@@ -55,7 +55,8 @@ html, body, #root {
 }
 
 .player-info-float {
-  left: 15px; /* Отступ слева */
+  left: 10px; /* Отступ слева */
+  top: 50px;
   /* Возможно, нужно добавить отступ от левой небезопасной зоны:
      left: calc(15px + env(safe-area-inset-left)); */
   display: flex;
@@ -82,7 +83,8 @@ html, body, #root {
 }
 
 .resources-float {
-  right: 15px; /* Отступ справа */
+  right: 10px; /* Отступ справа */
+  top:50px;
   /* Возможно, нужно добавить отступ от правой небезопасной зоны:
      right: calc(15px + env(safe-area-inset-right)); */
   display: flex;
@@ -111,6 +113,7 @@ html, body, #root {
 
 .energy-bar-float {
   left: 50%;
+  top:50px;
   transform: translateX(-50%); /* Центрирование по горизонтали */
   display: flex;
   align-items: center;
