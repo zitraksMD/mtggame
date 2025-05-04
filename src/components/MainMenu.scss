@@ -148,7 +148,7 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
-  top: 180px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ сверху, НИЖЕ кнопки BattlePass
+  top: 150px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ сверху, НИЖЕ кнопки BattlePass
                     // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
   left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
   display: flex;
@@ -184,7 +184,7 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: 180px; // Примерный отступ справа сверху (ниже, как просили)
+  top: 150px; // Примерный отступ справа сверху (ниже, как просили)
   right: 10px;
   display: flex;
   flex-direction: column;

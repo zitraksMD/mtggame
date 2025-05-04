@@ -141,6 +141,7 @@ const MainMenu = ({ onStart }) => { // onStart - функция из App.jsx
     const handleBattlePassClick = useCallback(() => { console.log("Battle Pass clicked"); }, []);
     const handleMailClick = useCallback(() => { console.log("Mail clicked"); }, []);
     const handleRewardsChestClick = useCallback(() => { console.log("Rewards Chest clicked"); }, []);
+    const handleDailyGrindClick = useCallback(() => { console.log("Daily Grind clicked"); /* TODO: Add logic */ }, []);
     const handleQuestsClick = useCallback(() => { console.log("Quests clicked"); }, []);
     const handleExchangeClick = useCallback(() => { console.log("Exchange clicked"); }, []);
     const handleResetClick = useCallback(() => { if (window.confirm('Сбросить все данные?')) { localStorage.clear(); window.location.reload(); } }, []);
@@ -250,14 +251,18 @@ const MainMenu = ({ onStart }) => { // onStart - функция из App.jsx
              BattlePass
          </button>
 
-         {/* Левая колонка (Только Почта и Сундук) */}
-         <div className="main-menu-left-column">
-             {/* BattlePass здесь больше НЕТ */}
+        {/* Левая колонка (Добавляем Daily Grind) */}
+        <div className="main-menu-left-column">
              <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
                  <img src="/assets/icons/mail-icon.png" alt="Почта" />
              </button>
              <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
-                 <img src="/assets/icons/gift-icon.png" alt="Награды" />
+                 <img src="/assets/icons/chest-icon.png" alt="Награды" />
+             </button>
+             {/* !!! НОВАЯ КНОПКА !!! */}
+             <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick}>
+                 {/* ЗАМЕНИТЬ НА ПРАВИЛЬНЫЙ ПУТЬ К ИКОНКЕ */}
+                 <img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" />
              </button>
          </div>
 
