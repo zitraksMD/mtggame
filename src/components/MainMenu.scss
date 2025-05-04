@@ -1,17 +1,18 @@
 // MainMenu.scss
 
-// --- Корневой элемент (.main-menu === motion.div) ---
+// --- Корневой элемент (.main-menu) ---
 .main-menu {
-  // Фон остается
   background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
-  // Занимает всю область, предоставленную родителем (App.jsx)
   width: 100%;
   height: 100%;
-  position: relative; // Важно для позиционирования дочерних элементов
-  overflow: hidden;   // Скрываем все, что выходит за пределы экрана
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
-// --- Контейнер для просмотра карты главы ---
+// --- Контейнер для просмотра карты главы (Как было) ---
 .chapter-view-container {
   width: 100%;
   height: 100%;
@@ -20,30 +21,47 @@
   left: 0;
   overflow: hidden;   // Обрезаем карту главы по границам контейнера
   cursor: grab;       // Курсор "схватить" по умолчанию
+  z-index: 1;         // Под новыми кнопками UI
 }
 
-// --- Сам контент карты главы (перетаскиваемый) ---
+// --- Сам контент карты главы (Как было) ---
 .chapter-map-content {
   position: relative; // Чтобы дочерние .level-node позиционировались относительно него
-  background-size: cover; // Или contain, или конкретный размер
+  background-size: cover;
   background-repeat: no-repeat;
-  background-position: center center; // Или top left, если координаты оттуда
-  transform-origin: 0 0; // Точка трансформации для translate
-  // transition: transform 0.1s ease-out; // Плавность применяется в JS только когда не тащим
+  background-position: center center; // Или top left
+  transform-origin: 0 0;
 
-  // Меняем курсор во время перетаскивания
   &.dragging {
-      cursor: grabbing;
+    cursor: grabbing;
   }
 }
 
-// --- Узел уровня ---
+// --- SVG и Узлы Уровней (Как было) ---
+.chapter-level-svg-connections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none; // Не мешать кликам
+  z-index: 1; // Под узлами, над картой
+}
+
+.level-connection-path {
+  stroke: rgba(255, 255, 255, 0.6); // Цвет связи
+  stroke-width: 5px;
+  fill: none;
+  stroke-dasharray: 10, 5; // Пунктирная линия
+  // Анимация отрисовки (опционально)
+  // stroke-dashoffset: 1000;
+  // animation: drawPath 5s linear forwards;
+}
+// @keyframes drawPath { to { stroke-dashoffset: 0; } }
+
 .level-node {
-  position: absolute; // <<< Позиционируется относительно .chapter-map-content
-  // top и left задаются инлайново в пикселях
-  width: 40px;       // Размер узла
+  position: absolute;
+  width: 40px;
   height: 40px;
-  background: rgba(52, 152, 219, 0.8); // Полупрозрачный синий
+  background: rgba(52, 152, 219, 0.8);
   border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 50%;
   display: flex;
@@ -52,145 +70,171 @@
   font-weight: bold;
   font-size: 16px;
   color: white;
-  cursor: pointer;   // Указывает на кликабельность
+  cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  z-index: 2;        // Над картой
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  z-index: 2; // Над связями и картой
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-      background-color: rgba(30, 144, 255, 0.9);
-      transform: scale(1.1); // Увеличение при наведении
+    background-color: rgba(41, 128, 185, 0.9); // Чуть темнее при наведении
+    transform: scale(1.1);
   }
 
-  // Можно добавить стили для пройденных/активных уровней
   &.completed {
-      background-color: rgba(46, 204, 113, 0.8);
-      border-color: rgba(255, 255, 255, 1);
+    background-color: rgba(46, 204, 113, 0.8); // Зеленый
+    border-color: rgba(255, 255, 255, 1);
+    &:hover { background-color: rgba(39, 174, 96, 0.9); }
   }
   &.active { // Если это текущий доступный уровень
-      border-color: #f1c40f;
-      box-shadow: 0 0 15px rgba(241, 196, 15, 0.8);
+    border-color: #f1c40f; // Золотая рамка
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.8); // Свечение
+  }
+  &.locked { // Если не доступен (если будет такая логика)
+      background-color: rgba(128, 128, 128, 0.7);
+      border-color: rgba(180, 180, 180, 0.8);
+      cursor: not-allowed;
+      &:hover { transform: scale(1); background-color: rgba(128, 128, 128, 0.7); }
   }
 }
 
 
-// --- Остальные элементы UI ---
-// Позиционируются абсолютно относительно .main-menu
+// --- НОВЫЕ ЭЛЕМЕНТЫ UI (Поверх карты) ---
 
-.chapter-name {
+// Общие стили для кнопок
+.main-menu-button {
   position: absolute;
-  bottom: 85px; // Пример: Над нижним навбаром + отступ
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  z-index: 5; // Выше чем карта (z-index: 1) и узлы (z-index: 2)
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px); // Небольшой блюр фона под кнопкой (опционально)
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+   &:active {
+     transform: scale(0.97);
+  }
+
+  &.icon-button {
+    padding: 8px;
+    border-radius: 12px;
+    img {
+      width: 40px; height: 40px; object-fit: contain; display: block;
+    }
+  }
+}
+
+// Battle Pass
+.battle-pass-button {
+  top: 70px; // Примерный отступ сверху
   left: 50%;
   transform: translateX(-50%);
-  z-index: 5; // Поверх карты
-  font-size: 20px; // Чуть меньше
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+// Левая колонка
+.main-menu-left-column {
+  position: absolute;
+  top: 140px; // Примерный отступ слева сверху
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 5; // Выше карты
+  .main-menu-button { position: relative; top: auto; left: auto; transform: none; } // Сброс absolute для кнопок внутри
+}
+
+// Правая колонка
+.main-menu-right-column {
+  position: absolute;
+  top: 140px; // Примерный отступ справа сверху (ниже, как просили)
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 5; // Выше карты
+  .main-menu-button { position: relative; top: auto; right: auto; transform: none; } // Сброс absolute
+}
+
+// Название главы (Как было, но можно поднять z-index)
+.chapter-name {
+  position: absolute;
+  bottom: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5; // Выше карты
+  font-size: 20px;
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
-  background-color: rgba(0, 0, 0, 0.4); // Легкий фон для читаемости
+  background-color: rgba(0, 0, 0, 0.4);
   padding: 5px 15px;
   border-radius: 15px;
-  pointer-events: none; // Не мешает кликам по карте
+  pointer-events: none; // Не мешает кликам по карте под ним
 }
 
-.map-button-floating.icon-only {
-  position: absolute;
-  top: 70px; // Отступ от верха (пример)
-  right: 20px;
-  z-index: 5; // Поверх карты
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2); // Добавим рамку
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-      background: rgba(0, 0, 0, 0.7);
-  }
-
-  img.map-icon {
-      width: 50px; // Уменьшим иконку
-      height: 50px;
-      object-fit: contain;
-      display: block; // Убрать лишние отступы
-  }
-}
-
-
-// --- Попапы и оверлеи ---
+// --- Попапы и Оверлеи (Как было) ---
 .level-popup,
 .level-loading-overlay {
-  position: fixed; // Остаются фиксированными
+  position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100; // Поверх всего, кроме может быть хедера/футера App
+  z-index: 100; // Очень высоко
 }
-.level-popup { background: rgba(0, 0, 0, 0.7); } // Фон-затемнение для попапа уровня
-.level-loading-overlay { background: rgba(0, 0, 0, 0.85); z-index: 101; } // Фон для загрузки
+.level-popup { background: rgba(0, 0, 0, 0.7); }
+.level-loading-overlay { background: rgba(0, 0, 0, 0.85); z-index: 101; } // Самый высокий
 
-.level-popup-box { // Сам блок попапа
+.level-popup-box {
   background: #2d3748; padding: 25px 35px; border-radius: 12px; color: white;
-  text-align: center; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); min-width: 280px; // Чуть шире
-  border: 1px solid #4a5568; // Добавим рамку
+  text-align: center; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); min-width: 280px;
+  border: 1px solid #4a5568;
 
-  h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.1rem;} // Уменьшим заголовок
+  h3 { margin-top: 0; margin-bottom: 15px; font-size: 1.1rem;}
   p { margin-top: 12px; color: #cbd5e1; font-size: 0.9rem;}
 }
 
-.popup-buttons { // Кнопки в попапе
+.popup-buttons {
   display: flex; justify-content: center; gap: 15px; margin-top: 20px;
   button {
-      padding: 10px 20px; // Кнопки чуть больше
-      border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem;
-      transition: background-color 0.2s, transform 0.1s;
-      &:active { transform: scale(0.97); }
+    padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-weight: 600; font-size: 0.9rem;
+    transition: background-color 0.2s, transform 0.1s;
+    &:active { transform: scale(0.97); }
 
-      // Кнопка "В бой"
-      &:first-child:not(:disabled) { background-color: #4CAF50; color: white; }
-      &:first-child:hover:not(:disabled) { background-color: #5cb85c; }
-
-      // Кнопка "Отмена" / "Ок"
-      &:last-child:not(:disabled) { background-color: #718096; color: white; }
-      &:last-child:hover:not(:disabled) { background-color: #8592a6; }
-
-      &:disabled { // Стиль неактивной кнопки
-           background-color: #555 !important; color: #aaa !important; cursor: default; opacity: 0.7;
-      }
+    &:first-child:not(:disabled) { background-color: #4CAF50; color: white; }
+    &:first-child:hover:not(:disabled) { background-color: #5cb85c; }
+    &:last-child:not(:disabled) { background-color: #718096; color: white; }
+    &:last-child:hover:not(:disabled) { background-color: #8592a6; }
+    &:disabled { background-color: #555 !important; color: #aaa !important; cursor: default; opacity: 0.7;}
   }
 }
 
 .loading-text { color: white; font-size: 1.2rem; }
-.loading-spinner { // Простой CSS спиннер
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-left-color: #fff;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
+.loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3); border-left-color: #fff;
+  border-radius: 50%; width: 40px; height: 40px;
+  animation: spin 1s linear infinite; margin-bottom: 15px;
 }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-// --- Кнопка Reset ---
+// --- Кнопка Reset (Как было) ---
 .reset-button {
-  position: fixed;
-  bottom: 80px; // Чуть выше
+  position: fixed; // Или absolute
+  bottom: 20px; // Ниже
   left: 15px;
-  font-size: 10px;
-  opacity: 0.7;
-  background: rgba(255,0,0,0.6); // Красный фон
-  color: #fff;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  z-index: 999; // Поверх остального UI
+  font-size: 10px; opacity: 0.6; background: rgba(255,0,0,0.5); color: #fff;
+  border: none; padding: 4px 8px; border-radius: 4px; z-index: 99; // Ниже попапов
   cursor: pointer;
    &:hover { opacity: 1; background: rgba(255,0,0,0.8); }
 }
