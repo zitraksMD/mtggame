@@ -54,6 +54,8 @@ const App = () => {
     // === ЗАГЛУШКИ ТОЛЬКО ДЛЯ ТОГО, ЧЕГО НЕТ В СТОРЕ (ДОБАВЛЕНО из код1) ===
     const avatarUrl = "/assets/default-avatar.png";   // Заглушка для аватара (используем, т.к. avatarUrl закомментирован в селекторе)
     const energy = { current: "??", max: "??" };    // Заглушка для энергии (используем, т.к. energy закомментирован в селекторе)
+    const tonShards = 0; // <--- ДОБАВЬТЕ ЭТУ СТРОКУ (или null, или '???' - любое значение-заглушка)
+
 
     // ❗ Убедитесь, что нет других объявлений `const powerLevel = ...`, `const gold = ...` и т.д. вне useGameStore
 
@@ -176,43 +178,45 @@ const App = () => {
             {/* ▼▼▼ ШАПКА (ОБНОВЛЕНО согласно код1) ▼▼▼ */}
             {/* Условие показа шапки */}
             {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && (
-                <header className="app-header">
+                 <header className="app-header">
 
-                    {/* --- Левая часть --- */}
-                    <div className="header-left">
-                         {/* Используем заглушку avatarUrl, т.к. он не из стора */}
-                        <img src={avatarUrl} alt="Аватар" className="player-avatar" />
-                        <div className="player-info">
-                            {/* username из стора */}
-                            <span className="player-name">{username || "Гость"}</span>
-                            {/* powerLevel из стора, с '...' при загрузке */}
-                            <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
-                        </div>
-                    </div>
-
-                    {/* --- Правая часть (Ресурсы) --- */}
-                    <div className="header-right">
-                        {/* Энергия (Используем заглушку energy) */}
-                        <div className="resource-item energy-item">
-                            <img src="/assets/icon-energy.png" alt="Энергия" className="resource-icon" />
-                            {/* Используем значения из заглушки */}
-                            <span>{`${energy?.current}/${energy?.max}`}</span>
-                        </div>
-                        {/* Золото (Из стора) */}
-                        <div className="resource-item gold-item">
-                           <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon" />
-                            {/* gold из стора, с '0' при загрузке/undefined */}
-                           <span>{gold?.toLocaleString() ?? '0'}</span>
-                         </div>
-                        {/* Алмазы (Из стора) */}
-                         <div className="resource-item diamond-item">
-                           <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon" />
-                           {/* diamonds из стора, с '0' при загрузке/undefined */}
-                           <span>{diamonds?.toLocaleString() ?? '0'}</span>
-                         </div>
-                    </div>
-
-                </header>
+                 {/* Левая часть */}
+                 <div className="header-left">
+                   <img src={avatarUrl} alt="Аватар" className="player-avatar" />
+                   <div className="player-info">
+                     <span className="player-name">{username || "Гость"}</span>
+                     <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
+                   </div>
+                 </div>
+             
+                 {/* Центральная часть (Ресурсы) */}
+                 <div className="header-center resource-group">
+                     {/* Золото */}
+                     <div className="resource-item gold-item">
+                       <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon" />
+                       <span>{gold?.toLocaleString() ?? '0'}</span>
+                     </div>
+                     {/* Алмазы */}
+                     <div className="resource-item diamond-item">
+                       <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon" />
+                       <span>{diamonds?.toLocaleString() ?? '0'}</span>
+                     </div>
+                     {/* Осколки TON (Пример) */}
+                     <div className="resource-item toncoin-item">
+                       <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon" />
+                       {/* Замените tonShards на вашу переменную из стора */}
+                       <span>{tonShards?.toLocaleString() ?? '0'}</span>
+                     </div>
+                 </div>
+             
+                 {/* Правая часть (Энергия) */}
+                 <div className="header-right">
+                     <div className="resource-item energy-item">
+                       <img src="/assets/icon-energy.png" alt="Энергия" className="resource-icon" />
+                       <span>{`${energy?.current ?? '?'}/${energy?.max ?? '?'}`}</span>
+                     </div>
+                 </div>
+               </header>
             )}
             {/* ▲▲▲ КОНЕЦ ШАПКИ ▲▲▲ */}
 

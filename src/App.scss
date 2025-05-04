@@ -27,100 +27,75 @@ html, body, #root { // Добавил #root из код1 для консисте
 
 
   // Оставляем только верхний отступ (если он нужен и работает в Mini App)
-  padding-top: env(safe-area-inset-top, 0px);
-  // padding-bottom: env(safe-area-inset-bottom, 0px); // <-- УДАЛИТЬ ИЛИ ЗАКОММЕНТИРОВАТЬ
+    // padding-bottom: env(safe-area-inset-bottom, 0px); // <-- УДАЛИТЬ ИЛИ ЗАКОММЕНТИРОВАТЬ
   // padding-left/right тоже убраны ранее
 }
 
 /* === СТИЛИ ШАПКИ (Из Кода 1) === */
 .app-header {
   display: flex;
-  justify-content: space-between; // Разносим левую и правую части
-  align-items: center;           // Вертикальное выравнивание
-  padding: 5px 10px;           // Внутренние отступы (подберите)
-  // background-color: #1a1d2b;      // Пример фона (темно-сине-серый)
-  background: linear-gradient(to bottom, #2a3045, #1c202b); // Пример градиента из код1
-  width: 100%;                   // На всю ширину (уже учтен padding родителя)
+  justify-content: space-between; // Разносим лево|центр|право
+  align-items: center;            // Вертикальное выравнивание
+  background: linear-gradient(to bottom, #2a3045, #1c202b); // Фон
+  width: 100%;
+  flex-shrink: 0;
   box-sizing: border-box;
-  flex-shrink: 0;                // Не сжиматься по высоте
-  position: relative;            // Можно убрать, если z-index не нужен
-  z-index: 10;                   // Поверх контента
-  // border-bottom: 1px solid rgba(255, 255, 255, 0.1); // Если нужна линия снизу (из код1)
-  // box-shadow: 0 2px 5px rgba(0,0,0,0.3); // Небольшая тень снизу (была в код2, можно вернуть при желании)
+  z-index: 10;
+
+  // ▼▼▼ Отступы для безопасных зон ПРИМЕНЯЮТСЯ К ШАПКЕ ▼▼▼
+  padding-top: env(safe-area-inset-top, 24px); // Отодвигаем ВЕСЬ контент шапки от верха экрана (подберите fallback)
+  padding-bottom: 8px;                        // Нижний отступ внутри шапки
+  padding-left: env(safe-area-inset-left, 10px); // Боковые отступы (подберите fallback)
+  padding-right: env(safe-area-inset-right, 10px);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px; // Отступ между аватаром и инфо блоком
+  gap: 8px;
+  min-width: 0; // Чтобы контент мог сжиматься, если имя длинное
 }
+.player-avatar { width: 38px; height: 38px; border-radius: 6px; flex-shrink: 0;}
+.player-info { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.1; overflow: hidden;}
+.player-name { font-size: 14px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; /* Ограничение ширины для имени */ }
+.player-power { font-size: 13px; font-weight: 500; color: #a0aec0; }
 
-.player-avatar {
-  width: 38px; // Размер аватара из код1
-  height: 38px;
-  border-radius: 6px; // Скругление из код1
-  // border: 1px solid #4a5568; // Рамка, если нужна (из код1)
-  // border: 1px solid rgba(255, 255, 255, 0.3); // Рамка (была в код2) - Выберите один вариант или удалите
-  object-fit: cover; // Масштабирование картинки
-  flex-shrink: 0;
-}
-
-.player-info {
+// --- Центральная часть ---
+.header-center {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start; // Текст выравнивается по левому краю
-  gap: 1px; // Минимальный отступ между ником и силой из код1
-  line-height: 1.1; // Сжимаем строки поближе из код1
-  // Удалены стили для .power-level-wrapper и .player-level, которые были в код2 внутри этого блока
+  justify-content: center; // Центрируем ресурсы внутри блока
+  align-items: center;
+  gap: 10px;               // Отступ между ресурсами (подберите)
+  flex-grow: 1;          // Позволяем занимать доступное место (можно убрать)
+  min-width: 0;            // Для корректной работы flex
 }
 
-.player-name {
-  font-size: 14px; // из код1
-  font-weight: 600; // из код1
-  color: #e2e8f0; // Светло-серый из код1
-  // line-height: 1.2; // был в код2, заменен на общий line-height в .player-info
-}
-
-.player-power { // Новый стиль из код1
-  font-size: 13px;
-  font-weight: 500;
-  color: #a0aec0; // Серый из код1
-  // Если нужно иконку силы добавить (из код1):
-  // display: flex;
-  // align-items: center;
-  // gap: 4px;
-  // &::before { content: '⚡'; /* или иконка через background */ }
-}
-
+// --- Правая часть ---
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px; // Отступ между ресурсами из код1 (подберите)
-  // Удалены комментарии про ResourceBar из код2, т.к. стили для ресурсов добавлены ниже
+  justify-content: flex-end; // Прижимаем к правому краю
+  min-width: 0;
 }
 
-// Стили для ресурсов из код1 (можно переиспользовать из ResourceBar.scss или оставить здесь)
+// --- Общие стили для групп ресурсов ---
+.resource-group { // Можно добавить этот класс к .header-center и .header-right
+   display: flex;
+   align-items: center;
+   gap: 10px; // Или разный gap для центра и правого края
+}
 .resource-item {
   display: flex;
   align-items: center;
-  gap: 5px; // Отступ между иконкой и текстом
-  background-color: rgba(0, 0, 0, 0.3); // Небольшой фон для каждого ресурса
-  padding: 3px 6px;
+  gap: 5px;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
   border-radius: 5px;
+  white-space: nowrap; // Не переносить числа
 
-  span { // Стили для текста ресурса
-    color: white;
-    font-size: 13px;
-    font-weight: 600;
-  }
+  span { color: white; font-size: 13px; font-weight: 600; }
 }
-
-.resource-icon {
-  width: 16px; // Размер иконок ресурсов из код1
-  height: 16px;
-  object-fit: contain;
-}
-/* === КОНЕЦ СТИЛЕЙ ШАПКИ === */
+.resource-icon { width: 16px; height: 16px; object-fit: contain; }
 
 
 /* --- Область для сменяемого контента (вкладки, уровень) --- */
