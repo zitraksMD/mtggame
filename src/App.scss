@@ -17,7 +17,7 @@ html, body, #root {
 
 /* --- Основной контейнер приложения --- */
 .app-container {
-  height: 100%; /* Используйте 100vh, если 100% не работает как ожидается */
+  height: 100vh; /* <<< ПОПРОБУЙ ЭТО ЗНАЧЕНИЕ */
   width: 100%;
   background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
   display: flex;
@@ -65,7 +65,7 @@ html, body, #root {
   /* 45px - минимальный отступ сверху */
   /* 15px - желаемый отступ от нижней границы safe-area-inset-top */
   /* !!! Подберите эти значения (45px, 15px) для нужной высоты !!! */
-  top: max(45px, calc(15px + env(safe-area-inset-top, 0px)));
+  top: max(40px, calc(15px + env(safe-area-inset-top, 0px)));
 
   /* Горизонтальное центрирование */
   left: 50%;
