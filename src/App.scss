@@ -1,88 +1,173 @@
+/* src/App.scss */
+
 /* --- Глобальные стили --- */
-html, body, #root { // Добавил #root из код1 для консистентности
-  height: 100%;
-  width: 100%;
-  margin: 0 !important;
-  padding: 0;
-  overflow: hidden; // Запрещаем скролл всей страницы
+html, body, #root {
+  height: 100%; // <-- Заменен невидимый символ на обычный пробел
+  width: 100%;  // <-- Заменен невидимый символ на обычный пробел
+  margin: 0 !important; // <-- Заменен невидимый символ на обычный пробел
+  padding: 0; // <-- Заменен невидимый символ на обычный пробел
+  overflow: hidden; // <-- Заменен невидимый символ на обычный пробел
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-               Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; // Пример системного шрифта
-  background-color: #111; // Фон для областей вне приложения (если видны)
-  color: white; // Базовый цвет текста
-  overscroll-behavior: contain; // Отключаем "оттягивание" на мобильных
-  -webkit-tap-highlight-color: transparent; // Убираем синюю подсветку при тапе
+               Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #111;
+  color: white;
+  overscroll-behavior: contain;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* --- Основной контейнер приложения --- */
 .app-container {
   height: 100%;
   width: 100%;
+  background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background-color: #000;
   position: relative;
   box-sizing: border-box;
-  padding-bottom: 45px; // Пример: 70px (высота навбара) + 5px (запас)
-
-
-  // Оставляем только верхний отступ (если он нужен и работает в Mini App)
-    // padding-bottom: env(safe-area-inset-bottom, 0px); // <-- УДАЛИТЬ ИЛИ ЗАКОММЕНТИРОВАТЬ
-  // padding-left/right тоже убраны ранее
+  // padding-top: env(safe-area-inset-top, 0px); // <-- УБРАЛИ ОТСЮДА
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* === СТИЛИ ШАПКИ (Из Кода 1) === */
+/* === НОВЫЕ СТИЛИ ШАПКИ (из Кода 1) === */
 .app-header {
-  display: flex;
-  justify-content: space-between; // Разносим лево|центр|право
-  align-items: center;            // Вертикальное выравнивание
-  background: linear-gradient(to bottom, #2a3045, #1c202b); // Фон
+  background: linear-gradient(to bottom, #1b263b, #0d1b2a); /* Ваш темно-синий градиент */
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  flex-shrink: 0;
-  box-sizing: border-box;
   z-index: 10;
+  padding-top: env(safe-area-inset-top);
+  box-sizing: border-box;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Возможно, придется изменить на flex-start */
+  min-height: 100px; /* Или ваша актуальная высота */
+  padding-left: 10px;
+  padding-right: 10px;
 
-  // ▼▼▼ Отступы для безопасных зон ПРИМЕНЯЮТСЯ К ШАПКЕ ▼▼▼
-  padding-top: env(safe-area-inset-top, 24px); // Отодвигаем ВЕСЬ контент шапки от верха экрана (подберите fallback)
-  padding-bottom: 8px;                        // Нижний отступ внутри шапки
-  padding-left: env(safe-area-inset-left, 10px); // Боковые отступы (подберите fallback)
-  padding-right: env(safe-area-inset-right, 10px);
+  clip-path: polygon(
+    /* --- Шаг 1: Верхняя линия --- */
+    0% 0%,     /* 1. Левый верхний угол */
+    100% 0%,    /* 2. Правый верхний угол */
+
+    /* --- Шаг 2: Правое "плечо" (высокая часть) --- */
+    100% 100%,   /* 3. Правый нижний угол (почти на всю высоту, 95%) */
+    80% 100%,    /* 4. Внутренний нижний угол правого плеча (ширина плеча 20%, высота та же 95%) */
+                /* Эта точка - начало подъема к центру */
+
+    /* --- Шаг 3: Плавный подъем к центру --- */
+    /* Добавляем промежуточные точки для сглаживания */
+    75% 35%,    /* 5. Точка на подъеме (немного левее и выше предыдущей) */
+    55% 35%,    /* 6. Еще выше и левее */
+
+    /* --- Шаг 4: Центральная точка (самая высокая) --- */
+    50% 35%,    /* 7. Пик подъема (центр по горизонтали, поднят до 60% высоты) */
+
+    /* --- Шаг 5: Плавный спуск к левому плечу --- */
+    /* Зеркалим точки подъема */
+    35% 35%,    /* 8. Начинаем спуск (симметрично точке 6) */
+    25% 35%,    /* 9. Ниже и левее (симметрично точке 5) */
+
+    /* --- Шаг 6: Левое "плечо" (высокая часть) --- */
+    20% 100%,    /* 10. Внутренний нижний угол левого плеча (конец спуска, высота 95%, ширина 20%) */
+    0% 100%     /* 11. Левый нижний угол (высота 95%) */
+
+    /* --- Замыкание --- */
+    /* Последняя точка (11) автоматически соединяется с первой (1) */
+  );
+  /* --- КОНЕЦ ОБРЕЗКИ --- */
+
+  /* ВАЖНО: Эти координаты - ПРИМЕР!
+     Вам нужно будет поиграть с процентами (особенно с 50% 70%),
+     чтобы получить желаемую форму и глубину выреза.
+     Чем меньше второй процент у центральной точки (50% 70%), тем выше будет поднят центр.
+     Точки типа 100% 80% и 0% 80% определяют, где начинается "скругление" по бокам.
+  */
 }
 
-.header-left {
+// --- Блок Верх-Лево (Аватар, Инфо) ---
+.header-top-left {
+  background-color: transparent; /* Убираем черный фон */
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 60px) + 5px);
+  left: calc(env(safe-area-inset-left, 60px) + 5px);
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0; // Чтобы контент мог сжиматься, если имя длинное
+  min-width: 0;
 }
 .player-avatar { width: 38px; height: 38px; border-radius: 6px; flex-shrink: 0;}
 .player-info { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.1; overflow: hidden;}
-.player-name { font-size: 14px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; /* Ограничение ширины для имени */ }
+.player-name { font-size: 14px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
 .player-power { font-size: 13px; font-weight: 500; color: #a0aec0; }
 
-// --- Центральная часть ---
-.header-center {
-  display: flex;
-  justify-content: center; // Центрируем ресурсы внутри блока
-  align-items: center;
-  gap: 10px;               // Отступ между ресурсами (подберите)
-  flex-grow: 1;          // Позволяем занимать доступное место (можно убрать)
-  min-width: 0;            // Для корректной работы flex
-}
 
-// --- Правая часть ---
-.header-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end; // Прижимаем к правому краю
+// --- Блок Верх-Центр (Энергия) ---
+.header-top-center {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 24px) + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  max-width: 150px;
   min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.energy-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 3px 5px;
+  border-radius: 15px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-sizing: border-box;
+
+  .energy-icon {
+    width: 16px; height: 16px; flex-shrink: 0;
+  }
+  .energy-bar-track {
+    flex-grow: 1;
+    height: 8px;
+    background-color: #555;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .energy-bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    height: 100%;
+    background: linear-gradient(to right, #4ade80, #16a34a);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .energy-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    margin-left: 5px;
+    white-space: nowrap;
+  }
 }
 
-// --- Общие стили для групп ресурсов ---
-.resource-group { // Можно добавить этот класс к .header-center и .header-right
-   display: flex;
-   align-items: center;
-   gap: 10px; // Или разный gap для центра и правого края
+
+// --- Блок Верх-Право (Ресурсы столбиком) ---
+.header-top-right {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 24px) + 5px);
+  right: calc(env(safe-area-inset-right, 10px) + 5px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
 }
 .resource-item {
   display: flex;
@@ -91,95 +176,53 @@ html, body, #root { // Добавил #root из код1 для консисте
   background-color: rgba(0, 0, 0, 0.3);
   padding: 4px 8px;
   border-radius: 5px;
-  white-space: nowrap; // Не переносить числа
+  white-space: nowrap;
 
   span { color: white; font-size: 13px; font-weight: 600; }
 }
 .resource-icon { width: 16px; height: 16px; object-fit: contain; }
 
+/* === КОНЕЦ НОВЫХ СТИЛЕЙ ШАПКИ === */
+
 
 /* --- Область для сменяемого контента (вкладки, уровень) --- */
 .content-area {
-  flex: 1; // Занимает все доступное пространство по высоте
-  position: relative; // Для позиционирования дочерних анимируемых вкладок
-  overflow: hidden; // Обрезает контент вкладок во время анимации
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
-/*
-* Стиль для корневых элементов экранов внутри content-area (motion.div).
-* Framer Motion обычно управляет позицией через inline-стили.
-*/
+/* Стиль для корневых элементов экранов внутри content-area (motion.div). */
 .content-area > div {
-  position: absolute; // Важно для AnimatePresence mode="wait"
-  width: 100%;      // <--- Заставляем обертку занять всю ширину
-  height: 100%;     // <--- Заставляем обертку занять всю высоту
+  position: absolute;
+  width: 100%;
+  height: 100%;
   top: 0;
   left: 0;
-  // overflow-y: auto; // Можно добавить, если нужен скролл ВНУТРИ экрана, а не всей content-area
+  // overflow-y: auto;
 }
 
-/*
-* Убедитесь, что у каждой вкладки/экрана (MainMenu, Inventory, etc.)
-* задан свой фон в их собственных SCSS файлах,
-* чтобы они корректно перекрывали друг друга.
-*/
+/* Убедитесь, что у каждой вкладки/экрана задан свой фон */
 
 
-/* --- ❗ СТАРЫЕ ФИКСИРОВАННЫЕ ЭЛЕМЕНТЫ (Закомментированы или Удалены) --- */
-/* Этот блок уже был корректно закомментирован в код2, как и требовалось в код1 */
-
-/*
-// Отображение имени пользователя (ТЕПЕРЬ ЧАСТЬ .app-header)
-.username-display {
-  position: fixed; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
-  top: 0px; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
-  left: 15px;
-  // ... прочие стили ...
-}
-*/
-
-/*
-// Контейнер для PowerLevel (ТЕПЕРЬ ЧАСТЬ .app-header)
-.power-level-wrapper { // Замените на актуальный класс вашего PowerLevel компонента
-  position: fixed; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
-  top: 30px; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
-  left: 15px;
-  // ... прочие стили ...
-}
-*/
-
-/*
-// Старый фиксированный ресурс бар (ТЕПЕРЬ ЧАСТЬ .app-header)
-.resource-bar-fixed { // Старый класс для фиксированного бара
-  position: fixed;       // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
-  top: 0px;            // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
-  right: 15px;
-  // ... прочие стили ...
-}
-*/
-/* Стили для внутренних элементов старого бара также закомментированы ниже или удалены */
-/*
-.resource-item { ... }
-.resource-icon { ... }
-.gold-amount, .diamond-amount { ... }
-*/
+/* --- ❗ СТАРЫЕ/УДАЛЕННЫЕ СТИЛИ ИЗ КОД2 (закомментированы) --- */
+/* ... (остальные закомментированные стили без изменений) ... */
 
 
 /* --- Экраны загрузки / подготовки --- */
-// Эти стили остаются как были в код2
 .loading-screen,
 .fade-screen {
-  position: absolute; // Позиционируем относительно .content-area или .app-container
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column; // Для текста и возможного спиннера
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.85); // Чуть темнее фон
-  z-index: 50; // Выше обычного контента
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 50;
 
   h2 {
     color: white;
@@ -191,41 +234,32 @@ html, body, #root { // Добавил #root из код1 для консисте
 }
 
 .fade-screen {
-  background-color: #000; // Непрозрачный черный
+  background-color: #000;
 }
 
 
 /* --- Стили для BottomNav --- */
-// Эти стили остаются как были в код2 (закомментированный пример)
-/* Убедитесь, что стили BottomNav импортируются или определены ниже,
-  и что у него НЕТ position: fixed. Он должен быть частью flex-потока .app-container */
-// @import './components/BottomNav.scss';
-
-/* Пример стилей BottomNav без fixed: */
+/* ... (закомментированный пример BottomNav без изменений) ... */
 
 
 /* --- Дополнительные стили (если нужны) --- */
-// Эти стили остаются как были в код2
-// Стили для .text-white, .text-xl, если это классы Tailwind/Bootstrap,
-// но используются без подключения самой библиотеки, их нужно определить:
 .text-white {
   color: white;
 }
 .text-xl {
-  font-size: 1.25rem; // Пример для xl
+  font-size: 1.25rem;
 }
 
 /* --- UsernamePopup Specific Styles --- */
-// Эти стили остаются как были в код2
 .username-popup {
-  position: absolute; // Или fixed, если он должен быть поверх всего и всегда
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: rgba(30, 30, 40, 0.95);
   padding: 20px;
   border-radius: 10px;
-  z-index: 100; // Выше шапки и контента
+  z-index: 100;
   box-shadow: 0 5px 15px rgba(0,0,0,0.5);
   // Добавьте стили для input, button внутри попапа
 }

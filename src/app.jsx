@@ -19,10 +19,9 @@ import LoadingScreen from "./components/LoadingScreen";
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore"; // <--- Убедитесь, что импорт есть
-import './App.scss'; // Убедитесь, что здесь есть стили для .app-header, .header-left, .header-right, .player-avatar, .player-info и т.д. и padding для .app-container с env()
+import './App.scss'; // Убедитесь, что здесь есть стили для .app-header, .header-top-left, .header-top-center, .header-top-right, .resource-group-vertical, .player-avatar, .player-info, .energy-bar и т.д. и padding для .app-container с env()
 
 
-  
 const App = () => {
     // === Состояния ===
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -31,15 +30,15 @@ const App = () => {
     const [loadingError, setLoadingError] = useState(null);
     const [isLoadingLevel, setIsLoadingLevel] = useState(false);
 
-    // === Данные из стора (ЗАМЕНЕНО согласно код1) ===
+    // === Данные из стора ===
     // Получаем ВСЕ необходимые данные одним селектором
     const { username, gold, diamonds, powerLevel /*, energy, avatarUrl */ } = useGameStore((state) => ({
         username: state.username,
         gold: state.gold,
         diamonds: state.diamonds,
         powerLevel: state.powerLevel, // <--- УБЕДИТЕСЬ, ЧТО ЭТА СТРОКА ЕСТЬ И РАБОТАЕТ
-        // energy: state.energy,         // <--- ОСТАВИТЬ ЗАКОММЕНТИРОВАННЫМ / УДАЛИТЬ, если нет в сторе
-        // avatarUrl: state.avatarUrl    // <--- ОСТАВИТЬ ЗАКОММЕНТИРОВАННЫМ / УДАЛИТЬ, если нет в сторе
+        // energy: state.energy,       // <--- ОСТАВИТЬ ЗАКОММЕНТИРОВАННЫМ / УДАЛИТЬ, если нет в сторе
+        // avatarUrl: state.avatarUrl  // <--- ОСТАВИТЬ ЗАКОММЕНТИРОВАННЫМ / УДАЛИТЬ, если нет в сторе
     }));
 
     // Actions из стора (остаются как были, если нужны)
@@ -51,10 +50,12 @@ const App = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // === ЗАГЛУШКИ ТОЛЬКО ДЛЯ ТОГО, ЧЕГО НЕТ В СТОРЕ (ДОБАВЛЕНО из код1) ===
+    // === ЗАГЛУШКИ ТОЛЬКО ДЛЯ ТОГО, ЧЕГО НЕТ В СТОРЕ (ИЗМЕНЕНО согласно код1) ===
     const avatarUrl = "/assets/default-avatar.png";   // Заглушка для аватара (используем, т.к. avatarUrl закомментирован в селекторе)
-    const energy = { current: "??", max: "??" };    // Заглушка для энергии (используем, т.к. energy закомментирован в селекторе)
-    const tonShards = 0; // <--- ДОБАВЬТЕ ЭТУ СТРОКУ (или null, или '???' - любое значение-заглушка)
+    // const energy = { current: "??", max: "??" };    // Заглушка для энергии (используем, т.к. energy закомментирован в селекторе)
+    // --- Используем более реалистичные заглушки для энергии ---
+    const energy = { current: 85, max: 100 }; // Пример: 85/100 энергии
+    const tonShards = 0; // <--- ДОБАВЛЕНО ИЗ код1 (или null, или другое значение-заглушка)
 
 
     // ❗ Убедитесь, что нет других объявлений `const powerLevel = ...`, `const gold = ...` и т.д. вне useGameStore
@@ -175,50 +176,56 @@ const App = () => {
             {/* Попап для ввода имени пользователя (остается здесь) */}
             {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && <UsernamePopup />}
 
-            {/* ▼▼▼ ШАПКА (ОБНОВЛЕНО согласно код1) ▼▼▼ */}
-            {/* Условие показа шапки */}
+            {/* ▼▼▼ ОБНОВЛЕННАЯ ШАПКА (из код1) ▼▼▼ */}
             {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && (
-                 <header className="app-header">
+                <header className="app-header"> {/* Этот контейнер будет иметь padding-top */}
 
-                 {/* Левая часть */}
-                 <div className="header-left">
-                   <img src={avatarUrl} alt="Аватар" className="player-avatar" />
-                   <div className="player-info">
-                     <span className="player-name">{username || "Гость"}</span>
-                     <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
-                   </div>
-                 </div>
-             
-                 {/* Центральная часть (Ресурсы) */}
-                 <div className="header-center resource-group">
-                     {/* Золото */}
-                     <div className="resource-item gold-item">
-                       <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon" />
-                       <span>{gold?.toLocaleString() ?? '0'}</span>
-                     </div>
-                     {/* Алмазы */}
-                     <div className="resource-item diamond-item">
-                       <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon" />
-                       <span>{diamonds?.toLocaleString() ?? '0'}</span>
-                     </div>
-                     {/* Осколки TON (Пример) */}
-                     <div className="resource-item toncoin-item">
-                       <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon" />
-                       {/* Замените tonShards на вашу переменную из стора */}
-                       <span>{tonShards?.toLocaleString() ?? '0'}</span>
-                     </div>
-                 </div>
-             
-                 {/* Правая часть (Энергия) */}
-                 <div className="header-right">
-                     <div className="resource-item energy-item">
-                       <img src="/assets/icon-energy.png" alt="Энергия" className="resource-icon" />
-                       <span>{`${energy?.current ?? '?'}/${energy?.max ?? '?'}`}</span>
-                     </div>
-                 </div>
-               </header>
+                    {/* --- Блок под кнопкой Close (Верх-Лево) --- */}
+                    <div className="header-top-left">
+                        <img src={avatarUrl} alt="Аватар" className="player-avatar" />
+                        <div className="player-info">
+                            <span className="player-name">{username || "Гость"}</span>
+                            <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
+                        </div>
+                    </div>
+
+                    {/* --- Блок по центру (Энергия) --- */}
+                    <div className="header-top-center">
+                        <div className="energy-bar">
+                             <img src="/assets/icon-energy.png" alt="" className="resource-icon energy-icon" />
+                             <div className="energy-bar-track">
+                                 {/* Ширина внутреннего блока будет управляться стилем или JS */}
+                                 <div
+                                     className="energy-bar-fill"
+                                     style={{ width: `${(energy?.current && energy?.max && energy.max > 0) ? (energy.current / energy.max * 100) : 0}%` }} // Добавлена проверка energy.max > 0
+                                 ></div>
+                             </div>
+                             <span className="energy-text">{`${energy?.current ?? '?'}/${energy?.max ?? '?'}`}</span>
+                        </div>
+                    </div>
+
+                    {/* --- Блок справа (Ресурсы столбиком) --- */}
+                    <div className="header-top-right resource-group-vertical">
+                         {/* Золото */}
+                         <div className="resource-item gold-item">
+                           <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon" />
+                           <span>{gold?.toLocaleString() ?? '0'}</span>
+                         </div>
+                         {/* Алмазы */}
+                         <div className="resource-item diamond-item">
+                           <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon" />
+                           <span>{diamonds?.toLocaleString() ?? '0'}</span>
+                         </div>
+                         {/* Осколки TON */}
+                         <div className="resource-item toncoin-item">
+                           <img src="/assets/icon-toncoin.png" alt="Осколки" className="resource-icon" />
+                           <span>{tonShards?.toLocaleString() ?? '0'}</span>
+                         </div>
+                    </div>
+
+                </header>
             )}
-            {/* ▲▲▲ КОНЕЦ ШАПКИ ▲▲▲ */}
+            {/* ▲▲▲ КОНЕЦ ОБНОВЛЕННОЙ ШАПКИ ▲▲▲ */}
 
             {/* ❗ Старые компоненты PowerLevel, ResourceBar удалены из рендера, их данные теперь в <header> */}
 
