@@ -27,7 +27,6 @@ html, body, #root {
   position: relative;
   box-sizing: border-box;
   /* padding-top: env(safe-area-inset-top, 0px); // <-- УБРАЛИ ОТСЮДА, т.к. теперь плавающие блоки */
-  padding-bottom: env(safe-area-inset-bottom, 0px); /* Оставляем для нижней зоны */
 }
 
 
@@ -49,14 +48,13 @@ html, body, #root {
   /* Используем max для отступа блока и env */
   /* top: max(20px, env(safe-area-inset-top)); */
   /* Пока просто top, но можно усложнить с calc и env */
-  top: 20px; /* <<< Начинаем с 20px, а не 50px - обычно это удобнее */
+  top: 70px; /* <<< Начинаем с 20px, а не 50px - обычно это удобнее */
   /* ПРИМЕЧАНИЕ: Убедитесь, что это значение top учитывает safe-area-inset-top,
      либо используйте calc(20px + env(safe-area-inset-top)) или max() как в комментарии выше */
 }
 
 .player-info-float {
   left: 10px; /* Отступ слева */
-  top: 50px;
   /* Возможно, нужно добавить отступ от левой небезопасной зоны:
      left: calc(15px + env(safe-area-inset-left)); */
   display: flex;
@@ -84,7 +82,6 @@ html, body, #root {
 
 .resources-float {
   right: 10px; /* Отступ справа */
-  top:50px;
   /* Возможно, нужно добавить отступ от правой небезопасной зоны:
      right: calc(15px + env(safe-area-inset-right)); */
   display: flex;
@@ -113,7 +110,6 @@ html, body, #root {
 
 .energy-bar-float {
   left: 50%;
-  top:50px;
   transform: translateX(-50%); /* Центрирование по горизонтали */
   display: flex;
   align-items: center;
