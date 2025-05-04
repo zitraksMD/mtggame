@@ -257,7 +257,7 @@ const MainMenu = ({ onStart }) => { // onStart - функция из App.jsx
                  <img src="/assets/icons/mail-icon.png" alt="Почта" />
              </button>
              <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
-                 <img src="/assets/icons/chest-icon.png" alt="Награды" />
+                 <img src="/assets/icons/gift-icon.png" alt="Награды" />
              </button>
          </div>
 
