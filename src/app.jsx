@@ -287,7 +287,7 @@ const App = () => {
                     </div>
                     {/* Осколки TON */}
                     <div className="resource-item-float">
-                        <img src="/assets/icon-toncoin.png" alt="Осколки" className="resource-icon-small" /> {/* Класс из Кода 1 */}
+                        <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon-small" /> {/* Класс из Кода 1 */}
                         <span>{tonShards?.toLocaleString() ?? '0'}</span>
                     </div>
                 </div>
@@ -297,7 +297,7 @@ const App = () => {
                 <div className="energy-bar-float">
                     {/* Обертка для самой полоски (Из Кода 1) */}
                     <div className="energy-bar-content">
-                        <img src="/assets/icon-energy.png" alt="" className="resource-icon-small energy-icon" />
+                        <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
                         <div className="energy-track">
                         <div
                                 className="energy-fill"
