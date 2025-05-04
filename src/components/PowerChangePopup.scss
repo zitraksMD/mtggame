@@ -1,0 +1,48 @@
+/* Стало так: */
+.inventory .power-change-popup { // <<< Добавили родительский класс .inventory
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(100, 116, 139, 0.6);
+  border-radius: 8px;
+  padding: 8px 15px;
+  color: #e0e0e0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  z-index: 250;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  backdrop-filter: blur(3px);
+
+  // Стили для дочерних элементов ТЕПЕРЬ НУЖНО ТОЖЕ ВЛОЖИТЬ или использовать полную специфичность
+  // Например:
+  // .power-icon { ... } // Так не сработает, если было внутри старого блока
+  // Нужно либо:
+  .power-icon {
+     font-size: 1.1em;
+     color: #facc15;
+  }
+  .power-label {
+    color: #94a3b8;
+  }
+  .power-value {
+    font-weight: bold;
+    color: #ffffff;
+    min-width: 30px;
+    text-align: right;
+  }
+  .power-diff {
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-left: 2px;
+    &.gain { color: #4ade80; }
+    &.loss { color: #f87171; }
+  }
+  // Либо для каждого дочернего прописывать полный путь:
+  // .inventory .power-change-popup .power-icon { ... }
+} // Конец .inventory .power-change-popup

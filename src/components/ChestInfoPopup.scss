@@ -1,0 +1,171 @@
+/* ChestInfoPopup.scss или в общем файле стилей */
+
+/* --- Стили для кнопки "i" на карточке сундука (из кода 2 - полная версия) --- */
+.chest-card {
+    position: relative; /* Убедись, что у родителя есть position: relative */
+  
+    .chest-info-button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(0, 0, 0, 0.4);
+      color: #eee;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 20px; /* Центрирование 'i' */
+      text-align: center;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 5; /* Поверх других элементов карточки */
+      transition: background-color 0.2s, transform 0.1s, border-color 0.2s; /* Добавил transition для border-color */
+  
+      &:hover {
+        background: rgba(0, 0, 0, 0.6);
+        border-color: white; /* Используем стиль ховера из кода 2 */
+      }
+      &:active {
+        transform: scale(0.9); /* Используем стиль active из кода 2 */
+      }
+    }
+  }
+  
+  
+  /* --- Стили для самого Info Popup --- */
+  
+  /* Стили для оверлея (из кода 1 - более полный) */
+  .info-popup-overlay {
+    z-index: 300; /* Выше, чем попап наград */
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    padding: 15px; /* Отступ для маленьких экранов */
+  }
+  
+  /* Стили для контента попапа (из кода 1 - flex-структура, без общих паддингов) */
+  .info-popup-content {
+    background: linear-gradient(to bottom, #2c3e50, #1a2531);
+    border: 2px solid #7f8c8d;
+    border-radius: 10px;
+    /* Убираем общий padding и padding-top, т.к. есть header/body */
+    width: 90%;
+    max-width: 400px;
+    max-height: 90vh; /* Ограничиваем высоту */
+    color: #ecf0f1;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    display: flex; /* Добавляем flex для структуры */
+    flex-direction: column; /* Вертикальное расположение header и body */
+  }
+  
+  /* Стили для хедера (из кода 1) */
+  .info-popup-header {
+    display: flex;
+    justify-content: center; /* Центрируем заголовок */
+    align-items: center;
+    padding: 10px 40px; /* Отступы для хедера (оставляем место для крестика справа) */
+    border-bottom: 1px solid rgba(127, 140, 141, 0.3);
+    position: relative; /* Для позиционирования крестика */
+    flex-shrink: 0; /* Не сжимать хедер */
+  
+    h4 { /* Стилизуем заголовок в хедере */
+      margin: 0;
+      font-size: 1.1em;
+      color: #e4e4e4;
+      font-weight: bold;
+      text-align: center;
+    }
+  
+    /* Стили для крестика (позиционируется внутри хедера) - объединены стили */
+    .popup-close-icon {
+       position: absolute;
+       top: 50%; /* Центрируем по вертикали */
+       right: 10px; /* Отступ справа */
+       transform: translateY(-50%); /* Точное вертикальное центрирование */
+       width: 30px; height: 30px; padding: 0; border: none;
+       background: rgba(255, 255, 255, 0.1); color: #bdc3c7;
+       font-size: 24px; font-weight: bold; line-height: 30px;
+       text-align: center; border-radius: 50%; cursor: pointer; z-index: 15; /* z-index для уверенности */
+       transition: background-color 0.2s, color 0.2s;
+       &:hover { background: rgba(255, 255, 255, 0.2); color: white; }
+       &:active { background: rgba(0, 0, 0, 0.2); }
+    }
+  }
+  
+  /* Стили для основного контента (из кода 1 - скроллируемый) */
+  .info-popup-body {
+    padding: 15px 20px 20px 20px; /* Внутренние отступы для контента */
+    overflow-y: auto; /* Добавляем скролл для контента */
+    flex-grow: 1; /* Занимает оставшееся место */
+    min-height: 100px; /* Минимальная высота контента */
+  
+    /* Стилизация скроллбара (из кода 1) */
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb { background-color: rgba(127, 140, 141, 0.6); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb:hover { background-color: rgba(127, 140, 141, 0.8); }
+  }
+  
+  /* Стили для секции внутри body (стили согласованы) */
+  .info-popup-section {
+     margin-bottom: 15px;
+     h4 { /* Заголовок "Шансы выпадения:" */
+       margin: 0 0 10px 0;
+       font-size: 1em;
+       color: #bdc3c7;
+       text-align: center;
+     }
+  }
+  
+  /* Стили для списка шансов (объединены, используется логика цветов из кода 1) */
+  .info-popup-chances-list {
+     list-style: none;
+     padding: 0;
+     margin: 0;
+     li {
+       display: flex;
+       justify-content: space-between;
+       padding: 5px 0; /* Используем увеличенный отступ из кода 1 */
+       border-bottom: 1px dashed rgba(127, 140, 141, 0.2);
+       &:last-child { border-bottom: none; }
+     }
+     .chance-label {
+       font-weight: bold;
+       margin-right: 10px;
+  
+       /* --- СТИЛИ ДЛЯ ЦВЕТОВ РЕДКОСТИ (логика из кода 1) --- */
+       /* Основные редкости (для Gear и для артефактов) */
+       &.rarity-common { color: #bdc3c7; }    /* Серый */
+       &.rarity-uncommon { color: #2ecc71; }  /* Зеленый */
+       &.rarity-rare { color: #3498db; }    /* Синий */
+       &.rarity-epic { color: #9b59b6; }    /* Фиолетовый */
+       &.rarity-legendary { color: #f1c40f; } /* Желтый/Золотой */
+       &.rarity-mythic { color: #e74c3c; }    /* Красный */
+  
+       /* Особые типы */
+       &.rarity-gold { color: #f1c40f; }     /* Золото */
+       &.rarity-diamonds { color: #1abc9c; } /* Алмазы (бирюзовый для отличия от rare) */
+       // Убраны отдельные цвета для shard/full, они получают цвет по своей редкости (e.g., rarity-legendary)
+  
+       /* Цвет по умолчанию */
+       &.rarity-default { color: #ecf0f1; }
+     }
+     .chance-value {
+       color: white;
+       font-weight: 500; /* Чуть менее жирный, чем label */
+     }
+  }
+  
+  /* Стили для примечаний (стили согласованы) */
+  .info-popup-note {
+    font-size: 0.8em; color: #95a5a6; margin-top: 15px; padding-top: 10px;
+    border-top: 1px solid rgba(127, 140, 141, 0.2); line-height: 1.4;
+  
+    &.pity-note {
+      color: #f39c12; /* Оранжевый/Золотой для Pity (из кода 2) */
+      font-weight: bold; /* Выделяем жирным (из кода 1) */
+    }
+  }

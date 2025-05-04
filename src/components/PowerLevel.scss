@@ -1,0 +1,43 @@
+
+
+
+.power-level-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffcc00;
+  text-shadow: 1px 1px 2px black;
+}
+
+
+
+.power-change-popup {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: bold;
+  animation: floatUp 1.2s ease-out;
+  z-index: 10;
+}
+
+.power-change-popup.gain {
+  color: #4caf50;
+  text-shadow: 0 0 6px #4caf50;
+}
+
+.power-change-popup.loss {
+  color: #ff5252;
+  text-shadow: 0 0 6px #ff5252;
+}
+
+@keyframes floatUp {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -30px);
+  }
+}

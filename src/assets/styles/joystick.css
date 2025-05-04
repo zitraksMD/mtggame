@@ -1,0 +1,21 @@
+/* joystick.css */
+
+.nipple {
+    opacity: 0.6;
+  }
+  
+  .nipple .front, .nipple .back {
+    background: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+  
+  .nipple .back {
+    width: 100px !important;
+    height: 100px !important;
+  }
+  
+  .nipple .front {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  

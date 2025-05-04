@@ -1,0 +1,209 @@
+// src/components/ArtifactsPanel.scss
+
+// Переменные для цветов редкости
+$rarity-common-color: #888;
+$rarity-rare-color: #3a7ac0;
+$rarity-legendary-color: #d08000;
+$rarity-mythic-color: #c03050;
+$artifact-item-bg: rgba(15, 23, 42, 0.6);       // Фон обертки иконки
+$artifact-item-border: rgba(120, 130, 150, 0.3); // Цвет рамки обертки иконки
+
+// Основной контейнер контента артефактов
+.artifacts-panel-content-only {
+    width: 100%;
+    height: 100%; // Занимает всю высоту родителя
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.2); // Фон под списком
+    border-radius: 8px;
+    color: white;
+    box-sizing: border-box;
+    // overflow-y: auto; // Скролл перенесен на .artifacts-list
+}
+
+// Список сетов артефактов (скроллируемый)
+.artifacts-list {
+    flex-grow: 1;             // Занимает доступное место
+    overflow-y: auto;         // Включаем вертикальный скролл
+    // Пример паддинга с большим отступом снизу:
+    padding: 15px 15px 30px 15px; // 15px сверху, по 15px по бокам, 30px снизу
+    display: flex;
+    flex-direction: column;
+    gap: 25px;                // Отступ между сетами
+
+    // Стилизация скроллбара (WebKit)
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+    &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
+}
+
+// Блок отдельного сета артефактов
+.artifact-set {
+    background-color: rgba(10, 15, 30, 0.5); // Фон блока сета
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid rgba(100, 110, 140, 0.3); // Рамка блока сета
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0; // Предотвращает сжатие по вертикали
+}
+
+// Заголовок сета
+.set-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #eee;
+    margin: 0 0 15px 0;
+    text-align: left;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); // Линия под заголовком
+}
+
+// Контейнер для иконок артефактов внутри сета
+.set-items {
+    display: flex;
+    justify-content: center; // Или flex-start, если нужно выравнивание по левому краю
+    gap: 20px;               // Отступ между иконками
+    flex-wrap: wrap;         // Перенос на новую строку, если не влезают
+    margin-bottom: 20px;     // Отступ перед бонусами сета
+}
+
+// Элемент одного артефакта
+.artifact-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 75px;             // Ширина элемента
+    text-align: center;
+    cursor: pointer;         // Показываем, что можно кликнуть
+    transition: transform 0.2s ease; // Плавный переход для hover-эффекта
+
+    .artifact-icon-wrapper {
+        width: 64px; height: 64px; // Размер обертки иконки
+        padding: 4px;              // Отступ от рамки до иконки
+        border: 2px solid $artifact-item-border; // Рамка по умолчанию
+        border-radius: 8px;
+        background-color: $artifact-item-bg; // Фон обертки
+        margin-bottom: 6px;        // Отступ до названия
+        position: relative;
+        display: flex; align-items: center; justify-content: center;
+        transition: border-color 0.2s, background-color 0.2s, transform 0.2s ease; // Плавные переходы
+
+        img {
+            display: block;
+            max-width: 100%; max-height: 100%;
+            object-fit: contain;
+            transition: filter 0.3s ease; // Плавный переход для фильтра яркости/серости
+            filter: none; // <<< Яркая иконка по умолчанию
+        }
+
+        // Оверлей (опционально, может быть не нужен при использовании filter)
+        .locked-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: inherit; // Наследует скругление родителя
+            display: flex; align-items: center; justify-content: center;
+            // Можно добавить иконку замка или '?'
+            // content: '?';
+            // font-size: 24px; color: #aaa;
+            opacity: 0; // Скрыт по умолчанию
+            transition: opacity 0.3s ease;
+        }
+    } // конец .artifact-icon-wrapper
+
+    .artifact-name {
+        font-size: 11px;
+        color: #ccc; // Цвет имени по умолчанию
+        line-height: 1.2;
+        transition: color 0.3s ease; // Плавный переход цвета
+    }
+
+    // --- Стили для НЕАКТИВНЫХ артефактов ---
+    // Этот класс добавляется в JSX, если artifact.level === 0 или артефакта нет в collectedArtifacts
+    &.not-owned {
+        .artifact-icon-wrapper {
+            img {
+                filter: grayscale(85%) opacity(0.5); // Делаем иконку тусклой
+            }
+            // Если используешь оверлей, показываем его
+            // .locked-overlay {
+            //   opacity: 1;
+            // }
+        }
+        .artifact-name {
+           color: #777; // Серое имя для неактивных
+        }
+    }
+
+    // --- Стили для РЕДКОСТИ (влияют на рамку/фон обертки) ---
+    &.rarity-common { .artifact-icon-wrapper { border-color: $rarity-common-color; } }
+    &.rarity-rare { .artifact-icon-wrapper { border-color: $rarity-rare-color; background-color: rgba($rarity-rare-color, 0.15); } }
+    &.rarity-legendary { .artifact-icon-wrapper { border-color: $rarity-legendary-color; background-color: rgba($rarity-legendary-color, 0.15); } }
+    &.rarity-mythic { .artifact-icon-wrapper { border-color: $rarity-mythic-color; background-color: rgba($rarity-mythic-color, 0.15); } }
+
+    // --- Эффект при НАВЕДЕНИИ ---
+    &:hover {
+        .artifact-icon-wrapper {
+            transform: scale(1.05); // Немного увеличиваем
+            // Подсвечиваем рамку белым или цветом редкости
+             border-color: #fff; // Белым для контраста
+             // Или цветом редкости:
+             // &.rarity-common { border-color: lighten($rarity-common-color, 15%); }
+             // &.rarity-rare { border-color: lighten($rarity-rare-color, 15%); }
+             // &.rarity-legendary { border-color: lighten($rarity-legendary-color, 15%); }
+             // &.rarity-mythic { border-color: lighten($rarity-mythic-color, 15%); }
+        }
+
+        // Немного ослабляем фильтр при наведении на неактивный
+        &.not-owned .artifact-icon-wrapper img {
+            filter: grayscale(50%) opacity(0.7);
+        }
+    }
+
+} // Конец .artifact-item
+
+// Блок с бонусами сета
+.set-bonuses {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1); // Разделитель
+
+    h4 { // Заголовок "Бонусы набора:"
+        font-size: 0.9em;
+        color: #bbb;
+        margin: 0 0 10px 0;
+        font-weight: normal;
+        text-transform: uppercase;
+        text-align: left;
+    }
+    ul { // Список бонусов
+        list-style: none;
+        padding: 0; margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 5px; // Отступ между строками бонусов
+    }
+    li { // Строка бонуса
+        font-size: 0.85em;
+        color: #999; // Цвет неактивного бонуса
+        transition: color 0.3s ease;
+        text-align: left;
+
+        // Стили для активного бонуса
+        &.active-bonus {
+            color: #4caf50; // Зеленый цвет активного
+            font-weight: bold;
+            .bonus-condition { color: #6fcf97; } // Условие тоже подсвечиваем
+            .bonus-description { color: #fff; } // Описание делаем белым
+        }
+
+        .bonus-condition { // "[Собрано X]"
+             display: inline-block;
+             min-width: 80px; // Чтобы выровнять описания
+             margin-right: 10px;
+             color: #ccc;      // Цвет условия по умолчанию
+             font-weight: 500;
+         }
+         // .bonus-description - текст бонуса
+    }
+} // Конец .set-bonuses

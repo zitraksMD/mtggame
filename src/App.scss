@@ -1,0 +1,256 @@
+/* --- Глобальные стили --- */
+html, body, #root { // Добавил #root из код1 для консистентности
+  height: 100%;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0;
+  overflow: hidden; // Запрещаем скролл всей страницы
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+               Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; // Пример системного шрифта
+  background-color: #111; // Фон для областей вне приложения (если видны)
+  color: white; // Базовый цвет текста
+  overscroll-behavior: contain; // Отключаем "оттягивание" на мобильных
+  -webkit-tap-highlight-color: transparent; // Убираем синюю подсветку при тапе
+}
+
+/* --- Основной контейнер приложения --- */
+.app-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #000;
+  position: relative;
+  box-sizing: border-box;
+  padding-bottom: 45px; // Пример: 70px (высота навбара) + 5px (запас)
+
+
+  // Оставляем только верхний отступ (если он нужен и работает в Mini App)
+  padding-top: env(safe-area-inset-top, 0px);
+  // padding-bottom: env(safe-area-inset-bottom, 0px); // <-- УДАЛИТЬ ИЛИ ЗАКОММЕНТИРОВАТЬ
+  // padding-left/right тоже убраны ранее
+}
+
+/* === СТИЛИ ШАПКИ (Из Кода 1) === */
+.app-header {
+  display: flex;
+  justify-content: space-between; // Разносим левую и правую части
+  align-items: center;           // Вертикальное выравнивание
+  padding: 5px 10px;           // Внутренние отступы (подберите)
+  // background-color: #1a1d2b;      // Пример фона (темно-сине-серый)
+  background: linear-gradient(to bottom, #2a3045, #1c202b); // Пример градиента из код1
+  width: 100%;                   // На всю ширину (уже учтен padding родителя)
+  box-sizing: border-box;
+  flex-shrink: 0;                // Не сжиматься по высоте
+  position: relative;            // Можно убрать, если z-index не нужен
+  z-index: 10;                   // Поверх контента
+  // border-bottom: 1px solid rgba(255, 255, 255, 0.1); // Если нужна линия снизу (из код1)
+  // box-shadow: 0 2px 5px rgba(0,0,0,0.3); // Небольшая тень снизу (была в код2, можно вернуть при желании)
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px; // Отступ между аватаром и инфо блоком
+}
+
+.player-avatar {
+  width: 38px; // Размер аватара из код1
+  height: 38px;
+  border-radius: 6px; // Скругление из код1
+  // border: 1px solid #4a5568; // Рамка, если нужна (из код1)
+  // border: 1px solid rgba(255, 255, 255, 0.3); // Рамка (была в код2) - Выберите один вариант или удалите
+  object-fit: cover; // Масштабирование картинки
+  flex-shrink: 0;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; // Текст выравнивается по левому краю
+  gap: 1px; // Минимальный отступ между ником и силой из код1
+  line-height: 1.1; // Сжимаем строки поближе из код1
+  // Удалены стили для .power-level-wrapper и .player-level, которые были в код2 внутри этого блока
+}
+
+.player-name {
+  font-size: 14px; // из код1
+  font-weight: 600; // из код1
+  color: #e2e8f0; // Светло-серый из код1
+  // line-height: 1.2; // был в код2, заменен на общий line-height в .player-info
+}
+
+.player-power { // Новый стиль из код1
+  font-size: 13px;
+  font-weight: 500;
+  color: #a0aec0; // Серый из код1
+  // Если нужно иконку силы добавить (из код1):
+  // display: flex;
+  // align-items: center;
+  // gap: 4px;
+  // &::before { content: '⚡'; /* или иконка через background */ }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px; // Отступ между ресурсами из код1 (подберите)
+  // Удалены комментарии про ResourceBar из код2, т.к. стили для ресурсов добавлены ниже
+}
+
+// Стили для ресурсов из код1 (можно переиспользовать из ResourceBar.scss или оставить здесь)
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 5px; // Отступ между иконкой и текстом
+  background-color: rgba(0, 0, 0, 0.3); // Небольшой фон для каждого ресурса
+  padding: 3px 6px;
+  border-radius: 5px;
+
+  span { // Стили для текста ресурса
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.resource-icon {
+  width: 16px; // Размер иконок ресурсов из код1
+  height: 16px;
+  object-fit: contain;
+}
+/* === КОНЕЦ СТИЛЕЙ ШАПКИ === */
+
+
+/* --- Область для сменяемого контента (вкладки, уровень) --- */
+.content-area {
+  flex: 1; // Занимает все доступное пространство по высоте
+  position: relative; // Для позиционирования дочерних анимируемых вкладок
+  overflow: hidden; // Обрезает контент вкладок во время анимации
+}
+
+/*
+* Стиль для корневых элементов экранов внутри content-area (motion.div).
+* Framer Motion обычно управляет позицией через inline-стили.
+*/
+.content-area > div {
+  position: absolute; // Важно для AnimatePresence mode="wait"
+  width: 100%;      // <--- Заставляем обертку занять всю ширину
+  height: 100%;     // <--- Заставляем обертку занять всю высоту
+  top: 0;
+  left: 0;
+  // overflow-y: auto; // Можно добавить, если нужен скролл ВНУТРИ экрана, а не всей content-area
+}
+
+/*
+* Убедитесь, что у каждой вкладки/экрана (MainMenu, Inventory, etc.)
+* задан свой фон в их собственных SCSS файлах,
+* чтобы они корректно перекрывали друг друга.
+*/
+
+
+/* --- ❗ СТАРЫЕ ФИКСИРОВАННЫЕ ЭЛЕМЕНТЫ (Закомментированы или Удалены) --- */
+/* Этот блок уже был корректно закомментирован в код2, как и требовалось в код1 */
+
+/*
+// Отображение имени пользователя (ТЕПЕРЬ ЧАСТЬ .app-header)
+.username-display {
+  position: fixed; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
+  top: 0px; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
+  left: 15px;
+  // ... прочие стили ...
+}
+*/
+
+/*
+// Контейнер для PowerLevel (ТЕПЕРЬ ЧАСТЬ .app-header)
+.power-level-wrapper { // Замените на актуальный класс вашего PowerLevel компонента
+  position: fixed; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
+  top: 30px; // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
+  left: 15px;
+  // ... прочие стили ...
+}
+*/
+
+/*
+// Старый фиксированный ресурс бар (ТЕПЕРЬ ЧАСТЬ .app-header)
+.resource-bar-fixed { // Старый класс для фиксированного бара
+  position: fixed;       // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
+  top: 0px;            // <-- УДАЛИТЬ/ЗАКОММЕНТИРОВАТЬ
+  right: 15px;
+  // ... прочие стили ...
+}
+*/
+/* Стили для внутренних элементов старого бара также закомментированы ниже или удалены */
+/*
+.resource-item { ... }
+.resource-icon { ... }
+.gold-amount, .diamond-amount { ... }
+*/
+
+
+/* --- Экраны загрузки / подготовки --- */
+// Эти стили остаются как были в код2
+.loading-screen,
+.fade-screen {
+  position: absolute; // Позиционируем относительно .content-area или .app-container
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column; // Для текста и возможного спиннера
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.85); // Чуть темнее фон
+  z-index: 50; // Выше обычного контента
+
+  h2 {
+    color: white;
+    font-size: 1.4rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    margin: 0;
+    padding: 10px;
+  }
+}
+
+.fade-screen {
+  background-color: #000; // Непрозрачный черный
+}
+
+
+/* --- Стили для BottomNav --- */
+// Эти стили остаются как были в код2 (закомментированный пример)
+/* Убедитесь, что стили BottomNav импортируются или определены ниже,
+  и что у него НЕТ position: fixed. Он должен быть частью flex-потока .app-container */
+// @import './components/BottomNav.scss';
+
+/* Пример стилей BottomNav без fixed: */
+
+
+/* --- Дополнительные стили (если нужны) --- */
+// Эти стили остаются как были в код2
+// Стили для .text-white, .text-xl, если это классы Tailwind/Bootstrap,
+// но используются без подключения самой библиотеки, их нужно определить:
+.text-white {
+  color: white;
+}
+.text-xl {
+  font-size: 1.25rem; // Пример для xl
+}
+
+/* --- UsernamePopup Specific Styles --- */
+// Эти стили остаются как были в код2
+.username-popup {
+  position: absolute; // Или fixed, если он должен быть поверх всего и всегда
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(30, 30, 40, 0.95);
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 100; // Выше шапки и контента
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  // Добавьте стили для input, button внутри попапа
+}

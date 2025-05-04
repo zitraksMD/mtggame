@@ -1,0 +1,117 @@
+{
+  "id": 101,
+  "name": "Ур. 1-1: Гоблинская застава",
+  "levelType": "standard",
+  "width": 1200,
+  "height": 1200,
+  "backgroundTexture": "/assets/main-background-game.png",
+  "playerStart": { "x": 600, "y": 1100 }, 
+
+  "walls": [
+    { "id": "wall_top", "x": 0, "y": 0, "width": 1200, "height": 50 },    
+    { "id": "wall_bottom", "x": 0, "y": 1150, "width": 1200, "height": 50 }, 
+    { "id": "wall_left", "x": 0, "y": 50, "width": 50, "height": 1100 },    
+    { "id": "wall_right", "x": 1150, "y": 50, "width": 50, "height": 1100 }, 
+    { "id": "obstacle_1", "x": 400, "y": 600, "width": 100, "height": 80 } 
+  ],
+
+
+  "enemies": [
+    {
+      "id": "goblin_melee_1",      
+      "type": "melee",            
+      "model": "/Models/goblin_range.glb",
+      "x": 300,                   
+      "y": 500,                   
+      "stats": {                  
+        "hp": 50,                
+        "speed": 1.8,            
+        "damage": 8,              
+        "attackRange": 35,        
+        "attackSpeed": 1.5        
+      }
+    },
+    {
+      "id": "goblin_melee_2",
+      "type": "melee",
+      "model": "/Models/goblin_range.glb",
+      "x": 900,
+      "y": 500,
+      "stats": {
+        "hp": 55,                 
+        "speed": 1.7,
+        "damage": 9,
+        "attackRange": 35,
+        "attackSpeed": 1.6
+      }
+    },
+    {
+      "id": "goblin_ranged_1",     
+      "type": "ranged",
+      "model": "/Models/goblin_melee.glb", 
+      "x": 600,
+      "y": 300,
+      "stats": {
+        "hp": 100,
+        "speed": 2,
+        "damage": 6,             
+        "attackRange": 250,       
+        "attackSpeed": 2.0        
+      }
+    },
+    {
+      "id": "mage_fire_1",
+      "type": "caster", 
+      "model": "/Models/goblin_melee.glb", 
+      "x": 400,
+      "y": 200,
+      "stats": {
+          "hp": 80,
+          "speed": 0, 
+          "attackRange": 300, 
+          "attackSpeed": 0.5, 
+          "attackType": "beam", 
+          "beamType": "fire",  
+          "beamDamage": 5,      
+          "beamEffectDuration": 1.0,
+
+          "dotDamage": 2,       
+          "dotDuration": 3,    
+          "dotInterval": 0.5   
+
+      }
+  },
+  {
+      "id": "mage_ice_1",
+      "type": "caster",
+      "model": "/Models/goblin_melee.glb",
+      "x": 800,
+      "y": 200,
+      "stats": {
+          "hp": 80, "speed": 0, "attackRange": 300, "attackSpeed": 0.5,
+          "attackType": "beam", "beamType": "ice",
+          "beamDamage": 5, "beamEffectDuration": 1.0,
+          "freezeDuration": 0.5 
+      }
+  },
+  
+   {
+     "id": "goblin_boss_1",
+     "type": "boss",
+      "model": "/Models/goblin_range.glb",
+      "x": 600,
+    "y": 150,
+     "stats": {
+      "hp": 250,
+        "speed": 1.2,
+       "damage": 18,
+      "attackRange": 45,
+        "attackSpeed": 2.2
+      }
+   }
+  ],
+
+  "winCondition": {
+     "type": "clear_enemies" 
+   }
+}

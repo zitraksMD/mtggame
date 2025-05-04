@@ -1,0 +1,288 @@
+/* src/components/ChestResultsPopup.scss */
+
+/* --- Keyframes for Rarity Glow --- */
+@keyframes rarity-glow {
+    0% {
+        // Используем переменную --rarity-color для цвета свечения
+        box-shadow: 0 0 6px 0px var(--rarity-color, rgba(255, 255, 255, 0.2));
+    }
+    50% {
+        box-shadow: 0 0 14px 4px var(--rarity-color, rgba(255, 255, 255, 0.5));
+    }
+    100% {
+        box-shadow: 0 0 6px 0px var(--rarity-color, rgba(255, 255, 255, 0.2));
+    }
+}
+
+/* --- Overlay --- */
+.chest-results-overlay {
+    z-index: 250;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* --- Popup Container --- */
+.chest-results-popup {
+    background: linear-gradient(to bottom, #3a3d7a, #2a2d5a);
+    border: 2px solid #7a7ed9;
+    border-radius: 15px;
+    padding: 20px;
+    padding-top: 55px; // Место под заголовок и крестик
+    width: 100%;
+    max-width: 500px;
+    max-height: calc(100vh - 40px); // Ограничим высоту с учетом padding оверлея
+    color: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+
+    /* --- Title --- */
+    h3 {
+        margin: 0;
+        margin-bottom: 15px;
+        padding: 0 30px;
+        font-size: 1.4em;
+        color: #ffddaa;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    /* --- Close Button --- */
+    .popup-close-icon {
+        position: absolute;
+        top: 8px; right: 8px;
+        width: 30px; height: 30px;
+        padding: 0; border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: #e0e0ff; font-size: 24px; font-weight: bold;
+        line-height: 30px; text-align: center;
+        border-radius: 50%; cursor: pointer;
+        transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+        z-index: 15;
+
+        &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); color: white; }
+        &:active:not(:disabled) { background: rgba(0, 0, 0, 0.2); }
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    }
+}
+
+/* --- Rewards Grid --- */
+.rewards-grid {
+    /* --- Существующие стили для сетки (когда > 1 элемента) --- */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 12px;
+    padding: 10px 5px;
+    overflow-y: auto;
+    flex-shrink: 1;
+    min-height: 80px;
+    perspective: 1000px;
+
+    /* --- Scrollbar Styles --- */
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.4); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.6); }
+
+&.single-item {
+    display: flex;              // Меняем display на flex
+    justify-content: center;    // Центрируем по горизонтали
+    align-items: center;        // Центрируем по вертикали
+    // Отключаем ненужные свойства grid
+    grid-template-columns: none;
+    gap: 0;
+    // Убедимся, что контейнер растягивается, чтобы было где центрировать
+    flex-grow: 1;
+    padding: 20px; // Можно добавить отступы для одного элемента
+
+    // Опционально: Делаем сам элемент чуть крупнее, когда он один
+    .reward-item {
+       width: 90px; // Например, 90px вместо 70px в сетке
+       // aspect-ratio остается 1/1
+       // Убедись, что размер иконки внутри (.reward-icon) тоже подстроен, если нужно
+    }
+}
+}
+
+/* --- Reward Item (Flip Container) --- */
+.reward-item {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+
+    .reward-item-flipper-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .reward-face {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 6px;
+        box-sizing: border-box;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .reward-placeholder {
+        background: linear-gradient(160deg, #50557a, #40446a);
+        border: 2px solid #6a6d9a;
+        font-size: 2.8em;
+        font-weight: bold;
+        color: rgba(255, 255, 255, 0.6);
+        transform: rotateY(0deg);
+    }
+
+    .reward-content-wrapper {
+        transform: rotateY(180deg);
+        border: 2px solid transparent;
+        position: relative; // Для позиционирования дочерних элементов
+
+        /* --- Стили редкости (фон и рамка) --- */
+        &.rarity-common {
+            --rarity-color: #808080;
+            border-color: var(--rarity-color);
+            background: radial-gradient(ellipse at center, rgb(255, 255, 255) 0%, rgba(100, 100, 100, 0.5) 100%);
+            // Нет анимации свечения
+        }
+        &.rarity-uncommon {
+            --rarity-color: #2ecc71;
+            border-color: var(--rarity-color);
+            background: radial-gradient(ellipse at center, rgba(80, 180, 90, 0.4) 0%, rgba(40, 140, 50, 0.5) 100%);
+            animation: rarity-glow 2.2s ease-in-out infinite alternate; // <<< ВОЗВРАЩАЕМ АНИМАЦИЮ
+        }
+        &.rarity-rare {
+            --rarity-color: #3498db;
+            border-color: var(--rarity-color);
+            background: radial-gradient(ellipse at center, rgba(80, 120, 220, 0.4) 0%, rgba(40, 80, 180, 0.5) 100%);
+            animation: rarity-glow 2.0s ease-in-out infinite alternate; // <<< ВОЗВРАЩАЕМ АНИМАЦИЮ
+        }
+        &.rarity-epic {
+            --rarity-color: #9b59b6;
+            border-color: var(--rarity-color);
+            background: radial-gradient(ellipse at center, rgba(155, 89, 182, 0.4) 0%, rgba(120, 40, 140, 0.5) 100%);
+            animation: rarity-glow 1.8s ease-in-out infinite alternate; // <<< ВОЗВРАЩАЕМ АНИМАЦИЮ
+        }
+        &.rarity-legendary {
+            --rarity-color: #f1c40f;
+            border-color: var(--rarity-color);
+            background: radial-gradient(ellipse at center, rgba(241, 196, 15, 0.4) 0%, rgba(211, 166, 5, 0.5) 100%);
+            animation: rarity-glow 1.6s ease-in-out infinite alternate; // <<< ВОЗВРАЩАЕМ АНИМАЦИЮ
+        }
+        &.rarity-mythic {
+            --rarity-color: #e74c3c;
+            border-color: var(--rarity-color);
+            background: radial-gradient(ellipse at center, rgba(231, 76, 60, 0.4) 0%, rgba(192, 57, 43, 0.5) 100%);
+            animation: rarity-glow 1.4s ease-in-out infinite alternate; // <<< ВОЗВРАЩАЕМ АНИМАЦИЮ
+        }
+
+        /* --- Стили для элементов ВНУТРИ стороны с контентом --- */
+        .reward-icon {
+            display: block;
+            width: 58px;
+            height: 58px;
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+            border-radius: 4px;
+        }
+        .reward-quantity {
+            position: absolute; bottom: 2px; right: 3px; background-color: rgba(0, 0, 0, 0.8);
+            color: white; padding: 1px 4px; font-size: 11px; font-weight: bold;
+            border-radius: 3px; line-height: 1.1; z-index: 1; pointer-events: none;
+        }
+        .reward-new-indicator {
+            position: absolute; top: 2px; left: 3px; background-color: #e74c3c; color: white;
+            width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 11px; font-weight: bold; line-height: 1;
+            z-index: 1; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); pointer-events: none;
+        }
+    } // Конец .reward-content-wrapper
+
+    /* --- Тултип --- */
+    .reward-tooltip {
+        position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+        background-color: rgba(10, 10, 20, 0.9); color: #eee; padding: 4px 8px;
+        border-radius: 4px; font-size: 12px; white-space: nowrap; z-index: 20;
+        pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+
+        &::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border-width: 5px; border-style: solid; border-color: rgba(10, 10, 20, 0.9) transparent transparent transparent;
+        }
+    }
+
+    &:hover .reward-tooltip { // Показ тултипа по наведению
+      opacity: 1;
+    }
+
+} // Конец .reward-item
+
+/* --- Action Buttons --- */
+.popup-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(122, 126, 217, 0.3);
+    flex-shrink: 0;
+}
+
+/* --- Open Again Button --- */
+.open-again-button {
+    padding: 10px 20px; border: none; border-radius: 8px;
+    background: linear-gradient(to bottom, #5a7ac0, #4a6ac0);
+    color: white; cursor: pointer; font-weight: bold; font-size: 1em;
+    border: 1px solid #3a5aa0; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+    transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+    &:hover:not(:disabled) { background: linear-gradient(to bottom, #6a8ad0, #5a7ad0); }
+    &:active:not(:disabled) { transform: scale(0.98); }
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+}
+
+/* --- Close/OK Button --- */
+.close-results-button,
+.close-button {
+    padding: 10px 25px; border: none; border-radius: 8px;
+    background: linear-gradient(to bottom, #5a9a5a, #4CAF50);
+    color: white; cursor: pointer; font-weight: bold; font-size: 1em;
+    border: 1px solid #3a7a3a; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+    transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+    &:hover:not(:disabled) { background: linear-gradient(to bottom, #6aac6a, #5cb85c); }
+    &:active:not(:disabled) { transform: scale(0.98); }
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+}

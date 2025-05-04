@@ -1,0 +1,178 @@
+/* ./ChestCard.scss */
+
+// --- Общие стили для карточки сундука ---
+.chest-card {
+    display: flex;
+    flex-direction: column; // Элементы карточки теперь идут друг под другом
+    background: linear-gradient(160deg, #4a559a, #3a3d7a);
+    border-radius: 12px;
+    border: 1px solid rgba(122, 126, 217, 0.5);
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    color: #e0e0ff;
+    position: relative;
+  
+    // Анимация открытия (если нужна)
+    &.opening-effect {
+      // Можно добавить анимацию свечения или тряски
+      animation: pulse-glow 0.8s infinite alternate;
+    }
+  }
+
+  .card-main-content {
+    display: flex;        // Картинка и текст рядом
+    flex-direction: row;  // Явно указываем направление
+    align-items: center; // Выравнивание по центру по вертикали (или flex-start)
+    gap: 15px;            // Отступ между картинкой и текстом
+    margin-bottom: 12px;  // Отступ снизу до кнопок
+}
+  
+  // Левая часть с картинкой сундука
+  .chest-graphic-area {
+    flex: 0 0 90px; // Можно чуть уменьшить ширину иконки
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // Убираем margin-right, теперь есть gap у родителя
+    // margin-right: 15px;
+  
+    .chest-graphic-img {
+      max-width: 100%;
+      max-height: 90px; // Уменьшаем высоту
+      object-fit: contain;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+    }
+  }
+
+  .chest-content-area {
+    flex: 1 1 auto; // Занимает оставшееся место в строке
+    display: flex;
+    flex-direction: column;
+    gap: 6px; // Отступ между описанием и pity
+    // Убираем margin-bottom и text-align
+    // margin-bottom: 12px;
+    // text-align: center;
+  }
+  
+  .chest-description {
+    font-size: 0.85em;
+    color: #c0c0ee;
+    line-height: 1.3;
+  }
+  
+  .chest-pity-info {
+    font-size: 0.8em;
+    font-weight: bold;
+    line-height: 1.4;
+  
+    // Стили для одиночной строки pity
+    span {
+      display: block; // Чтобы каждая строка была на новой строке, если их несколько
+      color: #ffddaa; // Золотистый цвет для гаранта
+      text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+    }
+  
+    // Стили, если несколько строк pity (мульти-гарант)
+    &.multiple span {
+      background-color: rgba(0, 0, 0, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-bottom: 4px; // Отступ между строками гаранта
+      display: inline-block; // Чтобы фон был по размеру текста
+      margin-right: 5px; // Отступ справа, если они в одну строку помещаются
+      border: 1px solid rgba(255, 221, 170, 0.3); // Слабая рамка в цвет текста
+    }
+  }
+  
+  // Обертка для кнопок открытия
+  .chest-button-wrapper {
+    display: flex;
+    gap: 10px;
+    width: 100%; // Занимает всю ширину карточки
+    margin-top: auto; // Прижимает к низу, если .chest-card будет выше контента
+
+    &.two-buttons { // Всегда две кнопки
+       // justify-content: space-between; // Убрали, т.к. кнопки растягиваются
+    }
+  }
+  
+  // Стили для кнопок открытия сундуков
+  .purchase-button.open-chest-button {
+    flex-grow: 1; // Кнопки занимают доступное место (если их 2)
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px; // Отступ между иконкой валюты и текстом
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    min-width: 80px; // Минимальная ширина кнопки
+  
+    img {
+      height: 18px; // Размер иконки валюты
+      width: auto;
+      vertical-align: middle;
+    }
+  
+    span { // Для текста "x1" или "x10"
+      font-weight: bold;
+      margin-left: auto; // Отодвигает x1/x10 вправо
+      padding-left: 5px;
+    }
+  
+    // Общий стиль кнопок (можно сделать разные)
+    &.gear-style { // Стиль для сундуков снаряжения (как на референсе)
+      background: linear-gradient(to bottom, #65d36e, #4caf50); // Зеленый градиент
+      border: 1px solid #3a8a3a;
+      text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+  
+      &:hover:not(:disabled) {
+        background: linear-gradient(to bottom, #75e37e, #5cb85c);
+        box-shadow: 0 3px 5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+      }
+      &:active:not(:disabled) {
+        transform: translateY(1px) scale(0.98);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+      }
+    }
+  
+    &.wish-style { // Стиль для артефактных (если нужен другой)
+      background: linear-gradient(to bottom, #5a7ac0, #4a6ac0); // Синий градиент
+      border: 1px solid #3a5aa0;
+       text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+       box-shadow: 0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+  
+      &:hover:not(:disabled) {
+        background: linear-gradient(to bottom, #6a8ad0, #5a7ad0);
+         box-shadow: 0 3px 5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+      }
+       &:active:not(:disabled) {
+         transform: translateY(1px) scale(0.98);
+         box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+       }
+    }
+  
+    // Стиль для неактивной кнопки
+    &:disabled {
+      background: linear-gradient(to bottom, #888, #666);
+      border-color: #555;
+      color: #bbb;
+      cursor: not-allowed;
+      opacity: 0.7;
+       box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+       text-shadow: none;
+    }
+  }
+  
+  // Анимация пульсации для .opening-effect (пример)
+  @keyframes pulse-glow {
+    0% { box-shadow: 0 0 5px rgba(255, 255, 150, 0.4), 0 3px 8px rgba(0, 0, 0, 0.3); }
+    100% { box-shadow: 0 0 15px rgba(255, 255, 150, 0.8), 0 3px 8px rgba(0, 0, 0, 0.3); }
+  }

@@ -1,0 +1,335 @@
+/* src/components/CraftingSuccessPopup.scss */
+
+// --- Переменные и цвета редкости ---
+$popup-border-radius: 12px;
+$popup-padding: 18px;
+// ИЗМЕНЕНО: Цвета текста для темного фона
+$text-color-primary: #f0f4f8;   // Основной светлый текст (чуть холоднее)
+$text-color-secondary: #a0b0c0; // Второстепенный, более тусклый светлый текст
+$text-color-stat-value: #ffffff; // Значения статов - белые
+
+// Фоны и рамки для темного фона
+$header-banner-bg-opaque: #daa520;     // Золотистый (Goldenrod)
+$header-banner-border-opaque: #b8860b; // Темно-золотистый для рамки
+$header-banner-text-color: #4d3a00;   // Темно-коричневый текст для контраста с золотым
+$close-button-bg: rgba(255, 255, 255, 0.08);
+$close-button-border: rgba(255, 255, 255, 0.15);
+$close-button-text: $text-color-primary;
+$section-bg: rgba(0, 0, 0, 0.15); // Полупрозрачный темный для секций
+$section-border: rgba(255, 255, 255, 0.1); // Светлая рамка секций
+$button-bg: rgba(255, 255, 255, 0.1);
+$button-border: rgba(255, 255, 255, 0.3);
+$button-hover-bg: rgba(255, 255, 255, 0.18);
+$button-hover-border: rgba(255, 255, 255, 0.4);
+
+// ИЗМЕНЕНО: Градиент для фона попапа
+$popup-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
+// ИЗМЕНЕНО: Фон оверлея - стандартный полупрозрачный темный
+$overlay-bg: rgba(0, 0, 0, 0.75); // Сделал чуть темнее
+
+$rarity-colors: (
+  common: #b0b0b0,
+  uncommon: #5cb85c,
+  rare: #4285f4,
+  epic: #a042f4,
+  legendary: #f0ad4e,
+  mythic: #d9534f
+);
+
+// Миксин для фона/рамки иконки по редкости
+@mixin rarity-style($color) {
+  border-color: lighten($color, 10%); // Светлая рамка для иконки
+  // Полупрозрачный фон иконки с цветом редкости
+  background-color: rgba(lighten(desaturate($color, 15%), 20%), 0.5);
+}
+
+// --- Стили ---
+
+.popup-overlay.new-style {
+  position: fixed;
+  inset: 0;
+  background: $overlay-bg; // Стандартный темный фон оверлея
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.popup-container {
+  background: $popup-gradient; // Градиентный фон попапа
+  border-radius: $popup-border-radius;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  border: 3px solid; // Рамка по цвету редкости
+  position: relative;
+  padding-top: 55px;
+
+  @each $rarity, $color in $rarity-colors {
+    &.rarity-#{$rarity} {
+      border-color: lighten($color, 15%); // Осветляем цвет рамки
+    }
+  }
+}
+
+.popup-header-banner {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: $header-banner-bg-opaque;        // Используем золотистый фон
+  border: 1px solid $header-banner-border-opaque; // Используем темно-золотистую рамку
+  color: $header-banner-text-color;            // Используем темный цвет текста
+  padding: 8px 25px;
+  border-radius: 20px;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+.popup-close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: $close-button-bg;
+  border: 1px solid $close-button-border;
+  color: $close-button-text; // Светлый текст
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  line-height: 26px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 3;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+}
+
+.item-name-centered {
+  position: absolute;
+  top: 35px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 0 45px;
+  font-size: 1.4em;
+  font-weight: bold;
+  margin: 0;
+  z-index: 1;
+  line-height: 1.2;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.5); // Тень для читаемости на градиенте
+
+   @each $rarity, $color in $rarity-colors {
+      &.rarity-text-#{$rarity} {
+        color: lighten($color, 25%); // Осветляем цвет для имени
+      }
+   }
+   color: $text-color-primary; // Светлый по умолчанию
+}
+
+.popup-content-area {
+  padding: $popup-padding;
+  padding-top: 25px;
+}
+
+.item-main-info {
+  display: flex;
+  align-items: center;
+  gap: $popup-padding;
+  margin-bottom: $popup-padding;
+
+  .item-icon-wrapper {
+    padding: 6px;
+    border-radius: 8px;
+    border: 2px solid;
+    flex-shrink: 0;
+
+     @each $rarity, $color in $rarity-colors {
+        &.rarity-#{$rarity} {
+          @include rarity-style($color); // Применяем миксин
+        }
+     }
+
+    .item-icon {
+      display: block;
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+      border-radius: 4px;
+      // Добавим фильтр для яркости иконки на темном фоне, если нужно
+      // filter: brightness(1.1);
+    }
+  }
+
+  .item-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    .item-rarity-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+      border: 1px solid;
+      margin-bottom: 5px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3); // Тень для текста на значке
+
+      @each $rarity, $color in $rarity-colors {
+        &.rarity-#{$rarity} {
+          background-color: $color;
+          border-color: darken($color, 15%);
+          color: if(lightness($color) > 60%, #222, #fff); // Чуть темнее текст для светлых значков
+        }
+      }
+    }
+
+    .item-type {
+      display: block;
+      font-size: 0.85em;
+      color: $text-color-secondary; // Второстепенный светлый
+      text-transform: capitalize;
+    }
+  }
+}
+
+.item-section {
+  background-color: $section-bg; // Полупрозрачный темный
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  border: 1px solid $section-border; // Светлая рамка
+
+  &:last-of-type {
+    margin-bottom: $popup-padding;
+  }
+
+  h4 {
+    font-size: 1em;
+    font-weight: bold;
+    color: $text-color-primary; // Светлый текст
+    margin: 0 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15); // Светлый разделитель
+
+     &.set-name {
+         font-weight: bold;
+         text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+         @each $rarity, $color in $rarity-colors {
+              &.rarity-text-#{$rarity} {
+                color: lighten($color, 25%);
+              }
+         }
+         color: $text-color-primary;
+      }
+  }
+
+  p {
+      color: $text-color-secondary; // Второстепенный светлый
+      font-size: 0.9em;
+      line-height: 1.45;
+      margin: 0;
+  }
+
+  .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 5px 15px;
+      font-size: 0.85em;
+      line-height: 1.5;
+
+     .stat-item {
+        display: flex;
+        justify-content: space-between;
+
+        .stat-name {
+          color: $text-color-secondary; // Второстепенный светлый
+          margin-right: 5px;
+          white-space: nowrap;
+        }
+        .stat-value {
+          font-weight: 600;
+          color: $text-color-stat-value; // Белый
+          text-align: right;
+          white-space: nowrap;
+        }
+     }
+  }
+
+  .stats-list.set-bonus-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85em;
+    line-height: 1.5;
+
+     .stat-item.set-bonus-item {
+        padding: 4px 0;
+        border-bottom: 1px dotted rgba(255, 255, 255, 0.15);
+
+        &:last-child { border-bottom: none; }
+
+        .set-pieces {
+          font-weight: 600;
+          color: $text-color-primary; // Основной светлый
+          margin-right: 6px;
+        }
+        .set-description {
+           color: $text-color-secondary; // Второстепенный светлый
+        }
+     }
+  }
+}
+
+
+.popup-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0;
+  padding: 0 $popup-padding $popup-padding;
+
+  .popup-button.close-only {
+    padding: 10px 40px;
+    border-radius: 6px;
+    border: 1px solid $button-border; // Светлая рамка
+    background: $button-bg;        // Полупрозрачный светлый фон
+    color: $text-color-primary;     // Светлый текст
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: $button-hover-bg;
+      border-color: $button-hover-border;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    &:active {
+      transform: translateY(0px);
+      box-shadow: none;
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
+}
+
+// Цвет текста по редкости (для имени и названия сета)
+@each $rarity, $color in $rarity-colors {
+  .rarity-text-#{$rarity} {
+    color: lighten($color, 25%);
+  }
+}

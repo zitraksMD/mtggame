@@ -1,0 +1,47 @@
+.username-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  
+    .popup-content {
+      background: #1f1f1f;
+      padding: 20px 30px;
+      border-radius: 12px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+  
+      h2 {
+        margin-bottom: 12px;
+      }
+  
+      input {
+        padding: 8px;
+        border-radius: 6px;
+        border: none;
+        width: 200px;
+        margin-bottom: 12px;
+      }
+  
+      button {
+        padding: 6px 14px;
+        border: none;
+        background: #ff5722;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+  
+        &:hover {
+          background: #e64a19;
+        }
+      }
+    }
+  }
+  

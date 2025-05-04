@@ -1,0 +1,297 @@
+// src/components/Achievements.scss
+
+// --- Основной контейнер ---
+.achievements-screen {
+    width: 100%;
+    height: 100%;
+    background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
+    box-sizing: border-box;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 15px;
+    padding-right: 15px;
+    padding-top: 55px;    // Пример! Подстрой под свой UI
+    padding-bottom: 75px; // Пример! Подстрой под свой UI
+}
+
+// === БЛОК: УРОВЕНЬ И XP ===
+.achievement-level-progress-bar {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    margin-bottom: 10px; // Отступ до кнопки "Награды"
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 8px 15px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    .level-badge {
+        flex-shrink: 0; width: 40px; height: 40px; background-color: #8a2be2;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        border: 2px solid #fff; box-shadow: 0 0 8px rgba(138, 43, 226, 0.7);
+        .level-number { font-size: 18px; font-weight: bold; color: #fff; }
+    }
+    .xp-bar-container {
+        flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .xp-bar-bg {
+        width: 100%; height: 12px; background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 6px; overflow: hidden; border: 1px solid #555;
+    }
+    .xp-bar-fg {
+        height: 100%; background: linear-gradient(to right, #a040f0, #c080ff);
+        border-radius: 6px; transition: width 0.5s ease-out;
+    }
+    .xp-text { font-size: 11px; color: #ddd; }
+    .xp-target {
+        flex-shrink: 0; font-size: 14px; font-weight: bold; color: #ffd700;
+        min-width: 40px; text-align: right;
+    }
+}
+
+// === КНОПКА НАГРАД ЗА УРОВЕНЬ ===
+.level-rewards-button {
+    display: block;
+    margin: 0 auto 20px auto; // Центрирование и отступ вниз
+    padding: 8px 16px;
+    background-color: rgba(138, 43, 226, 0.8);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+
+    &:hover { background-color: rgba(158, 73, 246, 0.9); }
+    &:active { transform: scale(0.98); }
+}
+
+// === Список Достижений (контейнер) ===
+.achievements-list {
+    width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; display: flex;
+    flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; padding: 10px 5px;
+
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); }
+    scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0,0,0,0.1);
+}
+
+// === Отдельный элемент Достижения в списке ===
+.achievement-item {
+    background-color: rgba(50, 55, 65, 0.8); border: 1px solid #555; border-radius: 8px; padding: 10px 15px;
+    display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center;
+    transition: opacity 0.3s, border-color 0.3s, background-color 0.3s; cursor: pointer;
+
+    &:hover { background-color: rgba(65, 70, 80, 0.85); }
+    &.claimed { opacity: 0.6; }
+    &.claimable { border-color: #ffcc80; background-color: rgba(70, 65, 85, 0.85); }
+
+    .achievement-icon {
+        font-size: 22px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+        background-color: rgba(0,0,0,0.2); border-radius: 50%; flex-shrink: 0;
+    }
+    .achievement-details-condensed { overflow: hidden; }
+    .achievement-name {
+        font-weight: bold; font-size: 14px; color: #eee; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
+    }
+    .achievement-reward-condensed {
+        font-size: 12px; font-weight: normal; display: flex; align-items: center;
+        gap: 8px; justify-self: end; color: #ccc;
+        span { display: flex; align-items: center; gap: 2px; }
+        small { font-weight: 500; }
+        .xp-reward { color: #bb86fc; small { color: #bb86fc; } }
+        img { height: 14px; width: 14px; }
+    }
+    .claim-button {
+        padding: 5px 8px; font-size: 11px; min-width: 60px; text-align: center;
+        border: none; border-radius: 5px; cursor: pointer; font-weight: 500;
+        transition: background-color 0.2s; justify-self: end; white-space: nowrap;
+        flex-shrink: 0;
+        &:not(:disabled) { background-color: #4CAF50; color: white; }
+        &:not(:disabled):hover { background-color: #5cb85c; }
+        &:disabled { background-color: #555; color: #aaa; cursor: default; opacity: 0.8; }
+    }
+}
+
+// === ПОПАП ДЕТАЛЕЙ ДОСТИЖЕНИЯ ===
+.achievement-popup-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px; box-sizing: border-box;
+}
+.achievement-popup-content {
+    background-color: #2a2f3b; border: 1px solid #555; border-radius: 10px;
+    padding: 25px; max-width: 450px; width: 100%; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    position: relative; color: #eee;
+
+    .popup-close-btn {
+        position: absolute; top: 10px; right: 10px; background: none; border: none;
+        color: #aaa; font-size: 24px; line-height: 1; cursor: pointer; padding: 5px;
+        &:hover { color: #fff; }
+    }
+    .popup-header {
+        display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
+        padding-bottom: 15px; border-bottom: 1px solid #444;
+    }
+    .popup-icon {
+        font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+        background-color: rgba(0,0,0,0.2); border-radius: 50%; flex-shrink: 0;
+    }
+    .popup-name { font-size: 18px; font-weight: bold; margin: 0; }
+    .popup-description { font-size: 14px; color: #ccc; margin-bottom: 20px; line-height: 1.5; }
+    .popup-progress {
+        margin-bottom: 20px;
+        .progress-bar-bg { height: 10px; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; overflow: hidden; border: 1px solid #333; }
+        .progress-bar-fg { height: 100%; background: linear-gradient(to right, #ffcc80, #ffd700); border-radius: 5px; transition: width 0.3s ease-out; }
+        span { font-size: 13px; color: #ffcc80; display: block; text-align: center; margin-top: 4px; }
+    }
+    .popup-status {
+        font-size: 14px; margin-bottom: 20px; font-weight: 500;
+        &.completed-text { color: #4CAF50; }
+        &.locked-text { color: #aaa; }
+    }
+    .popup-rewards {
+        margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;
+        h4 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #aaa; }
+        span { display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500; }
+    }
+}
+
+
+// === ПОПАП НАГРАД ЗА УРОВЕНЬ ===
+// Оверлей (фон + центрирование)
+.level-rewards-popup-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); // Полупрозрачный темный фон на весь экран
+    display: flex; align-items: center; justify-content: center; // Центрирует .level-rewards-popup-content
+    z-index: 1001;
+    padding: 20px; box-sizing: border-box;
+}
+
+// === ПОПАП НАГРАД ЗА УРОВЕНЬ (ИСПРАВЛЕНИЯ) ===
+
+// Оверлей (фон + центрирование) - ОСТАВЛЯЕМ КАК БЫЛО
+.level-rewards-popup-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); // Фон затемнения - ОК
+    display: flex; align-items: center; justify-content: center; // Центрирование - ОК
+    z-index: 1001;
+    padding: 20px; box-sizing: border-box;
+}
+
+// Контент попапа (сам блок, который центрируется)
+.level-rewards-popup-content {
+    // ... (фоны, цвета, отступы, тень, радиус - как было или как настроил) ...
+    background-color: #333842;
+    color: #eee;
+    border: 1px solid #555;
+    padding: 25px 35px;
+    padding-top: 50px;
+    padding-bottom: 30px;
+    max-width: 480px;
+    width: 100%;
+    border-radius: 10px;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
+    position: relative;
+    display: flex;
+    flex-direction: column; // Важно для внутреннего скролла
+
+    // VVV ИЗМЕНЕНИЕ ЗДЕСЬ VVV
+    // Заменяем max-height на фиксированную height
+    // max-height: 80vh; // <<< УДАЛИ или закомментируй эту строку
+    height: 600px; // <<< ДОБАВЬ эту строку (выбери нужную высоту, например 500px, 600px, или 70vh)
+    // ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^
+
+    .popup-close-btn {
+       // ... (стили кнопки закрытия как были) ...
+       position: absolute; top: 10px; right: 10px; background: none; border: none;
+       color: #aaa; width: 30px; height: 30px; font-size: 24px; line-height: 28px;
+       text-align: center; cursor: pointer; padding: 0;
+       &:hover { color: #fff; }
+    }
+
+    h2 {
+        // ... (стили заголовка как были) ...
+        text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 18px;
+        color: inherit; padding: 0 25px;
+        flex-shrink: 0; // <<< Добавим, чтобы заголовок не сжимался
+    }
+
+    // Список наград (с прокруткой) - СТИЛИ ОСТАЮТСЯ ПРЕЖНИМИ
+    .level-rewards-list {
+        overflow-y: auto; // <<< Позволяет скроллить контент по вертикали
+        flex-grow: 1;     // <<< Заставляет этот блок растягиваться на всю доступную высоту ВНУТРИ попапа
+        padding: 5px;
+        margin: 0 -5px;
+
+        // Стили скроллбара (оставляем как были)
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 3px; }
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.3) rgba(0,0,0,0.1);
+    }
+
+    // Элемент списка наград за уровень
+    .level-reward-item {
+        display: flex;
+        align-items: center;
+        // Используем НЕПРОЗРАЧНЫЙ фон, чуть темнее основного фона попапа
+        background-color: #404552; // <<< НЕПРОЗРАЧНЫЙ
+        border: 1px solid #5f6470; // <<< Рамка чуть светлее фона элемента
+        border-radius: 6px; // Уменьшим скругление
+        padding: 8px 12px; // Уменьшим паддинги
+        margin-bottom: 8px; // Уменьшим отступ
+        gap: 12px;
+
+        &.locked {
+             opacity: 0.6;
+             // filter: grayscale(50%); // Можно убрать grayscale, если мешает читаемости
+        }
+    }
+
+    // Область Уровня (слева)
+    .level-badge-area {
+        background-color: rgba(0, 0, 0, 0.2); // Темнее фон плашки
+        border-radius: 4px; padding: 6px 8px; text-align: center;
+        flex-shrink: 0; min-width: 70px; // Чуть уже
+        color: inherit; // Наследует светлый цвет
+
+        .level-badge-text {
+            display: block; font-weight: bold; font-size: 14px; margin-bottom: 2px; // Чуть меньше
+        }
+        .level-status-text {
+            display: block; font-size: 10px; // Мельче
+            color: #aaa; // Цвет для "Не достигнут"
+            font-weight: 500;
+        }
+        .level-reward-item.unlocked & .level-status-text {
+             color: #66bb6a; // Светло-зеленый для "Достигнут"
+        }
+    }
+
+     // Область Наград (справа)
+    .reward-details-area {
+        flex-grow: 1; display: flex; flex-wrap: wrap; gap: 8px; // Меньше gap
+        font-size: 13px; font-weight: 500; justify-content: flex-start; // Начинаем слева
+        color: inherit; // Наследует светлый цвет
+    }
+    // Элемент награды (иконка+текст)
+    .reward-detail-item {
+        background-color: rgba(0, 0, 0, 0.2); // Темнее фон
+        padding: 3px 6px; border-radius: 4px;
+        display: inline-flex; align-items: center; gap: 4px; // Меньше gap
+        color: #ddd; // Явный светлый цвет для текста награды
+    }
+}
+// === КОНЕЦ ПОПАПА НАГРАД ЗА УРОВЕНЬ ===
