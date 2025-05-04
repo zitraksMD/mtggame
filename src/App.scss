@@ -2,11 +2,11 @@
 
 /* --- Глобальные стили --- */
 html, body, #root {
-  height: 100%; // <-- Заменен невидимый символ на обычный пробел
-  width: 100%;  // <-- Заменен невидимый символ на обычный пробел
-  margin: 0 !important; // <-- Заменен невидимый символ на обычный пробел
-  padding: 0; // <-- Заменен невидимый символ на обычный пробел
-  overflow: hidden; // <-- Заменен невидимый символ на обычный пробел
+  height: 100%;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
                Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background-color: #111;
@@ -22,191 +22,189 @@ html, body, #root {
   background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* Важно оставить overflow: hidden здесь, если .content-area не должен скроллить ВЕСЬ app-container */
   background-color: #000;
   position: relative;
   box-sizing: border-box;
-  // padding-top: env(safe-area-inset-top, 0px); // <-- УБРАЛИ ОТСЮДА
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* padding-top: env(safe-area-inset-top, 0px); // <-- УБРАЛИ ОТСЮДА, т.к. теперь плавающие блоки */
+  padding-bottom: env(safe-area-inset-bottom, 0px); /* Оставляем для нижней зоны */
 }
 
-/* === НОВЫЕ СТИЛИ ШАПКИ (из Кода 1) === */
-.app-header {
-  background: linear-gradient(to bottom, #1b263b, #0d1b2a); /* Ваш темно-синий градиент */
-  position: fixed;
-  top: 50px;
-  left: 0;
-  width: 100%;
-  z-index: 10;
-  padding-top: env(safe-area-inset-top);
-  box-sizing: border-box;
-  color: #fff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center; /* Возможно, придется изменить на flex-start */
-  min-height: 100px; /* Или ваша актуальная высота */
-  padding-left: 10px;
-  padding-right: 10px;
 
-  clip-path: polygon(
-    /* --- Шаг 1: Верхняя линия --- */
-    0% 0%,     /* 1. Левый верхний угол */
-    100% 0%,    /* 2. Правый верхний угол */
+/* === НОВЫЕ СТИЛИ ПЛАВАЮЩИХ БЛОКОВ (из Кода 1) === */
+/* Стили для новых плавающих блоков */
+.player-info-float,
+.resources-float,
+.energy-bar-float {
+  position: fixed; /* Или absolute, если app-container - relative (но fixed лучше для viewport) */
+  z-index: 100;    /* Должны быть поверх всего */
+  background-color: rgba(10, 10, 20, 0.6); /* Легкий фон, чтобы выделялись */
+  border-radius: 8px;
+  padding: 5px 8px;
+  backdrop-filter: blur(5px); /* Эффект размытия фона (опционально) */
+  color: #fff; /* Цвет текста по умолчанию */
+  transition: opacity 0.3s ease, top 0.3s ease; /* Плавное появление/смещение */
 
-    /* --- Шаг 2: Правое "плечо" (высокая часть) --- */
-    100% 100%,   /* 3. Правый нижний угол (почти на всю высоту, 95%) */
-    80% 100%,    /* 4. Внутренний нижний угол правого плеча (ширина плеча 20%, высота та же 95%) */
-                /* Эта точка - начало подъема к центру */
-
-    /* --- Шаг 3: Плавный подъем к центру --- */
-    /* Добавляем промежуточные точки для сглаживания */
-    75% 35%,    /* 5. Точка на подъеме (немного левее и выше предыдущей) */
-    55% 35%,    /* 6. Еще выше и левее */
-
-    /* --- Шаг 4: Центральная точка (самая высокая) --- */
-    50% 35%,    /* 7. Пик подъема (центр по горизонтали, поднят до 60% высоты) */
-
-    /* --- Шаг 5: Плавный спуск к левому плечу --- */
-    /* Зеркалим точки подъема */
-    35% 35%,    /* 8. Начинаем спуск (симметрично точке 6) */
-    25% 35%,    /* 9. Ниже и левее (симметрично точке 5) */
-
-    /* --- Шаг 6: Левое "плечо" (высокая часть) --- */
-    20% 100%,    /* 10. Внутренний нижний угол левого плеча (конец спуска, высота 95%, ширина 20%) */
-    0% 100%     /* 11. Левый нижний угол (высота 95%) */
-
-    /* --- Замыкание --- */
-    /* Последняя точка (11) автоматически соединяется с первой (1) */
-  );
-  /* --- КОНЕЦ ОБРЕЗКИ --- */
-
-  /* ВАЖНО: Эти координаты - ПРИМЕР!
-     Вам нужно будет поиграть с процентами (особенно с 50% 70%),
-     чтобы получить желаемую форму и глубину выреза.
-     Чем меньше второй процент у центральной точки (50% 70%), тем выше будет поднят центр.
-     Точки типа 100% 80% и 0% 80% определяют, где начинается "скругление" по бокам.
-  */
+  /* Добавляем стандартный отступ от небезопасных зон */
+  /* Используем max для отступа блока и env */
+  /* top: max(20px, env(safe-area-inset-top)); */
+  /* Пока просто top, но можно усложнить с calc и env */
+  top: 20px; /* <<< Начинаем с 20px, а не 50px - обычно это удобнее */
+  /* ПРИМЕЧАНИЕ: Убедитесь, что это значение top учитывает safe-area-inset-top,
+     либо используйте calc(20px + env(safe-area-inset-top)) или max() как в комментарии выше */
 }
 
-// --- Блок Верх-Лево (Аватар, Инфо) ---
-.header-top-left {
-  background-color: transparent; /* Убираем черный фон */
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 60px) + 5px);
-  left: calc(env(safe-area-inset-left, 60px) + 5px);
+.player-info-float {
+  left: 15px; /* Отступ слева */
+  /* Возможно, нужно добавить отступ от левой небезопасной зоны:
+     left: calc(15px + env(safe-area-inset-left)); */
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  gap: 8px; /* Пробел между аватаром и текстом */
+
+  .player-details {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9em;
+  }
+  .player-avatar-small { // Пример класса для аватара
+    width: 35px;
+    height: 35px;
+    border-radius: 50%; /* Или 6px, как было в .player-avatar */
+  }
+   .player-power::before { // Пример иконки для power
+     content: '⚡'; // Замените на вашу иконку или изображение
+     margin-right: 4px;
+   }
+   // Дополнительные стили для имени и мощности из старого кода, если нужны
+   .player-name { font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+   .player-power { font-weight: 500; color: #a0aec0; }
 }
-.player-avatar { width: 38px; height: 38px; border-radius: 6px; flex-shrink: 0;}
-.player-info { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.1; overflow: hidden;}
-.player-name { font-size: 14px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
-.player-power { font-size: 13px; font-weight: 500; color: #a0aec0; }
 
+.resources-float {
+  right: 15px; /* Отступ справа */
+  /* Возможно, нужно добавить отступ от правой небезопасной зоны:
+     right: calc(15px + env(safe-area-inset-right)); */
+  display: flex;
+  flex-direction: column; /* Ресурсы столбиком */
+  gap: 4px; /* Пробел между ресурсами */
+}
 
-// --- Блок Верх-Центр (Энергия) ---
-.header-top-center {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 24px) + 5px);
+.resource-item-float {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  background-color: rgba(0, 0, 0, 0.2); /* Легкий фон для каждого ресурса */
+  padding: 2px 5px; /* Или 4px 8px как было в .resource-item */
+  border-radius: 4px; /* Или 5px как было в .resource-item */
+  white-space: nowrap; // Добавлено из .resource-item
+
+  span { color: white; font-weight: 600; } // Добавлено из .resource-item
+}
+
+.resource-icon-small { // Пример класса для иконок
+  width: 16px;
+  height: 16px;
+  object-fit: contain; // Добавлено из .resource-icon
+}
+
+.energy-bar-float {
   left: 50%;
-  transform: translateX(-50%);
-  width: 40%;
-  max-width: 150px;
-  min-width: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.energy-bar {
+  transform: translateX(-50%); /* Центрирование по горизонтали */
   display: flex;
   align-items: center;
   gap: 5px;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  padding: 3px 5px;
-  border-radius: 15px;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-sizing: border-box;
+  width: 150px; // Примерная ширина полосы энергии (или width: 40%; max-width: 150px; как было)
+  padding: 4px 6px; // Или 3px 5px как было в .energy-bar
+  // Стили фона и рамки из старого .energy-bar можно добавить сюда, если нужно
+  // background-color: rgba(0, 0, 0, 0.4);
+  // border: 1px solid rgba(255,255,255,0.1);
 
-  .energy-icon {
-    width: 16px; height: 16px; flex-shrink: 0;
+  .energy-icon { // Класс для иконки из старого .energy-bar
+     width: 16px; height: 16px; flex-shrink: 0;
   }
-  .energy-bar-track {
-    flex-grow: 1;
-    height: 8px;
-    background-color: #555;
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
+
+  .energy-track { // Стили для самой полоски
+      flex-grow: 1;
+      height: 10px; // Или 8px как было
+      background-color: rgba(0, 0, 0, 0.4); // Или #555
+      border-radius: 5px; // Или 4px
+      overflow: hidden; /* Чтобы заливка не вылезала */
+      position: relative; // Для позиционирования .energy-fill
   }
-  .energy-bar-fill {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    height: 100%;
-    background: linear-gradient(to right, #4ade80, #16a34a);
-    border-radius: 4px;
-    transition: width 0.3s ease;
+  .energy-fill {
+      position: absolute; // Добавлено для соответствия старому коду
+      left: 0; top: 0; bottom: 0; // Добавлено
+      height: 100%;
+      // background-color: #4caf50; // Зеленый цвет энергии
+      background: linear-gradient(to right, #4ade80, #16a34a); // Градиент из старого кода
+      border-radius: 5px; // Или 4px
+      transition: width 0.3s ease;
   }
   .energy-text {
-    font-size: 11px;
-    font-weight: 600;
-    color: white;
-    margin-left: 5px;
-    white-space: nowrap;
+      font-size: 0.8em; // Или 11px
+      font-weight: 600; // Добавлено из старого кода
+      min-width: 35px; // Чтобы текст не прыгал
+      text-align: right;
+      color: white; // Добавлено из старого кода
+      white-space: nowrap; // Добавлено из старого кода
+      // margin-left: 5px; // Возможно, не нужен из-за gap
   }
 }
+/* === КОНЕЦ НОВЫХ СТИЛЕЙ ПЛАВАЮЩИХ БЛОКОВ === */
 
 
-// --- Блок Верх-Право (Ресурсы столбиком) ---
-.header-top-right {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 24px) + 5px);
-  right: calc(env(safe-area-inset-right, 10px) + 5px);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  min-width: 0;
-}
-.resource-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: 4px 8px;
-  border-radius: 5px;
-  white-space: nowrap;
-
-  span { color: white; font-size: 13px; font-weight: 600; }
-}
-.resource-icon { width: 16px; height: 16px; object-fit: contain; }
-
-/* === КОНЕЦ НОВЫХ СТИЛЕЙ ШАПКИ === */
+/* --- ❗ СТАРЫЕ СТИЛИ ШАПКИ (из Кода 2) УДАЛЕНЫ --- */
+/*
+.app-header { ... }
+.header-top-left { ... }
+.player-avatar { ... }
+.player-info { ... }
+.player-name { ... }
+.player-power { ... }
+.header-top-center { ... }
+.energy-bar { ... }
+.header-top-right { ... }
+.resource-item { ... }
+.resource-icon { ... }
+*/
+/* === КОНЕЦ УДАЛЕННЫХ СТИЛЕЙ ШАПКИ === */
 
 
 /* --- Область для сменяемого контента (вкладки, уровень) --- */
 .content-area {
   flex: 1;
-  position: relative;
-  overflow: hidden;
+  position: relative; /* Может быть и static, если нет абсолютно позиционированных дочерних элементов */
+  overflow-y: auto; /* !!! Добавляем скролл для контента !!! */
+  overflow-x: hidden;
+
+  /* --- Корректировка отступа основного контента --- */
+  /* Определите, какой отступ нужен, чтобы контент не заезжал под САМЫЙ ВЫСОКИЙ из плавающих блоков */
+  /* Возможно, около 80px-100px, если высота блока ~60px + top: 20px */
+  padding-top: 80px; /* <<< ПОДБЕРИТЕ ЗНАЧЕНИЕ ЭКСПЕРИМЕНТАЛЬНО */
+  padding-left: env(safe-area-inset-left); /* Отступ для контента слева */
+  padding-right: env(safe-area-inset-right); /* Отступ для контента справа */
+  padding-bottom: 80px; /* Примерный отступ снизу, если есть BottomNav или другие элементы */
+  box-sizing: border-box;
+  /* min-height нужен, чтобы фон app-container был виден, если контента мало */
+  /* Расчет зависит от высоты плавающих блоков сверху и элементов снизу (например, BottomNav) */
+  /* 100vh - padding-top - padding-bottom - safe-area-inset-bottom */
+  min-height: calc(100vh - 80px - 80px - env(safe-area-inset-bottom, 0px)); /* Пример расчета */
 }
 
 /* Стиль для корневых элементов экранов внутри content-area (motion.div). */
 .content-area > div {
-  position: absolute;
+  /* УБИРАЕМ ABSOLUTE позиционирование, т.к. content-area теперь скроллится */
+  /* position: absolute; */
   width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  // overflow-y: auto;
+  /* height: 100%; <-- Убираем, высота будет по контенту */
+  /* top: 0; */
+  /* left: 0; */
+  /* overflow-y: auto; <-- Скролл теперь на .content-area */
 }
 
-/* Убедитесь, что у каждой вкладки/экрана задан свой фон */
-
-
-/* --- ❗ СТАРЫЕ/УДАЛЕННЫЕ СТИЛИ ИЗ КОД2 (закомментированы) --- */
-/* ... (остальные закомментированные стили без изменений) ... */
+/* Убедитесь, что у каждой вкладки/экрана задан свой фон, если нужно */
 
 
 /* --- Экраны загрузки / подготовки --- */
@@ -222,7 +220,7 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.85);
-  z-index: 50;
+  z-index: 50; /* Должен быть выше плавающих блоков, если должен их перекрывать, иначе ниже (e.g., 90) */
 
   h2 {
     color: white;
@@ -252,14 +250,14 @@ html, body, #root {
 
 /* --- UsernamePopup Specific Styles --- */
 .username-popup {
-  position: absolute;
+  position: absolute; /* Или fixed, если должно быть поверх всего, включая скролл */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: rgba(30, 30, 40, 0.95);
   padding: 20px;
   border-radius: 10px;
-  z-index: 100;
+  z-index: 100; /* Или выше, если должен быть поверх .loading-screen */
   box-shadow: 0 5px 15px rgba(0,0,0,0.5);
   // Добавьте стили для input, button внутри попапа
 }
