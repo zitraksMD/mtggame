@@ -130,33 +130,60 @@
   }
 }
 
-// Battle Pass
+
+
+ // Левая колонка
+ .main-menu-left-column {
+  position: absolute;
+  top: 140px; // Настрой отступ сверху
+  left: 10px; // Настрой отступ слева
+  display: flex;
+  flex-direction: column;
+  gap: 15px; // Пространство между кнопками
+  z-index: 5;
+
+  // !!! ВОТ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ !!!
+  align-items: flex-start; // Не растягивать кнопки по ширине
+
+  .main-menu-button {
+    position: relative; // Убедись, что нет absolute позиционирования
+    top: auto;
+    left: auto;
+    transform: none;
+    // Можно добавить margin, если gap не устраивает
+  }
+}
+
+// Battle Pass кнопка (убираем позиционирование, настраиваем вид)
 .battle-pass-button {
-  top: 70px; // Примерный отступ сверху
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 25px;
+  // УБРАТЬ: top, left, transform: translateX(-50%) если они были здесь
+  padding: 10px 25px; // Оставляем или настраиваем горизонтальные падинги для ширины
   border-radius: 8px;
   font-size: 16px;
   font-weight: bold;
+  // Можно задать min-width, если нужно, но align-items должно хватить
 }
 
-// Левая колонка
-.main-menu-left-column {
-  position: absolute;
-  top: 140px; // Примерный отступ слева сверху
-  left: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  z-index: 5; // Выше карты
-  .main-menu-button { position: relative; top: auto; left: auto; transform: none; } // Сброс absolute для кнопок внутри
+// Стили для иконочных кнопок (они уже должны быть настроены на меньший размер)
+.main-menu-button.icon-button {
+   padding: 8px; // Меньшие падинги
+   border-radius: 12px;
+   width: 56px;  // Пример: Задать фиксированную ширину/высоту для квадратности
+   height: 56px; // width/height = (иконка 40px + padding 8px*2)
+   box-sizing: border-box; // Чтобы padding был включен в width/height
+
+   img {
+     width: 40px;
+     height: 40px;
+     object-fit: contain;
+     display: block;
+   }
 }
 
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: 1px; // Примерный отступ справа сверху (ниже, как просили)
+  top: 140px; // Примерный отступ справа сверху (ниже, как просили)
   right: 10px;
   display: flex;
   flex-direction: column;

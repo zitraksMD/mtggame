@@ -247,16 +247,18 @@ const MainMenu = ({ onStart }) => { // onStart - функция из App.jsx
 
             {/* Левая колонка */}
             <div className="main-menu-left-column">
-            <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
-                BattlePass
-            </button>
-                <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
-                    <img src="/assets/icons/mail-icon.png" alt="Почта" />
-                </button>
-                <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
-                    <img src="/assets/icons/gift-icon.png" alt="Награды" />
-                </button>
-            </div>
+     {/* !!! BattlePass теперь здесь !!! */}
+     <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
+         BattlePass
+     </button>
+     {/* Кнопки Почты и Сундука остаются здесь же */}
+     <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
+         <img src="/assets/icons/mail-icon.png" alt="Почта" />
+     </button>
+     <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
+         <img src="/assets/icons/gift-icon.png" alt="Награды" />
+     </button>
+ </div>
 
             {/* Правая колонка */}
             <div className="main-menu-right-column">
