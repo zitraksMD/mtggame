@@ -42,12 +42,17 @@ const App = () => {
 
     // === Данные из стора (Объединенный подход: useCallback + useMemo из Кода 1) ===
     // Используем useMemo для стабильности объекта-селектора
-    const { username, gold, diamonds, powerLevel } = useGameStore(
+    const { username, gold, diamonds, powerLevel,  energyCurrent, energyMax, lastEnergyRefillTimestamp, refillEnergyOnLoad, consumeEnergy } = useGameStore(
         useCallback(state => ({
             username: state.username,
             gold: state.gold,
             diamonds: state.diamonds,
             powerLevel: state.powerLevel,
+            energyCurrent: state.energyCurrent,
+            energyMax: state.energyMax,
+            lastEnergyRefillTimestamp: state.lastEnergyRefillTimestamp,
+            refillEnergyOnLoad: state.refillEnergyOnLoad,
+            consumeEnergy: state.consumeEnergy, // Добавили для примера
             // energy и avatarUrl не запрашиваются из стора в Коде 1, используем заглушки
         }), []) // Пустой массив зависимостей, т.к. селектор не меняется
     );
@@ -64,61 +69,62 @@ const App = () => {
 
     // === Логика таймера энергии (Из Кода 1) ===
     useEffect(() => {
-        // Если энергия не полная, запускаем таймер
-        if (energy && energy.current < energy.max) {
-            setShouldShowRefillTimer(true);
+        let intervalId = null;
 
-            // --- Упрощенная логика таймера ---
-            // В реальной игре здесь нужно использовать timestamp последнего восстановления из стора
-            // и рассчитывать точное время до следующего поинта.
-            // Пока сделаем простой обратный отсчет от 30 минут для демонстрации.
+        const updateTimer = () => {
+            // Перечитываем актуальные значения из стора внутри таймера, если нужно
+            // Но лучше полагаться на перезапуск useEffect из-за изменений в зависимостях
+            // const currentState = useGameStore.getState(); // Можно так, но не рекомендуется часто
+            // const currentEnergy = currentState.energyCurrent;
+            // const maxEnergy = currentState.energyMax;
+            // const lastRefillTs = currentState.lastEnergyRefillTimestamp;
 
-            // Рассчитываем время окончания текущего 30-минутного интервала
-            // Это очень грубый пример!
-            const now = Date.now();
-            // Представим, что восстановление началось когда-то в прошлом
-            // Найдем остаток от деления текущего времени на интервал
-            const remainder = now % ENERGY_REFILL_INTERVAL_MS;
-            const timeUntilNextRefill = ENERGY_REFILL_INTERVAL_MS - remainder;
-
-            let remainingMs = timeUntilNextRefill;
-
-            const intervalId = setInterval(() => {
-                remainingMs -= 1000; // Уменьшаем на секунду
+            // Используем значения из замыкания useEffect (energyCurrent, energyMax, lastEnergyRefillTimestamp)
+            if (energyCurrent < energyMax) {
+                setShouldShowRefillTimer(true);
+                const nextRefillTimestamp = lastEnergyRefillTimestamp + ENERGY_REFILL_INTERVAL_MS;
+                const now = Date.now();
+                let remainingMs = nextRefillTimestamp - now;
 
                 if (remainingMs <= 0) {
-                    // Время вышло (в реальной игре здесь бы сработал refill action из стора)
-                    setShouldShowRefillTimer(false); // Скрываем таймер (пока просто скрываем)
-                    setRefillTimerDisplay("");
-                    clearInterval(intervalId);
-                    // TODO: Вызвать функцию восстановления энергии из стора
-                    console.log("Время восстановить 1 энергию!");
-                    // Перезапускаем таймер (или заставляем useEffect перепроверить)
-                    // Для простоты здесь можно было бы обновить `energy` стейт/стор,
-                    // но так как он заглушка, просто имитируем перезапуск
-                    remainingMs = ENERGY_REFILL_INTERVAL_MS; // Начать новый отсчет
-                    setShouldShowRefillTimer(true); // Снова показать таймер
+                    // Время потенциально вышло. Вызываем refillEnergyOnLoad, чтобы стор сам пересчитал.
+                    // Это обработает и случай, когда прошло несколько интервалов.
+                    console.log("Timer expired, triggering refill check via action...");
+                    refillEnergyOnLoad(); // Вызов action изменит состояние и перезапустит этот useEffect
+                    // Сразу скрывать таймер не нужно, пусть useEffect перезапустится с новым состоянием
+                    if (intervalId) clearInterval(intervalId); // Останавливаем текущий интервал
                 } else {
-                    // Форматируем оставшееся время в мм:сс
-                    const totalSeconds = Math.floor(remainingMs / 1000);
+                    // Время еще есть, форматируем
+                    const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
                     const minutes = Math.floor(totalSeconds / 60);
                     const seconds = totalSeconds % 60;
                     setRefillTimerDisplay(
                         `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
                     );
                 }
-            }, 1000);
+            } else {
+                // Энергия полная
+                setShouldShowRefillTimer(false);
+                setRefillTimerDisplay("");
+                if (intervalId) clearInterval(intervalId);
+            }
+        };
 
-            // Функция очистки при размонтировании или изменении energy
-            return () => clearInterval(intervalId);
-
+        // Запускаем таймер только если энергия не полная
+        if (energyCurrent < energyMax) {
+            updateTimer(); // Первый вызов для немедленного отображения
+            intervalId = setInterval(updateTimer, 1000); // Обновление каждую секунду
         } else {
-            // Если энергия полная, скрываем таймер
-            setShouldShowRefillTimer(false);
-            setRefillTimerDisplay("");
+            setShouldShowRefillTimer(false); // Убедимся, что таймер скрыт, если энергия полная
         }
-    }, [energy]); // Запускаем эффект при изменении объекта energy (из Кода 1)
 
+        // Функция очистки
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+
+    // Перезапускаем useEffect, когда меняются ключевые данные энергии из стора
+    }, [energyCurrent, energyMax, lastEnergyRefillTimestamp, refillEnergyOnLoad]);
 
     // === Определение видимости плавающих блоков (Из Кода 1) ===
     const path = location.pathname;
@@ -178,7 +184,17 @@ const App = () => {
 
     // === Обработчики действий пользователя (ОСТАВЛЕНЫ ИЗ КОД2, так как они более полные) ===
     const handleStartGame = useCallback(async (chapterId, levelId) => {
-        console.log(`🚀 Запрос на старт: Глава ${chapterId}, Уровень ${levelId}`);
+        const ENERGY_COST = 10; // Пример стоимости старта уровня
+        console.log(`Попытка старта уровня ${levelId}. Стоимость: ${ENERGY_COST} энергии.`);
+
+        // <<< ПРИМЕР: Тратим энергию перед стартом >>>
+        const hasEnoughEnergy = consumeEnergy(ENERGY_COST); // Вызываем action стора
+
+        if (!hasEnoughEnergy) {
+            alert("Недостаточно энергии для старта уровня!");
+            console.log("Старт уровня отменен из-за нехватки энергии.");
+            return; // Прерываем старт
+        }        console.log(`🚀 Запрос на старт: Глава ${chapterId}, Уровень ${levelId}`);
         setIsLoadingLevel(true);
         setActiveLevelData(null);
         setLoadingError(null);
@@ -283,15 +299,17 @@ const App = () => {
                     <div className="energy-bar-content">
                         <img src="/assets/icon-energy.png" alt="" className="resource-icon-small energy-icon" />
                         <div className="energy-track">
-                            <div
+                        <div
                                 className="energy-fill"
-                                style={{ width: `${(energy?.current && energy?.max && energy.max > 0) ? (energy.current / energy.max * 100) : 0}%` }}
+                                // <<< ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ СТОРА >>>
+                                style={{ width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%` }}
                             ></div>
                         </div>
-                        <span className="energy-text">{`${energy?.current ?? '?'}/${energy?.max ?? '?'}`}</span>
+                         {/* <<< ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ СТОРА >>> */}
+                        <span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
                     </div>
-                    {/* Блок для таймера (используем состояния из Кода 1) */}
-                    { shouldShowRefillTimer && refillTimerDisplay && ( /* Переменные добавлены выше */
+                    {/* Блок для таймера */}
+                    { shouldShowRefillTimer && refillTimerDisplay && (
                        <div className="energy-refill-timer">
                            Восполнится через {refillTimerDisplay}
                        </div>

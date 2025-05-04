@@ -19,6 +19,8 @@ import { v4 as uuidv4 } from 'uuid'; // <<<--- ДОБАВЬ ИМПОРТ uuid
 
 
 const STORAGE_KEY = "gameState";
+const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000; // 30 минут
+const DEFAULT_MAX_ENERGY = 100; // Максимум энергии по умолчанию
 
 // --- Конфигурация уровней достижений (без изменений) ---
 const ACHIEVEMENT_LEVEL_XP_THRESHOLDS = { /* ... */ };
@@ -86,6 +88,9 @@ const createItemInstance = (itemTemplate) => {
                   playerHp: DEFAULT_BASE_STATS.hp,
                   playerRace: null,
                   inventory: [],
+                  energyMax: DEFAULT_MAX_ENERGY,
+                  energyCurrent: DEFAULT_MAX_ENERGY, // Начинаем с полной энергии
+                  lastEnergyRefillTimestamp: Date.now(), // Текущее время
                   dailyShopPurchases: {},
                   achievementsStatus: {},
                   totalGoldCollected: 0,
@@ -148,6 +153,9 @@ const createItemInstance = (itemTemplate) => {
           if (parsed.dailyDealsLastGenerated === undefined) parsed.dailyDealsLastGenerated = null;
           if (parsed.lastOpenedChestInfo === undefined) parsed.lastOpenedChestInfo = null;
           if (parsed.lastChestRewards === undefined) parsed.lastChestRewards = null;
+          if (parsed.energyMax === undefined) parsed.energyMax = DEFAULT_MAX_ENERGY;
+          if (parsed.energyCurrent === undefined) parsed.energyCurrent = parsed.energyMax; // Если не сохранено, считаем полным
+         if (parsed.lastEnergyRefillTimestamp === undefined) parsed.lastEnergyRefillTimestamp = Date.now(); // Если не сохранено, ставим текущее время
           // ... добавь инициализацию для других полей, если нужно ...
   
           // --- Проверка и инициализация 'equipped' ---
@@ -190,6 +198,9 @@ const createItemInstance = (itemTemplate) => {
               booleanFlags: {}, levelsCompleted: {}, achievementLevel: 1, achievementXp: 0, artifactLevels: {},
               artifactChestPity: {}, gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
               dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
+              energyMax: DEFAULT_MAX_ENERGY,
+              energyCurrent: DEFAULT_MAX_ENERGY,
+              lastEnergyRefillTimestamp: Date.now(),
           };
       }
   };
@@ -365,6 +376,9 @@ const useGameStore = create((set, get) => ({
     diamonds: savedState.diamonds ?? 0,
     username: savedState.username || null,
     powerLevel: savedState.powerLevel ?? 0, // Пересчитывается при изменении статов/экипировки/артефактов
+    energyMax: savedState.energyMax ?? DEFAULT_MAX_ENERGY,
+    energyCurrent: savedState.energyCurrent ?? DEFAULT_MAX_ENERGY,
+    lastEnergyRefillTimestamp: savedState.lastEnergyRefillTimestamp ?? Date.now(),
 
     // --- Игрок ---
     playerHp: savedState.playerHp ?? DEFAULT_BASE_STATS.hp,
@@ -776,10 +790,7 @@ computedStats: () => {
      },
 
 
-    // --- Действия с Валютой и Статистикой (без изменений) ---
-    addGold: (amount) => { /* ... */ },
-    addDiamonds: (amount) => { /* ... */ },
-    incrementKills: (count = 1) => { /* ... */ },
+
     // ... (код действий с валютой и киллами без изменений) ...
     addGold: (amount) => {
          set((state) => ({
@@ -796,6 +807,89 @@ computedStats: () => {
          set((state) => ({ totalKills: state.totalKills + count }));
          get().checkAllAchievements();
      },
+
+ refillEnergyOnLoad: () => {
+    set((state) => {
+        const now = Date.now();
+        const { energyCurrent, energyMax, lastEnergyRefillTimestamp } = state;
+
+        // Если энергия уже полная, ничего не делаем, просто возвращаем текущее состояние
+        if (energyCurrent >= energyMax) {
+            // Можно на всякий случай обновить timestamp, если он сильно в прошлом
+            // Но это необязательно, если consumeEnergy его обновляет при трате с полного бака.
+            // return { lastEnergyRefillTimestamp: now };
+            return {}; // Нет изменений
+        }
+
+        const elapsedMs = now - lastEnergyRefillTimestamp;
+        if (elapsedMs <= 0) return {}; // Время не прошло или timestamp в будущем
+
+        const refillIntervalsPassed = Math.floor(elapsedMs / ENERGY_REFILL_INTERVAL_MS);
+
+        if (refillIntervalsPassed <= 0) return {}; // Не прошло ни одного полного интервала
+
+        const energyToAdd = refillIntervalsPassed;
+        const newEnergy = Math.min(energyMax, energyCurrent + energyToAdd);
+        const pointsAdded = newEnergy - energyCurrent; // Сколько реально добавилось
+
+        // Если энергия не восполнилась до максимума, то новый timestamp
+        // это время последнего добавленного поинта.
+        // Если восполнилась до максимума, timestamp остается от последнего добавленного
+        // поинта, НЕ сдвигается на "now", чтобы не дарить лишнее время.
+        const newTimestamp = lastEnergyRefillTimestamp + pointsAdded * ENERGY_REFILL_INTERVAL_MS;
+
+        console.log(`Refill Check: Прошло ${Math.floor(elapsedMs / 1000)} сек. Интервалов: ${refillIntervalsPassed}. Добавлено: ${pointsAdded}. Новая энергия: ${newEnergy}. Новый timestamp: ${new Date(newTimestamp).toLocaleTimeString()}`);
+
+        return {
+            energyCurrent: newEnergy,
+            lastEnergyRefillTimestamp: newTimestamp,
+        };
+    });
+},
+
+// <<< НОВОЕ: Action для траты энергии >>>
+consumeEnergy: (cost) => {
+    if (cost <= 0) return false; // Нельзя потратить 0 или меньше
+
+    let success = false;
+    set((state) => {
+        const { energyCurrent, energyMax, lastEnergyRefillTimestamp } = state;
+
+        if (energyCurrent < cost) {
+            console.warn(`Consume Energy: Недостаточно энергии. Нужно: ${cost}, есть: ${energyCurrent}`);
+            success = false;
+            return {}; // Не меняем состояние
+        }
+
+        const wasFull = energyCurrent >= energyMax; // Была ли энергия полной ДО траты
+        const newEnergy = energyCurrent - cost;
+
+        // Если энергия была полной, то таймер следующего восстановления
+        // должен начаться с момента траты (сейчас).
+        // Если не была полной, timestamp не меняем, т.к. он уже отсчитывает
+        // время до следующего поинта.
+        const newTimestamp = wasFull ? Date.now() : lastEnergyRefillTimestamp;
+
+        console.log(`Consume Energy: Потрачено ${cost}. Осталось: ${newEnergy}. Timestamp ${wasFull ? 'обновлен на текущее' : 'не изменен'}.`);
+        success = true;
+        return {
+            energyCurrent: newEnergy,
+            lastEnergyRefillTimestamp: newTimestamp,
+        };
+    });
+    return success; // Возвращаем true, если энергия потрачена, false если нет
+},
+
+// (Опционально) Action для добавления энергии (награды и т.п.)
+addEnergy: (amount) => {
+     if (amount <= 0) return;
+     set((state) => {
+         const newEnergy = Math.min(state.energyMax, state.energyCurrent + amount);
+         console.log(`Add Energy: Добавлено ${amount}. Текущее: ${newEnergy}`);
+         // Timestamp НЕ меняем принудительно, пусть refillOnLoad разберется
+         return { energyCurrent: newEnergy };
+     });
+},
 
 
     setEquipped: (payload) => set({ equipped: payload }),
@@ -2055,6 +2149,7 @@ useGameStore.subscribe((state) => {
     const {
         gold, diamonds, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
+        energyCurrent, energyMax, lastEnergyRefillTimestamp,
         dailyDeals,             // <<< ДОБАВЛЕНО
         dailyDealsLastGenerated,// <<< ДОБАВЛЕНО
         dailyShopPurchases,
@@ -2073,6 +2168,7 @@ useGameStore.subscribe((state) => {
     const stateToSave = {
         gold, diamonds, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
+        energyCurrent, energyMax, lastEnergyRefillTimestamp,
         dailyDeals,             // <<< ДОБАВЛЕНО
         dailyDealsLastGenerated,// <<< ДОБАВЛЕНО
         dailyShopPurchases,
