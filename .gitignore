@@ -1,0 +1,39 @@
+# Исключаем зависимости
+/node_modules
+
+# Исключаем директорию сборки Vite
+/dist
+
+# Исключаем директорию кэша Vite
+.vite
+
+# Логи
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Файлы переменных окружения (кроме примеров)
+.env
+.env*.local
+!.env.example
+!.env.development.example
+!.env.production.example
+
+# Файлы настроек редакторов/IDE (опционально, можно настроить под себя)
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# Системные файлы macOS
+.DS_Store
+
+# Системные файлы Windows
+Thumbs.db

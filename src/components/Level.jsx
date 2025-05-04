@@ -9,7 +9,7 @@ import useEnemyLoader from './useEnemyLoader';   // Убедись, что пу�
 import useGameStore from '../store/useGameStore'; // Убедись, что путь верный
 import GameOverPopup from './GameOverPopup'; // Убедись, что путь верный
 // Импорт стилей
-import "./styles.scss"; // Убедись, что путь верный
+import "./Styles.scss"; // Убедись, что путь верный
 import { clamp, checkCollision, convertTiledX, convertTiledY, DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT } from './utils';
 
 

@@ -22,33 +22,6 @@ import useGameStore from "./store/useGameStore"; // <--- Убедитесь, ч�
 import './App.scss'; // Убедитесь, что здесь есть стили для .app-header, .header-left, .header-right, .player-avatar, .player-info и т.д. и padding для .app-container с env()
 
 
-// ▼▼▼ ДОБАВЛЕННЫЙ useEffect ДЛЯ TELEGRAM ▼▼▼
-const useTelegramIntegration = () => {
-    useEffect(() => {
-      // Проверяем, что скрипт загрузился и мы внутри Telegram
-      if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-  
-        // Сообщаем Telegram, что приложение готово
-        tg.ready();
-  
-        // Запрашиваем расширение на весь экран
-        tg.expand();
-  
-        console.log('Telegram WebApp: ready() and expand() called.');
-  
-        // Опционально: скрыть стандартную кнопку "Назад" Telegram
-        // tg.BackButton.hide();
-  
-        // Опционально: задать цвет шапки Telegram
-        // tg.setHeaderColor('#1c202b'); // Пример
-  
-      } else {
-        console.log('Telegram WebApp script not loaded or not in Telegram environment.');
-      }
-    }, []); // Пустой массив зависимостей - выполнить один раз при монтировании
-  };
-  // ▲▲▲-----------------------------------▲▲▲
   
 const App = () => {
     // === Состояния ===
