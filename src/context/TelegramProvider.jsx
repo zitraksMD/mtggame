@@ -1,36 +1,44 @@
-// src/context/TelegramProvider.jsx (НОВЫЙ ФАЙЛ)
+// src/context/TelegramProvider.jsx
 import React, { createContext, useContext, useEffect, useMemo } from "react";
 
-// Создаем контекст (хранит initData или весь объект tg)
-// Давайте хранить весь объект tg для большей гибкости
+// Контекст остается без изменений
 export const TelegramContext = createContext(null);
 
 // Компонент-провайдер
 export const TelegramProvider = ({ children }) => {
-    // Получаем объект WebApp один раз при помощи useMemo
     const telegram = useMemo(() => window.Telegram?.WebApp, []);
 
     useEffect(() => {
-        // Этот эффект выполнится один раз после монтирования компонента
         if (telegram) {
             try {
                 console.log("TelegramProvider: WebApp найден, инициализация...");
-                // Сообщаем о готовности
-                telegram.ready();
+                telegram.ready(); // Сообщаем о готовности
 
-                // Пытаемся запросить фуллскрин (используем requestFullscreen, т.к. он в примере)
-                // Если хотите использовать expand, замените строку ниже
-                if (telegram.isVersionAtLeast('8.0')) { // Проверка версии на всякий случай
-                   telegram.requestFullscreen();
-                   console.log("TelegramProvider: requestFullscreen() вызван.");
+                // Запрашиваем фуллскрин
+                if (telegram.isVersionAtLeast('8.0')) {
+                    telegram.requestFullscreen?.(); // Используем ?. на случай отсутствия метода
+                    console.log("TelegramProvider: requestFullscreen() вызван (если доступен).");
                 } else {
-                   telegram.expand(); // Fallback для старых версий
-                   console.log("TelegramProvider: expand() вызван (fallback).");
+                    telegram.expand?.(); // Используем ?. на случай отсутствия метода
+                    console.log("TelegramProvider: expand() вызван (fallback).");
                 }
 
-                // Отключаем вертикальный свайп для закрытия (опционально)
-                // telegram.disableVerticalSwipes();
-                // console.log("TelegramProvider: vertical swipes disabled.");
+                // ▼▼▼ ДОБАВЛЯЕМ ЛОГИКУ ОТКЛЮЧЕНИЯ СВАЙПА ЗДЕСЬ ▼▼▼
+                if (typeof telegram.disableVerticalSwipes === 'function') {
+                    // Пробуем старый/удобный метод, если он есть
+                    telegram.disableVerticalSwipes();
+                    console.log("TelegramProvider: Отключен вертикальный свайп через disableVerticalSwipes().");
+                }
+                // Если его нет, пробуем официальный метод postEvent (для TG >= 7.7)
+                else if (telegram.isVersionAtLeast('7.7') && typeof telegram.postEvent === 'function') {
+                    telegram.postEvent('web_app_setup_swipe_behavior', JSON.stringify({ allow_vertical_swipe: false }));
+                    console.log("TelegramProvider: Отключен вертикальный свайп через postEvent('web_app_setup_swipe_behavior').");
+                }
+                // Если ни один метод не сработал (старая версия ТГ?)
+                else {
+                    console.warn("TelegramProvider: Не удалось отключить вертикальный свайп (метод не найден).");
+                }
+                // ▲▲▲-----------------------------------------▲▲▲
 
                 console.log("TelegramProvider: Инициализация завершена.");
 
@@ -40,18 +48,19 @@ export const TelegramProvider = ({ children }) => {
         } else {
              console.log("TelegramProvider: Telegram WebApp не найден при монтировании.");
         }
-    }, [telegram]); // Зависимость от объекта telegram (он не меняется)
+    }, [telegram]);
+
+    const initData = telegram?.initDataUnsafe || null;
 
     return (
-        // Передаем сам объект telegram через контекст
-        // (или только telegram.initDataUnsafe, если нужно)
+        // Передаем объект telegram или только initData
         <TelegramContext.Provider value={telegram}>
             {children}
         </TelegramContext.Provider>
     );
 };
 
-// Кастомный хук для доступа к объекту telegram
+// Хук для доступа к telegram остается без изменений
 export const useTelegram = () => {
     return useContext(TelegramContext);
 };
