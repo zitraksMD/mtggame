@@ -2,74 +2,77 @@
 
 // --- Контейнер Навбара ---
 .bottom-nav {
+  position: fixed;      // <<< ДОБАВИТЬ! Фиксируем на экране
+  bottom: 0;          // <<< ДОБАВИТЬ! Прижимаем к низу
+  left: 0;            // <<< ДОБАВИТЬ! Прижимаем к левому краю
+  right: 0;           // <<< ДОБАВИТЬ! Прижимаем к правому краю
+  // width: 100%;     // Можно оставить или использовать left/right: 0
+
+  height: 70px;       // Ваша высота навбара
+  z-index: 100;       // <<< ИЗМЕНИТЬ! Поверх контента и на уровне верхних блоков
+
   display: flex;
   justify-content: space-around;
-  align-items: stretch; // Растягиваем элементы на всю высоту
-  // background-color: #1f2937; // Пример фона
-  background: linear-gradient(to top, #1a1d2b, #2a3045); // Пример градиента
-  width: 100%;
-  height: 70px; // Высота с учетом подписей (можно настроить)
-  flex-shrink: 0; // Не сжиматься по высоте
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.3); // Тень сверху
-  z-index: 10; // Поверх основного контента
+  align-items: stretch;
+  background: linear-gradient(to top, #1a1d2b, #2a3045);
+  flex-shrink: 0; // Это свойство больше не так важно для fixed элемента
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
   box-sizing: border-box;
-  border-top: 1px solid rgba(255, 255, 255, 0.1); // Линия сверху
-  margin-bottom: -45px; // Попробуйте отрицательное значение (-5px, -10px, -15px...)
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 
-  // Отступ снизу для безопасной зоны УБРАН, т.к. вы хотите прижать ниже в Mini App
+  // margin-bottom: -45px; // <<< УБРАТЬ ЭТУ СТРОКУ!
+
+  /* Отступ снизу для безопасной зоны:
+     Раскомментируйте строку ниже, если навбар НЕ должен заезжать
+     на системные элементы (например, полоску "домой" на iPhone) */
   // padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 // --- Стиль для каждой ссылки (NavLink -> a.nav-item) ---
 .nav-item {
   display: flex;
-  flex-direction: column; // Иконка над текстом
-  align-items: center;     // Центрируем по горизонтали
-  justify-content: center; // Центрируем по вертикали
-  flex: 1; // Равномерно занимают ширину
-  padding: 5px 2px; // Внутренние отступы
-  text-decoration: none; // Убрать подчеркивание
-  color: #8b94a3; // Цвет неактивной подписи
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 5px 2px; // Убедитесь, что эти отступы не делают иконки/текст слишком большими для height: 70px
+  text-decoration: none;
+  color: #8b94a3;
   background: none;
   border: none;
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
   position: relative;
-
-  // Плавность для эффектов масштабирования и цвета
   transition: transform 0.2s ease-out, color 0.2s ease;
 
   .nav-icon {
-    width: 28px; // Размер иконки
+    width: 28px;
     height: 28px;
     object-fit: contain;
-    margin-bottom: 4px; // Отступ до текста
-    transition: transform 0.2s ease; // Отдельная плавность для иконки, если нужно
+    margin-bottom: 4px;
+    transition: transform 0.2s ease;
   }
 
   .nav-label {
-    font-size: 10px; // Размер подписи
+    font-size: 10px;
     font-weight: 500;
     line-height: 1.1;
     text-align: center;
   }
 
-  // === Активная вкладка ===
   &.active {
-    color: #ffffff; // Белый цвет активной подписи
-    transform: scale(1.1); // Увеличиваем весь элемент
-    z-index: 1; // Поверх соседних
+    color: #ffffff;
+    transform: scale(1.1);
+    z-index: 1; // Достаточно 1, т.к. он внутри .bottom-nav
 
     .nav-label {
-        font-weight: 600; // Активная подпись жирнее
+      font-weight: 600;
     }
-    // .nav-icon { /* Дополнительные стили для активной иконки? */ }
   }
 
-  // === Нажатие ===
   &:active {
-     transform: scale(0.92); // Уменьшаем весь элемент
-     transition-duration: 0.05s; // Быстрый эффект
+     transform: scale(0.92);
+     transition-duration: 0.05s;
   }
 }
