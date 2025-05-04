@@ -159,7 +159,6 @@ html, body, #root {
   padding-right: env(safe-area-inset-right, 0px);
 
   /* Отступ снизу должен быть равен высоте BottomNav (БЕЗ учета его safe-area padding) */
-  padding-bottom: 70px; /* <<< ПОДБЕРИТЕ ПО ВЫСОТЕ ВАШЕГО НАВБАРА */
 
   /* min-height: calc(...); */ /* <<< УБРАТЬ ЭТУ СТРОКУ */
 }
