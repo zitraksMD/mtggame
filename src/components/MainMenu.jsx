@@ -243,13 +243,13 @@ const MainMenu = ({ onStart }) => { // onStart - функция из App.jsx
             {/* Название главы */}
             <h2 className="chapter-name">{chapterData.name}</h2>
 
-            {/* Верхний ряд */}
-            <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
-                BattlePass
-            </button>
+          
 
             {/* Левая колонка */}
             <div className="main-menu-left-column">
+            <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
+                BattlePass
+            </button>
                 <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
                     <img src="/assets/icons/mail-icon.png" alt="Почта" />
                 </button>

@@ -145,7 +145,7 @@
 .main-menu-left-column {
   position: absolute;
   top: 140px; // Примерный отступ слева сверху
-  left: 20px;
+  left: 10px;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -156,8 +156,8 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: 140px; // Примерный отступ справа сверху (ниже, как просили)
-  right: 20px;
+  top: 1px; // Примерный отступ справа сверху (ниже, как просили)
+  right: 10px;
   display: flex;
   flex-direction: column;
   gap: 15px;
