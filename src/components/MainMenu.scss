@@ -132,58 +132,59 @@
 
 
 
- // Левая колонка
- .main-menu-left-column {
-  position: absolute;
-  top: 140px; // Настрой отступ сверху
-  left: 10px; // Настрой отступ слева
-  display: flex;
-  flex-direction: column;
-  gap: 15px; // Пространство между кнопками
-  z-index: 5;
-
-  // !!! ВОТ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ !!!
-  align-items: flex-start; // Не растягивать кнопки по ширине
-
-  .main-menu-button {
-    position: relative; // Убедись, что нет absolute позиционирования
-    top: auto;
-    left: auto;
-    transform: none;
-    // Можно добавить margin, если gap не устраивает
-  }
-}
-
-// Battle Pass кнопка (убираем позиционирование, настраиваем вид)
+// Battle Pass (Снова позиционируется абсолютно)
 .battle-pass-button {
-  // УБРАТЬ: top, left, transform: translateX(-50%) если они были здесь
-  padding: 10px 25px; // Оставляем или настраиваем горизонтальные падинги для ширины
+  position: absolute; // Важно!
+  top: 130px;     // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ сверху, под аватаром
+  left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ слева
+  z-index: 5;
+  padding: 10px 25px; // Горизонтальные падинги для ширины
   border-radius: 8px;
   font-size: 16px;
   font-weight: bold;
-  // Можно задать min-width, если нужно, но align-items должно хватить
+  // УБРАТЬ: transform: translateX(-50%) если был
 }
 
-// Стили для иконочных кнопок (они уже должны быть настроены на меньший размер)
-.main-menu-button.icon-button {
-   padding: 8px; // Меньшие падинги
-   border-radius: 12px;
-   width: 56px;  // Пример: Задать фиксированную ширину/высоту для квадратности
-   height: 56px; // width/height = (иконка 40px + padding 8px*2)
-   box-sizing: border-box; // Чтобы padding был включен в width/height
+// Левая колонка (Почта и Сундук)
+.main-menu-left-column {
+  position: absolute; // Колонка тоже позиционируется абсолютно
+  top: 180px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ сверху, НИЖЕ кнопки BattlePass
+                    // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
+  left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
+  display: flex;
+  flex-direction: column;
+  gap: 15px;       // Пространство между Почтой и Сундуком
+  z-index: 5;
+  // УБРАЛИ: align-items: flex-start; - больше не нужно
 
-   img {
-     width: 40px;
-     height: 40px;
-     object-fit: contain;
-     display: block;
-   }
+  // Кнопки внутри колонки НЕ ДОЛЖНЫ быть absolute
+  .main-menu-button {
+    position: relative; // Важно! Сбросить absolute
+    top: auto;
+    left: auto;
+    transform: none;
+  }
 }
+ // Стили для иконочных кнопок (они уже должны быть настроены на меньший размер)
+ .main-menu-button.icon-button {
+    padding: 8px; // Меньшие падинги
+    border-radius: 12px;
+    width: 56px;  // Пример: Задать фиксированную ширину/высоту для квадратности
+    height: 56px; // width/height = (иконка 40px + padding 8px*2)
+    box-sizing: border-box; // Чтобы padding был включен в width/height
+
+    img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      display: block;
+    }
+ }
 
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: 140px; // Примерный отступ справа сверху (ниже, как просили)
+  top: 180px; // Примерный отступ справа сверху (ниже, как просили)
   right: 10px;
   display: flex;
   flex-direction: column;

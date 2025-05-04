@@ -245,20 +245,21 @@ const MainMenu = ({ onStart }) => { // onStart - функция из App.jsx
 
           
 
-            {/* Левая колонка */}
-            <div className="main-menu-left-column">
-     {/* !!! BattlePass теперь здесь !!! */}
-     <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
-         BattlePass
-     </button>
-     {/* Кнопки Почты и Сундука остаются здесь же */}
-     <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
-         <img src="/assets/icons/mail-icon.png" alt="Почта" />
-     </button>
-     <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
-         <img src="/assets/icons/gift-icon.png" alt="Награды" />
-     </button>
- </div>
+           {/* !!! Battle Pass - позиционируется САМ ПО СЕБЕ !!! */}
+         <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
+             BattlePass
+         </button>
+
+         {/* Левая колонка (Только Почта и Сундук) */}
+         <div className="main-menu-left-column">
+             {/* BattlePass здесь больше НЕТ */}
+             <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
+                 <img src="/assets/icons/mail-icon.png" alt="Почта" />
+             </button>
+             <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
+                 <img src="/assets/icons/chest-icon.png" alt="Награды" />
+             </button>
+         </div>
 
             {/* Правая колонка */}
             <div className="main-menu-right-column">
