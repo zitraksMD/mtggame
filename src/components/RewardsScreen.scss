@@ -154,7 +154,7 @@
   .rewards-track-container {
     height: 100%;             // Занимает всю высоту обертки
     overflow-y: auto;       // <<< ВЕРТИКАЛЬНЫЙ СКРОЛЛ
-    padding: 15px 15px 200px 15px; // Нижний отступ под футер (подбери)
+    padding: 15px 15px 105px 15px; // Нижний отступ под футер (подбери)
     overscroll-behavior-y: contain; // <<< ЗАПРЕЩАЕМ оттягивание ВНУТРИ этой области по вертикали
     box-sizing: border-box;
     display: flex;
@@ -199,8 +199,6 @@
     gap: 12px;
     box-sizing: border-box; // Добавляем на всякий случай
   
-  }
-  
   // --- Кнопки и индикатор в футере ---
   .claim-all-button,
   .purchase-button,
@@ -217,7 +215,7 @@
   
     &:active { transform: scale(0.98); box-shadow: none; }
   }
-  
+  }
   // --- Кнопка "Забрать все" ---
   .claim-all-button {
     flex-grow: 2;         // <<< Занимает 1 долю свободного места
