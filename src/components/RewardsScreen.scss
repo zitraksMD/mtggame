@@ -14,7 +14,6 @@
     box-sizing: border-box;
   
     // --- ИСПРАВЛЕННЫЕ ПАДДИНГИ (с правильными env) ---
-    padding-top: calc(env(safe-area-inset-top, 10px) + 5px);    // Отступ СВЕРХУ + safe area
     padding-left: calc(env(safe-area-inset-left, 10px) + 10px);   // Отступ СЛЕВА + safe area
     padding-right: calc(env(safe-area-inset-right, 10px) + 10px);  // Отступ СПРАВА + safe area
     padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 10px); // Отступ СНИЗУ + safe area (10px - зазор под футером)
@@ -26,7 +25,7 @@
     align-items: center;
     justify-content: center; // Центрируем заголовок
     padding: 8px 12px;
-    min-height: 70px; // ПРИМЕРНАЯ ВЫСОТА! Уточни или убери, если не нужна
+    min-height: 80px; // ПРИМЕРНАЯ ВЫСОТА! Уточни или убери, если не нужна
     background-color: rgba(45, 55, 72, 0.8); // Сделаем чуть темнее фон шапки
     border-bottom: 1px solid #4a5568;
     flex-shrink: 0;
@@ -45,7 +44,7 @@
   // --- НОВЫЕ СТИЛИ ДЛЯ КНОПКИ ЗАКРЫТИЯ (ПОТОМОК .popup-box) ---
   .popup-close-button { // Убедись, что этот класс у кнопки в JSX
     position: absolute;
-    top: 50px;           // <<< Отступ сверху от края родителя (.rewards-screen)
+    top: 60px;           // <<< Отступ сверху от края родителя (.rewards-screen)
     right: 12px;          // <<< Отступ справа чуть больше
     z-index: 20;          // <<< Поверх всего
     width: 32px;          // Чуть больше
