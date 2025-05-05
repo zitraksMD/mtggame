@@ -3,17 +3,21 @@
 
 // --- Основной контейнер Экрана ---
 .rewards-screen {
-    display: flex;            // Включаем Flexbox
-    flex-direction: column;   // Дети (шапка, табы, wrapper, футер) идут колонкой
-    height: 100vh;            // Занимает 100% высоты видимой области экрана
-    // Или можно height: 100%; если родительский контейнер в App.jsx имеет высоту
-    background-color: #1a202c; // Темный фон для экрана (подбери свой)
-    color: #e2e8f0;          // Светлый текст по умолчанию
-    overflow: hidden;         // Обрезаем все, что может вылезти за пределы экрана
-    position: relative; // <<< ВАЖНО: База для абсолютного футера
-    overscroll-behavior: none; // <<< Запрещаем оттягивание для самого экрана
-    padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 5px);
-
+    display: flex;
+    flex-direction: column;
+    height: 100%;             // <<< ИСПОЛЬЗУЕМ 100% ВМЕСТО 100vh
+    background-color: #1a202c;
+    color: #e2e8f0;
+    overflow: hidden;         // Обрезаем контент по границам экрана
+    position: relative;       // База для абсолютного позиционирования
+    overscroll-behavior: none;
+    box-sizing: border-box;
+  
+    // --- ИСПРАВЛЕННЫЕ ПАДДИНГИ (с правильными env) ---
+    padding-top: calc(env(safe-area-inset-top, 10px) + 5px);    // Отступ СВЕРХУ + safe area
+    padding-left: calc(env(safe-area-inset-left, 10px) + 10px);   // Отступ СЛЕВА + safe area
+    padding-right: calc(env(safe-area-inset-right, 10px) + 10px);  // Отступ СПРАВА + safe area
+    padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 10px); // Отступ СНИЗУ + safe area (10px - зазор под футером)
   }
   
   // --- Шапка Экрана ---
@@ -180,17 +184,17 @@
   // --- Футер Экрана ---
   .rewards-footer {
     position: absolute;
-    bottom: 0px; // <<< ОСТАВЛЯЕМ 0: приклеен к НИЖНЕЙ ГРАНИЦЕ ПАДДИНГА .rewards-screen
+    bottom: 0; // <<< Приклеен к НИЗУ .rewards-screen (у которого теперь есть padding-bottom)
     left: 0;
     right: 0;
-    background-color: #273041; // <<< Вернули нормальный фон
+    background-color: #273041;
     border-top: 1px solid #4a5568;
     z-index: 10;
     display: flex;
     align-items: center;
     padding: 10px 15px;
     gap: 12px;
-    box-sizing: border-box; // Важно для padding
+    box-sizing: border-box;
   
   // --- Кнопки и индикатор в футере ---
   .claim-all-button,
