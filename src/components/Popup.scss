@@ -14,7 +14,7 @@
     // Добавляем отступ сверху = безопасная зона + высота хедера + зазор
     // 80px - ПРИМЕРНАЯ ВЫСОТА ВАШЕГО ИГРОВОГО ХЕДЕРА (ресурсы + аватар) - !!! ПОДБЕРИТЕ ТОЧНО !!!
     // 15px - Зазор между хедером и попапом
-    padding-top: calc(env(safe-area-inset-top, 10px) + 150px + 15px);
+    padding-top: calc(env(safe-area-inset-top, 10px) + 140px + 15px);
 
     // Добавляем отступы по краям и снизу для безопасности и внешнего вида
     padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
@@ -22,7 +22,8 @@
     padding-bottom: 50px;
     box-sizing: border-box;
 }
-  
+
+
   .popup-box {
     background-color: #2d3748; // Темно-серый фон (как у попапа уровня)
     color: white;
@@ -32,17 +33,18 @@
     border: 1px solid #4a5568;
     min-width: 300px; // Минимальная ширина
     max-width: 90%; // Максимальная ширина
-    max-height: 80vh; // Максимальная высота, чтобы не уезжал за экран
+    max-height: 70vh; // Максимальная высота, чтобы не уезжал за экран
     display: flex;
     flex-direction: column;
     overflow: hidden; // Чтобы скругление работало с дочерними элементами
+    height: fit-content; // Может помочь убрать лишнее пространство снизу, если контент короткий
   }
   
   .popup-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px; // Отступы в шапке
+    padding: 0; // Убираем падинг здесь, если он не нужен для скролл-контейнера
     background-color: rgba(74, 85, 104, 0.5); // Чуть другой фон для шапки
     border-bottom: 1px solid #4a5568; // Линия под шапкой
   }
