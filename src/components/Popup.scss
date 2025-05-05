@@ -1,19 +1,20 @@
-// src/components/Popup.scss (Corrected Version)
+// src/components/Popup.scss - ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 .popup-backdrop {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: flex-start;
+  align-items: flex-start; // Попап прижат к верху (до padding-top)
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(3px);
   padding-top: calc(env(safe-area-inset-top, 10px) + 120px + 15px);
   padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
   padding-right: calc(env(safe-area-inset-right, 15px) + 15px);
-  padding-bottom: 50px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 30px); // Адаптивный отступ снизу
   box-sizing: border-box;
+  // overflow-y: auto; // <<< УБРАТЬ ЭТУ СТРОКУ! Бэкдроп не должен скроллиться.
 }
 
 .popup-box {
@@ -23,50 +24,43 @@
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border: 1px solid #4a5568;
-  min-width: 300px;
-  max-width: 90%;
-  max-height: 70vh;
+  min-width: 0;
+  width: 90%;
+  max-width: 600px;
+  max-height: 75vh; // Максимальная высота всего попапа
   display: flex;
-  flex-direction: column; // Вертикально: Шапка + Контент
-  overflow: hidden;
+  flex-direction: column;
+  overflow: hidden; // <<< ОЧЕНЬ ВАЖНО: Ограничивает высоту и обрезает контент
+  box-sizing: border-box;
+  margin: auto 0; // Вертикальное центрирование если контент ниже max-height
 }
 
 .popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px; // Примерные паддинги
+  padding: 10px 15px;
   background-color: rgba(74, 85, 104, 0.5);
   border-bottom: 1px solid #4a5568;
-  flex-shrink: 0;     // Шапка не сжимается
+  flex-shrink: 0; // Фиксированная высота шапки
 }
 
 .popup-title {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
+  padding-left: 5px;
 }
 
 .popup-close-button {
-  background: none;
-  border: none;
-  color: #cbd5e1;
-  font-size: 2rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 5px;
-  transition: color 0.2s ease;
-
-  &:hover {
-      color: white;
-  }
+  // ... стили кнопки ...
 }
 
-.popup-content { // Container for {children} (RewardsPopupContent)
-  flex-grow: 1;           // Растет, занимая место
+.popup-content { // Этот контейнер растягивается между шапкой и футером попапа (если бы он был)
+  flex-grow: 1;    // Занимает все доступное место по высоте в .popup-box
   padding: 0;
-  overflow: hidden;       // Сам не скроллится
+  overflow: hidden; // <<< ВАЖНО: Содержимое не должно вылезать из этого контейнера
   position: relative;
-  display: flex;          // <<< ВЕРНУЛИ FLEX
-  flex-direction: column; // <<< СДЕЛАЛИ ВЕРТИКАЛЬНЫМ (чтобы дочерний flex-grow работал)
+  min-height: 0;    // Для корректной работы flex-grow
 }
+

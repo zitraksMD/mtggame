@@ -1,6 +1,7 @@
 // src/App.jsx
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'; // Добавлен useMemo из Кода 1
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// <<< useNavigate и useLocation импортированы (как в Коде 1 и Коде 2) >>>
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 // Импорты Компонентов
@@ -10,11 +11,11 @@ import Inventory from "./components/Inventory";
 import Shop from "./components/Shop";
 import BottomNav from "./components/BottomNav";
 import UsernamePopup from "./components/UsernamePopup";
-// Компоненты PowerLevel и ResourceBar больше не нужны, так как их содержимое интегрировано (комментарий из Кода 2 сохранен)
 import Forge from "./components/Forge";
 import Achievements from "./components/Achievements";
 import RaceSelection from "./components/RaceSelection";
 import LoadingScreen from "./components/LoadingScreen";
+import RewardsScreen from "./components/RewardsScreen"; // <<< ДОБАВЛЕН ИМПОРТ НОВОГО ЭКРАНА из Кода 1
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
@@ -24,14 +25,14 @@ import './App.scss'; // Убедитесь, что здесь есть стил�
 const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000; // 30 минут
 
 const App = () => {
-    // === Состояния ===
+    // === Состояния === (Из Кода 2, они более полные)
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [needsRaceSelection, setNeedsRaceSelection] = useState(false);
     const [activeLevelData, setActiveLevelData] = useState(null);
     const [loadingError, setLoadingError] = useState(null);
     const [isLoadingLevel, setIsLoadingLevel] = useState(false);
 
-    // === Состояния для таймера энергии (Из Кода 1) ===
+    // === Состояния для таймера энергии (Из Кода 1/Кода 2) ===
     const [refillTimerDisplay, setRefillTimerDisplay] = useState(""); // Строка для отображения (мм:сс)
     const [shouldShowRefillTimer, setShouldShowRefillTimer] = useState(false); // Флаг показа таймера
 
@@ -40,8 +41,7 @@ const App = () => {
     const location = useLocation();
     const appContainerRef = useRef(null); // Добавлено из Кода 1
 
-    // === Данные из стора (Объединенный подход: useCallback + useMemo из Кода 1) ===
-    // Используем useMemo для стабильности объекта-селектора
+    // === Данные из стора (Объединенный подход из Кода 2, с селектором из Кода 1) ===
     const { username, gold, diamonds, powerLevel,  energyCurrent, energyMax, lastEnergyRefillTimestamp, refillEnergyOnLoad, consumeEnergy } = useGameStore(
         useCallback(state => ({
             username: state.username,
@@ -52,8 +52,7 @@ const App = () => {
             energyMax: state.energyMax,
             lastEnergyRefillTimestamp: state.lastEnergyRefillTimestamp,
             refillEnergyOnLoad: state.refillEnergyOnLoad,
-            consumeEnergy: state.consumeEnergy, // Добавили для примера
-            // energy и avatarUrl не запрашиваются из стора в Коде 1, используем заглушки
+            consumeEnergy: state.consumeEnergy, // Добавлено из Кода 1 / Кода 2
         }), []) // Пустой массив зависимостей, т.к. селектор не меняется
     );
 
@@ -63,22 +62,18 @@ const App = () => {
     const checkAndRefreshDailyDeals = useGameStore((s) => s.checkAndRefreshDailyDeals);
 
     // === ЗАГЛУШКИ (Из Кода 1, с использованием useMemo для energy) ===
-    const energy = useMemo(() => ({ current: 85, max: 100 }), []); // Используем useMemo для стабильности объекта
-    const avatarUrl = "/assets/default-avatar.png"; // Как в Коде 1
-    const tonShards = 0;                        // Как в Коде 1
+    // energy из useMemo используется в Коде 1 как заглушка, но в Коде 2/Store есть реальные energyCurrent/energyMax
+    // Оставим заглушки avatarUrl и tonShards из Кода 1
+    const avatarUrl = "/assets/default-avatar.png";
+    const tonShards = 0;
+    // Заглушка energy больше не нужна, так как используем energyCurrent/energyMax из стора
+    // const energy = useMemo(() => ({ current: 85, max: 100 }), []);
 
-    // === Логика таймера энергии (Из Кода 1) ===
+    // === Логика таймера энергии (Из Кода 1 / Кода 2 - они идентичны) ===
     useEffect(() => {
         let intervalId = null;
 
         const updateTimer = () => {
-            // Перечитываем актуальные значения из стора внутри таймера, если нужно
-            // Но лучше полагаться на перезапуск useEffect из-за изменений в зависимостях
-            // const currentState = useGameStore.getState(); // Можно так, но не рекомендуется часто
-            // const currentEnergy = currentState.energyCurrent;
-            // const maxEnergy = currentState.energyMax;
-            // const lastRefillTs = currentState.lastEnergyRefillTimestamp;
-
             // Используем значения из замыкания useEffect (energyCurrent, energyMax, lastEnergyRefillTimestamp)
             if (energyCurrent < energyMax) {
                 setShouldShowRefillTimer(true);
@@ -88,10 +83,8 @@ const App = () => {
 
                 if (remainingMs <= 0) {
                     // Время потенциально вышло. Вызываем refillEnergyOnLoad, чтобы стор сам пересчитал.
-                    // Это обработает и случай, когда прошло несколько интервалов.
                     console.log("Timer expired, triggering refill check via action...");
                     refillEnergyOnLoad(); // Вызов action изменит состояние и перезапустит этот useEffect
-                    // Сразу скрывать таймер не нужно, пусть useEffect перезапустится с новым состоянием
                     if (intervalId) clearInterval(intervalId); // Останавливаем текущий интервал
                 } else {
                     // Время еще есть, форматируем
@@ -126,9 +119,11 @@ const App = () => {
     // Перезапускаем useEffect, когда меняются ключевые данные энергии из стора
     }, [energyCurrent, energyMax, lastEnergyRefillTimestamp, refillEnergyOnLoad]);
 
-    // === Определение видимости плавающих блоков (Из Кода 1) ===
+    // === Определение видимости плавающих блоков (ОБНОВЛЕНО из Кода 1) ===
     const path = location.pathname;
-    const showAnyFixedUI = !path.startsWith('/level/') && !isInitialLoading && !needsRaceSelection;
+    // НЕ показывать UI на уровне, при загрузке, выборе расы И НА ЭКРАНЕ НАГРАД
+    const showAnyFixedUI = !path.startsWith('/level/') && !isInitialLoading && !needsRaceSelection && path !== '/rewards'; // <<< ДОБАВЛЕНО && path !== '/rewards' из Кода 1
+    // Остальные условия видимости теперь зависят от showAnyFixedUI
     const showPlayerInfo = showAnyFixedUI && (path === '/main' || path === '/inventory');
     const showResources = showAnyFixedUI && (path === '/main' || path === '/inventory' || path === '/shop' || path === '/forge');
     const showEnergyBar = showAnyFixedUI && (path === '/main');
@@ -180,21 +175,23 @@ const App = () => {
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [/* Зависимости можно оставить пустыми или добавить стабильные функции */]);
+    }, [/* Зависимости можно оставить пустыми или добавить стабильные функции navigate, initialize*, setUsername, checkAndRefresh* */]);
 
-    // === Обработчики действий пользователя (ОСТАВЛЕНЫ ИЗ КОД2, так как они более полные) ===
+    // === Обработчики действий пользователя (ОСТАВЛЕНЫ ИЗ КОД2, но с изменениями из Кода 1) ===
     const handleStartGame = useCallback(async (chapterId, levelId) => {
         const ENERGY_COST = 10; // Пример стоимости старта уровня
         console.log(`Попытка старта уровня ${levelId}. Стоимость: ${ENERGY_COST} энергии.`);
 
-        // <<< ПРИМЕР: Тратим энергию перед стартом >>>
+        // Используем consumeEnergy из стора (как в Коде 1 и Коде 2)
         const hasEnoughEnergy = consumeEnergy(ENERGY_COST); // Вызываем action стора
 
         if (!hasEnoughEnergy) {
             alert("Недостаточно энергии для старта уровня!");
             console.log("Старт уровня отменен из-за нехватки энергии.");
             return; // Прерываем старт
-        }        console.log(`🚀 Запрос на старт: Глава ${chapterId}, Уровень ${levelId}`);
+        }
+
+        console.log(`🚀 Запрос на старт: Глава ${chapterId}, Уровень ${levelId}`);
         setIsLoadingLevel(true);
         setActiveLevelData(null);
         setLoadingError(null);
@@ -202,8 +199,7 @@ const App = () => {
         try {
             const dataPath = `/data/levels/level${levelId}Data.json`;
             console.log(`Загрузка данных уровня: ${dataPath}`);
-            // Имитация задержки сети (можно убрать)
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 300)); // Имитация сети
             const response = await fetch(dataPath);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${dataPath}`);
             const loadedData = await response.json();
@@ -213,61 +209,58 @@ const App = () => {
             console.log(`✅ Данные для уровня ${levelId} загружены.`);
             setActiveLevelData(loadedData);
             setIsLoadingLevel(false);
-            navigate(`/level/${levelId}`, { replace: true }); // Использовать replace для навигации после загрузки
+            navigate(`/level/${levelId}`, { replace: true });
         } catch (error) {
             console.error(`❌ Ошибка загрузки уровня ${levelId}:`, error);
             setLoadingError(`Не удалось загрузить уровень ${levelId}. ${error.message}`);
             setIsLoadingLevel(false);
-            navigate("/main", { replace: true }); // Возврат в меню при ошибке
+            navigate("/main", { replace: true });
             setActiveLevelData(null);
         }
-    }, [navigate]);
+    }, [navigate, consumeEnergy]); // <<< Добавлен consumeEnergy в зависимости (как в Коде 1/Коде 2)
 
     const handleLevelComplete = useCallback(() => {
-        console.log("🏁 Уровень завершён, возврат в меню.");
+        console.log("🏁 Уровень завершён, переход на экран наград.");
         setActiveLevelData(null); // Сброс данных уровня
-        navigate("/main");
+        navigate("/rewards"); // <<< ИЗМЕНЕНО: Переход на /rewards согласно логике добавления экрана в Коде 1
     }, [navigate]);
 
     const handleLevelReady = useCallback(() => {
         console.log("🎮 Компонент Уровня готов к игре!");
-        // Можно добавить логику, если нужно что-то сделать когда уровень полностью отрисован и готов
+        // Логика из Кода 2
     }, []);
 
     const handleRaceSelectionComplete = useCallback(() => {
         console.log("Раса выбрана, перенаправление в главное меню.");
         setNeedsRaceSelection(false);
-        // Перезагрузка данных пользователя или обновление состояния может потребоваться здесь
-        // Например, снова вызвать initializeCharacterStats, если он не был вызван ранее
-        // или обновить имя пользователя, если оно устанавливается после выбора расы
-        navigate('/main', { replace: true }); // Использовать replace
-    }, [navigate]); // Добавлены зависимости
+        // Логика из Кода 2
+        navigate('/main', { replace: true });
+    }, [navigate]); // Добавлена зависимость navigate
 
 
     // === Основной рендер компонента App ===
 
-    // Показываем начальный экран загрузки
+    // Начальный экран загрузки (из Кода 2)
     if (isInitialLoading) {
         return <LoadingScreen key="loading_initial" message="Загрузка игры..." />;
     }
 
-    // Редирект на выбор расы, если нужно (до основного рендера)
-    // Убрано из основного return, чтобы избежать рендера остального UI во время редиректа
+    // Редирект на выбор расы (из Кода 2)
     if (needsRaceSelection && location.pathname !== '/race-selection') {
-         // Показываем заглушку пока идет перенаправление
         return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
     }
 
     return (
-        <div className="app-container" ref={appContainerRef}> {/* Добавлен ref из Кода 1 */}
+        <div className="app-container" ref={appContainerRef}> {/* ref из Кода 1 */}
 
-            {/* --- Плавающие Блоки (Структура и видимость из Кода 1) --- */}
+            {/* --- Плавающие Блоки (Структура из Кода 2, видимость из Кода 1) --- */}
             {/* Блок Информации о Игроке */}
             {showPlayerInfo && (
                 <div className="player-info-float">
-                    <img src={avatarUrl} alt="Аватар" className="player-avatar-small" /> {/* Класс из Кода 1 */}
+                    <img src={avatarUrl} alt="Аватар" className="player-avatar-small" />
                     <div className="player-details">
                         <span className="player-name">{username || "Гость"}</span>
+                        {/* Отображаем powerLevel из стора */}
                         <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
                     </div>
                 </div>
@@ -277,17 +270,19 @@ const App = () => {
                 <div className="resources-float">
                     {/* Золото */}
                     <div className="resource-item-float">
-                        <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon-small" /> {/* Класс из Кода 1 */}
+                        <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon-small" />
+                        {/* Отображаем gold из стора */}
                         <span>{gold?.toLocaleString() ?? '0'}</span>
                     </div>
                     {/* Алмазы */}
                     <div className="resource-item-float">
-                        <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon-small" /> {/* Класс из Кода 1 */}
+                        <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon-small" />
+                        {/* Отображаем diamonds из стора */}
                         <span>{diamonds?.toLocaleString() ?? '0'}</span>
                     </div>
-                    {/* Осколки TON */}
+                    {/* Осколки TON (используем заглушку) */}
                     <div className="resource-item-float">
-                        <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon-small" /> {/* Класс из Кода 1 */}
+                        <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon-small" />
                         <span>{tonShards?.toLocaleString() ?? '0'}</span>
                     </div>
                 </div>
@@ -295,23 +290,22 @@ const App = () => {
             {/* Блок Энергии (с таймером) */}
             {showEnergyBar && (
                 <div className="energy-bar-float">
-                    {/* Обертка для самой полоски (Из Кода 1) */}
                     <div className="energy-bar-content">
                         <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
                         <div className="energy-track">
-                        <div
+                            <div
                                 className="energy-fill"
-                                // <<< ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ СТОРА >>>
+                                // <<< ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ СТОРА (energyCurrent, energyMax) >>>
                                 style={{ width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%` }}
                             ></div>
                         </div>
-                         {/* <<< ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ СТОРА >>> */}
+                         {/* <<< ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ СТОРА (energyCurrent, energyMax) >>> */}
                         <span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
                     </div>
-                    {/* Блок для таймера */}
+                    {/* Блок для таймера (как в Коде 2) */}
                     { shouldShowRefillTimer && refillTimerDisplay && (
                        <div className="energy-refill-timer">
-                           Восполнится через {refillTimerDisplay}
+                            Восполнится через {refillTimerDisplay}
                        </div>
                     )}
                 </div>
@@ -319,58 +313,58 @@ const App = () => {
             {/* --- Конец Плавающих Блоков --- */}
 
 
-            {/* Попап для ввода имени пользователя (условия показа из Кода 1, позиционирование зависит от CSS) */}
-            {/* Показывается только если НЕ начальная загрузка, НЕ нужен выбор расы и НЕ на уровне */}
-            {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && <UsernamePopup />}
-
-            {/* ❌ Удалена старая <header> из Кода 2 (если она была) */}
+            {/* Попап для ввода имени пользователя (условия показа из Кода 1) */}
+            {/* Показывается только если НЕ начальная загрузка, НЕ нужен выбор расы, НЕ на уровне И НЕ на экране наград */}
+            {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && !location.pathname.startsWith('/rewards') && <UsernamePopup />} {/* <<< Добавлено && !location.pathname.startsWith('/rewards') из Кода 1 */}
 
             {/* Основная область для контента */}
             <main className="content-area">
                 <AnimatePresence mode="wait" initial={false}>
-                    {/* Routes (Логика из Кода 2, обработка Level немного изменена для ясности) */}
+                    {/* Routes (Логика из Кода 2, с добавлением маршрута из Кода 1) */}
                     <Routes location={location} key={location.pathname}>
+                        {/* Маршруты из Кода 2 */}
                         <Route path="/race-selection" element={<RaceSelection onComplete={handleRaceSelectionComplete} />} />
                         <Route path="/level/:levelId/loading" element={<LoadingScreen message="Загрузка уровня..." />} />
                         <Route path="/level/:levelId" element={
-                             // Сначала проверяем, есть ли данные уровня
-                             activeLevelData ? (
-                                 <Level levelData={activeLevelData} onLevelComplete={handleLevelComplete} onReady={handleLevelReady}/>
-                             ) : // Если данных нет, проверяем, идет ли еще загрузка
-                             isLoadingLevel ? (
-                                 <LoadingScreen message="Загрузка данных..." /> // Показываем лоадер пока грузим данные, если попали сюда напрямую
-                             ) : // Если не грузим и данных нет - показываем ошибку
-                             (
-                                 <motion.div
-                                     key="error_level_data"
-                                     className="loading-screen" // Используем класс для стилизации под ошибку
-                                     initial={{ opacity: 0 }}
-                                     animate={{ opacity: 1 }}
-                                     exit={{ opacity: 0 }}
-                                 >
-                                     <h2>Ошибка: Данные уровня не найдены!</h2>
-                                     <p>Возможно, вы попали сюда по неверной ссылке.</p>
-                                     <button onClick={() => navigate('/main', { replace: true })}>В меню</button>
-                                 </motion.div>
-                             )
+                            // Логика рендера Level или Loading/Error из Кода 2
+                            activeLevelData ? (
+                                <Level levelData={activeLevelData} onLevelComplete={handleLevelComplete} onReady={handleLevelReady}/>
+                            ) : isLoadingLevel ? (
+                                <LoadingScreen message="Загрузка данных..." />
+                            ) : (
+                                <motion.div
+                                    key="error_level_data"
+                                    className="loading-screen" // Используем класс для стилизации под ошибку
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                >
+                                    <h2>Ошибка: Данные уровня не найдены!</h2>
+                                    <p>Возможно, вы попали сюда по неверной ссылке.</p>
+                                    <button onClick={() => navigate('/main', { replace: true })}>В меню</button>
+                                </motion.div>
+                            )
                         }/>
                         <Route path="/inventory" element={<Inventory />} />
                         <Route path="/shop" element={<Shop />} />
                         <Route path="/forge" element={<Forge />} />
                         <Route path="/achievements" element={<Achievements />} />
+
+                        {/* === НОВЫЙ МАРШРУТ ДЛЯ ЭКРАНА НАГРАД (из Кода 1) === */}
+                        <Route path="/rewards" element={<RewardsScreen />} />
+
+                        {/* Главное меню и путь по умолчанию (из Кода 2) */}
                         <Route path="/main" element={<MainMenu onStart={handleStartGame} />} />
-                        {/* Универсальный маршрут для / или любого другого не найденного пути */}
-                        <Route path="*" element={<MainMenu onStart={handleStartGame} />} /> {/* Перенаправляем на MainMenu */}
+                        <Route path="*" element={<MainMenu onStart={handleStartGame} />} />
                     </Routes>
                 </AnimatePresence>
             </main>
 
             {/* Нижняя навигация (условия показа из Кода 1) */}
-            {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && (
+            {/* НЕ показывается на уровне и экране наград */}
+             {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && !location.pathname.startsWith('/rewards') && ( // <<< Добавлено && !location.pathname.startsWith('/rewards') из Кода 1
                 <BottomNav />
             )}
 
-            {/* Попап для отображения ошибок загрузки (без изменений) */}
+            {/* Попап для отображения ошибок загрузки (из Кода 2) */}
             {loadingError && (
                 <div className="error-popup">
                     <p>{loadingError}</p>
