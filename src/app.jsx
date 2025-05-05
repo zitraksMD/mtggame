@@ -328,8 +328,12 @@ const App = () => {
                         <Route path="/level/:levelId" element={
                             // Логика рендера Level или Loading/Error из Кода 2
                             activeLevelData ? (
-                                <Level levelData={activeLevelData} onLevelComplete={handleLevelComplete} onReady={handleLevelReady}/>
-                            ) : isLoadingLevel ? (
+<Level
+      levelData={activeLevelData}
+      onLevelComplete={handleLevelComplete}
+      onReady={handleLevelReady}
+      difficulty={'normal'} // <<< ВОТ ЭТО ДОБАВЛЕНО
+    />                            ) : isLoadingLevel ? (
                                 <LoadingScreen message="Загрузка данных..." />
                             ) : (
                                 <motion.div
