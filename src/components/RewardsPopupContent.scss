@@ -15,7 +15,7 @@
   justify-content: flex-start; // <<< Элементы начинаются слева
   // flex-wrap: wrap; // <<< УБИРАЕМ перенос строк
   flex-wrap: nowrap;   // <<< ВАЖНО: Запрещаем перенос
-  margin-bottom: 15px;
+  margin-bottom: 0px;
   background-color: rgba(0, 0, 0, 0.2);
   padding: 5px 10px; // Добавим немного горизонтального падинга
   border-radius: 8px;
