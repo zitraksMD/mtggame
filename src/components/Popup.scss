@@ -19,9 +19,7 @@
     // Добавляем отступы по краям и снизу для безопасности и внешнего вида
     padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
     padding-right: calc(env(safe-area-inset-right, 15px) + 15px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 15px) + 30px); // Снизу отступ побольше
-
-    overflow-y: auto; // <<< ДОБАВЛЕНО: Скролл для всего оверлея, если контент не влезет
+    padding-bottom: 50px;
     box-sizing: border-box;
 }
   
