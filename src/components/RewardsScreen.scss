@@ -10,51 +10,73 @@
     background-color: #1a202c; // Темный фон для экрана (подбери свой)
     color: #e2e8f0;          // Светлый текст по умолчанию
     overflow: hidden;         // Обрезаем все, что может вылезти за пределы экрана
+    position: relative; // <<< ВАЖНО: База для абсолютного футера
+    overscroll-behavior: none; // <<< Запрещаем оттягивание для самого экрана
+
   }
   
   // --- Шапка Экрана ---
   .rewards-screen-header {
     display: flex;
     align-items: center;
-    justify-content: space-between; // Кнопка назад | Заголовок | Пустое место
+    justify-content: center; // Центрируем заголовок
     padding: 8px 12px;
-    background-color: rgba(45, 55, 72, 0.8); // Фон шапки
+    min-height: 70px; // ПРИМЕРНАЯ ВЫСОТА! Уточни или убери, если не нужна
+    background-color: rgba(45, 55, 72, 0.8); // Сделаем чуть темнее фон шапки
     border-bottom: 1px solid #4a5568;
-    flex-shrink: 0; // Фиксированная высота
-    position: relative;
-    z-index: 10;
+    flex-shrink: 0;
+    position: relative; // Может понадобиться для z-index или позиционирования заголовка/видео
+    z-index: 10; // Выше табов
   
-    h1 {
+    h1 { // Заголовок (или будущий видео-контейнер)
       margin: 0;
-      font-size: 1.1rem; // Размер заголовка
+      font-size: 1.1rem;
       font-weight: 600;
-      text-align: center;
-      flex-grow: 1; // Занимает центр
-    }
-  
-    .back-button {
-      background: none;
-      border: none;
-      color: #cbd5e1;
-      font-size: 1.8rem; // Размер стрелки
-      font-weight: bold;
-      cursor: pointer;
-      padding: 0 10px 0 0; // Отступ справа от стрелки
-      line-height: 1;
-      &:hover { color: white; }
-    }
-    // Пустой div справа для баланса flex justify-content: space-between
-    .header-placeholder {
-      width: 40px; // Примерно ширина кнопки назад
-      flex-shrink: 0;
+      text-align: center; // Текст по центру
+      flex-grow: 1;       // Занимает доступное место в центре
+      // Добавь стили для позиционирования видео сюда позже
     }
   }
+  // --- НОВЫЕ СТИЛИ ДЛЯ КНОПКИ ЗАКРЫТИЯ (ПОТОМОК .popup-box) ---
+  .popup-close-button { // Убедись, что этот класс у кнопки в JSX
+    position: absolute;
+    top: 50px;           // <<< Отступ сверху от края родителя (.rewards-screen)
+    right: 12px;          // <<< Отступ справа чуть больше
+    z-index: 20;          // <<< Поверх всего
+    width: 32px;          // Чуть больше
+    height: 32px;
   
+    // Стили самой кнопки
+    background-color: rgba(40, 50, 70, 0.6); // Полупрозрачный фон
+    border: 1px solid rgba(120, 130, 150, 0.5); // Полупрозрачная рамка
+    color: #e2e8f0;       // Цвет крестика
+    font-size: 1.4rem;    // Размер крестика
+    font-weight: bold;
+    line-height: 1;
+    width: 30px;          // Фиксированный размер
+    height: 30px;
+    border-radius: 50%;   // Круглая
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+  
+    &:hover {
+      background-color: rgba(60, 70, 90, 0.8);
+      color: white;
+    }
+    &:active {
+        transform: scale(0.92);
+    }
+  }
   // --- Табы Этапов (с горизонтальным скроллом CSS) ---
   .stage-tabs {
     flex-shrink: 0; // Фиксированная высота
     padding: 6px 10px;
     background-color: rgba(0, 0, 0, 0.2); // Фон табов
+    overscroll-behavior-x: contain; // <<< ЗАПРЕЩАЕМ оттягивание ВНУТРИ табов по горизонтали
     border-bottom: 1px solid #4a5568;
     position: relative;
     z-index: 5; // Ниже шапки
@@ -132,7 +154,8 @@
   .rewards-track-container {
     height: 100%;             // Занимает всю высоту обертки
     overflow-y: auto;       // <<< ВЕРТИКАЛЬНЫЙ СКРОЛЛ
-    padding: 15px 15px 60px 15px; // Нижний отступ под футер (подбери)
+    padding: 15px 15px 105px 15px; // Нижний отступ под футер (подбери)
+    overscroll-behavior-y: contain; // <<< ЗАПРЕЩАЕМ оттягивание ВНУТРИ этой области по вертикали
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -155,16 +178,27 @@
   
   // --- Футер Экрана ---
   .rewards-footer {
-    flex-shrink: 0;           // Не сжимается по высоте
+    // --- Убираем свойства Flex-элемента ---
+    // flex-shrink: 0; // НЕ НУЖНО
+  
+    // --- Добавляем Абсолютное позиционирование ---
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0; // или width: 100%;
+    // --- Конец позиционирования ---
+  
+    // Оставляем внутренние стили
     background-color: #273041;
     border-top: 1px solid #4a5568;
-    position: relative;
-    z-index: 4;
-    display: flex;            // <<< Включаем Flexbox
-    align-items: center;      // <<< Выравниваем по вертикали (важно, если кнопки разной высоты)
-    // flex-direction: row; // Row идет по умолчанию, можно не писать
-    padding: 10px 15px;       // Отступы внутри футера (можно поменять)
-    gap: 12px;                // <<< Расстояние между кнопками
+    z-index: 10; // Поверх контента
+    display: flex;
+    align-items: center;
+    // flex-direction: row; // По умолчанию row (для кнопок в ряд)
+    padding: 10px 15px;
+    gap: 12px;
+    box-sizing: border-box; // Добавляем на всякий случай
+  
   }
   
   // --- Кнопки и индикатор в футере ---

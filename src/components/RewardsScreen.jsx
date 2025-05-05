@@ -130,16 +130,18 @@ const RewardsScreen = () => {
     return (
         // Основной контейнер экрана
         <div className="rewards-screen">
+             {/* === КНОПКА ЗАКРЫТИЯ (ТЕПЕРЬ ЗДЕСЬ) === */}
+        {/* Используем класс popup-close-button для стилей */}
+        <button className="popup-close-button" onClick={handleGoBack} aria-label="Закрыть">×</button>
 
             {/* Шапка Экрана */}
             <div className="rewards-screen-header">
-                {/* Кнопка Назад - <<< Используем новый обработчик (из код1) >>> */}
-                <button onClick={handleGoBack} className="back-button">←</button>
-                {/* Заголовок */}
-                <h1>Награды</h1>
-                {/* Пустой элемент для выравнивания */}
-                <div className="header-placeholder"></div>
-            </div>
+        {/* Пустое место слева (вместо кнопки Назад) */}
+        <div className="header-placeholder-left"></div>
+        {/* Заголовок (или место для видео) */}
+        <h1>Награды</h1>
+
+      </div>
 
             {/* Табы Этапов (из код2) */}
             <div className="stage-tabs">
