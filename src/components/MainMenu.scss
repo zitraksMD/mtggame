@@ -135,7 +135,7 @@
 // Battle Pass (Снова позиционируется абсолютно)
 .battle-pass-button {
   position: absolute; // Важно!
-  top: calc(100px + env(safe-area-inset-top, 15px)); // Добавляем отступ сверху
+  top: 115px;
   left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ слева
   z-index: 5;
   padding: 10px 25px; // Горизонтальные падинги для ширины
@@ -148,8 +148,7 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
-  top: calc(150px + env(safe-area-inset-top, 15px));
-                    // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
+  top: 165px;                    // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
   left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
   display: flex;
   flex-direction: column;
@@ -184,7 +183,7 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: calc(150px + env(safe-area-inset-top, 15px));
+  top: 165px; // Примерный отступ справа сверху (ниже, как просили)
   right: 10px;
   display: flex;
   flex-direction: column;
