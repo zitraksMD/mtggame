@@ -178,26 +178,19 @@
   
   // --- Футер Экрана ---
   .rewards-footer {
-    // --- Убираем свойства Flex-элемента ---
-    // flex-shrink: 0; // НЕ НУЖНО
-  
-    // --- Добавляем Абсолютное позиционирование ---
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0; // или width: 100%;
-    // --- Конец позиционирования ---
-  
-    // Оставляем внутренние стили
-    background-color: #273041;
+    right: 0;
+    // <<< ВРЕМЕННО: ЯРКИЙ ФОН ДЛЯ ОТЛАДКИ >>>
+    background-color: deeppink !important;
     border-top: 1px solid #4a5568;
-    z-index: 10; // Поверх контента
+    z-index: 10;
     display: flex;
     align-items: center;
-    // flex-direction: row; // По умолчанию row (для кнопок в ряд)
     padding: 10px 15px;
     gap: 12px;
-    box-sizing: border-box; // Добавляем на всякий случай
+    box-sizing: border-box;
   
   // --- Кнопки и индикатор в футере ---
   .claim-all-button,
