@@ -1,44 +1,40 @@
 // src/components/RewardsPopupContent.scss
 
-.rewards-popup-content {
+.rewards-popup-content { // Корневой div внутри RewardsPopupContent.jsx
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  // height: 100%;      // <<< УБРАЛИ height: 100%
+  flex-grow: 1;          // <<< ДОБАВИЛИ flex-grow: 1 (чтобы он рос внутри .popup-content)
   box-sizing: border-box;
+  background-color: #2d3748;
+  overflow: hidden;      // <<< ДОБАВИЛИ overflow: hidden (на всякий случай, чтобы обрезать дочерние)
 }
 
 // --- Этапы ---
 .stage-tabs {
   display: flex;
-  // justify-content: center; // <<< УБИРАЕМ или меняем на flex-start
-  justify-content: flex-start; // <<< Элементы начинаются слева
-  // flex-wrap: wrap; // <<< УБИРАЕМ перенос строк
-  flex-wrap: nowrap;   // <<< ВАЖНО: Запрещаем перенос
+  justify-content: flex-start; // Элементы начинаются слева
+  flex-wrap: nowrap;           // <<< ВАЖНО: Запрещаем перенос
   margin-bottom: 0px;
   background-color: rgba(0, 0, 0, 0.2);
   padding: 5px 10px; // Добавим немного горизонтального падинга
   border-radius: 8px;
   overflow-x: auto;   // <<< ВАЖНО: Включаем горизонтальный скролл
   -webkit-overflow-scrolling: touch; // Для плавной прокрутки на iOS
+  flex-shrink: 0;     // <<< ИЗ КОД1: Табы не должны сжиматься по вертикали
+  position: relative;   // <<< ИЗ КОД1: Для z-index
+  z-index: 2;           // <<< ИЗ КОД1 (но значение 2 из код2, чтобы быть выше футера и контента)
 
-  // Опционально: Стилизация скроллбара (если мешает)
-  &::-webkit-scrollbar {
-      height: 4px; // Тонкий скроллбар
-      // display: none; // Можно совсем скрыть, если не нужен
-  }
-  &::-webkit-scrollbar-track {
-      background: transparent; // Прозрачный трек
-  }
-  &::-webkit-scrollbar-thumb {
-      background: rgba(113, 128, 150, 0.5); // Полупрозрачный ползунок
-      border-radius: 2px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-      background: rgba(113, 128, 150, 0.8);
-  }
+  // Миниатюрный горизонтальный скроллбар (из код1 и код2)
+  &::-webkit-scrollbar { height: 3px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(113, 128, 150, 0.6); border-radius: 1.5px; }
+  &::-webkit-scrollbar-thumb:hover { background: rgba(113, 128, 150, 0.9); }
 }
 
+
+// Стили .stage-tab остаются как в код2
 .stage-tab {
   padding: 8px 15px;
   margin: 3px 5px; // Оставляем небольшие отступы
@@ -52,135 +48,94 @@
   display: inline-flex;
   align-items: center;
   white-space: nowrap; // <<< Гарантируем, что текст внутри таба не переносится
-  flex-shrink: 0;     // <<< ВАЖНО: Табы не должны сжиматься
-
+  flex-shrink: 0;      // <<< ВАЖНО: Табы не должны сжиматься
 
   &:hover:not(.active):not(:disabled):not(.locked) {
-      background-color: #5a6578;
+    background-color: #5a6578;
   }
 
-  &.active {
-      background-color: #718096;
-      color: white;
-      border-color: #a0aec0;
-      font-weight: 600;
-      cursor: default;
+  &.active { // <<< СТИЛИ ДЛЯ АКТИВНОЙ ВКЛАДКИ
+    background-color: #facc15; // <<< ЗОЛОТОЙ/ЖЕЛТЫЙ ФОН
+    color: #422006;          // <<< Темный контрастный текст
+    border-color: transparent; // Можно убрать рамку или сделать ее золотой #fde047
+    font-weight: 600;          // Чуть жирнее
+    cursor: default;
+    // Добавляем свечение для активной вкладки
+    box-shadow: 0 0 10px 2px rgba(250, 204, 21, 0.4);
   }
   &:disabled { // Общие стили для неактивного состояния
-      opacity: 0.5;
-      cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
-  // Стили для заблокированного таба (из код2, слегка дополнено)
+  // Стили для заблокированного таба
   &.locked {
-      opacity: 0.6;
-      cursor: not-allowed;
-      background-color: #374151; // Более темный фон
-      border-color: transparent;
-      // position: relative; // Не обязательно, если иконка просто внутри
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #374151; // Более темный фон
+    border-color: transparent;
 
-      &:hover {
-          background-color: #374151; // Не меняем цвет при ховере
-      }
+    &:hover {
+      background-color: #374151; // Не меняем цвет при ховере
+    }
 
-      // Иконка внутри таба
-      .stage-lock-icon {
-          margin-right: 5px; // Отступ для иконки замка
-          font-size: 0.8em; // Маленький замок
-          filter: grayscale(80%);
-          // color: #9ca3af; // Можно добавить цвет
-      }
+    // Иконка внутри таба
+    .stage-lock-icon {
+      margin-right: 5px; // Отступ для иконки замка
+      font-size: 0.8em; // Маленький замок
+      filter: grayscale(80%);
+    }
   }
 }
 
-// --- Дорожка наград ---
+/* --- СТИЛИ ДЛЯ .rewards-track-wrapper БЫЛИ УДАЛЕНЫ СОГЛАСНО КОММЕНТАРИЮ В КОД1 --- */
+/* Если этот div используется в JSX, ему нужно как минимум position: relative; */
+/* Если нет, его можно удалить из JSX */
+/* В данном коде предполагаем, что .rewards-track-container теперь основной блок контента */
 
-// Обертка для трека наград (из код1 - для позиционирования начальной линии)
-.rewards-track-wrapper {
-  flex-grow: 1; // Занимает доступное пространство
-  position: relative; // Контекст для позиционирования начальной линии
-  overflow: hidden; // Чтобы скроллбар контейнера работал
-}
 
-// Контейнер с уровнями и скроллом (Объединение код1 и код2)
-.rewards-track-container {
-  height: 100%; // Занимает всю высоту обертки
-  overflow-y: auto; // Скролл
-  padding: 5px 10px 5px 15px; // Отступы (как в код1 и код2)
-  margin-right: 5px; // Компенсация ширины скроллбара (как в код1 и код2)
+// --- Контейнер с уровнями и скроллом ---
+.rewards-track-container { // <<< Теперь это ОСНОВНОЙ блок контента
+  flex-grow: 1;           // <<< ИЗ КОД1: ЗАНИМАЕТ все место между табами и футером
+  overflow-y: auto;       // <<< ИЗ КОД1: ТОЛЬКО ЗДЕСЬ вертикальный скролл
+  padding: 10px 15px 60px 15px; // <<< ИЗ КОД1: Важный padding-bottom (высота футера + запас)
   display: flex;
   flex-direction: column;
-  gap: 5px; // Используем gap (как в код1 и код2)
+  gap: 50px;                // Используем gap (как в код1 и код2)
+  position: relative;       // <<< ИЗ КОД1: Нужно для абс. позиционирования линий внутри
+  // margin-right: 0; // Убрано, так как padding уже учитывает место для скроллбара
 
-  // Стилизация скроллбара (из код2, т.к. в код1 они пропущены `/* ... */`)
-  &::-webkit-scrollbar {
-      width: 5px;
-  }
-  &::-webkit-scrollbar-track {
-      background: rgba(0,0,0,0.1);
-      border-radius: 3px;
-  }
-  &::-webkit-scrollbar-thumb {
-      background: #5a6578;
-      border-radius: 3px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-      background: #718096;
+  // Миниатюрный вертикальный скроллбар (из код1)
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 1.5px; }
+  &::-webkit-scrollbar-thumb { background: rgba(90, 101, 120, 0.7); border-radius: 1.5px; }
+  &::-webkit-scrollbar-thumb:hover { background: rgba(113, 128, 150, 0.9); }
+
+  // --- НАЧАЛЬНАЯ ЖЕЛТАЯ ЛИНИЯ (позиционируется отн. контейнера) --- (Из код1)
+  .initial-progress-line {
+      position: absolute;
+      top: 10px; // От верха контейнера (равно padding-top из КОД1)
+      left: 50%;
+      transform: translateX(-50%); // Центрирование
+      width: 6px;
+      background-color: #facc15;
+      z-index: 1; // Под кружками
+      border-radius: 0 0 3px 3px;
+      // Высота до центра первого кружка: pad-top + half-row - half-circle
+      // 10px + (75px / 2) - (30px / 2) = 10 + 37.5 - 15 = 32.5px
+      height: 32.5px; // <<< Пересчитано из КОД1
   }
 }
 
+// Стили .reward-row, .level-number остаются как в код2
 .reward-row {
   display: grid;
   grid-template-columns: 1fr auto 1fr; // Награда | Разделитель | Награда
   align-items: center; // Вертикальное выравнивание по центру
-  min-height: 75px; // Минимальная высота ряда (из код1/код2)
-  position: relative; // Для позиционирования линий (из код1/код2)
+  min-height: 75px;
+  position: relative;
 }
 
-.level-connector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  position: relative; // Контекст для ::before и желтого сегмента
-  align-self: stretch;
-  z-index: 0; // Ниже номера уровня
-
-  // --- НОВЫЕ СТИЛИ для div серой линии ---
-  .grey-line-element {
-    position: absolute;
-    top: -50%;
-    bottom: -50%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px; // <<< Толщина серой
-    background-color: #4a5568;
-    z-index: 0; // Слой 0
-
-    .reward-row:first-child & { top: 50%; }
-    .reward-row:last-child & { bottom: 50%; }
-}
-}
-
-// --- Желтый сегмент линии ---
-// <<< ВОЗВРАЩАЕМ СТАРУЮ ЛОГИКУ ВЫСОТЫ/ПОЗИЦИОНИРОВАНИЯ (центр-к-центру) >>>
-.progress-line-segment {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 50%;             // От центра текущего уровня
-  height: calc(100% - 10px); // До центра предыдущего (перекрывая gap)
-  width: 6px;              // <<< Толще серой
-  background-color: #facc15;
-  z-index: 1;              // <<< Выше серой
-  border-radius: 3px;
-
-  // Убираем коррекцию для первого, она тут не нужна или ломает логику
-  // .reward-row:first-child & { ... }
-}
-
-
-// --- Номер уровня ---
 .level-number {
   width: 30px;
   height: 30px;
@@ -190,236 +145,292 @@
   justify-content: center;
   font-weight: bold;
   font-size: 14px;
-
-  position: relative; // Для z-index
-  z-index: 2;         // Выше линий
-
-  // <<< ХАК С ТОЛСТОЙ РАМКОЙ ЦВЕТА ФОНА >>>
-  border: 4px solid #2d3748; // Толщина 4px, цвет фона попапа (#2d3748)
-  background-clip: padding-box; // Фон не заходит под рамку
-
-  // Стили по умолчанию
-  background-color: #4a5568; // Фон кружка (под рамкой)
-  // border-color не нужен, т.к. задан выше
+  position: relative;
+  z-index: 2; // Выше линий
+  background-color: #4a5568; // Серый фон по умолчанию
   color: #cbd5e1;
-  transition: background-color 0.2s, color 0.2s; // Убрали border-color
+  transition: background-color 0.2s, color 0.2s;
 
   &.completed {
-     background-color: #facc15; // Желтый фон кружка
-     // border-color не нужен
-     color: white;
-     // Рамка остается такой же толстой и цвета фона попапа
-     border: 4px solid #2d3748;
+    background-color: #facc15; // Желтый фон для пройденного
+    color: white;
   }
 }
 
-// --- НАЧАЛЬНАЯ ЖЕЛТАЯ ЛИНИЯ ---
-// <<< ИЗМЕНЯЕМ ВЫСОТУ ДЛЯ СОЕДИНЕНИЯ С ВЕРХНИМ КРАЕМ КРУЖКА 1 >>>
-.initial-progress-line {
+// Стили для .level-connector, .grey-line-element, .progress-line-segment
+// берем из код1, так как там явно указаны правки позиционирования и высоты
+.level-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px; // Ширина соответствует месту для level-number
+  position: relative;
+  align-self: stretch;
+  z-index: 0; // Ниже level-number
+
+  // --- Серая линия (Из код1, с поправками на gap) ---
+  .grey-line-element {
     position: absolute;
-    top: 0; // От верха обертки
-    left: 55,5%;
-    transform: translateX(calc(-25px - 3px)); // Центрирование
-    width: 6px;
-    background-color: #facc15;
-    z-index: 1; // Ниже номера уровня 1
-    border-radius: 0 0 3px 3px;
+    top: -40%; // <<< Из код1 (Может потребоваться подгонка из-за gap=5px)
+    bottom: -50%; // <<< Из код1 (Может потребоваться подгонка из-за gap=5px)
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    background-color: #4a5568;
+    z-index: 0; // Ниже желтой линии
 
-    // Высота = расстояние от верха обертки до верхнего края кружка 1.
-    // Если нет падинга у обертки, то это (Высота ряда - Высота кружка) / 2
-    // (75px - 30px) / 2 = 22.5px. Округлим до 23px или подберите точнее.
-    height: 23px; // <<< НОВАЯ ВЫСОТА (подберите точнее!)
+    // Коррекция для первого и последнего рядов
+    .reward-row:first-child & { top: 50%; } // Начинается от центра кружка
+    .reward-row:last-child & { bottom: 50%; } // Заканчивается у центра кружка
+  }
 }
 
-// --- Анимация из код2 (если нужна) ---
-@keyframes flow-animation {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
-}
-// Селектор .progress-line-active из код2 был заменен на .progress-line-segment из код1,
-// т.к. они выполняли схожую функцию. Если нужна отдельная логика/стили для "активной"
-// (текущей, не завершенной) линии, нужно будет добавить .progress-line-active отдельно.
+// --- Желтый сегмент линии --- (Из код1)
+.progress-line-segment {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 50%; // Начинается от центра текущего кружка
+  // Высота должна соединять центры кружков, учитывая gap.
+  // height = row.min-height + gap = 75px + 5px = 80px
+  height: 80px; // <<< ПОПРАВЛЕНО в КОД1: Высота = высота ряда + gap
+  width: 6px;   // Толще серой
+  background-color: #facc15;
+  z-index: 1;   // Выше серой
+  border-radius: 3px;
 
-// --- Слоты наград --- (Взяты из код2, т.к. более полные)
+  // Не нужен сегмент для первого ряда (он создается initial-progress-line)
+  .reward-row:first-child & {
+    display: none;
+  }
+}
+
+// --- Слоты наград --- (Остаются как в код2)
 .reward-slot {
   background-color: rgba(0, 0, 0, 0.3);
   border: 1px solid #4a5568;
   border-radius: 8px;
   padding: 8px;
-  min-height: 85px; // Оставляем ОДНО значение min-height
+  min-height: 85px;
   display: flex;
-  align-items: center;       // Центрируем блок иконки по вертикали
-  justify-content: center; // Центрируем блок иконки по горизонтали
-  position: relative;       // Оставляем relative для дочерних .checkmark, .lock-icon и т.д.
+  align-items: center;
+  justify-content: center;
+  position: relative;
   overflow: hidden;
   cursor: default;
   transition: transform 0.1s ease-out, box-shadow 0.2s ease, border-color 0.2s ease;
 
   // --- Сама иконка ---
   .reward-icon {
-      width: 52px;
-      height: 52px;
-      position: relative; // !!! ДОБАВЛЕНО position: relative !!!
-      border-radius: 6px; // Увеличили скругление
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      border: 1px solid rgba(255, 255, 255, 0.15); // Чуть заметнее рамка
-      background-color: rgba(0, 0, 0, 0.2); // Фон под иконкой
-      flex-shrink: 0; // Запрещаем иконке сжиматься, если слот узкий
+    width: 52px;
+    height: 52px;
+    position: relative; // !!! ДОБАВЛЕНО position: relative !!!
+    border-radius: 6px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-color: rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
   }
 
-  // --- Количество (стили позиционирования должны быть здесь) ---
+  // --- Количество ---
   .reward-icon .reward-amount {
-      position: absolute;
-      bottom: 2px;
-      right: 0px;
-      background-color: rgba(0, 0, 0, 0.65);
-      color: #fff;
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.1;
-      text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
-      z-index: 1; // Поверх фона иконки
+    position: absolute;
+    bottom: 2px;
+    right: 0px;
+    background-color: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.1;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
+    z-index: 1;
   }
 
   // --- Состояния награды ---
   &.claimable {
-      border-color: #facc15;
-      cursor: pointer;
-      box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
+    border-color: #facc15;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
 
-      &:hover {
-          background-color: rgba(74, 85, 104, 0.4);
-          transform: translateY(-1px); // Легкий подъем при ховере
-          box-shadow: 0 2px 12px rgba(250, 204, 21, 0.6);
-      }
-      &:active {
-          transform: translateY(0px); // Возврат при нажатии
-      }
+    &:hover {
+      background-color: rgba(74, 85, 104, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 12px rgba(250, 204, 21, 0.6);
+    }
+    &:active {
+      transform: translateY(0px);
+    }
   }
 
   &.claimed {
-      opacity: 0.6;
-      border-color: #4a5568;
-      box-shadow: none;
+    opacity: 0.6;
+    border-color: #4a5568;
+    box-shadow: none;
 
-      .checkmark {
-          position: absolute;
-          top: 2px;
-          right: 4px;
-          font-size: 1.3rem; // Чуть меньше
-          color: #4ade80;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-      }
+    .checkmark {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font-size: 1.3rem;
+      color: #4ade80;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    }
   }
 
   &.locked {
-      opacity: 0.5;
-      cursor: not-allowed;
-      position: relative;
-      background-color: rgba(0,0,0,0.5); // Темнее фон для заблокированных
+    opacity: 0.5;
+    cursor: not-allowed;
+    position: relative;
+    background-color: rgba(0,0,0,0.5);
 
-      .lock-icon {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 1.8rem; // Меньше замок
-          color: rgba(255, 255, 255, 0.5);
-          text-shadow: 1px 1px 2px black;
-      }
-      // Можно скрыть иконку и количество под замком
-      .reward-icon, .reward-amount {
-          opacity: 0.3;
-      }
+    .lock-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.8rem;
+      color: rgba(255, 255, 255, 0.5);
+      text-shadow: 1px 1px 2px black;
+    }
+    .reward-icon, .reward-amount {
+      opacity: 0.3;
+    }
   }
 
   .claim-indicator { // Надпись "Забрать"
-      position: absolute;
-      bottom: 2px; // Ближе к низу
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 9px; // Меньше шрифт
-      font-weight: bold;
-      color: #fde047; // Ярче желтый
-      background: rgba(0,0,0,0.6);
-      padding: 1px 0;
-      border-radius: 0 0 3px 3px;
-      pointer-events: none; // Чтобы не мешала клику
+    position: absolute;
+    bottom: 4px;       // <<< Чуть поднимем от нижнего края
+    left: 4px;         // <<< Небольшой отступ слева
+    right: 4px;        // <<< Небольшой отступ справа
+    text-align: center;
+    font-size: 10px;      // <<< Чуть крупнее шрифт
+    font-weight: 600;     // <<< Можно чуть менее жирный, если bold слишком
+    color: #583305;       // <<< Темно-коричневый/бронзовый цвет текста (для контраста с золотом)
+    // Золотой градиент для фона
+    background: linear-gradient(180deg, #fde047, #facc15); // Яркий золотой градиент
+    padding: 2px 8px;      // <<< Увеличили паддинги (2px сверху/снизу, 8px слева/справа)
+    border-radius: 4px;    // <<< Сделаем полностью скругленные углы
+    pointer-events: none;  // Оставляем, чтобы не мешал клику
+    text-shadow: 0px 1px 0px rgba(255, 255, 255, 0.2); // <<< Легкая светлая тень сверху для объема
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2); // <<< Легкая темная тень снизу
+    // border: 1px solid rgba(0,0,0,0.1); // Можно добавить тонкую темную рамку, если нужно
   }
 }
 
-// --- Иконки наград --- (Из код2, т.к. более полные)
-// Добавь сюда background-image для каждого типа:
+// --- Иконки наград --- (Из код2)
 .reward-type-diamond .reward-icon {
-  /* background-color: #2dd4bf; */ // Убираем/комментируем цвет-заглушку
   background-image: url('/assets/diamond-image.png'); // !!! УКАЖИ ПРАВИЛЬНЫЙ ПУТЬ !!!
 }
 .reward-type-ton_shard .reward-icon {
-  /* background-color: #38bdf8; */
   background-image: url('/assets/toncoin-icon.png'); // !!! УКАЖИ ПРАВИЛЬНЫЙ ПУТЬ !!!
 }
 .reward-type-key .reward-icon {
-  /* background-color: #facc15; */
   background-image: url('/assets/key-image.png'); // !!! УКАЖИ ПРАВИЛЬНЫЙ ПУТЬ !!!
 }
-// ... добавь другие типы, если нужно (energy, chest_common, chest_rare)
+// ... добавь другие типы ...
 
 
-// --- Футер --- (Из код2)
+// --- Футер ---
 .rewards-footer {
   display: flex;
-  justify-content: space-between; // Распределить кнопки
   align-items: center;
-  padding: 15px 20px;
-  border-top: 1px solid #4a5568;
-  margin-top: 15px;
-  flex-shrink: 0; // Не сжимать футер
+  padding: 15px 20px;     // <<< ИЗ КОД1: Отступы внутри футера
+  border-top: 1px solid #4a5568; // <<< ИЗ КОД1
+  flex-shrink: 0;         // <<< ИЗ КОД1: Футер не должен сжиматься по вертикали
+  gap: 15px;              // <<< ИЗ КОД1: Зазор между кнопками
+  position: relative;       // <<< ИЗ КОД1: Для z-index
+  z-index: 2;               // <<< ИЗ КОД1: Выше скролл-контейнера
+  background-color: #2d3748; // <<< ИЗ КОД1: Фон, чтобы перекрыть контент под ним
 }
 
-.claim-all-button, .purchase-button {
-  padding: 10px 18px; // Чуть меньше падинг
-  border-radius: 8px;
-  border: none;
+// Стили кнопок из код2, но с добавлением flex-grow и flex-basis из код1
+.claim-all-button,
+.purchase-button {
+  flex-grow: 1; // <<< ИЗ КОД1: Растягиваются на доступное пространство
+  flex-basis: 0; // <<< ИЗ КОД1: Базовая ширина 0 для равномерного растягивания
+  padding: 8px 15px; // Общий падинг для кнопок (из стилей код2)
+  border-radius: 6px; // Общее скругление
+  font-weight: 600; // Общая жирность
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s;
   text-align: center;
+}
 
-  &:active { transform: scale(0.97); }
-  &:disabled {
-      background-color: #555 !important;
-      color: #aaa !important;
-      cursor: default;
-      opacity: 0.7;
+.purchase-button {
+  // Стили из код2
+  background: linear-gradient(160deg, #facc15, #e6a114); // Золотистый градиент
+  color: #422006; // Темный коричневый текст
+  border: 1px solid #fde047; // Светлая рамка
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3); // Тень + блик
+  display: flex; // <<< Чтобы иконка и текст встали в ряд
+  align-items: center;
+  justify-content: center; // Центрируем содержимое
+  gap: 8px; // Пробел между иконкой и текстом/ценой
+  // padding уже задан выше
+
+  &:hover {
+    background: linear-gradient(160deg, #fde047, #facc15); // Чуть светлее при ховере
+    box-shadow: 0 3px 7px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.4);
+  }
+
+  .purchase-icon {
+    font-size: 1.5rem; // Размер иконки (подбери)
+    line-height: 1; // Убираем лишнюю высоту строки у иконки
+  }
+
+  .purchase-details {
+      display: flex;
+      flex-direction: column; // Текст и цена друг под другом
+      align-items: flex-start; // Выравнивание по левому краю
+      line-height: 1.2; // Слегка увеличим межстрочный интервал
+  }
+
+  .purchase-text {
+      font-size: 0.85rem; // Размер основного текста
+      font-weight: 600;
+  }
+
+  .price {
+    font-size: 0.95rem; // Цена чуть крупнее
+    font-weight: bold;
   }
 }
 
 .claim-all-button {
-  background-color: #4CAF50;
+  // Стили из код2
+  background-color: #00ff22; // Более нейтральный серый
   color: white;
-  &:not(:disabled):hover { background-color: #5cb85c; }
-}
+  border: 1px solid #9ca3af;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  // padding уже задан выше
 
-.purchase-button {
-  background-color: #facc15;
-  color: #422006;
-  &:hover { background-color: #fde047; }
-
-  .price {
-      font-size: 0.8rem;
-      font-weight: bold;
-      display: block;
+  &:not(:disabled):hover {
+    background-color: #718096;
+  }
+  &:disabled { // Стили для неактивной кнопки Забрать все
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #4a5568;
+    border-color: #5a6578;
+    box-shadow: none;
   }
 }
 
+// Индикатор купленного пропуска остается как в код2
 .paid-unlocked-indicator {
   color: #a3e635; // Лаймовый цвет
   font-weight: 600;
   font-size: 0.9rem;
 }
+
+// Анимация остается как в код2 (если нужна)
+@keyframes flow-animation {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+// ... остальные стили, если они есть ниже ...

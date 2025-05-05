@@ -1,77 +1,72 @@
-// src/components/Popup.scss
+// src/components/Popup.scss (Corrected Version)
 
 .popup-backdrop {
-    position: fixed; // Фиксирован относительно viewport
-    inset: 0; // Растянуть на весь экран
-    background-color: rgba(0, 0, 0, 0.7); // Полупрозрачный темный фон
-    display: flex;
-    // align-items: center; // УБИРАЕМ центрирование
-    align-items: flex-start; // <<< ИЗМЕНЕНО: Прижимаем к верху (с учетом padding)
-    justify-content: center; // Оставляем центрирование по горизонтали
-    z-index: 1000; // Поверх всего остального контента
-    backdrop-filter: blur(3px); // Размытие фона (опционально)
-
-    // Добавляем отступ сверху = безопасная зона + высота хедера + зазор
-    // 80px - ПРИМЕРНАЯ ВЫСОТА ВАШЕГО ИГРОВОГО ХЕДЕРА (ресурсы + аватар) - !!! ПОДБЕРИТЕ ТОЧНО !!!
-    // 15px - Зазор между хедером и попапом
-    padding-top: calc(env(safe-area-inset-top, 10px) + 120px + 15px);
-
-    // Добавляем отступы по краям и снизу для безопасности и внешнего вида
-    padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
-    padding-right: calc(env(safe-area-inset-right, 15px) + 15px);
-    padding-bottom: 50px;
-    box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  padding-top: calc(env(safe-area-inset-top, 10px) + 120px + 15px);
+  padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
+  padding-right: calc(env(safe-area-inset-right, 15px) + 15px);
+  padding-bottom: 50px;
+  box-sizing: border-box;
 }
 
+.popup-box {
+  background-color: #2d3748;
+  color: white;
+  padding: 0;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid #4a5568;
+  min-width: 300px;
+  max-width: 90%;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column; // Вертикально: Шапка + Контент
+  overflow: hidden;
+}
 
-  .popup-box {
-    background-color: #2d3748; // Темно-серый фон (как у попапа уровня)
-    color: white;
-    padding: 0; // Убираем общий падинг, чтобы шапка прилегала
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid #4a5568;
-    min-width: 300px; // Минимальная ширина
-    max-width: 90%; // Максимальная ширина
-    max-height: 70vh; // Максимальная высота, чтобы не уезжал за экран
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; // Чтобы скругление работало с дочерними элементами
-    height: fit-content; // Может помочь убрать лишнее пространство снизу, если контент короткий
-  }
-  
-  .popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0; // Убираем падинг здесь, если он не нужен для скролл-контейнера
-    background-color: rgba(74, 85, 104, 0.5); // Чуть другой фон для шапки
-    border-bottom: 1px solid #4a5568; // Линия под шапкой
-  }
-  
-  .popup-title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-  
-  .popup-close-button {
-    background: none;
-    border: none;
-    color: #cbd5e1; // Цвет крестика
-    font-size: 2rem; // Размер крестика
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 5px; // Небольшой отступ для кликабельности
-    transition: color 0.2s ease;
-  
-    &:hover {
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px; // Примерные паддинги
+  background-color: rgba(74, 85, 104, 0.5);
+  border-bottom: 1px solid #4a5568;
+  flex-shrink: 0;     // Шапка не сжимается
+}
+
+.popup-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.popup-close-button {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s ease;
+
+  &:hover {
       color: white;
-    }
   }
-  
-  .popup-content {
-    padding: 20px 25px; // Отступы для контента
-    overflow-y: auto; // Добавить скролл, если контент не помещается
-    flex-grow: 1; // Занимать доступное пространство по высоте
-  }
+}
+
+.popup-content { // Container for {children} (RewardsPopupContent)
+  flex-grow: 1;           // Растет, занимая место
+  padding: 0;
+  overflow: hidden;       // Сам не скроллится
+  position: relative;
+  display: flex;          // <<< ВЕРНУЛИ FLEX
+  flex-direction: column; // <<< СДЕЛАЛИ ВЕРТИКАЛЬНЫМ (чтобы дочерний flex-grow работал)
+}
