@@ -12,6 +12,7 @@
     overflow: hidden;         // Обрезаем все, что может вылезти за пределы экрана
     position: relative; // <<< ВАЖНО: База для абсолютного футера
     overscroll-behavior: none; // <<< Запрещаем оттягивание для самого экрана
+    padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 5px);
 
   }
   
@@ -154,7 +155,7 @@
   .rewards-track-container {
     height: 100%;             // Занимает всю высоту обертки
     overflow-y: auto;       // <<< ВЕРТИКАЛЬНЫЙ СКРОЛЛ
-    padding: 15px 15px 155px 15px; // Нижний отступ под футер (подбери)
+    padding: 15px 15px 100px 15px; // Нижний отступ под футер (подбери)
     overscroll-behavior-y: contain; // <<< ЗАПРЕЩАЕМ оттягивание ВНУТРИ этой области по вертикали
     box-sizing: border-box;
     display: flex;
@@ -179,7 +180,7 @@
   // --- Футер Экрана ---
   .rewards-footer {
     position: absolute;
-    bottom: 55px; // <<< ОСТАВЛЯЕМ 0: приклеен к НИЖНЕЙ ГРАНИЦЕ ПАДДИНГА .rewards-screen
+    bottom: 0px; // <<< ОСТАВЛЯЕМ 0: приклеен к НИЖНЕЙ ГРАНИЦЕ ПАДДИНГА .rewards-screen
     left: 0;
     right: 0;
     background-color: #273041; // <<< Вернули нормальный фон
