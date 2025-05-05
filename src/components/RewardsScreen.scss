@@ -154,7 +154,7 @@
   .rewards-track-container {
     height: 100%;             // Занимает всю высоту обертки
     overflow-y: auto;       // <<< ВЕРТИКАЛЬНЫЙ СКРОЛЛ
-    padding: 15px 15px 105px 15px; // Нижний отступ под футер (подбери)
+    padding: 15px 15px 155px 15px; // Нижний отступ под футер (подбери)
     overscroll-behavior-y: contain; // <<< ЗАПРЕЩАЕМ оттягивание ВНУТРИ этой области по вертикали
     box-sizing: border-box;
     display: flex;
@@ -261,8 +261,42 @@
     .reward-icon { width: 48px; height: 48px; position: relative; border-radius: 6px; background-size: contain; background-repeat: no-repeat; background-position: center; border: 1px solid rgba(255, 255, 255, 0.15); background-color: rgba(0, 0, 0, 0.2); flex-shrink: 0;
       .reward-amount { position: absolute; bottom: 1px; right: 1px; background-color: rgba(0, 0, 0, 0.7); color: #fff; padding: 1px 5px; border-radius: 3px; font-size: 11px; font-weight: 600; line-height: 1.1; text-shadow: 1px 1px 1px rgba(0,0,0,0.7); z-index: 1; }
     }
-    &.claimable { border-color: #facc15; cursor: pointer; box-shadow: 0 0 8px rgba(250, 204, 21, 0.4); &:hover { background-color: rgba(45, 55, 72, 0.5); transform: translateY(-1px); box-shadow: 0 2px 12px rgba(250, 204, 21, 0.6); } &:active { transform: translateY(0px); } .claim-indicator { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font-size: 9px; font-weight: bold; color: #fde047; background: rgba(0,0,0,0.6); padding: 1px 0; border-radius: 0 0 3px 3px; pointer-events: none; z-index: 2; } }
-    &.claimed { opacity: 0.6; border-color: #4a5568; box-shadow: none; filter: grayscale(30%); .checkmark { position: absolute; top: 2px; right: 4px; font-size: 1.3rem; color: #4ade80; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); z-index: 2; } }
+    &.claimable {
+        border-color: #facc15; // Золотая рамка у доступной награды
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
+        position: relative; // Убедимся, что у claimable есть position: relative
+    
+        &:hover {
+          background-color: rgba(45, 55, 72, 0.5);
+          transform: translateY(-1px);
+          box-shadow: 0 2px 12px rgba(250, 204, 21, 0.6);
+        }
+        &:active { transform: translateY(0px); }
+    
+        // --- Стили для индикатора "Забрать" ---
+        .claim-indicator {
+          position: absolute;
+          bottom: 0;            // <<< Прижимаем к самому низу слота
+          left: 0;
+          right: 0;
+          width: 100%;          // На всю ширину слота
+          box-sizing: border-box; // Паддинг не увеличивает ширину
+    
+          background-color: #facc15; // <<< ЗОЛОТОЙ ФОН
+          color: #422006;          // <<< ТЕМНЫЙ ТЕКСТ
+          text-align: center;
+          font-size: 10px;        // Чуть крупнее
+          font-weight: 600;       // Нормальная насыщенность
+          padding: 2px 0;         // Небольшой вертикальный паддинг
+          text-transform: uppercase; // Заглавные буквы
+          letter-spacing: 0.5px;   // Небольшая разрядка
+    
+          border-radius: 0 0 8px 8px; // <<< Скругляем только нижние углы (как у родителя .reward-slot)
+          pointer-events: none; // Чтобы не мешал клику
+          z-index: 2;             // Поверх иконки награды
+        }
+      }    &.claimed { opacity: 0.6; border-color: #4a5568; box-shadow: none; filter: grayscale(30%); .checkmark { position: absolute; top: 2px; right: 4px; font-size: 1.3rem; color: #4ade80 !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); z-index: 2; } }
     &.locked { opacity: 0.5; cursor: not-allowed; background-color: rgba(0,0,0,0.5); .lock-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.8rem; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 2px black; z-index: 2; } .reward-icon, .reward-amount { opacity: 0.3; } }
     &.empty { background-color: transparent; border: 1px solid rgba(74, 85, 104, 0.3); box-shadow: none; } // Стиль для пустого слота
   }
