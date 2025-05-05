@@ -2,14 +2,28 @@
 
 .popup-backdrop {
     position: fixed; // Фиксирован относительно viewport
-    inset: 0; // Растянуть на весь экран (top: 0; right: 0; bottom: 0; left: 0;)
+    inset: 0; // Растянуть на весь экран
     background-color: rgba(0, 0, 0, 0.7); // Полупрозрачный темный фон
     display: flex;
-    align-items: center; // Центрировать по вертикали
-    justify-content: center; // Центрировать по горизонтали
+    // align-items: center; // УБИРАЕМ центрирование
+    align-items: flex-start; // <<< ИЗМЕНЕНО: Прижимаем к верху (с учетом padding)
+    justify-content: center; // Оставляем центрирование по горизонтали
     z-index: 1000; // Поверх всего остального контента
     backdrop-filter: blur(3px); // Размытие фона (опционально)
-  }
+
+    // Добавляем отступ сверху = безопасная зона + высота хедера + зазор
+    // 80px - ПРИМЕРНАЯ ВЫСОТА ВАШЕГО ИГРОВОГО ХЕДЕРА (ресурсы + аватар) - !!! ПОДБЕРИТЕ ТОЧНО !!!
+    // 15px - Зазор между хедером и попапом
+    padding-top: calc(env(safe-area-inset-top, 10px) + 150px + 15px);
+
+    // Добавляем отступы по краям и снизу для безопасности и внешнего вида
+    padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
+    padding-right: calc(env(safe-area-inset-right, 15px) + 15px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 15px) + 30px); // Снизу отступ побольше
+
+    overflow-y: auto; // <<< ДОБАВЛЕНО: Скролл для всего оверлея, если контент не влезет
+    box-sizing: border-box;
+}
   
   .popup-box {
     background-color: #2d3748; // Темно-серый фон (как у попапа уровня)
