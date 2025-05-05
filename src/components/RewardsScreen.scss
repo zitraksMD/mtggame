@@ -262,41 +262,71 @@
       .reward-amount { position: absolute; bottom: 1px; right: 1px; background-color: rgba(0, 0, 0, 0.7); color: #fff; padding: 1px 5px; border-radius: 3px; font-size: 11px; font-weight: 600; line-height: 1.1; text-shadow: 1px 1px 1px rgba(0,0,0,0.7); z-index: 1; }
     }
     &.claimable {
-        border-color: #facc15; // Золотая рамка у доступной награды
+        border-color: #fde047; // <<< Делаем рамку чуть ярче
         cursor: pointer;
-        box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
-        position: relative; // Убедимся, что у claimable есть position: relative
+        // <<< УЛУЧШАЕМ СВЕЧЕНИЕ через box-shadow >>>
+        // Несколько теней: одна основная, вторая - более размытое свечение
+        box-shadow:
+          0 0 12px 2px rgba(250, 204, 21, 0.55), // Более яркая и чуть шире
+          0 0 25px 5px rgba(250, 204, 21, 0.3);  // Дополнительное размытое свечение
+        position: relative; // Нужно для индикатора и блика
+        overflow: visible; // <<< Разрешаем тени выходить за пределы
+    
+        // --- ДОБАВЛЯЕМ АНИМАЦИЮ ПУЛЬСАЦИИ СВЕЧЕНИЯ (опционально) ---
+        animation: claimable-glow 1.8s infinite alternate ease-in-out;
+    
     
         &:hover {
-          background-color: rgba(45, 55, 72, 0.5);
-          transform: translateY(-1px);
-          box-shadow: 0 2px 12px rgba(250, 204, 21, 0.6);
+          background-color: rgba(45, 55, 72, 0.6);
+          transform: translateY(-2px) scale(1.02); // Небольшое увеличение при ховере
+          box-shadow:
+            0 0 16px 3px rgba(250, 204, 21, 0.7),
+            0 0 35px 8px rgba(250, 204, 21, 0.4); // Усиленное свечение при ховере
         }
-        &:active { transform: translateY(0px); }
+        &:active {
+           transform: translateY(0px) scale(1); // Возврат при клике
+           transition: transform 0.05s; // Быстрый возврат
+        }
     
         // --- Стили для индикатора "Забрать" ---
         .claim-indicator {
           position: absolute;
-          bottom: 0;            // <<< Прижимаем к самому низу слота
-          left: 0;
-          right: 0;
-          width: 100%;          // На всю ширину слота
-          box-sizing: border-box; // Паддинг не увеличивает ширину
+          bottom: 0; left: 0; right: 0; width: 100%;
+          box-sizing: border-box;
+          background-color: #facc15; // Золотой фон
+          color: #422006;          // Темный текст
+          text-align: center; font-size: 10px; font-weight: 600; padding: 2px 0;
+          text-transform: uppercase; letter-spacing: 0.5px;
+          border-radius: 0 0 8px 8px; // Скругление нижних углов (как у родителя)
+          pointer-events: none;
+          z-index: 2;
     
-          background-color: #facc15; // <<< ЗОЛОТОЙ ФОН
-          color: #422006;          // <<< ТЕМНЫЙ ТЕКСТ
-          text-align: center;
-          font-size: 10px;        // Чуть крупнее
-          font-weight: 600;       // Нормальная насыщенность
-          padding: 2px 0;         // Небольшой вертикальный паддинг
-          text-transform: uppercase; // Заглавные буквы
-          letter-spacing: 0.5px;   // Небольшая разрядка
+          // --- СТИЛИ ДЛЯ БЛИКА (ПСЕВДОЭЛЕМЕНТ) ---
+          overflow: hidden;     // <<< Обрезаем псевдоэлемент границами индикатора
+          // position: relative; // <<< Индикатор уже absolute, псевдоэлемент будет относительно него
     
-          border-radius: 0 0 8px 8px; // <<< Скругляем только нижние углы (как у родителя .reward-slot)
-          pointer-events: none; // Чтобы не мешал клику
-          z-index: 2;             // Поверх иконки награды
+          &::after {
+            content: '';
+            position: absolute;
+            top: -50%;            // <<< Растягиваем по высоте с запасом
+            left: -75%;           // <<< Начинаем слева за пределами видимости
+            width: 50%;           // <<< Ширина самого блика
+            height: 200%;         // <<< Высота блика (больше индикатора)
+            background: linear-gradient( // <<< Градиент блика
+              to right,
+              rgba(255, 255, 240, 0) 0%,      // Прозрачный
+              rgba(255, 255, 240, 0.6) 50%,   // Бело-желтый полупрозрачный в центре
+              rgba(255, 255, 240, 0) 100%     // Снова прозрачный
+            );
+            transform: skewX(-25deg); // <<< Наклоняем блик
+            // <<< Применяем анимацию >>>
+            animation: shimmer-glare 2.2s infinite linear;
+            // Задержка анимации для разных элементов (если нужно)
+            // animation-delay: calc(var(--item-index, 0) * 0.1s); // Понадобится передавать --item-index через style в JSX
+          }
         }
-      }    &.claimed { opacity: 0.6; border-color: #4a5568; box-shadow: none; filter: grayscale(30%); .checkmark { position: absolute; top: 2px; right: 4px; font-size: 1.3rem; color: #4ade80 !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); z-index: 2; } }
+      } // Конец &.claimable
+         &.claimed { opacity: 0.6; border-color: #4a5568; box-shadow: none; filter: grayscale(30%); .checkmark { position: absolute; top: 2px; right: 4px; font-size: 1.3rem; color: #4ade80 !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); z-index: 2; } }
     &.locked { opacity: 0.5; cursor: not-allowed; background-color: rgba(0,0,0,0.5); .lock-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.8rem; color: rgba(255, 255, 255, 0.5); text-shadow: 1px 1px 2px black; z-index: 2; } .reward-icon, .reward-amount { opacity: 0.3; } }
     &.empty { background-color: transparent; border: 1px solid rgba(74, 85, 104, 0.3); box-shadow: none; } // Стиль для пустого слота
   }
@@ -305,3 +335,33 @@
   .reward-type-ton_shard .reward-icon { background-image: url('/assets/toncoin-icon.png'); }
   .reward-type-key .reward-icon { background-image: url('/assets/key-image.png'); }
   // ... другие типы ...
+
+  // Анимация пульсации свечения для .claimable
+@keyframes claimable-glow {
+    from {
+      box-shadow:
+        0 0 10px 1px rgba(250, 204, 21, 0.4),
+        0 0 20px 4px rgba(250, 204, 21, 0.2);
+    }
+    to {
+      box-shadow:
+        0 0 14px 3px rgba(250, 204, 21, 0.6), // Чуть ярче и шире
+        0 0 30px 7px rgba(250, 204, 21, 0.35); // Размытие тоже больше
+    }
+  }
+  
+  // Анимация блика для .claim-indicator::after
+  @keyframes shimmer-glare {
+    0% {
+      left: -75%; // Блик слева за границей
+    }
+    40% { // Пауза перед движением
+       left: -75%;
+    }
+    70% { // Движение блика направо
+      left: 125%; // Блик уходит за правую границу
+    }
+    100% { // Пауза справа
+      left: 125%;
+    }
+  }
