@@ -1,39 +1,60 @@
 {
   "id": 101,
-  "name": "Ур. 1-1: Тест Монстров", 
+  "name": "Ур. 1-1: Тест Комнат", 
   "levelType": "standard",
   "width": 1200,
   "height": 1200,
-  "backgroundTexture": "/assets/main-background-game.png", 
+  "backgroundTexture": "/assets/main-background-game.png",
   "playerStart": { "x": 600, "y": 1100 },
-  "walls": [ 
+  "walls": [
     { "id": "wall_top", "x": 0, "y": 0, "width": 1200, "height": 50 },
     { "id": "wall_bottom", "x": 0, "y": 1150, "width": 1200, "height": 50 },
     { "id": "wall_left", "x": 0, "y": 50, "width": 50, "height": 1100 },
     { "id": "wall_right", "x": 1150, "y": 50, "width": 50, "height": 1100 },
-    { "id": "obstacle_1", "x": 400, "y": 600, "width": 100, "height": 80 }
+   
+    {
+      "id": "door_room1_to_room2",
+      "x": 50,                 
+      "y": 590,                
+      "width": 1100,           
+      "height": 20,           
+      "isDoor": true,           
+      "opensWhenRoomCleared": "room1_start", 
+      "targetRoomIdForDoor": "room2_north"  
+    }
   ],
   "enemies": [
-    { "id": "goblin_melee_1", "type": "melee", "model": "/Models/placeholder.glb", "x": 200, "y": 900, "stats": { "hp": 100 } },
-    { "id": "goblin_ranged_1", "type": "ranged", "model": "/Models/placeholder.glb", "x": 1000, "y": 900, "stats": { "hp": 100 } },
-    { "id": "goblin_caster_fire", "type": "caster", "model": "/Models/placeholder.glb", "x": 200, "y": 700, "stats": { "hp": 100, "beamType": "fire" } }, 
-    { "id": "goblin_caster_ice", "type": "caster", "model": "/Models/placeholder.glb", "x": 1000, "y": 700, "stats": { "hp": 100, "beamType": "ice" } }, 
-    { "id": "goblin_boss_1", "type": "boss", "model": "/Models/placeholder.glb", "x": 600, "y": 150, "stats": { "hp": 500 } },
-    { "id": "skel_sword_1", "type": "skeleton_swordsman", "model": "/Models/placeholder.glb", "x": 300, "y": 800, "stats": { "hp": 100 } },
-    { "id": "skel_archer_1", "type": "skeleton_archer", "model": "/Models/placeholder.glb", "x": 900, "y": 800, "stats": { "hp": 100 } },
-    { "id": "necro_1", "type": "necromancer", "model": "/Models/placeholder.glb", "x": 600, "y": 600, "stats": { "hp": 100, "summonType": "skeleton_spirit", "summonCount": 1, "summonCooldown": 10 } },
-    { "id": "ogre_mage_1", "type": "ogre_mage", "model": "/Models/placeholder.glb", "x": 300, "y": 600, "stats": { "hp": 100 } },
-    { "id": "bone_dancer_1", "type": "bone_dancer", "model": "/Models/placeholder.glb", "x": 900, "y": 600, "stats": { "hp": 100 } },
-    { "id": "cursed_carrier_1", "type": "cursed_carrier", "model": "/Models/placeholder.glb", "x": 300, "y": 400, "stats": { "hp": 100, "summonType": "skeleton_swordsman", "summonCooldown": 15 } },
-    { "id": "rotting_soldier_1", "type": "rotting_soldier", "model": "/Models/placeholder.glb", "x": 900, "y": 400, "stats": { "hp": 100 } }, 
-    { "id": "plague_totemist_1", "type": "plague_totemist", "model": "/Models/placeholder.glb", "x": 300, "y": 200, "stats": { "hp": 100, "totemType": "slow", "totemCooldown": 12 } },
-    { "id": "revenant_knight_1", "type": "revenant_knight", "model": "/Models/placeholder.glb", "x": 900, "y": 200, "stats": { "hp": 100, "blockCharges": 2 } },
-    { "id": "sand_reaper_1", "type": "sand_reaper", "model": "/Models/placeholder.glb", "x": 450, "y": 150, "stats": { "hp": 100, "spikeDelay": 1.0 } },
-    { "id": "ghostly_enchanter_1", "type": "ghostly_enchanter", "model": "/Models/placeholder.glb", "x": 750, "y": 150, "stats": { "hp": 100, "debuffDuration": 5, "debuffStrength": 0.2 } },
-    { "id": "cursed_gladiator_1", "type": "cursed_gladiator", "model": "/Models/placeholder.glb", "x": 450, "y": 500, "stats": { "hp": 100, "stackDamageBonus": 1 } },
-    { "id": "poison_cultist_1", "type": "poison_cultist", "model": "/Models/placeholder.glb", "x": 750, "y": 500, "stats": { "hp": 100, "puddleDps": 2, "abilityCooldown": 6 } }
+    { "id": "goblin_melee_1", "type": "melee", "x": 200, "y": 900, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "goblin_melee_2", "type": "melee", "x": 1000, "y": 900, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "goblin_ranged_1", "type": "ranged", "x": 1000, "y": 700, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "goblin_caster_fire", "type": "caster", "x": 200, "y": 700, "stats": { "beamType": "fire" }, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "skel_sword_1", "type": "skeleton_swordsman", "x": 300, "y": 800, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "skel_archer_1", "type": "skeleton_archer", "x": 900, "y": 800, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "necro_1", "type": "necromancer", "x": 600, "y": 650, "roomId": "room1_start", "initiallyActive": true }, 
+
+    { "id": "rotting_soldier_1", "type": "rotting_soldier", "x": 900, "y": 400, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "plague_totemist_1", "type": "plague_totemist", "x": 300, "y": 200, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "revenant_knight_1", "type": "revenant_knight", "x": 900, "y": 200, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "sand_reaper_1", "type": "sand_reaper", "x": 450, "y": 150, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "ghostly_enchanter_1", "type": "ghostly_enchanter", "x": 750, "y": 150, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "cursed_gladiator_1", "type": "cursed_gladiator", "x": 450, "y": 500, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "poison_cultist_1", "type": "poison_cultist", "x": 750, "y": 500, "roomId": "room2_north", "initiallyActive": false }
   ],
-  "winCondition": {
+  "winCondition": { 
     "type": "clear_enemies" 
-  }
+  },
+
+  "rooms": [
+      {
+        "id": "room1_start",
+        "name": "Стартовая локация",
+        "area": { "x_min": 50, "y_min": 610, "x_max": 1150, "y_max": 1150 },
+        "isStartingRoom": true 
+      },
+    {
+      "id": "room2_north",
+      "name": "Северный зал",
+      "area": { "x_min": 50, "y_min": 50, "x_max": 1150, "y_max": 590 }
+    }
+  ]
 }

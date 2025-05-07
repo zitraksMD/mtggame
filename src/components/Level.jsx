@@ -9,6 +9,8 @@ import useEnemyLoader from './useEnemyLoader'; // Импорт из code1
 import GameOverPopup from './GameOverPopup';
 import LoadingScreen from "./LoadingScreen"; // Импорт из code1
 import { clamp, checkCollision, convertTiledX, convertTiledY, DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT } from './utils';
+import { BASE_ENEMY_STATS } from '../data/enemyBaseStats';
+
 
 // --- Константы ---
 const HEALTH_BAR_WIDTH = 30;
@@ -58,12 +60,20 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     const wallsRef = useRef([]);
     const projectilesRef = useRef([]); // Снаряды игрока
     const enemyProjectilesRef = useRef([]); // Снаряды врагов
+    const effectTimersRef = useRef([]);
     const velocity = useRef({ x: 0, y: 0, force: 0 });
     const playerAttackCooldown = useRef(0);
     const levelStartTimeRef = useRef(null);
     const readyCalledRef = useRef(false);
     const beamTexturesRef = useRef({});
     const backgroundMeshRef = useRef(null); // Реф для фона
+    const fogOverlaysRef = useRef({}); // Для хранения мешей тумана по ID комнаты
+    const fogMaterialRef = useRef(null); // Для создания материала тумана один раз
+    const worldRoomBoundariesRef = useRef({});
+    const [clearedRoomIds, setClearedRoomIds] = useState(new Set());
+
+
+    
 
     // === Состояния ===
     const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +83,14 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     const [beamTexturesLoaded, setBeamTexturesLoaded] = useState(false);
     const [activeClouds, setActiveClouds] = useState([]); // <<< НОВОЕ СОСТОЯНИЕ для облаков
     const activeCloudsRef = useRef([]); // Реф для доступа в animate
+    const enemiesStateRef = useRef(enemiesState); // Реф для актуального состояния врагов
+    const [currentActiveRoomId, setCurrentActiveRoomId] = useState(null);
+
+
+    useEffect(() => {
+        enemiesStateRef.current = enemiesState;
+        console.log("[enemiesStateRef updated] Length:", enemiesState.length, enemiesState); // Лог для проверки
+    }, [enemiesState]); // Этот эффект сработает КАЖДЫЙ РАЗ при изменении enemiesState
 
     
     
@@ -267,6 +285,11 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
             if (mountPoint && rendererRef.current?.domElement && mountPoint.contains(rendererRef.current.domElement)) {
                 mountPoint.removeChild(rendererRef.current.domElement);
             }
+            if (fogMaterialRef.current) {
+                console.log("[Level.jsx] Disposing shared fog material");
+                fogMaterialRef.current.dispose();
+                fogMaterialRef.current = null;
+            }
 
             // Сброс рефов
             sceneRef.current = null;
@@ -275,123 +298,257 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         };
     }, []);
 
-    // --- Добавление Фона и Стен ---
-    useEffect(() => {
-        const currentScene = sceneRef.current;
-        if (!currentScene || !levelConfig) {
-            console.log("[Level.jsx] Skip Background/Walls: No scene or levelConfig yet.");
-            return;
-        }
-        console.log("[Level.jsx] Создание фона и стен");
+ // --- Добавление Фона, Стен, ТУМАНА ВОЙНЫ и РАСЧЕТ ГРАНИЦ КОМНАТ ---
+useEffect(() => {
+    const currentScene = sceneRef.current;
+    // Обновленная проверка: добавили levelData и fogMaterialRef
+    if (!currentScene || !levelConfig || !levelData || !fogMaterialRef.current) {
+        console.log("[Level.jsx] Skip Background/Walls/Fog/Boundaries: Missing critical refs or data.");
+        return;
+    }
+    console.log("[Level.jsx] Создание/обновление фона, стен, тумана войны и границ комнат");
 
-        // Удаление старых
-        if(backgroundMeshRef.current) {
-            console.log("  > Removing old background");
-            currentScene.remove(backgroundMeshRef.current);
-            backgroundMeshRef.current.geometry?.dispose();
-            backgroundMeshRef.current.material?.map?.dispose();
-            backgroundMeshRef.current.material?.dispose();
-            backgroundMeshRef.current = null;
+    // --- РАСЧЕТ ГРАНИЦ КОМНАТ В МИРОВЫХ КООРДИНАТАХ (из код1) ---
+    // После того как levelConfig и levelData.rooms точно доступны
+    if (levelData.rooms && levelConfig) {
+        const boundaries = {};
+        levelData.rooms.forEach(room => {
+            if (room.area) {
+                // Конвертируем min/max Tiled координаты в min/max мировые координаты
+                // Для X: Tiled X -> World X (convertTiledX(tiledX, 0, worldWidth))
+                // Для Y: Tiled Y -> World Y (WORLD_Y_OFFSET - tiledY) (упрощенно, без objectHeight)
+                // convertTiledY(tiledY, 0, gameWorldHeight, WORLD_Y_OFFSET)
+
+                // Важно: convertTiledX дает ЦЕНТР объекта, если objectWidth > 0.
+                // Если мы передаем 0, то это просто конвертация точки.
+                // x_min_world будет соответствовать левой границе, x_max_world - правой.
+                // y_min_world будет соответствовать ВЕРХНЕЙ границе в Three.js (большее значение Y в Tiled),
+                // y_max_world будет соответствовать НИЖНЕЙ границе в Three.js (меньшее значение Y в Tiled).
+                // Это из-за инверсии Y в convertTiledY.
+
+                // x_min_world < x_max_world
+                // y_min_world (верхняя граница) > y_max_world (нижняя граница) в координатах Three.js, если Y растет вверх.
+                // Давай пересмотрим convertTiledY: WORLD_Y_OFFSET - y - objectHeight / 2.
+                // Если y_tiled_min = 50 (верхняя в Tiled), y_tiled_max = 590 (нижняя в Tiled) для room2_north
+                // world_y_for_tiled_y_50 = W_H/2 - 50
+                // world_y_for_tiled_y_590 = W_H/2 - 590
+                // То есть, в мире Three.js: y_max_world = W_H/2 - 50, y_min_world = W_H/2 - 590. (y_min_world < y_max_world)
+
+                boundaries[room.id] = {
+                    xMinWorld: convertTiledX(room.area.x_min, 0, levelConfig.gameWorldWidth),
+                    xMaxWorld: convertTiledX(room.area.x_max, 0, levelConfig.gameWorldWidth),
+                    // Для Y нужно быть внимательным с инверсией.
+                    // convertTiledY переводит верхнюю границу Tiled в верхнюю границу мира, нижнюю Tiled в нижнюю мира.
+                    // y_min в Tiled (например, 50) это ВЕРХ комнаты. y_max в Tiled (например, 590) это НИЗ комнаты.
+                    // В мире Three.js Y растет ВВЕРХ.
+                    // convertTiledY(room.area.y_min) даст БОЛЬШЕЕ значение Y (верхняя граница мира)
+                    // convertTiledY(room.area.y_max) даст МЕНЬШЕЕ значение Y (нижняя граница мира)
+                    yMaxWorld: convertTiledY(room.area.y_min, 0, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET), // Верхняя граница комнаты в мире
+                    yMinWorld: convertTiledY(room.area.y_max, 0, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET)  // Нижняя граница комнаты в мире
+                };
+            }
+        });
+        worldRoomBoundariesRef.current = boundaries; // Предполагается, что worldRoomBoundariesRef это useRef(), определенный где-то выше
+        console.log("[Level.jsx] World room boundaries calculated:", boundaries);
+    }
+
+    // --- Очистка старого ---
+
+    // Очистка старого фона
+    if(backgroundMeshRef.current) {
+        console.log("  > Removing old background");
+        currentScene.remove(backgroundMeshRef.current);
+        backgroundMeshRef.current.geometry?.dispose();
+        backgroundMeshRef.current.material?.map?.dispose();
+        backgroundMeshRef.current.material?.dispose();
+        backgroundMeshRef.current = null;
+    }
+
+    // Очистка старых стен
+    if(wallsRef.current.length > 0) {
+        console.log(`  > Removing ${wallsRef.current.length} old walls`);
+        wallsRef.current.forEach(w => {
+            if(w.mesh) {
+                currentScene.remove(w.mesh);
+                w.mesh.geometry?.dispose();
+                // Общий материал стен не удаляем тут, он будет удален при размонтировании, если нужно
+            }
+        });
+        wallsRef.current = [];
+    }
+
+    // Очистка старого тумана
+    Object.values(fogOverlaysRef.current).forEach(overlay => {
+        if (overlay) {
+            console.log(`  > Removing old fog overlay: ${overlay.name}`);
+            currentScene.remove(overlay);
+            overlay.geometry?.dispose();
+            // Материал общий (fogMaterialRef.current), не удаляем его здесь.
         }
-        if(wallsRef.current.length > 0) {
-            console.log(`  > Removing ${wallsRef.current.length} old walls`);
+    });
+    fogOverlaysRef.current = {}; // Очищаем объект со ссылками на туман
+
+    // --- Создание нового ФОНА ---
+    const textureLoader = new THREE.TextureLoader();
+    if (levelData?.backgroundTexture) {
+        console.log(`  > Loading background texture: ${levelData.backgroundTexture}`);
+        textureLoader.load(
+            levelData.backgroundTexture,
+            (texture) => { // Success callback
+                if (!sceneRef.current) return;
+                console.log("    * Background texture loaded successfully");
+                texture.encoding = THREE.sRGBEncoding;
+                const bgGeometry = new THREE.PlaneGeometry(levelConfig.gameWorldWidth, levelConfig.gameWorldHeight);
+                const bgMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                const backgroundMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+                backgroundMesh.position.set(0, 0, -10); // Z=-10
+                backgroundMesh.renderOrder = -1; // Чтобы рендерился первым
+                sceneRef.current.add(backgroundMesh);
+                backgroundMeshRef.current = backgroundMesh;
+            },
+            undefined, // onProgress callback (не используется)
+            (error) => { // Error callback
+                console.error("❌ Ошибка загрузки фона:", error);
+                if(sceneRef.current) sceneRef.current.background = new THREE.Color(0x282c34); // Установка цвета фона по умолчанию при ошибке
+            }
+        );
+    } else {
+        console.log("  > No background texture specified, using color.");
+        currentScene.background = new THREE.Color(0x282c34);
+    }
+
+    // --- Создание новых СТЕН ---
+    // Важно: стены должны быть добавлены на сцену ДО тумана,
+    // чтобы туман был поверх них (если Z-позиция тумана это предполагает).
+    if (levelData?.walls && levelData.walls.length > 0) {
+        console.log(`  > Creating ${levelData.walls.length} walls`);
+          const wallMaterial = new THREE.MeshStandardMaterial({ // Предполагаем, что материал стен может быть общим
+                color: 0x808080,
+                roughness: 0.8,
+                metalness: 0.2
+          });
+          const tempWalls = [];
+
+          levelData.walls.forEach(wallData => {
+                const wallWidth = wallData.width;
+                const wallHeight = wallData.height;
+                const wallX = convertTiledX(wallData.x, wallWidth, levelConfig.gameWorldWidth);
+                const wallY = convertTiledY(wallData.y, wallHeight, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET);
+
+                const wallGeometry = new THREE.BoxGeometry(wallWidth, wallHeight, 10); // Глубина стены 10
+                const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+                wallMesh.position.set(wallX, wallY, -5); // Z-позиция стен, чтобы были перед фоном, но за туманом
+                currentScene.add(wallMesh);
+
+                tempWalls.push({
+                    id: wallData.id || `wall-${Math.random()}`,
+                    x: wallX - wallWidth / 2,
+                    y: wallY - wallHeight / 2,
+                    width: wallWidth,
+                    height: wallHeight,
+                    mesh: wallMesh
+                });
+          });
+          wallsRef.current = tempWalls;
+       } else {
+           console.log("  > No walls data found for creation.");
+       }
+
+    // --- Создание нового ТУМАНА ВОЙНЫ ---
+    if (levelData.rooms && levelData.rooms.length > 0) {
+        console.log(`  > Creating fog for ${levelData.rooms.length} rooms`);
+        levelData.rooms.forEach(room => {
+            if (!room.area) {
+                console.warn(`Room ${room.id} has no area defined, skipping fog.`);
+                return;
+            }
+
+            const roomWidth = room.area.x_max - room.area.x_min;
+            const roomHeight = room.area.y_max - room.area.y_min;
+
+            if (roomWidth <= 0 || roomHeight <= 0) {
+                console.warn(`Room ${room.id} has invalid area dimensions, skipping fog.`);
+                return;
+            }
+
+            const fogGeometry = new THREE.PlaneGeometry(roomWidth, roomHeight);
+            // Используем общий материал из fogMaterialRef
+            const fogOverlayMesh = new THREE.Mesh(fogGeometry, fogMaterialRef.current);
+
+            const roomCenterX_tiled = room.area.x_min + roomWidth / 2;
+            const roomCenterY_tiled = room.area.y_min + roomHeight / 2;
+
+            const worldX = convertTiledX(roomCenterX_tiled, 0, levelConfig.gameWorldWidth);
+            const worldY = convertTiledY(roomCenterY_tiled, 0, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET);
+
+            fogOverlayMesh.position.set(worldX, worldY, 0.5); // Z=0.5, чтобы быть над фоном/полом, но под персонажами
+            fogOverlayMesh.name = `fog_overlay_${room.id}`;
+
+            if (room.isStartingRoom) {
+                fogOverlayMesh.visible = false;
+                console.log(`    * Fog for starting room ${room.id} created and hidden.`);
+            } else {
+                fogOverlayMesh.visible = true;
+                console.log(`    * Fog for room ${room.id} created and visible.`);
+            }
+            
+            currentScene.add(fogOverlayMesh);
+            fogOverlaysRef.current[room.id] = fogOverlayMesh;
+        });
+    } else {
+        console.log("  > No rooms data found for fog creation.");
+    }
+
+    // --- Функция очистки для этого useEffect ---
+    return () => {
+        console.log("[Level.jsx] Очистка фона, стен и тумана перед пересозданием/размонтированием");
+        const sceneForCleanup = sceneRef.current; // Используем локальную копию, на случай если sceneRef изменится
+        if (sceneForCleanup) {
+            // Очистка фона
+            if(backgroundMeshRef.current) {
+                sceneForCleanup.remove(backgroundMeshRef.current);
+                backgroundMeshRef.current.geometry?.dispose();
+                backgroundMeshRef.current.material?.map?.dispose();
+                backgroundMeshRef.current.material?.dispose();
+            }
+            
+            // Очистка стен
             wallsRef.current.forEach(w => {
-                if(w.mesh) {
-                    currentScene.remove(w.mesh);
+                if (w.mesh) {
+                    sceneForCleanup.remove(w.mesh);
                     w.mesh.geometry?.dispose();
-                    // Общий материал не удаляем тут
+                    // Общий материал стен (wallMaterial) был создан внутри этого useEffect.
+                    // Если он больше нигде не используется и не сохраняется в ref для последующего dispose,
+                    // он будет удален сборщиком мусора, когда все ссылки на него пропадут.
+                    // Однако, если вы хотите быть более явными, можно сохранить wallMaterial в ref
+                    // (например, wallMaterialRef.current = wallMaterial;) и затем диспозить его здесь:
+                    // wallMaterialRef.current?.dispose(); wallMaterialRef.current = null;
+                    // В текущей реализации, он не диспозится явно, что может быть нормально для многих случаев.
                 }
             });
-            wallsRef.current = [];
-        }
+            sceneForCleanup.background = null; // Сбрасываем фон сцены, если он был установлен как цвет
 
-        // Создание нового фона
-        const textureLoader = new THREE.TextureLoader();
-        if (levelData?.backgroundTexture) {
-            console.log(`  > Loading background texture: ${levelData.backgroundTexture}`);
-            textureLoader.load(
-                levelData.backgroundTexture,
-                (texture) => {
-                    if (!sceneRef.current) return;
-                    console.log("    * Background texture loaded successfully");
-                    texture.encoding = THREE.sRGBEncoding;
-                    const bgGeometry = new THREE.PlaneGeometry(levelConfig.gameWorldWidth, levelConfig.gameWorldHeight);
-                    const bgMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-                    const backgroundMesh = new THREE.Mesh(bgGeometry, bgMaterial);
-                    backgroundMesh.position.set(0, 0, -10);
-                    backgroundMesh.renderOrder = -1;
-                    sceneRef.current.add(backgroundMesh);
-                    backgroundMeshRef.current = backgroundMesh;
-                },
-                undefined,
-                (error) => {
-                    console.error("❌ Ошибка загрузки фона:", error);
-                    if(sceneRef.current) sceneRef.current.background = new THREE.Color(0x282c34);
+            // Очистка тумана
+            Object.values(fogOverlaysRef.current).forEach(overlay => {
+                if (overlay) {
+                    sceneForCleanup.remove(overlay);
+                    overlay.geometry?.dispose();
+                    // Общий материал fogMaterialRef.current НЕ удаляется здесь,
+                    // он должен быть удален при размонтировании компонента Level целиком, если он там создается.
                 }
-            );
-        } else {
-            console.log("  > No background texture specified, using color.");
-            currentScene.background = new THREE.Color(0x282c34);
+            });
         }
-
-        // Создание новых стен
-        if (levelData?.walls && levelData.walls.length > 0 && levelConfig) {
-            console.log(`  > Creating ${levelData.walls.length} walls`);
-             const wallMaterial = new THREE.MeshStandardMaterial({
-                 color: 0x808080,
-                 roughness: 0.8,
-                 metalness: 0.2
-             });
-             const tempWalls = [];
-
-             levelData.walls.forEach(wallData => {
-                 const wallWidth = wallData.width;
-                 const wallHeight = wallData.height;
-                 const wallX = convertTiledX(wallData.x, wallWidth, levelConfig.gameWorldWidth);
-                 const wallY = convertTiledY(wallData.y, wallHeight, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET);
-
-                 const wallGeometry = new THREE.BoxGeometry(wallWidth, wallHeight, 10);
-                 const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-                 wallMesh.position.set(wallX, wallY, -5);
-                 currentScene.add(wallMesh);
-
-                 tempWalls.push({
-                     id: wallData.id || `wall-${Math.random()}`,
-                     x: wallX - wallWidth / 2,
-                     y: wallY - wallHeight / 2,
-                     width: wallWidth,
-                     height: wallHeight,
-                     mesh: wallMesh
-                 });
-             });
-             wallsRef.current = tempWalls;
-         } else {
-             console.log("  > No walls data found or levelConfig missing.");
-         }
-
-        // Функция очистки для этого useEffect
-        return () => {
-            console.log("[Level.jsx] Очистка фона и стен перед пересозданием");
-             if (sceneRef.current) {
-                 if(backgroundMeshRef.current) {
-                     sceneRef.current.remove(backgroundMeshRef.current);
-                     backgroundMeshRef.current.geometry?.dispose();
-                     backgroundMeshRef.current.material?.map?.dispose();
-                     backgroundMeshRef.current.material?.dispose();
-                     backgroundMeshRef.current = null;
-                 }
-                 wallsRef.current.forEach(w => {
-                     if (w.mesh) {
-                         sceneRef.current?.remove(w.mesh);
-                         w.mesh.geometry?.dispose();
-                         // Не удаляем общий материал здесь
-                     }
-                 });
-                 sceneRef.current.background = null;
-             }
-             wallsRef.current = [];
-        };
-    }, [levelConfig, levelData?.backgroundTexture, levelData?.walls]);
+        backgroundMeshRef.current = null;
+        wallsRef.current = [];
+        fogOverlaysRef.current = {};
+        // worldRoomBoundariesRef.current = {}; // Очистка границ, если это необходимо при размонтировании/пересоздании
+    };
+// Используем обновленные зависимости, так как levelData включает все необходимое
+// и worldRoomBoundariesRef также зависит от levelData и levelConfig
+}, [levelConfig, levelData, fogMaterialRef.current]); // sceneRef, convertTiledX, convertTiledY, worldRoomBoundariesRef - также являются зависимостями, если они не стабильны.
+                                                    // Однако, ref-ы (sceneRef, fogMaterialRef, worldRoomBoundariesRef) обычно стабильны.
+                                                    // Функции convertTiledX, convertTiledY - если они определены вне компонента или являются useCallback с пустым массивом зависимостей,
+                                                    // то их можно не включать. Если они пересоздаются при каждом рендере, их стоит включить или обернуть в useCallback.
 
     // --- Загрузка Игрока ---
     const { playerObject, isPlayerModelLoaded } = usePlayerLoader(
@@ -402,75 +559,145 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     );
 
     // --- Загрузка Врагов (ИСПОЛЬЗУЕМ useEnemyLoader) ---
-    const { enemyRefs, areEnemiesLoaded, initialEnemyStates } = useEnemyLoader(
+    const {
+        enemyRefs: loadedEnemyRefsArray,  // Это МАССИВ данных врагов из useEnemyLoader
+        setEnemyRefs: setLoadedEnemyRefsArray, // Это ФУНКЦИЯ для обновления этого массива
+        areEnemiesLoaded,
+        initialEnemyStates: loadedInitialStates,
+        // shieldResources // Если нужны
+    } = useEnemyLoader(
         levelData?.enemies,
-        sceneRef.current,
+        sceneRef.current, // sceneRef должен быть useRef(), инициализированный в Level.jsx
         levelConfig,
         levelData?.id,
-        difficulty
+        difficulty,
+        BASE_ENEMY_STATS
     );
 
     // --- Управление общей загрузкой ---
     useEffect(() => {
+        // Определяем, все ли необходимые ресурсы загружены
         const allLoaded = !!levelConfig && isPlayerModelLoaded && areEnemiesLoaded && beamTexturesLoaded;
-        const currentlyLoading = !allLoaded;
-
+        const currentlyLoading = !allLoaded; // Обратное значение для состояния "идет загрузка"
+    
+        // Если состояние загрузки изменилось (например, с true на false)
         if (isLoading !== currentlyLoading) {
-            setIsLoading(currentlyLoading);
-            if (!currentlyLoading) { // Если загрузка ТОЛЬКО ЧТО завершилась
+            setIsLoading(currentlyLoading); // Обновляем состояние загрузки в родительском компоненте или локально
+    
+            // Если загрузка ТОЛЬКО ЧТО завершилась
+            if (!currentlyLoading) {
+                // И если колбек onReady еще не был вызван (чтобы избежать многократного вызова)
                 if (!readyCalledRef.current) {
                     console.log("✨ Уровень ГОТОВ! Вызов onReady.");
+    
+                    // Инициализация HP игрока, если соответствующая функция передана
                     if (typeof initializeLevelHp === 'function') {
                         initializeLevelHp();
                         console.log("HP игрока инициализировано после загрузки.");
                     } else {
                         console.error("ОШИБКА: initializeLevelHp не функция при вызове onReady!");
                     }
+    
+                    // Вызов колбека onReady, если он передан как пропс
                     if (typeof onReady === 'function') {
-                         onReady();
+                        onReady();
                     } else {
-                         console.warn("Пропс onReady не передан в Level.");
+                        console.warn("Пропс onReady не передан в Level.");
                     }
-                    readyCalledRef.current = true;
-
+                    readyCalledRef.current = true; // Помечаем, что onReady и инициализация уровня были выполнены
+    
+                    // --- НАЧАЛО ИНТЕГРИРОВАННОГО КОДА (из код1) ---
+                    // Установка стартовой комнаты после полной загрузки уровня и вызова onReady
+                    // Проверяем наличие levelData и массива комнат
+                    if (levelData && levelData.rooms && Array.isArray(levelData.rooms)) {
+                        // Ищем комнату, помеченную как стартовая
+                        const startingRoom = levelData.rooms.find(room => room.isStartingRoom);
+    
+                        if (startingRoom) {
+                            setCurrentActiveRoomId(startingRoom.id);
+                            console.log(`[Level.jsx] Starting room set to: ${startingRoom.id}`);
+                            // Согласно комментарию в код1: "Туман для стартовой комнаты уже должен быть скрыт при создании".
+                            // Если требуется дополнительная гарантия скрытия тумана здесь:
+                            // if (fogOverlaysRef.current && fogOverlaysRef.current[startingRoom.id] && fogOverlaysRef.current[startingRoom.id].visible !== false) {
+                            //     fogOverlaysRef.current[startingRoom.id].visible = false;
+                            //     console.log(`[Level.jsx] Fog explicitly ensured hidden for designated starting room: ${startingRoom.id}`);
+                            // }
+                        } else {
+                            console.warn("[Level.jsx] No starting room defined in levelData.rooms!");
+                            // Если стартовая комната не определена, но комнаты есть, используем первую из списка
+                            if (levelData.rooms.length > 0) {
+                                const firstRoomAsStarting = levelData.rooms[0];
+                                setCurrentActiveRoomId(firstRoomAsStarting.id);
+                                console.log(`[Level.jsx] Defaulting to first room as starting room: ${firstRoomAsStarting.id}`);
+                                // Скрыть туман для первой комнаты, если она выбрана как стартовая по умолчанию
+                                if (fogOverlaysRef.current && fogOverlaysRef.current[firstRoomAsStarting.id]) {
+                                    // Проверяем, что туман действительно видим, перед тем как его скрывать
+                                    if (fogOverlaysRef.current[firstRoomAsStarting.id].visible !== false) {
+                                        fogOverlaysRef.current[firstRoomAsStarting.id].visible = false;
+                                        console.log(`[Level.jsx] Fog cleared for default starting room: ${firstRoomAsStarting.id}`);
+                                    }
+                                } else {
+                                    // Это предупреждение может быть полезно, если ожидается, что для каждой комнаты есть оверлей тумана
+                                    console.warn(`[Level.jsx] Fog overlay not found or not applicable for default starting room: ${firstRoomAsStarting.id}`);
+                                }
+                            } else {
+                                // Если комнат вообще нет
+                                console.error("[Level.jsx] No rooms available in levelData.rooms to set as a default starting room.");
+                            }
+                        }
+                    } else {
+                        // Если данные о комнатах отсутствуют или некорректны
+                        console.warn("[Level.jsx] levelData.rooms is not available or not an array. Cannot set starting room.");
+                    }
+                    // --- КОНЕЦ ИНТЕГРИРОВАННОГО КОДА ---
+    
+                    // Логика для условия победы "выжить определенное время"
                     if (levelData?.winCondition?.type === 'survive_duration') {
-                        levelStartTimeRef.current = Date.now();
-                        setRemainingTime(levelData.winCondition.duration);
+                        levelStartTimeRef.current = Date.now(); // Запоминаем время начала уровня
+                        setRemainingTime(levelData.winCondition.duration); // Устанавливаем общее время для выживания
                         console.log(`Survival Timer Started: ${levelData.winCondition.duration}s`);
                     } else {
-                        levelStartTimeRef.current = null;
-                        setRemainingTime(null);
+                        levelStartTimeRef.current = null; // Сбрасываем время начала, если условие не "survive_duration"
+                        setRemainingTime(null); // Сбрасываем оставшееся время
                     }
                 } else {
-                     console.log("[Level.jsx] Загрузка завершена, но onReady уже был вызван.");
+                    // Этот блок выполнится, если загрузка завершилась, но onReady уже был вызван ранее (например, из-за изменения зависимостей)
+                    console.log("[Level.jsx] Загрузка завершена, но onReady уже был вызван ранее.");
                 }
             } else {
-                 console.log("[Level.jsx] Переход в состояние загрузки...");
+                // Если загрузка еще не завершена (currentlyLoading === true)
+                console.log("[Level.jsx] Переход в состояние загрузки...");
             }
         }
     }, [
-        levelConfig,
-        isPlayerModelLoaded,
-        areEnemiesLoaded,
-        beamTexturesLoaded,
-        isLoading,
-        onReady,
-        initializeLevelHp,
-        levelData?.winCondition
+        levelConfig,            // Конфигурация уровня
+        isPlayerModelLoaded,    // Флаг загрузки модели игрока
+        areEnemiesLoaded,       // Флаг загрузки врагов
+        beamTexturesLoaded,     // Флаг загрузки текстур лучей
+        isLoading,              // Текущее состояние загрузки (из state)
+        // setIsLoading,        // Функция для установки isLoading, обычно стабильна и не требуется в зависимостях, если это setState из useState
+        onReady,                // Колбек, вызываемый по готовности уровня (пропс)
+        initializeLevelHp,      // Функция инициализации HP (пропс)
+        levelData,              // Данные уровня, включая levelData.rooms и levelData.winCondition. Важно для логики стартовой комнаты и условий победы.
+        // setCurrentActiveRoomId, // Функция для установки активной комнаты (setState), стабильна
+        // fogOverlaysRef,      // ref-объект, стабилен
+        // readyCalledRef,      // ref-объект, стабилен
+        // levelStartTimeRef,   // ref-объект, стабилен
+        // setRemainingTime     // Функция для установки оставшегося времени (setState), стабильна
     ]);
 
     // --- Инициализация состояния врагов ---
     useEffect(() => {
-        if (areEnemiesLoaded && initialEnemyStates && initialEnemyStates.length > 0) {
-            if (JSON.stringify(enemiesState) !== JSON.stringify(initialEnemyStates)) {
-                 console.log(`--- ИНИЦИАЛИЗАЦИЯ enemiesState (${initialEnemyStates.length} шт.) из initialEnemyStates ---`);
-                 setEnemiesState(initialEnemyStates);
+        if (areEnemiesLoaded && loadedInitialStates && loadedInitialStates.length > 0) {
+            if (JSON.stringify(enemiesState) !== JSON.stringify(loadedInitialStates)) {
+                 console.log(`--- ИНИЦИАЛИЗАЦИЯ enemiesState (${loadedInitialStates.length} шт.) из initialEnemyStates ---`);
+                 setEnemiesState(loadedInitialStates);
             }
         } else if (!areEnemiesLoaded && enemiesState.length > 0) {
              console.log("--- Очистка enemiesState, т.к. areEnemiesLoaded = false ---");
              setEnemiesState([]);
         }
-    }, [areEnemiesLoaded, initialEnemyStates]); // Не зависим от enemiesState
+    }, [areEnemiesLoaded, loadedInitialStates]); // Не зависим от enemiesState
 
     const hpResources = useMemo(() => ({
         geometryBg: new THREE.PlaneGeometry(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT),
@@ -485,7 +712,140 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         activeCloudsRef.current = activeClouds;
     }, [activeClouds]);
 
-// В Level.jsx
+    const spikeResources = useMemo(() => {
+        // Параметры шипа (можно вынести в константы)
+        const indicatorRadius = 30; // Базовый радиус
+        const spikeHeight = indicatorRadius * 1.2;
+        const spikeRadius = indicatorRadius * 0.15;
+        const spikeColor = 0xB8860B; // Песочный
+    
+        return {
+            geometry: new THREE.ConeGeometry(spikeRadius, spikeHeight, 8),
+            material: new THREE.MeshStandardMaterial({
+                color: spikeColor,
+                roughness: 0.7,
+                metalness: 0.2
+            })
+        };
+    }, []); // Создаем один раз
+    
+    // --- Добавляем очистку spikeResources в useEffect ---
+    useEffect(() => {
+        return () => {
+            console.log("Очистка общих ресурсов шипов из Level");
+            spikeResources.geometry.dispose();
+            spikeResources.material.dispose();
+            // ... очистка hpResources ...
+        };
+    }, [spikeResources, hpResources]); // Добавляем spikeResources в зависимости
+
+    useEffect(() => {
+        console.log('[RoomCheck DEBUG] useEffect triggered. currentActiveRoomId:', currentActiveRoomId, 'clearedRoomIds:', clearedRoomIds, 'enemiesState length:', enemiesState?.length);
+    
+        if (!currentActiveRoomId || clearedRoomIds.has(currentActiveRoomId) || !levelData?.enemies || !enemiesState?.length) {
+            console.log('[RoomCheck DEBUG] Early return. Conditions:', {
+                hasActiveRoom: !!currentActiveRoomId,
+                isAlreadyCleared: currentActiveRoomId ? clearedRoomIds.has(currentActiveRoomId) : 'N/A',
+                hasLevelEnemies: !!levelData?.enemies,
+                hasEnemiesState: !!enemiesState?.length
+            });
+            return;
+        }
+    
+        const monstersInCurrentRoom = levelData.enemies.filter(enemyDef => enemyDef.roomId === currentActiveRoomId);
+        console.log(`[RoomCheck DEBUG] For room '${currentActiveRoomId}', monstersInCurrentRoom (from levelData):`, monstersInCurrentRoom.map(m => m.id), `Count: ${monstersInCurrentRoom.length}`);
+        
+        if (monstersInCurrentRoom.length === 0 && currentActiveRoomId && !levelData.rooms.find(r => r.id === currentActiveRoomId)?.isStartingRoom) {
+            console.log(`[RoomCheck DEBUG] Room '${currentActiveRoomId}' is defined as empty in levelData and not starting room. Returning.`);
+            return;
+        }
+    
+        let allMonstersInRoomDead = true;
+        if (monstersInCurrentRoom.length > 0) {
+            console.log('[RoomCheck DEBUG] Checking individual monster states...');
+            for (const enemyDef of monstersInCurrentRoom) {
+                const enemyState = enemiesState.find(es => es.id === enemyDef.id);
+                if (enemyState) {
+                    console.log(`[RoomCheck DEBUG] Monster ${enemyDef.id} (in room ${currentActiveRoomId}): currentHp = ${enemyState.currentHp}`);
+                    if (enemyState.currentHp > 0) {
+                        allMonstersInRoomDead = false;
+                        console.log(`[RoomCheck DEBUG] Monster ${enemyDef.id} is ALIVE. Setting allMonstersInRoomDead = false.`);
+                        break;
+                    }
+                } else {
+                    // Если монстр определен для комнаты в levelData, но его нет в enemiesState
+                    // Это может быть нормально, если он еще не активирован (initiallyActive: false и комната еще не посещалась)
+                    // Но если ВСЕ монстры комнаты, которые ДОЛЖНЫ БЫТЬ активны, мертвы, комната зачищена.
+                    // Если монстр initiallyActive: true, он ДОЛЖЕН быть в enemiesState.
+                    // Если initiallyActive: false, и комната только что стала активной, он должен появиться в enemiesState.
+                    // Этот момент нужно аккуратно продумать: как мы считаем монстров, которые еще не были добавлены в enemiesState?
+                    // Пока что, если его нет в enemiesState, мы его не считаем "живым", что может привести к преждевременной зачистке,
+                    // ЕСЛИ не все монстры комнаты добавляются в enemiesState при активации комнаты.
+                    // Но useEnemyLoader должен добавлять всех (даже неактивных initiallyActive:false) в initialEnemyStates,
+                    // так что они должны быть в enemiesState с самого начала.
+                    console.warn(`[RoomCheck DEBUG] Monster ${enemyDef.id} (defined for room ${currentActiveRoomId}) NOT FOUND in enemiesState. This might be an issue.`);
+                    // Если мы хотим, чтобы все монстры, перечисленные для комнаты, были УЧТЕНЫ (т.е. были в enemiesState и имели hp <=0),
+                    // то отсутствие в enemiesState должно считаться как "комната не зачищена".
+                    // allMonstersInRoomDead = false; 
+                    // break;
+                }
+            }
+        } else {
+            // Если в levelData.enemies нет монстров для этой комнаты
+            allMonstersInRoomDead = false;
+            console.log(`[RoomCheck DEBUG] No monsters defined for room ${currentActiveRoomId} in levelData, so allMonstersInRoomDead = false (nothing to clear).`);
+        }
+        
+        console.log(`[RoomCheck DEBUG] Final check: allMonstersInRoomDead = ${allMonstersInRoomDead}, monstersInCurrentRoom.length = ${monstersInCurrentRoom.length}`);
+    
+    
+        if (allMonstersInRoomDead && monstersInCurrentRoom.length > 0) {
+            console.log(`[RoomCheck] 🎉 Комната ${currentActiveRoomId} ЗАЧИЩЕНА!`);
+            
+            // --- Шаг B: Найти дверь(и), которая открывается этой комнатой ---
+            const doorsToOpenData = levelData.walls.filter(wallDataInLevel =>
+                wallDataInLevel.isDoor === true && wallDataInLevel.opensWhenRoomCleared === currentActiveRoomId
+            );
+        
+            if (doorsToOpenData.length > 0) {
+                doorsToOpenData.forEach(doorData => {
+                    console.log(`[DoorLogic] Найдена дверь для открытия: ID='${doorData.id}', ведет в '${doorData.targetRoomIdForDoor || 'не указано'}'`);
+                    
+                    // Теперь найдем соответствующий 3D объект (меш) этой двери в wallsRef.current
+                    const doorWallObjectInRef = wallsRef.current.find(wallRef => wallRef.id === doorData.id);
+        
+                    if (doorWallObjectInRef && doorWallObjectInRef.mesh) {
+                        const doorMesh = doorWallObjectInRef.mesh;
+                        const doorId = doorData.id; // Сохраним ID для использования в логах и filter
+                    
+                        console.log(`[DoorLogic] Найден 3D объект (меш) для двери ${doorId}. Открываем (удаляем).`);
+                    
+                        // 1. Удаляем 3D объект двери со сцены
+                        if (sceneRef.current && doorMesh.parent === sceneRef.current) { // Убедимся, что он на сцене
+                            sceneRef.current.remove(doorMesh);
+                        } else if (sceneRef.current && doorMesh.parent !== sceneRef.current && doorMesh.parent instanceof THREE.Object3D) {
+                            // Если меш вложен в другой объект (например, в pivot самого wallRef, что вероятно)
+                            doorMesh.parent.remove(doorMesh);
+                        }
+                        wallsRef.current = wallsRef.current.filter(wallInRef => wallInRef.id !== doorId);
+    
+                        console.log(`[DoorLogic] Дверь ${doorId} удалена со сцены и из массива стен для коллизий.`);
+                    
+                    } else {
+                        console.warn(`[DoorLogic] Не найден 3D объект (меш) для двери с ID '${doorData.id}' в wallsRef.current. Проверьте ID.`);
+                    }
+                });
+            } else {
+                console.log(`[DoorLogic] Для зачищенной комнаты ${currentActiveRoomId} не найдено дверей в levelData.walls, которые должны открыться.`);
+            }
+            // --- Конец Шага B ---
+        
+            // Помечаем комнату как зачищенную (это у тебя уже есть)
+            setClearedRoomIds(prevCleared => new Set(prevCleared).add(currentActiveRoomId));
+        }
+    
+    }, [enemiesState, currentActiveRoomId, clearedRoomIds, levelData]); // Следим за этими зависимостями
+
 const createPoisonCloud = useCallback((position) => {
     const currentScene = sceneRef.current;
     if (!currentScene) return;
@@ -542,13 +902,14 @@ const createPoisonCloud = useCallback((position) => {
     useEffect(() => {
         const currentScene = sceneRef.current;
         // Проверяем базовые зависимости
-        if (!currentScene || !enemyRefs || !enemiesState) {
+        if (!currentScene || !loadedEnemyRefsArray || !enemiesState) {
             return; // Выходим, если что-то не готово
         }
 
         // Проходим по ТЕКУЩИМ РЕФАМ (3D объектам), которые могут быть на сцене
-        enemyRefs.forEach(enemyRef => {
+        loadedEnemyRefsArray.forEach(enemyRef => {
             if (!enemyRef || !enemyRef.pivot) return; // Пропускаем невалидные рефы
+
 
             // Находим СОСТОЯНИЕ для этого врага
             const enemyState = enemiesState.find(es => es.id === enemyRef.id);
@@ -591,7 +952,7 @@ const createPoisonCloud = useCallback((position) => {
         }); // Конец forEach
 
     // Убедись, что createPoisonCloud есть в зависимостях!
-    }, [enemiesState, enemyRefs, sceneRef, createPoisonCloud, hpResources]);
+    }, [enemiesState, loadedEnemyRefsArray, sceneRef, createPoisonCloud, hpResources]);
 
     
 
@@ -652,8 +1013,8 @@ const createPoisonCloud = useCallback((position) => {
 
     // === ОБРАБОТЧИК УРОНА ВРАГУ (ИСПРАВЛЕННЫЙ) ===
     const handleEnemyHit = useCallback((enemyId, damageAmount) => {
-        // <<< ИСПОЛЬЗУЕМ enemyRefs ИЗ СОСТОЯНИЯ >>>
-        const enemyRef = enemyRefs.find(ref => ref && ref.id === enemyId);
+        // <<< ИСПОЛЬЗУЕМ loadedEnemyRefsArray ИЗ СОСТОЯНИЯ >>>
+        const enemyRef = loadedEnemyRefsArray.find(ref => ref && ref.id === enemyId);
 
         // Если враг не найден или уже помечен как мертвый, выходим
         if (!enemyRef || enemyRef.isDead) {
@@ -712,8 +1073,8 @@ const createPoisonCloud = useCallback((position) => {
                 }             
              console.log(`--- Flag isDead SET for ${enemyId} AFTER state update ---`);
          }
-    // <<< ОБНОВЛЯЕМ ЗАВИСИМОСТИ: используем enemyRefs из состояния >>>
-    }, [enemyRefs, enemiesState, playerTakeDamage]); // Добавили enemyRefs
+    // <<< ОБНОВЛЯЕМ ЗАВИСИМОСТИ: используем loadedEnemyRefsArray из состояния >>>
+    }, [loadedEnemyRefsArray, enemiesState, playerTakeDamage]); // Добавили loadedEnemyRefsArray
 
     // ... остальные функции и useEffect ...
 
@@ -729,20 +1090,6 @@ const createPoisonCloud = useCallback((position) => {
     }, [playerHp, levelStatus, loseLevel]);
 
 
-    // === ФУНКЦИИ-ЗАГЛУШКИ ДЛЯ СПОСОБНОСТЕЙ ВРАГОВ (из code1) ===
-
-    // Для Некроманта, Носильщика
-    const summonCreature = useCallback((summonerId, creatureType, count, position) => {
-        console.warn(`[${summonerId}] SUMMON STUB: ${count} x ${creatureType} at (${position.x.toFixed(0)}, ${position.y.toFixed(0)}) - НЕ РЕАЛИЗОВАНО`);
-        // TODO:
-        // 1. Получить базовые статы для creatureType (из какого-то общего конфига врагов?).
-        // 2. Отмасштабировать статы на основе текущего levelId и difficulty.
-        // 3. Создать новый объект врага (pivot, mesh-заглушку, hpBar) аналогично useEnemyLoader.
-        // 4. Добавить новый объект в enemyRefs.current (ВАЖНО: мутировать реф напрямую или через очередь).
-        // 5. Добавить начальное состояние HP в enemiesState (ВАЖНО: использовать setEnemiesState с осторожностью внутри цикла, лучше через очередь обновлений).
-        // 6. Добавить созданный pivot на сцену sceneRef.current.
-    }, [levelData?.id, difficulty]); // Зависит от ID уровня и сложности для масштабирования
-
     // Для Тотемщика
     const placeTotem = useCallback((casterId, position, totemType, duration, range, effect) => {
         console.warn(`[${casterId}] PLACE TOTEM STUB: type=${totemType}, duration=${duration}s at (${position.x.toFixed(0)}, ${position.y.toFixed(0)}) - НЕ РЕАЛИЗОВАНО`);
@@ -756,18 +1103,113 @@ const createPoisonCloud = useCallback((position) => {
         //     - Применять соответствующие эффекты (баффы/дебаффы) к игроку (через useGameStore?).
     }, []);
 
-    // Для Жнеца
-    const triggerGroundSpikes = useCallback((casterId, targetPos, delay, radius, damage) => {
-        console.warn(`[${casterId}] TRIGGER SPIKES STUB at (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)}) after ${delay}s - НЕ РЕАЛИЗОВАНО`);
-        // TODO:
-        // 1. Создать визуальный индикатор на земле в targetPos (декаль, круг?).
-        // 2. Запустить таймер (setTimeout или через логику в animate).
-        // 3. По истечении delay:
-        //     - Показать анимацию/эффект шипов.
-        //     - Проверить, находится ли игрок в radius от targetPos.
-        //     - Если да, нанести урон: playerTakeDamage(damage).
-        //     - Удалить индикатор/эффект шипов через некоторое время.
-    }, [playerTakeDamage]); // Зависит от playerTakeDamage
+
+ // --- Функция для атаки Шипами Жнеца (ОБНОВЛЕНА с конусами) ---
+ // Предполагается, что `spikeResources` определен где-то в области видимости этого useCallback,
+// и содержит предварительно созданные `geometry` и `material` для шипов.
+// Например:
+// const spikeResources = {
+//   geometry: new THREE.ConeGeometry(некий_радиус, некая_высота, 8), // Геометрия должна быть определена
+//   material: new THREE.MeshStandardMaterial({ color: 0xC19A6B, roughness: 0.8, metalness: 0.2 }), // Материал должен быть определен
+// };
+// Эти `некий_радиус` и `некая_высота` должны соответствовать желаемым параметрам шипов.
+// Если они должны зависеть от `indicatorRadius`, то `spikeResources` должен обновляться соответствующим образом вне этой функции.
+
+// В Level.jsx
+
+const triggerGroundSpikes = useCallback((casterId, targetPos, delay, radius, damage) => {
+    const currentScene = sceneRef.current;
+    if (!currentScene || !playerObject) return;
+
+    console.log(` Reaper ${casterId} кастует шипы в (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)}) с задержкой ${delay}с`);
+
+    const indicatorRadius = radius || 30;
+    const spikeHeight = indicatorRadius * 1.5; // Высота конуса
+    const spikeRadius = indicatorRadius * 0.2; // Радиус основания конуса
+    const numSpikes = 7; // Количество шипов
+    const spikeColor = 0xC19A6B; // Песочно-коричневый
+    const eruptionDuration = 0.5; // Как долго шипы видны (секунд)
+
+    // --- 1. Создаем индикатор опасности (Красное Кольцо) ---
+    const indicatorGeometry = new THREE.RingGeometry(indicatorRadius - 2, indicatorRadius, 32);
+    const indicatorMaterial = new THREE.MeshBasicMaterial({ color: 0xff4444, side: THREE.DoubleSide, transparent: true, opacity: 0.6, depthWrite: false });
+    const indicatorMesh = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+    indicatorMesh.position.copy(targetPos);
+    indicatorMesh.position.z = -8.8; // На земле, чуть выше фона
+    indicatorMesh.rotation.x = -Math.PI / 2;
+    indicatorMesh.renderOrder = 6;
+    currentScene.add(indicatorMesh);
+    // ---
+
+    // --- 2. Таймер для срабатывания шипов ---
+    const eruptionTimerId = setTimeout(() => {
+        // Удаляем индикатор
+        currentScene?.remove(indicatorMesh);
+        indicatorGeometry.dispose();
+        indicatorMaterial.dispose();
+
+        const currentPlayerPos = playerObject?.position;
+        console.log(` Reaper ${casterId} шипы появились! Проверка игрока @ (${currentPlayerPos?.x.toFixed(0)}, ${currentPlayerPos?.y.toFixed(0)})`);
+
+        // --- 3. Создаем ШИПЫ (КОНУСЫ) ---
+         // Используем ОБЩИЕ ресурсы, если они были созданы через useMemo (как для хелсбаров/щита)
+         // Или создаем новые КАЖДЫЙ РАЗ (как здесь) - тогда нужно их очищать в cleanupTimer
+         const spikeGeometry = new THREE.ConeGeometry(spikeRadius, spikeHeight, 8);
+         const spikeMaterial = new THREE.MeshStandardMaterial({ // <<< Standard Material - НУЖЕН СВЕТ!
+              color: spikeColor,
+              roughness: 0.8,
+              metalness: 0.2
+         });
+         const spikeMeshes = []; // Массив для хранения созданных мешей
+
+        console.log(`   -> Создание ${numSpikes} шипов...`);
+        for (let i = 0; i < numSpikes; i++) {
+            const spikeMesh = new THREE.Mesh(spikeGeometry, spikeMaterial);
+            const angle = (i / numSpikes) * Math.PI * 2 * (1 + (Math.random() - 0.5) * 0.3);
+            const dist = indicatorRadius * (0.2 + Math.random() * 0.7);
+            spikeMesh.position.copy(targetPos);
+            spikeMesh.position.x += Math.cos(angle) * dist;
+            spikeMesh.position.y += Math.sin(angle) * dist;
+            spikeMesh.position.z = spikeHeight / 2; // <<< Основание на земле (Z=0)
+            spikeMesh.rotation.x = (Math.random() - 0.5) * 0.4;
+            spikeMesh.rotation.z = (Math.random() - 0.5) * 0.4;
+            spikeMesh.renderOrder = 7;
+            currentScene.add(spikeMesh); // <<< ДОБАВЛЯЕМ НА СЦЕНУ
+            spikeMeshes.push(spikeMesh);
+        }
+        console.log(`   -> ${spikeMeshes.length} шипов добавлено на сцену.`);
+        // ---
+
+        // --- 4. Проверяем урон игроку ---
+        if (currentPlayerPos && typeof playerTakeDamage === 'function' && playerHp > 0) {
+             const distSq = currentPlayerPos.distanceToSquared(targetPos);
+             if (distSq <= indicatorRadius * indicatorRadius) {
+                 const finalDamage = damage || 15;
+                 console.log(` Игрок получил урон от шипов! Урон: ${finalDamage}`);
+                 playerTakeDamage(finalDamage);
+             }
+        }
+
+        // --- 5. Таймер для удаления шипов ---
+        const cleanupTimerId = setTimeout(() => {
+             console.log(` Reaper ${casterId} удаляет ${spikeMeshes.length} шипов.`);
+             spikeMeshes.forEach(spike => {
+                  currentScene?.remove(spike);
+             });
+             // Очищаем ГЕОМЕТРИЮ и МАТЕРИАЛ, так как создавали их в этом вызове
+              spikeGeometry.dispose();
+              spikeMaterial.dispose();
+             effectTimersRef.current = effectTimersRef.current.filter(id => id !== cleanupTimerId);
+        }, eruptionDuration * 1000);
+
+        effectTimersRef.current.push(cleanupTimerId);
+        effectTimersRef.current = effectTimersRef.current.filter(id => id !== eruptionTimerId);
+
+    }, delay * 1000);
+
+    effectTimersRef.current.push(eruptionTimerId);
+
+}, [sceneRef, playerObject, playerTakeDamage, playerHp]); // Зависимости
 
     // Для Культиста
     const createPoisonPuddle = useCallback((casterId, targetPos, duration, radius, dps) => {
@@ -811,7 +1253,7 @@ const createPoisonCloud = useCallback((position) => {
     // === ОСНОВНОЙ ИГРОВОЙ ЦИКЛ ===
     useEffect(() => {
         // Условие запуска цикла
-        if (isLoading || levelStatus !== 'playing' || !playerObject || !enemyRefs || !sceneRef.current || !rendererRef.current || !cameraRef.current || !levelConfig || !beamTexturesLoaded) {
+        if (isLoading || levelStatus !== 'playing' || !playerObject || !loadedEnemyRefsArray || !sceneRef.current || !rendererRef.current || !cameraRef.current || !levelConfig || !beamTexturesLoaded) {
             if (animationFrameId.current) {
                 cancelAnimationFrame(animationFrameId.current);
                 animationFrameId.current = null;
@@ -826,7 +1268,7 @@ const createPoisonCloud = useCallback((position) => {
         const findNearestEnemy = (origin, maxRangeSq) => {
             let nearestEnemy = null;
             let minDistanceSq = maxRangeSq;
-            enemyRefs?.forEach(enemy => {
+            loadedEnemyRefsArray?.forEach(enemy => {
                 // Используем enemy.isDead вместо поиска в enemiesState каждый раз
                 if (!enemy || enemy.isDead || !enemy.pivot?.position) return;
                 const distanceSq = origin.distanceToSquared(enemy.pivot.position);
@@ -849,6 +1291,7 @@ const createPoisonCloud = useCallback((position) => {
         };
 
         const createProjectile = (targetEnemyRef) => {
+            console.log("Player Attack Stat:", playerStats?.attack);
             if (!playerObject || !targetEnemyRef?.pivot?.position || !playerStats) return;
 
             const projSpeed = 500;
@@ -1060,6 +1503,15 @@ const createPoisonCloud = useCallback((position) => {
 
         // --- Главная функция кадра ---
         // --- Главная функция кадра ---
+// Предполагается, что THREE, HEALTH_BAR_WIDTH, levelConfig, playerStats, checkCollision, clamp, 
+// createProjectile, handleEnemyHit, playerTakeDamage, removeBeamMesh, createPoisonCloud,
+// checkWinCondition, loadedEnemyRefsArray (массив объектов врагов с полями isActive, isDead, pivot, stats, hpBar, mixer, type, id и т.д.),
+// enemiesStateRef, playerObject, sceneRef, cameraRef, rendererRef, wallsRef, projectilesRef,
+// enemyProjectilesRef, activeCloudsRef, clock, velocity, playerAttackCooldown,
+// lastTimestamp, animationFrameId, levelStatus, setLevelStatus, playerHp,
+// createBeamMeshFixed, updateBeamMesh, triggerGroundSpikes, (и возможно другие функции, вызываемые из ИИ врагов)
+// УЖЕ ОПРЕДЕЛЕНЫ И ДОСТУПНЫ В ЭТОЙ ОБЛАСТИ ВИДИМОСТИ.
+
 const animate = (timestamp) => {
     if (levelStatus !== 'playing') {
         console.log(`Game loop stopping. Status: ${levelStatus}`);
@@ -1070,21 +1522,20 @@ const animate = (timestamp) => {
     }
     animationFrameId.current = requestAnimationFrame(animate);
 
-    // Расчет дельта времени (dt)
     const dt = timestamp === 0 ? 0.016 : Math.min((timestamp - lastTimestamp) / 1000, 0.05);
     lastTimestamp = timestamp;
-
+    
+    const currentEnemiesState = enemiesStateRef.current;
     const playerPos = playerObject?.position;
     const currentScene = sceneRef.current;
     const currentCamera = cameraRef.current;
     const currentRenderer = rendererRef.current;
-
-    // Проверка наличия необходимых объектов
+    
     if (!playerObject || !playerPos || !currentScene || !currentCamera || !currentRenderer || !levelConfig || !playerStats) {
         console.warn("Пропуск кадра: Отсутствуют необходимые объекты");
         return;
     }
-
+    
     // ==================================
     // === 1. Обновление Игрока =======
     // ==================================
@@ -1099,7 +1550,6 @@ const animate = (timestamp) => {
         let nextY = playerPos.y + dy;
         const PLAYER_SIZE = { width: 30, height: 30 };
 
-        // Проверка коллизий игрока со стенами
         const pRect = { x: playerPos.x - PLAYER_SIZE.width / 2, y: playerPos.y - PLAYER_SIZE.height / 2, width: PLAYER_SIZE.width, height: PLAYER_SIZE.height };
         let colX = false;
         let colY = false;
@@ -1108,11 +1558,9 @@ const animate = (timestamp) => {
         const pRectY = { ...pRect, y: nextY - PLAYER_SIZE.height / 2 };
         for (const wall of wallsRef.current) { if (checkCollision(pRectY, wall)) { colY = true; break; } }
 
-        // Применение движения, если нет коллизий
         if (!colX) playerPos.x = nextX;
         if (!colY) playerPos.y = nextY;
 
-        // Ограничение движения границами мира
         const pSizeHW = PLAYER_SIZE.width / 2;
         const pSizeHH = PLAYER_SIZE.height / 2;
         const minX = -levelConfig.gameWorldWidth / 2 + pSizeHW;
@@ -1122,7 +1570,6 @@ const animate = (timestamp) => {
         playerPos.x = clamp(playerPos.x, minX, maxX);
         playerPos.y = clamp(playerPos.y, minYw, maxYw);
 
-        // Плавный поворот игрока
         if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
             const angle = Math.atan2(dy, dx);
             let targetRotZ = angle - Math.PI / 2;
@@ -1134,11 +1581,51 @@ const animate = (timestamp) => {
             const lerpFactor = 0.15;
             playerObject.rotation.z += diff * lerpFactor;
         }
-        // TODO: Анимация ходьбы
-    } else {
-        // TODO: Анимация бездействия
     }
-    playerObject.userData?.mixer?.update(dt); // Обновление миксера анимаций игрока
+    playerObject.userData?.mixer?.update(dt); 
+
+    // Внутри animate
+let playerCurrentRoom = null;
+if (playerObject?.position && levelData?.rooms) {
+    const pX = playerObject.position.x;
+    const pY = playerObject.position.y;
+
+    for (const room of levelData.rooms) { // Или итерироваться по keys(worldRoomBoundariesRef.current)
+        const bounds = worldRoomBoundariesRef.current[room.id];
+        if (bounds &&
+            pX >= bounds.xMinWorld && pX <= bounds.xMaxWorld &&
+            pY >= bounds.yMinWorld && pY <= bounds.yMaxWorld) {
+            playerCurrentRoom = room.id;
+            break;
+        }
+    }
+}
+
+if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
+    console.log(`Player entered new room: ${playerCurrentRoom}. Previously active: ${currentActiveRoomId}`);
+    // Здесь будет логика активации новой комнаты:
+    // 1. Скрыть туман для playerCurrentRoom
+    if (fogOverlaysRef.current[playerCurrentRoom]) {
+        fogOverlaysRef.current[playerCurrentRoom].visible = false;
+    }
+    // 2. Активировать монстров в playerCurrentRoom
+    if (loadedEnemyRefsArray) { // Добавим проверку, что массив существует
+        loadedEnemyRefsArray.forEach(enemy => {
+            if (enemy.roomId === playerCurrentRoom && !enemy.isActive) {
+                enemy.isActive = true;
+                if (enemy.pivot) {
+                    enemy.pivot.visible = true; // Делаем видимым
+                }
+                console.log(`Enemy ${enemy.id} in room ${playerCurrentRoom} activated.`);
+                if (enemy.aiState === 'SLEEPING' || !enemy.aiState) { // "Разбудить" AI
+                    enemy.aiState = 'IDLE';
+                }
+            }
+        });
+    }
+    
+    setCurrentActiveRoomId(playerCurrentRoom);
+}
 
     // ==================================
     // === 2. Атака Игрока =============
@@ -1149,10 +1636,9 @@ const animate = (timestamp) => {
         playerAttackCooldown.current = interval;
         const range = playerStats.attackRange || 150;
         const rangeSq = range * range;
-        const target = findNearestEnemy(playerPos, rangeSq); // Находим ближайшего врага
+        const target = findNearestEnemy(playerPos, rangeSq); 
         if (target) {
-            createProjectile(target); // Создаем снаряд в сторону цели
-            // TODO: Анимация атаки
+            createProjectile(target); 
         }
     }
 
@@ -1160,14 +1646,15 @@ const animate = (timestamp) => {
     // === 3. Снаряды Игрока ==========
     // ==================================
     const activeProjectiles = [];
-    // Создаем хитбоксы для живых врагов
-    const enemyHitboxes = enemyRefs?.map(enemy => {
-        if (enemy?.pivot?.position && !enemy.isDead) {
-            const size = 40; // TODO: брать из enemy.stats.hitboxSize?
+    const enemyHitboxes = loadedEnemyRefsArray?.map(enemy => {
+        // Убедимся, что enemy.isActive существует и используется (если нет, считать true или добавить)
+        // Добавлена проверка !enemy.isActive
+        if (enemy?.pivot?.position && !enemy.isDead && (typeof enemy.isActive === 'undefined' || enemy.isActive)) {
+            const size = 40; 
             return {
                 id: enemy.id,
                 type: enemy.type,
-                ref: enemy, // Для доступа к blockCharges
+                ref: enemy, 
                 x: enemy.pivot.position.x - size / 2,
                 y: enemy.pivot.position.y - size / 2,
                 width: size,
@@ -1176,32 +1663,28 @@ const animate = (timestamp) => {
         } return null;
     }).filter(Boolean) || [];
 
-    // Обновление и проверка коллизий снарядов игрока
     projectilesRef.current.forEach(proj => {
-        proj.position.add(proj.velocity.clone().multiplyScalar(dt)); // Движение
-        proj.lifetime -= dt; // Уменьшение времени жизни
-
-        if (proj.mesh) proj.mesh.position.copy(proj.position); // Обновление позиции меша
+        proj.position.add(proj.velocity.clone().multiplyScalar(dt)); 
+        proj.lifetime -= dt; 
+        if (proj.mesh) proj.mesh.position.copy(proj.position); 
 
         let hit = false;
         if (proj.lifetime > 0 && enemyHitboxes.length > 0) {
             const projSize = 8;
             const pHitbox = { x: proj.position.x - projSize / 2, y: proj.position.y - projSize / 2, width: projSize, height: projSize };
-
-            // Проверка коллизии с хитбоксами врагов
             for (const eBox of enemyHitboxes) {
                 if (checkCollision(pHitbox, eBox)) {
-                    handleEnemyHit(eBox.id, proj.damage); // Обработка попадания
+                    console.log(`>>> СНАРЯД ${proj.id} ПОПАЛ во врага ${eBox.id}! Урон: ${proj.damage}`);
+                    handleEnemyHit(eBox.id, proj.damage); 
                     hit = true;
                     break;
                 }
             }
         }
 
-        // Если снаряд еще жив и никого не поразил, оставляем его
         if (proj.lifetime > 0 && !hit) {
             activeProjectiles.push(proj);
-        } else { // Иначе удаляем меш из сцены и освобождаем ресурсы
+        } else { 
             if (proj.mesh) {
                 currentScene?.remove(proj.mesh);
                 proj.mesh.geometry?.dispose();
@@ -1209,354 +1692,309 @@ const animate = (timestamp) => {
             }
         }
     });
-    projectilesRef.current = activeProjectiles; // Обновляем массив активных снарядов
+    projectilesRef.current = activeProjectiles; 
 
     // ==================================
     // === 4. Обновление Врагов ========
     // ==================================
-    enemyRefs?.forEach(enemy => {
-        // 1. --- Получение данных и базовые проверки ---
-        const enemyState = enemiesState?.find(es => es.id === enemy.id);
-
-        if (!enemy || !enemy.pivot || !enemy.stats || enemy.isDead || !enemyState) {
-            // Скрытие хелсбара и луча для мертвых или некорректных врагов
-            if (enemy?.isDead && enemy.hpBar?.container?.visible) {
+    loadedEnemyRefsArray?.forEach(enemy => {
+        // +++ ВАЖНОЕ ИЗМЕНЕНИЕ ИЗ КОД1: Проверка активности и состояния "мертв" +++
+        // Предполагаем, что 'enemy.isActive' существует. Если нет, эту проверку нужно адаптировать.
+        if (!enemy.isActive || enemy.isDead) {
+            if (enemy.hpBar?.container) {
                 enemy.hpBar.container.visible = false;
             }
-            if (enemy?.isDead && enemy.beamEffectMesh) {
-                removeBeamMesh(enemy);
+            if (enemy.isDead && enemy.beamEffectMesh) { // Дополнительно для мертвых
+                 removeBeamMesh(enemy);
             }
-            return; // Пропускаем обработку этого врага
+            return; // Пропускаем неактивных или мертвых врагов
+        }
+        // +++ КОНЕЦ ВАЖНОГО ИЗМЕНЕНИЯ ИЗ КОД1 +++
+
+        // Если мы дошли сюда, значит enemy.isActive === true и enemy.isDead === false.
+        // Убедимся, что pivot врага видим (из код1)
+        if (enemy.pivot && !enemy.pivot.visible) {
+             enemy.pivot.visible = true; 
         }
 
-        // 2. --- Проверка смерти в этом кадре ---
-        if (enemyState.currentHp <= 0) {
-            enemy.isDead = true; // Помечаем как мертвого
-            console.log(`--- Враг ${enemy.id} (${enemy.type}) помечен как isDead (HP=${enemyState.currentHp}) ---`);
+        const enemyState = currentEnemiesState.find(es => es.id === enemy.id);
 
-            // --- ЛОГИКА ПРИ СМЕРТИ (взята из code1) ---
+        // Базовые проверки (объединение код1 и существующей логики из код2)
+        // isDead уже проверен выше.
+        if (!enemy.pivot || !enemy.stats || !enemyState) {
+            if (enemy.hpBar?.container) enemy.hpBar.container.visible = false;
+            if (enemy.beamEffectMesh) removeBeamMesh(enemy); 
+            return;
+        }
+        
+        // Проверка смерти по HP из состояния (если он только что умер)
+        if (enemyState.currentHp <= 0) {
+            enemy.isDead = true; 
+            console.log(`--- Враг ${enemy.id} (${enemy.type}) ПОМЕЧЕН МЕРТВЫМ в animate (HP=${enemyState.currentHp}) ---`);
+            
+            // --- ЛОГИКА ПРИ СМЕРТИ (объединенная) ---
             if (enemy.type === 'rotting_soldier' && !enemy.exploded) {
                 console.log(`Rotting Soldier ${enemy.id} EXPLODES!`);
                 const ePosOnDeath = enemy.pivot.position.clone();
-                // TODO: Эффект взрыва
-
-                // Урон игроку от взрыва
                 if (enemy.stats.explosionDamage && typeof playerTakeDamage === 'function') {
                     const explosionRadius = enemy.stats.explosionRadius || 50;
-                    const distToPlayer = ePosOnDeath.distanceTo(playerPos);
-                    if (distToPlayer <= explosionRadius) {
+                    if (ePosOnDeath.distanceTo(playerPos) <= explosionRadius) {
                         console.log(`... Player takes ${enemy.stats.explosionDamage} explosion damage`);
                         playerTakeDamage(enemy.stats.explosionDamage);
                     }
                 }
-                // Создание облака яда
-                createPoisonCloud(ePosOnDeath); // Вызов функции создания облака (нужно определить ее)
+                createPoisonCloud(ePosOnDeath); 
                 enemy.exploded = true;
-                if (enemy.pivot) enemy.pivot.visible = false; // Скрыть модель
-                if (enemy.hpBar?.container) enemy.hpBar.container.visible = false; // Скрыть хелсбар
-                return; // Завершаем обработку этого врага
+                if (enemy.pivot) enemy.pivot.visible = false; 
             } else if (enemy.type === 'cursed_carrier') {
-                console.log(`Cursed Carrier ${enemy.id} summons on death...`);
-                // Вызов функции призыва (нужно определить ее)
-                summonCreature(enemy.id, enemy.stats.summonOnDeathType || 'skeleton_spirit', enemy.stats.summonOnDeathCount || 1, enemy.pivot.position.clone());
+                // Ваша логика призыва существ при смерти (если вы вернетесь к суммонерам)
+                console.log(`Cursed Carrier ${enemy.id} умер. TODO: логика призыва существ.`);
             }
 
-            // Убираем луч, если он был активен при смерти
-            if (enemy.beamEffectMesh) removeBeamMesh(enemy);
-            // TODO: Анимация смерти?
-            return; // Завершаем обработку мертвого врага
+            if (enemy.hpBar?.container) enemy.hpBar.container.visible = false; 
+            if (enemy.beamEffectMesh) removeBeamMesh(enemy); 
+            
+            // Завершаем обработку, так как враг только что умер.
+            // useEffect должен позаботиться об удалении из массива врагов.
+            return; 
         }
 
-        // --- Если враг жив ---
+        // --- Если враг жив и активен ---
         const ePivot = enemy.pivot;
         const ePos = ePivot.position;
         const eStats = enemy.stats;
-        const mixer = enemy.mixer;
+        // const mixer = enemy.mixer; // enemy.mixer используется напрямую ниже
 
-        // 3. --- Обновление анимаций ---
-        mixer?.update(dt);
+        // Обновление анимаций (из код1)
+        enemy.mixer?.update(dt);
 
-        // 4. --- Расчет дистанции до игрока ---
-        const dist = ePos.distanceTo(playerPos);
-
-        // 5. --- Обновление Хелсбара ---
-        if (enemy.hpBar?.container && enemy.hpBar?.fill && enemyState.maxHp > 0) {
+        // Обновление Хелсбара (из код1)
+        if (enemy.hpBar?.container && enemy.hpBar?.fill && enemyState && enemyState.maxHp > 0) {
+            enemy.hpBar.container.visible = true; 
             const hpPercent = Math.max(0, enemyState.currentHp / enemyState.maxHp);
             const fillMesh = enemy.hpBar.fill;
-            const container = enemy.hpBar.container;
-            const newScaleX = Math.max(0.001, hpPercent); // Чтобы не было scale=0
-            const newPosX = (HEALTH_BAR_WIDTH * (newScaleX - 1)) / 2;
+            const newScaleX = Math.max(0.001, hpPercent);
             fillMesh.scale.x = newScaleX;
-            fillMesh.position.x = newPosX;
-            container.visible = true;
-            // Поворот хелсбара к камере
-            if (currentCamera) { container.quaternion.copy(currentCamera.quaternion); }
-        } else if (enemy.hpBar?.container) {
-            container.visible = false; // Скрываем, если нет данных
+            // HEALTH_BAR_WIDTH должна быть определена глобально или передана
+            fillMesh.position.x = (HEALTH_BAR_WIDTH * (newScaleX - 1)) / 2; 
+            if (cameraRef.current) { 
+                enemy.hpBar.container.quaternion.copy(cameraRef.current.quaternion);
+            }
+        } else if (enemy.hpBar?.container) { 
+            enemy.hpBar.container.visible = false;
         }
-
-        // 6. --- Обновление кулдаунов ---
+        
+        // --- Остальная логика ИИ, движения, атак, кулдаунов из код2 ---
+        const dist = ePos.distanceTo(playerPos); // Расчет дистанции до игрока
+    
+        // Обновление кулдаунов
         if (enemy.attackCooldown > 0) enemy.attackCooldown -= dt;
         if (enemy.abilityCooldown > 0) enemy.abilityCooldown -= dt;
         if (typeof enemy.beamEffectTimer === 'number' && enemy.beamEffectTimer > 0) {
             enemy.beamEffectTimer -= dt;
             if (enemy.beamEffectTimer <= 0) {
-                removeBeamMesh(enemy); // Удаляем эффект луча по таймеру
+                removeBeamMesh(enemy); 
             }
         }
 
-        // 7. --- Вспомогательные функции для ИИ ---
+        // Вспомогательные функции для ИИ
         const rotateEnemyTowards = (targetPosition, rotationSpeed = 0.08) => {
-             const direction = new THREE.Vector3().subVectors(targetPosition, ePos);
-             if (direction.lengthSq() < 0.01) return; // Не поворачивать, если цель близко
-             const angle = Math.atan2(direction.y, direction.x);
-             let targetZ = angle - Math.PI / 2; // Коррекция для модели, смотрящей по Y
-             const currentZ = ePivot.rotation.z;
-             const twoPi = Math.PI * 2;
-             let diff = targetZ - currentZ;
-             // Нормализация разницы углов (-PI, PI]
-             while (diff <= -Math.PI) diff += twoPi;
-             while (diff > Math.PI) diff -= twoPi;
-             const threshold = 0.05; // Порог для мгновенного поворота
-             if (Math.abs(diff) > threshold) {
-                 ePivot.rotation.z += diff * rotationSpeed; // Плавный поворот
-             } else {
-                 ePivot.rotation.z = targetZ; // Точный поворот
-             }
-             // Убедиться, что вращение только по Z
-             ePivot.rotation.order = 'XYZ';
-             ePivot.rotation.x = 0;
-             ePivot.rotation.y = 0;
+            const direction = new THREE.Vector3().subVectors(targetPosition, ePos);
+            if (direction.lengthSq() < 0.01) return; 
+            const angle = Math.atan2(direction.y, direction.x);
+            let targetZ = angle - Math.PI / 2; 
+            const currentZ = ePivot.rotation.z;
+            const twoPi = Math.PI * 2;
+            let diff = targetZ - currentZ;
+            while (diff <= -Math.PI) diff += twoPi;
+            while (diff > Math.PI) diff -= twoPi;
+            const threshold = 0.05; 
+            if (Math.abs(diff) > threshold) {
+                ePivot.rotation.z += diff * rotationSpeed; 
+            } else {
+                ePivot.rotation.z = targetZ; 
+            }
+            ePivot.rotation.order = 'XYZ';
+            ePivot.rotation.x = 0;
+            ePivot.rotation.y = 0;
         };
 
-        const ENEMY_COLLISION_SIZE = { width: 30, height: 30 }; // Размер для коллизий врага
+        const ENEMY_COLLISION_SIZE = { width: 30, height: 30 }; 
 
         const moveEnemyWithCollision = (directionVector, speedValue) => {
-             if (speedValue <= 0) return { collidedX: false, collidedY: false };
-             const moveDir = directionVector.clone().normalize();
-             const moveAmount = speedValue * dt * 60; // Общее смещение за кадр (60 FPS база)
+            if (typeof dt === 'undefined') console.error("DT IS UNDEFINED IN moveEnemyWithCollision!");
+            if (speedValue <= 0) return { collidedX: false, collidedY: false };
+            const moveDir = directionVector.clone().normalize();
+            const moveAmount = speedValue * dt * 60; 
 
-             const nextX = ePos.x + moveDir.x * moveAmount;
-             const nextY = ePos.y + moveDir.y * moveAmount; // Исправлено: Умножить на moveDir.y
+            const nextX = ePos.x + moveDir.x * moveAmount;
+            const nextY = ePos.y + moveDir.y * moveAmount; 
 
-             const enemyHitbox = {
-                 x: ePos.x - ENEMY_COLLISION_SIZE.width / 2,
-                 y: ePos.y - ENEMY_COLLISION_SIZE.height / 2,
-                 width: ENEMY_COLLISION_SIZE.width,
-                 height: ENEMY_COLLISION_SIZE.height
-             };
+            const enemyHitbox = {
+                x: ePos.x - ENEMY_COLLISION_SIZE.width / 2,
+                y: ePos.y - ENEMY_COLLISION_SIZE.height / 2,
+                width: ENEMY_COLLISION_SIZE.width,
+                height: ENEMY_COLLISION_SIZE.height
+            };
 
-             // Проверка по X
-             const nextHitboxX = { ...enemyHitbox, x: nextX - ENEMY_COLLISION_SIZE.width / 2 };
-             let canMoveX = true;
-             for (const wall of wallsRef.current) {
-                 if (checkCollision(nextHitboxX, wall)) {
-                     canMoveX = false;
-                     break;
-                 }
-             }
+            const nextHitboxX = { ...enemyHitbox, x: nextX - ENEMY_COLLISION_SIZE.width / 2 };
+            let canMoveX = true;
+            for (const wall of wallsRef.current) {
+                if (checkCollision(nextHitboxX, wall)) {
+                    canMoveX = false; break;
+                }
+            }
 
-             // Проверка по Y
-             const nextHitboxY = { ...enemyHitbox, y: nextY - ENEMY_COLLISION_SIZE.height / 2 };
-             let canMoveY = true;
-             for (const wall of wallsRef.current) {
-                 if (checkCollision(nextHitboxY, wall)) {
-                     canMoveY = false;
-                     break;
-                 }
-             }
+            const nextHitboxY = { ...enemyHitbox, y: nextY - ENEMY_COLLISION_SIZE.height / 2 };
+            let canMoveY = true;
+            for (const wall of wallsRef.current) {
+                if (checkCollision(nextHitboxY, wall)) {
+                    canMoveY = false; break;
+                }
+            }
 
-             // Применяем движение
-             if (canMoveX) { ePos.x = nextX; }
-             if (canMoveY) { ePos.y = nextY; }
+            if (canMoveX) { ePos.x = nextX; }
+            if (canMoveY) { ePos.y = nextY; }
 
-             // Ограничение по границам мира (после коллизий со стенами)
-             const eSizeHW = ENEMY_COLLISION_SIZE.width / 2;
-             const eSizeHH = ENEMY_COLLISION_SIZE.height / 2;
-             const minXb = -levelConfig.gameWorldWidth / 2 + eSizeHW;
-             const maxXb = levelConfig.gameWorldWidth / 2 - eSizeHW;
-             const minYwb = -levelConfig.WORLD_Y_OFFSET + eSizeHH;
-             const maxYwb = levelConfig.gameWorldHeight - levelConfig.WORLD_Y_OFFSET - eSizeHH;
-             ePos.x = clamp(ePos.x, minXb, maxXb);
-             ePos.y = clamp(ePos.y, minYwb, maxYwb);
+            const eSizeHW = ENEMY_COLLISION_SIZE.width / 2;
+            const eSizeHH = ENEMY_COLLISION_SIZE.height / 2;
+            const minXb = -levelConfig.gameWorldWidth / 2 + eSizeHW;
+            const maxXb = levelConfig.gameWorldWidth / 2 - eSizeHW;
+            const minYwb = -levelConfig.WORLD_Y_OFFSET + eSizeHH;
+            const maxYwb = levelConfig.gameWorldHeight - levelConfig.WORLD_Y_OFFSET - eSizeHH;
+            ePos.x = clamp(ePos.x, minXb, maxXb);
+            ePos.y = clamp(ePos.y, minYwb, maxYwb);
 
-             return { collidedX: !canMoveX, collidedY: !canMoveY };
+            return { collidedX: !canMoveX, collidedY: !canMoveY };
         };
 
-
-        // 8. --- ЛОГИКА ИИ (по типам врагов) ---
-        let isAttacking = false; // Флаг для использования в других системах, если нужно
-
+        // ЛОГИКА ИИ (по типам врагов) 
+        let isAttacking = false; 
         switch (enemy.type) {
-
-            // --- ОБНОВЛЕННЫЙ CASE ДЛЯ МИЛИ-ПОДОБНЫХ (Объединение логики) ---
+            // --- ОБНОВЛЕННЫЙ CASE ДЛЯ МИЛИ-ПОДОБНЫХ ---
             case 'melee':
             case 'boss':
             case 'skeleton_swordsman':
             case 'cursed_gladiator':
             case 'revenant_knight':
-            case 'rotting_soldier': // Поведение до взрыва - как у мили
-            case 'cursed_carrier':  // Поведение до призыва - как у мили
+            case 'rotting_soldier': // Уже обработан выше, если умер. Если жив, то ИИ здесь.
+            case 'cursed_carrier':  // Аналогично.
             {
-                // --- 1. Получаем данные и рассчитываем условия ---
                 const eStats = enemy.stats;
                 const atkRange = eStats.attackRange || 25;
                 const aggroRange = atkRange * (eStats.aggroMultiplier || 5);
                 const playerInAttackRange = dist <= atkRange;
                 const playerInAggroRange = dist <= aggroRange;
 
-                // Инициализация состояния и позиции спавна
-                if (!enemy.aiState) enemy.aiState = 'IDLE';
+                if (!enemy.aiState && !enemy.id.startsWith('summon_')) { 
+                    enemy.aiState = 'IDLE';
+                }
                 if (!enemy.spawnPosition) enemy.spawnPosition = ePos.clone();
                 const spawnPos = enemy.spawnPosition;
                 const distToSpawn = spawnPos ? ePos.distanceTo(spawnPos) : 0;
 
-                // --- 2. Логика Переключения Состояний ---
                 let nextState = enemy.aiState;
-                const returnDelay = 3500; // мс - время ожидания перед возвратом
+                const returnDelay = 3500; 
 
                 switch (enemy.aiState) {
                     case 'IDLE':
                         if (playerInAggroRange) {
                             nextState = 'CHASING';
-                            enemy.chaseEndTime = null; // Сброс таймера возврата
+                            enemy.chaseEndTime = null; 
                         }
                         break;
-
                     case 'CHASING':
                         if (playerInAttackRange) {
                             nextState = 'ATTACKING';
                             enemy.chaseEndTime = null;
-                        } else if (!playerInAggroRange) { // Игрок вне радиуса аггро
-                            if (!enemy.chaseEndTime) { // Запускаем таймер, если еще не запущен
+                        } else if (!playerInAggroRange) { 
+                            if (!enemy.chaseEndTime) { 
                                 enemy.chaseEndTime = Date.now() + returnDelay;
                                 console.log(`Enemy ${enemy.id} потерял игрока, таймер возврата запущен.`);
                             }
-                            if (Date.now() >= enemy.chaseEndTime) { // Таймер истек
+                            if (Date.now() >= enemy.chaseEndTime) { 
                                 nextState = 'RETURNING';
                                 console.log(`Enemy ${enemy.id} возвращается на базу.`);
                                 enemy.chaseEndTime = null;
                             }
-                            // Если таймер идет - продолжаем погоню (nextState не меняется)
-                        } else { // Игрок снова в радиусе аггро
-                            enemy.chaseEndTime = null; // Сбрасываем таймер, если он был
-                            // nextState остается 'CHASING'
+                        } else { 
+                            enemy.chaseEndTime = null; 
                         }
                         break;
-
                     case 'ATTACKING':
                         if (!playerInAttackRange) {
-                            nextState = 'CHASING'; // Догонять снова
+                            nextState = 'CHASING'; 
                         }
-                        // Если в КД или не может атаковать - остается в ATTACKING (анимация другая)
                         break;
-
                     case 'RETURNING':
                         if (playerInAggroRange) {
-                            nextState = 'CHASING'; // Снова агрится
+                            nextState = 'CHASING'; 
                             enemy.chaseEndTime = null;
-                        } else if (distToSpawn < 10) { // Добрался до базы
+                        } else if (distToSpawn < 10) { 
                             nextState = 'IDLE';
-                             ePos.copy(spawnPos); // Точно ставим на спавн
-                             ePivot.rotation.z = enemy.spawnRotationZ || 0; // Возвращаем исходный поворот (если есть)
-                             console.log(`Enemy ${enemy.id} вернулся.`);
+                            ePos.copy(spawnPos); 
+                            ePivot.rotation.z = enemy.spawnRotationZ || 0; 
+                            console.log(`Enemy ${enemy.id} вернулся.`);
                         }
-                        // Иначе продолжает возвращаться (nextState не меняется)
                         break;
                 }
                 enemy.aiState = nextState;
 
-                // --- 3. Выполнение Действий на основе Текущего Состояния ---
                 let shouldMove = false;
                 let moveTargetPos = null;
                 let shouldRotate = false;
                 let rotateTargetPos = null;
                 let isAttackingNow = false;
-                let currentMoveSpeed = eStats.speed || 1.5; // Скорость по умолчанию
-                let canAttack = true; // Флаг для блока рыцаря
+                let currentMoveSpeed = eStats.speed || 1.5; 
+                let canAttack = true; 
 
-                // Логика блока Рыцаря
                 if (enemy.type === 'revenant_knight') {
                     if (typeof enemy.blockCharges === 'undefined') enemy.blockCharges = eStats.initialBlockCharges || 0;
                     if (enemy.blockCharges > 0) {
-                        canAttack = false; // Не может атаковать с блоком
-                         // TODO: Анимация BlockIdle / BlockWalk ?
+                        canAttack = false; 
                     }
-                    // Отображение щита
                     if (enemy.shieldMesh) enemy.shieldMesh.visible = enemy.blockCharges > 0;
-                 }
+                }
 
-                 // Определяем действия для текущего состояния
-                 switch (enemy.aiState) {
-                     case 'IDLE':
-                         shouldMove = false;
-                         shouldRotate = false; // Можно не поворачивать
-                         // TODO: Анимация Idle (или BlockIdle для рыцаря)
-                         break;
-                     case 'CHASING':
-                         shouldMove = true;
-                         moveTargetPos = playerPos.clone();
-                         shouldRotate = true;
-                         rotateTargetPos = playerPos.clone();
-                         currentMoveSpeed = eStats.speed || 1.5;
-                         // TODO: Анимация Walk (или BlockWalk для рыцаря)
-                         break;
-                     case 'ATTACKING':
-                         shouldMove = false; // Не двигается во время атаки
-                         shouldRotate = true;
-                         rotateTargetPos = playerPos.clone();
-                         if (enemy.attackCooldown <= 0 && canAttack) {
-                             isAttackingNow = true; // Готов атаковать
-                             // TODO: Анимация Attack
-                         } else {
-                             // TODO: Анимация Idle или конец атаки (или BlockIdle)
-                         }
-                         break;
-                     case 'RETURNING':
-                         shouldMove = true;
-                         moveTargetPos = spawnPos.clone();
-                         shouldRotate = true;
-                         rotateTargetPos = spawnPos.clone();
-                         currentMoveSpeed = (eStats.speed || 1.5) * 0.8; // Возвращается чуть медленнее?
-                         // TODO: Анимация Walk
-                         break;
-                 }
+                switch (enemy.aiState) {
+                    case 'IDLE':
+                        shouldMove = false; shouldRotate = false; break;
+                    case 'CHASING':
+                        shouldMove = true; moveTargetPos = playerPos.clone();
+                        shouldRotate = true; rotateTargetPos = playerPos.clone();
+                        currentMoveSpeed = eStats.speed || 1.5;
+                        break;
+                    case 'ATTACKING':
+                        shouldMove = false; 
+                        shouldRotate = true; rotateTargetPos = playerPos.clone();
+                        if (enemy.attackCooldown <= 0 && canAttack) {
+                            isAttackingNow = true; 
+                        }
+                        break;
+                    case 'RETURNING':
+                        shouldMove = true; moveTargetPos = spawnPos.clone();
+                        shouldRotate = true; rotateTargetPos = spawnPos.clone();
+                        currentMoveSpeed = (eStats.speed || 1.5) * 0.8; 
+                        break;
+                }
 
-                 // --- 4. Выполняем Атаку (если isAttackingNow=true) ---
-                 if (isAttackingNow) {
-                     let currentDamage = eStats.damage || 5;
-                     // TODO: Логика Гладиатора (урон зависит от HP?)
-                     // if (enemy.type === 'cursed_gladiator') { /* ... */ }
-                     console.log(`${enemy.id} (${enemy.type}) attacks player! Damage: ${currentDamage}`);
-                     if (typeof playerTakeDamage === 'function') playerTakeDamage(currentDamage);
-                     enemy.attackCooldown = 1 / (eStats.attackSpeed || 1.0); // Сброс кулдауна
-                 }
+                if (isAttackingNow) {
+                    let currentDamage = eStats.damage || 5;
+                    console.log(`${enemy.id} (${enemy.type}) attacks player! Damage: ${currentDamage}`);
+                    if (typeof playerTakeDamage === 'function') playerTakeDamage(currentDamage);
+                    enemy.attackCooldown = 1 / (eStats.attackSpeed || 1.0); 
+                }
 
-                 // --- 5. Выполняем Движение и Коллизии ---
-                 if (shouldMove && moveTargetPos) {
+                if (shouldMove && moveTargetPos) {
                     const direction = new THREE.Vector3().subVectors(moveTargetPos, ePos);
                     moveEnemyWithCollision(direction, currentMoveSpeed);
-                 }
+                }
 
-                 // --- 6. Выполняем Поворот ---
-                 if (shouldRotate && rotateTargetPos) {
-                     rotateEnemyTowards(rotateTargetPos);
-                 }
-
-                 // --- 7. Логика Носильщика (Спаун по КД Способности) ---
-                  if (enemy.type === 'cursed_carrier' && enemy.abilityCooldown <= 0) {
-                     // Спаунит, если игрок в радиусе аггро? Или всегда? Допустим, всегда, если не возвращается.
-                     if (enemy.aiState !== 'RETURNING') {
-                          console.log(`Carrier ${enemy.id} summons...`);
-                          summonCreature(enemy.id, eStats.summonType || 'skeleton_swordsman', eStats.summonCount || 1, ePos.clone());
-                          enemy.abilityCooldown = eStats.summonCooldown || 15.0; // Сброс КД способности
-                          // TODO: Анимация призыва?
-                     }
-                  }
-
-                break; // Конец case для мили-подобных
-            } // Конец блока {}
-
+                if (shouldRotate && rotateTargetPos) {
+                    rotateEnemyTowards(rotateTargetPos);
+                }
+                break; 
+            }
 
             // === ДАЛЬНИЙ БОЙ (Снаряды - Лучник) ===
             case 'ranged':
@@ -1565,9 +2003,8 @@ const animate = (timestamp) => {
                 const eStats = enemy.stats;
                 const atkRange = eStats.attackRange || 100;
                 const playerInAttackRange = dist <= atkRange;
-                const currentMoveSpeed = eStats.speed || 1.0; // Базовая скорость
+                const currentMoveSpeed = eStats.speed || 1.0; 
 
-                // Инициализация для патрулирования
                 if (typeof enemy.patrolWaitTimer === 'undefined') enemy.patrolWaitTimer = 0;
                 if (!enemy.patrolTargetPosition) enemy.patrolTargetPosition = null;
                 if (!enemy.spawnPosition) enemy.spawnPosition = ePos.clone();
@@ -1579,451 +2016,226 @@ const animate = (timestamp) => {
                 let isAttackingNow = false;
 
                 if (playerInAttackRange) {
-                    // --- Логика Атаки ---
-                    shouldRotate = true;
-                    rotateTargetPos = playerPos.clone();
-                    enemy.patrolTargetPosition = null; // Прерываем патруль
+                    shouldRotate = true; rotateTargetPos = playerPos.clone();
+                    enemy.patrolTargetPosition = null; 
                     enemy.patrolWaitTimer = 0;
-                    shouldMove = false; // Стоит на месте при атаке
-
+                    shouldMove = false; 
                     if (enemy.attackCooldown <= 0) {
                         isAttackingNow = true;
-                        // TODO: Анимация атаки
-                    } else {
-                        // TODO: Анимация Idle/Aim
                     }
                 } else {
-                    // --- Логика Патрулирования ---
                     if (enemy.patrolWaitTimer > 0) {
-                        // Ждем на месте
                         enemy.patrolWaitTimer -= dt;
-                        shouldMove = false;
-                        shouldRotate = false;
-                        // TODO: Анимация Idle
+                        shouldMove = false; shouldRotate = false;
                     } else if (enemy.patrolTargetPosition) {
-                        // Идем к точке патруля
                         const distToPatrolTarget = ePos.distanceTo(enemy.patrolTargetPosition);
-                        if (distToPatrolTarget < 10) { // Дошли
-                            console.log(`Enemy ${enemy.id} reached patrol point.`);
+                        if (distToPatrolTarget < 10) { 
                             enemy.patrolTargetPosition = null;
-                            enemy.patrolWaitTimer = 1.5 + Math.random() * 2; // Ждем
-                            shouldMove = false;
-                            shouldRotate = false;
-                            // TODO: Анимация Idle
-                        } else { // Продолжаем идти
-                            shouldMove = true;
-                            moveTargetPos = enemy.patrolTargetPosition.clone();
-                            shouldRotate = true; // Поворот по ходу движения
-                            rotateTargetPos = enemy.patrolTargetPosition.clone();
-                            // TODO: Анимация Walk
+                            enemy.patrolWaitTimer = 1.5 + Math.random() * 2; 
+                            shouldMove = false; shouldRotate = false;
+                        } else { 
+                            shouldMove = true; moveTargetPos = enemy.patrolTargetPosition.clone();
+                            shouldRotate = true; rotateTargetPos = enemy.patrolTargetPosition.clone();
                         }
                     } else {
-                        // Выбираем новую точку патруля
                         const PATROL_RADIUS = 150;
                         const randomAngle = Math.random() * Math.PI * 2;
                         const randomDist = Math.random() * PATROL_RADIUS;
-                        // Рассчитываем точку вокруг спавна
                         const targetX = enemy.spawnPosition.x + Math.cos(randomAngle) * randomDist;
                         const targetY = enemy.spawnPosition.y + Math.sin(randomAngle) * randomDist;
-                        const newTarget = new THREE.Vector3(targetX, targetY, 0);
-                        // TODO: Проверить на коллизию с окружением перед установкой? (сложнее)
-                        enemy.patrolTargetPosition = newTarget;
+                        enemy.patrolTargetPosition = new THREE.Vector3(targetX, targetY, 0);
                         console.log(`Enemy ${enemy.id} new patrol target: (${targetX.toFixed(0)}, ${targetY.toFixed(0)})`);
-
-                        shouldMove = true; // Начинаем идти к ней
-                        moveTargetPos = enemy.patrolTargetPosition.clone();
-                        shouldRotate = true;
-                        rotateTargetPos = enemy.patrolTargetPosition.clone();
-                        // TODO: Анимация Walk
+                        shouldMove = true; moveTargetPos = enemy.patrolTargetPosition.clone();
+                        shouldRotate = true; rotateTargetPos = enemy.patrolTargetPosition.clone();
                     }
                 }
 
-                 // --- Выполняем Атаку (если надо) ---
-                 if (isAttackingNow) {
-                     console.log(`${enemy.id} firing projectile!`);
-                     // createEnemyProjectile(enemy, playerPos); // Нужна функция создания снаряда врага
-                     enemy.attackCooldown = 1 / (eStats.attackSpeed || 0.8);
-                 }
-
-                 // --- Выполняем Движение ---
-                 if (shouldMove && moveTargetPos) {
-                     const direction = new THREE.Vector3().subVectors(moveTargetPos, ePos);
-                     moveEnemyWithCollision(direction, currentMoveSpeed);
-                 }
-
-                 // --- Выполняем Поворот ---
-                 if (shouldRotate && rotateTargetPos) {
-                     rotateEnemyTowards(rotateTargetPos);
-                 }
-
-                break; // Конец case лучника
-            } // Конец {}
-
+                if (isAttackingNow) {
+                    console.log(`${enemy.id} firing projectile!`);
+                    // createEnemyProjectile(enemy, playerPos); // Ваша функция создания снаряда врага
+                    enemy.attackCooldown = 1 / (eStats.attackSpeed || 0.8);
+                }
+                if (shouldMove && moveTargetPos) {
+                    const direction = new THREE.Vector3().subVectors(moveTargetPos, ePos);
+                    moveEnemyWithCollision(direction, currentMoveSpeed);
+                }
+                if (shouldRotate && rotateTargetPos) {
+                    rotateEnemyTowards(rotateTargetPos);
+                }
+                break; 
+            }
 
             // === КАСТЕРЫ (Маги, Чародеи и т.д.) ===
             case 'caster':
             case 'ghostly_enchanter':
             case 'ogre_mage':
             {
-                 const currentAtkRange = eStats.attackRange || 300;
-                 const isPlayerInAttackRange = dist <= currentAtkRange;
+                const currentAtkRange = eStats.attackRange || 300;
+                const isPlayerInAttackRange = dist <= currentAtkRange;
 
-                 if (isPlayerInAttackRange) {
-                     rotateEnemyTowards(playerPos); // Поворот к цели
-                     // Атака по КД
-                     if (enemy.attackCooldown <= 0) {
-                         enemy.attackCooldown = 1 / (eStats.attackSpeed || 0.5);
-                         // TODO: playAnimation('Attack');
-
-                         if (enemy.type === 'ogre_mage') {
-                             const targetPoint = playerPos.clone(); // Стреляет в текущую позицию
-                             console.log(`Ogre Mage ${enemy.id} attacks target point!`);
-                             // createProjectileToPoint(enemy.id, ePos.clone(), targetPoint, eStats.damage || 10, eStats.projectileSpeed || 400); // Нужна эта функция
-                         } else if (enemy.type === 'ghostly_enchanter') {
-                             console.log(`Enchanter ${enemy.id} applies weaken!`);
-                             // applyPlayerDebuff(enemy.id, 'weaken', eStats.debuffDuration || 5, eStats.debuffStrength || 0.2); // Нужна эта функция
-                             // TODO: Визуализация луча ослабления?
-                         } else { // Обычные маги огня/льда
-                             if (typeof playerTakeDamage === 'function') playerTakeDamage(eStats.beamDamage || 1); // Мгновенный урон луча?
-                             // TODO: Наложить DoT/Freeze эффекты, если есть
-                             // Показываем/обновляем луч
-                             if (enemy.beamEffectMesh) removeBeamMesh(enemy); // Убираем старый, если был
-                             enemy.beamEffectMesh = createBeamMeshFixed(enemy, playerPos); // Нужна эта функция
-                             if (enemy.beamEffectMesh) enemy.beamEffectTimer = eStats.beamEffectDuration || 1.0; // Запускаем таймер видимости
-                         }
-                     } else {
-                         // Обновляем существующий луч, если это маг огня/льда и луч активен
-                         if (enemy.beamEffectMesh && (enemy.type === 'caster')) {
-                             updateBeamMesh(enemy.beamEffectMesh, ePos, playerPos); // Нужна эта функция
-                         }
-                         // TODO: playAnimation('Idle'); // Или Aim?
-                     }
-                 } else { // Игрок вне радиуса
-                     if (enemy.beamEffectMesh) removeBeamMesh(enemy); // Убираем луч
-                     // TODO: playAnimation('Idle');
-                     // Можно добавить логику патрулирования, как у лучника?
-                 }
-                 break; // Конец case кастеров
-            } // Конец {}
-
-
-            // === УНИКАЛЬНЫЕ НОВЫЕ ТИПЫ (из code1) ===
-
-            case 'necromancer': {
-                 rotateEnemyTowards(playerPos); // Всегда смотрит на игрока
-                 // Призыв по кулдауну способности
-                 if (enemy.abilityCooldown <= 0) {
-                     console.log(`Necromancer ${enemy.id} summons ${eStats.summonCount || 1} ${eStats.summonType || 'skeleton_spirit'}!`);
-                     summonCreature(enemy.id, eStats.summonType || 'skeleton_spirit', eStats.summonCount || 1, ePos.clone());
-                     enemy.abilityCooldown = eStats.summonCooldown || 10.0;
-                     // TODO: playAnimation('Summon');
-                 } else {
-                     // TODO: playAnimation('Idle');
-                 }
-                 // Можно добавить движение уклонения или патрулирование?
-                 break;
+                if (isPlayerInAttackRange) {
+                    rotateEnemyTowards(playerPos); 
+                    if (enemy.attackCooldown <= 0) {
+                        enemy.attackCooldown = 1 / (eStats.attackSpeed || 0.5);
+                        if (enemy.type === 'ogre_mage') {
+                            // createProjectileToPoint(enemy.id, ePos.clone(), playerPos.clone(), eStats.damage || 10, eStats.projectileSpeed || 400);
+                            console.log(`Ogre Mage ${enemy.id} attacks target point!`);
+                        } else if (enemy.type === 'ghostly_enchanter') {
+                            // applyPlayerDebuff(enemy.id, 'weaken', eStats.debuffDuration || 5, eStats.debuffStrength || 0.2);
+                            console.log(`Enchanter ${enemy.id} applies weaken!`);
+                        } else { 
+                            if (typeof playerTakeDamage === 'function') playerTakeDamage(eStats.beamDamage || 1); 
+                            if (enemy.beamEffectMesh) removeBeamMesh(enemy); 
+                            // enemy.beamEffectMesh = createBeamMeshFixed(enemy, playerPos); 
+                            if (enemy.beamEffectMesh) enemy.beamEffectTimer = eStats.beamEffectDuration || 1.0; 
+                        }
+                    } else {
+                        if (enemy.beamEffectMesh && (enemy.type === 'caster')) {
+                            // updateBeamMesh(enemy.beamEffectMesh, ePos, playerPos); 
+                        }
+                    }
+                } else { 
+                    if (enemy.beamEffectMesh) removeBeamMesh(enemy); 
+                }
+                break;
             }
-            case 'bone_dancer': {
+
+            // === УНИКАЛЬНЫЕ НОВЫЕ ТИПЫ (из code1, адаптировано) ===
+            case 'bone_dancer': 
+            // ... (Логика для bone_dancer из вашего code2, она довольно объемная и специфичная) ...
+            // Убедитесь, что эта логика корректно использует rotateEnemyTowards и moveEnemyWithCollision,
+            // а также dt для таймеров и анимаций.
+            // ВАЖНО: Логика анимации для bone_dancer в конце его case должна быть актуализирована или удалена,
+            // так как общее `enemy.mixer?.update(dt);` уже есть выше.
+            // Либо, если у bone_dancer есть своя логика `switchAction`, она должна быть здесь.
+            { // Начало блока для bone_dancer из вашего кода
                 const eStats = enemy.stats;
- 
-                // --- Параметры из последнего запроса ---
-                const baseSpeed = (eStats.speed || 3.5) * 60; // Скорость в юнитах/сек
-                const rotationLerp = 0.15; // Плавность поворота чуть выше
-                const activationRange = eStats.activationRange || 200; // Уменьшим радиус агро
-                const chargeSpeedMultiplier = eStats.chargeMultiplier || 3.0; // Увеличим скорость рывка
-                const chargeDuration = eStats.chargeDuration || 0.25;    // Уменьшим длительность рывка
-                const desiredOrbitDist = eStats.orbitDistance || 60;     // Дистанция орбиты (осталась 60)
-                // const radialCorrectionStrength = 1.8; // <<< Убрано, т.к. логика орбиты полностью заменена
- 
-                // --- Флаги и переменные для управления ---
+                const baseSpeed = (eStats.speed || 3.5) * 60; 
+                const rotationLerp = 0.15; 
+                const activationRange = eStats.activationRange || 200; 
+                const chargeSpeedMultiplier = eStats.chargeMultiplier || 3.0; 
+                const chargeDuration = eStats.chargeDuration || 0.25;
+                const desiredOrbitDist = eStats.orbitDistance || 60;
+
                 let shouldMove = false;
                 let shouldRotate = true;
-                let moveTargetPos = null; // Используется для движения к точке (в CHARGING и новой ORBITING)
-                let rotateTargetPos = playerPos.clone(); // По умолчанию смотрим на игрока
-                let currentMoveSpeed = baseSpeed; // Скорость по умолчанию
- 
-                // --- Расчеты расстояний (оставляем из предыдущей версии) ---
+                let moveTargetPos = null; 
+                let rotateTargetPos = playerPos.clone(); 
+                let currentMoveSpeed = baseSpeed; 
+
                 const vectorToPlayer = new THREE.Vector3().subVectors(playerPos, ePos);
-                const currentDistToPlayer = vectorToPlayer.length(); // <<< Используем это имя переменной
-                // const distToSpawn = ePos.distanceTo(enemy.spawnPosition); // <<< Убрано, т.к. RETURNING удален
- 
-                // --- Инициализация состояния ИИ и переменных ---
+                const currentDistToPlayer = vectorToPlayer.length(); 
+
                 if (!enemy.aiState) enemy.aiState = 'IDLE';
                 if (typeof enemy.chargeTimer === 'undefined') enemy.chargeTimer = 0;
                 if (!enemy.spawnPosition) enemy.spawnPosition = ePos.clone();
-                // Инициализация orbitDirection перенесена в переход из CHARGING в ORBITING
- 
-                // --- Логика состояний Танцора (обновленная) ---
+                
                 switch (enemy.aiState) {
                     case 'IDLE':
-                        shouldMove = false;
-                        shouldRotate = false;
-                        // TODO: Анимация Idle
- 
-                        // Используем currentDistToPlayer вместо dist для ясности
+                        shouldMove = false; shouldRotate = false;
                         if (currentDistToPlayer <= activationRange) {
-                            console.log(`Bone Dancer ${enemy.id} activated! Charging!`); // <<< Добавлен console.log
+                            console.log(`Bone Dancer ${enemy.id} activated! Charging!`);
                             enemy.aiState = 'CHARGING';
                             enemy.chargeTargetPos = playerPos.clone();
                             enemy.chargeTimer = 0;
                         }
                         break;
- 
                     case 'CHARGING':
-                        shouldMove = true;
-                        shouldRotate = true;
+                        shouldMove = true; shouldRotate = true;
                         moveTargetPos = enemy.chargeTargetPos || playerPos.clone();
-                        rotateTargetPos = moveTargetPos; // В рывке смотрим на цель рывка
-                        currentMoveSpeed = baseSpeed * chargeSpeedMultiplier; // Увеличенная скорость
-                        // TODO: Анимация рывка
- 
+                        rotateTargetPos = moveTargetPos; 
+                        currentMoveSpeed = baseSpeed * chargeSpeedMultiplier; 
                         enemy.chargeTimer += dt;
                         if (enemy.chargeTimer >= chargeDuration) {
-                            console.log(`Bone Dancer ${enemy.id} finished charge, orbiting.`); // <<< Добавлен console.log
+                            console.log(`Bone Dancer ${enemy.id} finished charge, orbiting.`);
                             enemy.aiState = 'ORBITING';
                             enemy.chargeTimer = 0;
-                            // >>> Инициализируем направление орбиты при переходе <<<
                             enemy.orbitDirection = (Math.random() < 0.5 ? 1 : -1);
                         }
                         break;
- 
                     case 'ORBITING':
-                        // >>> Полностью новая логика ORBITING из последнего запроса <<<
-                        shouldMove = true;
-                        shouldRotate = true;
-                        rotateTargetPos = playerPos.clone(); // Всегда смотрим на игрока во время орбиты
-                        // TODO: Анимация бега/кружения
- 
-                        // Используем currentDistToPlayer вместо currentDist
+                        shouldMove = true; shouldRotate = true;
+                        rotateTargetPos = playerPos.clone(); 
                         if (currentDistToPlayer > 0.1) {
-                            // --- Новая логика расчета точки для движения ---
- 
-                            // Вектор К игроку (нужен для normTangentDir)
-                            const normDirToPlayer = vectorToPlayer.clone().normalize(); // Пересчитываем на всякий случай или берем извне switch
- 
-                            // 1. Вектор от игрока к врагу и его нормаль
-                            // Используем clone(), чтобы не менять исходный vectorToPlayer
-                            let vecPlayerToEnemy = vectorToPlayer.clone().negate(); // vectorToPlayer = player - enemy => negate = enemy - player
-                            const normVecPlayerToEnemy = vecPlayerToEnemy.normalize(); // Нормализуем вектор ОТ игрока
- 
-                            // 2. Идеальная точка на орбите (на нужной дистанции от игрока)
+                            const normDirToPlayer = vectorToPlayer.clone().normalize();
+                            let vecPlayerToEnemy = vectorToPlayer.clone().negate();
+                            const normVecPlayerToEnemy = vecPlayerToEnemy.normalize();
                             const idealOrbitPoint = playerPos.clone().add(normVecPlayerToEnemy.multiplyScalar(desiredOrbitDist));
- 
-                            // 3. Тангенциальное направление в текущей точке врага
-                            // enemy.orbitDirection инициализируется при переходе в ORBITING
-                            // Используем normDirToPlayer (вектор к игроку) для расчета перпендикуляра
                             const normTangentDir = new THREE.Vector3(-normDirToPlayer.y, normDirToPlayer.x, 0).multiplyScalar(enemy.orbitDirection);
- 
-                            // 4. Вектор от текущей позиции к идеальной орбитальной
                             const vecToIdealOrbit = new THREE.Vector3().subVectors(idealOrbitPoint, ePos);
                             const distToIdealOrbit = vecToIdealOrbit.length();
- 
-                            // 5. Комбинируем движение:
-                            const tangentVelocity = normTangentDir.clone().multiplyScalar(baseSpeed); // clone() важен
-                            // Скорость коррекции дистанции
-                            const correctionSpeed = Math.min(baseSpeed, distToIdealOrbit * 2.0); // Ограничим макс. скорость коррекции
-                            const correctionVelocity = vecToIdealOrbit.normalize().multiplyScalar(correctionSpeed); // clone() не нужен, vecToIdealOrbit больше не используется
- 
-                            // Суммируем векторы скорости
-                            const finalVelocity = tangentVelocity.add(correctionVelocity); // tangentVelocity изменяется
-                            finalVelocity.clampLength(0, baseSpeed * 1.5); // Ограничим макс. итоговую скорость
- 
-                            // --- Рассчитываем цель для этого кадра ---
-                            moveTargetPos = ePos.clone().add(finalVelocity.clone().multiplyScalar(dt)); // clone() чтобы не менять finalVelocity перед .length()
-                            currentMoveSpeed = finalVelocity.length(); // Обновляем скорость для коллизий
- 
-                            if (currentMoveSpeed < 1) { // Если почти не движемся
+                            const tangentVelocity = normTangentDir.clone().multiplyScalar(baseSpeed);
+                            const correctionSpeed = Math.min(baseSpeed, distToIdealOrbit * 2.0); 
+                            const correctionVelocity = vecToIdealOrbit.normalize().multiplyScalar(correctionSpeed);
+                            const finalVelocity = tangentVelocity.add(correctionVelocity); 
+                            finalVelocity.clampLength(0, baseSpeed * 1.5); 
+                            moveTargetPos = ePos.clone().add(finalVelocity.clone().multiplyScalar(dt)); 
+                            currentMoveSpeed = finalVelocity.length(); 
+                            if (currentMoveSpeed < 1) { 
                                 shouldMove = false;
-                                // shouldRotate = false; // <<< В новом коде поворот НЕ отключается здесь, враг продолжает смотреть на игрока
                             }
-                            // --- Переход в RETURNING убран ---
- 
-                        } else { // Стоим на игроке
-                            shouldMove = false;
-                            shouldRotate = false; // Не двигаемся и не поворачиваемся (остается смотреть куда смотрел)
+                        } else { 
+                            shouldMove = false; shouldRotate = false; 
                         }
-                        break; // Конец case 'ORBITING'
- 
-                    // --- СОСТОЯНИЕ RETURNING УДАЛЕНО ---
- 
-                } // --- Конец switch(enemy.aiState) ---
- 
- 
-                // --- Выполняем Движение (Общий блок) ---
+                        break; 
+                } 
+                
                 if (shouldMove && moveTargetPos) {
                     let moveDir = new THREE.Vector3().subVectors(moveTargetPos, ePos);
-                    const distToTarget = moveDir.length();
- 
-                    // Используем порог 0.01 из последнего запроса
-                    if (distToTarget > 0.01) {
-                        moveDir.normalize();
-                        // Используем currentMoveSpeed, который теперь корректно устанавливается и в ORBITING
-                        const step = Math.min(currentMoveSpeed * dt, distToTarget);
- 
-                        const calculatedNextX = ePos.x + moveDir.x * step;
-                        const calculatedNextY = ePos.y + moveDir.y * step;
- 
-                        // --- Проверка коллизий со стенами (без изменений) ---
-                        const ENEMY_COLLISION_RADIUS = eStats.collisionRadius || 15;
-                        const enemyHitbox = { x: ePos.x - ENEMY_COLLISION_RADIUS, y: ePos.y - ENEMY_COLLISION_RADIUS, width: ENEMY_COLLISION_RADIUS * 2, height: ENEMY_COLLISION_RADIUS * 2 };
- 
-                        let finalNextX = ePos.x;
-                        let finalNextY = ePos.y;
- 
-                        // Проверка по X
-                        const nextHitboxX = { ...enemyHitbox, x: calculatedNextX - ENEMY_COLLISION_RADIUS };
-                        let canMoveX = true;
-                        if (wallsRef && wallsRef.current) {
-                            for (const wall of wallsRef.current) {
-                                if (checkCollision(nextHitboxX, wall)) {
-                                    canMoveX = false; break;
-                                }
-                            }
-                        }
-                        if (canMoveX) { finalNextX = calculatedNextX; }
- 
-                        // Проверка по Y
-                        const nextHitboxY = { x: finalNextX - ENEMY_COLLISION_RADIUS, y: calculatedNextY - ENEMY_COLLISION_RADIUS, width: ENEMY_COLLISION_RADIUS * 2, height: ENEMY_COLLISION_RADIUS * 2 };
-                        let canMoveY = true;
-                        if (wallsRef && wallsRef.current) {
-                             for (const wall of wallsRef.current) {
-                                 if (checkCollision(nextHitboxY, wall)) {
-                                     canMoveY = false; break;
-                                 }
-                             }
-                        }
-                        if (canMoveY) { finalNextY = calculatedNextY; }
- 
-                        // Применяем движение
-                        ePos.x = finalNextX;
-                        ePos.y = finalNextY;
- 
-                        // --- Clamp по границам мира (без изменений) ---
-                        if (levelConfig && typeof levelConfig.gameWorldWidth !== 'undefined' && typeof levelConfig.gameWorldHeight !== 'undefined' && typeof levelConfig.WORLD_Y_OFFSET !== 'undefined') {
-                            const minX = -levelConfig.gameWorldWidth / 2 + ENEMY_COLLISION_RADIUS;
-                            const maxX = levelConfig.gameWorldWidth / 2 - ENEMY_COLLISION_RADIUS;
-                            const minYw = -levelConfig.WORLD_Y_OFFSET + ENEMY_COLLISION_RADIUS;
-                            const maxYw = levelConfig.gameWorldHeight - levelConfig.WORLD_Y_OFFSET - ENEMY_COLLISION_RADIUS;
-                            ePos.x = clamp(ePos.x, minX, maxX);
-                            ePos.y = clamp(ePos.y, minYw, maxYw);
-                        }
+                    // Используем moveEnemyWithCollision, передавая только направление и скорость
+                    if (moveDir.lengthSq() > 0.001) { // Убедимся, что есть направление
+                       moveEnemyWithCollision(moveDir, currentMoveSpeed / 60 ); // moveEnemyWithCollision ожидает скорость в условных юнитах/dt*60
                     }
                 }
-                // Плавное возвращение на спавн в IDLE убрано, так как RETURNING удален и логика не требуется
- 
-                // --- Выполняем Поворот (Общий блок) ---
                 if (shouldRotate && rotateTargetPos) {
-                    let dirRot = new THREE.Vector3().subVectors(rotateTargetPos, ePos);
-                    if (dirRot.lengthSq() > 0.001) { // Порог из предыдущей версии, можно оставить
-                        const angle = Math.atan2(dirRot.y, dirRot.x);
-                        let targetZ = angle - Math.PI / 2; // Модель смотрит вверх (по +Y)
- 
-                        const curZ = ePivot.rotation.z;
-                        const twoPi = Math.PI * 2;
-                        let rotationDiff = targetZ - curZ;
- 
-                        while (rotationDiff <= -Math.PI) rotationDiff += twoPi;
-                        while (rotationDiff > Math.PI) rotationDiff -= twoPi;
- 
-                        const rotationThreshold = 0.01;
-                        if (Math.abs(rotationDiff) > rotationThreshold) {
-                            // Используем обновленный rotationLerp
-                            ePivot.rotation.z += rotationDiff * rotationLerp; // rotationLerp = 0.15
-                        } else {
-                            ePivot.rotation.z = targetZ;
-                        }
-                        ePivot.rotation.z %= twoPi;
- 
-                        ePivot.rotation.order = 'XYZ';
-                        ePivot.rotation.x = 0;
-                        ePivot.rotation.y = 0;
-                    }
+                    rotateEnemyTowards(rotateTargetPos, rotationLerp); // Используем свой lerp для поворота
                 }
- 
-                // --- Обновление анимации (упрощено без RETURNING) ---
-                let nextActionName = 'Idle'; // По умолчанию
-                if (enemy.aiState === 'IDLE') {
-                    nextActionName = enemy.actions?.Idle ? 'Idle' : 'idle';
-                } else if (enemy.aiState === 'CHARGING') {
-                    nextActionName = enemy.actions?.Run ? 'Run' : 'walk'; // Или спец. анимация рывка
-                } else if (enemy.aiState === 'ORBITING') {
-                    // Анимация зависит от скорости на орбите
-                    // Используем 'Run' если скорость > 80% от базовой, иначе 'Walk'
-                    if(currentMoveSpeed > baseSpeed * 0.8 && enemy.actions?.Run) nextActionName = 'Run';
-                    else nextActionName = enemy.actions?.Walk ? 'Walk' : 'walk';
-                }
- 
-                // Если стоим на месте, но не в IDLE (например, на орбите очень близко или застряли)
-                if (!shouldMove && enemy.aiState !== 'IDLE') {
-                   nextActionName = enemy.actions?.Idle ? 'Idle' : 'idle';
-                }
-                // switchAction(enemy, nextActionName); // Вызов переключения анимации
- 
-                break; // Конец case bone_dancer
-            } // Конец блока {}
+                // Логика анимации для bone_dancer (если специфична)
+                // let nextActionName = 'Idle'; // ... ваша логика switchAction
+                // switchAction(enemy, nextActionName);
+            } // Конец блока bone_dancer
+            break;
 
             case 'plague_totemist': {
-                 rotateEnemyTowards(playerPos); // Смотрит на игрока
-                 // Ставит тотем по кулдауну способности
-                 if (enemy.abilityCooldown <= 0) {
-                     console.log(`Totemist ${enemy.id} places a ${eStats.totemType || 'debuff'} totem!`);
-                     // placeTotem(enemy.id, ePos.clone(), eStats.totemType || 'debuff_slow', eStats.totemDuration || 15.0, eStats.totemRange || 120, eStats.totemEffect || { slowPercent: 0.3 }); // Нужна эта функция
-                     enemy.abilityCooldown = eStats.totemCooldown || 12.0;
-                     // TODO: playAnimation('Cast');
-                 } else {
-                     // TODO: playAnimation('Idle');
-                 }
-                 // Обычно неподвижен? Или может патрулировать?
-                 break;
+                rotateEnemyTowards(playerPos); 
+                if (enemy.abilityCooldown <= 0) {
+                    console.log(`Totemist ${enemy.id} places a ${eStats.totemType || 'debuff'} totem!`);
+                    // placeTotem(enemy.id, ePos.clone(), eStats.totemType || 'debuff_slow', eStats.totemDuration || 15.0, eStats.totemRange || 120, eStats.totemEffect || { slowPercent: 0.3 });
+                    enemy.abilityCooldown = eStats.totemCooldown || 12.0;
+                }
+                break;
             }
-
             case 'sand_reaper': {
-                 rotateEnemyTowards(playerPos); // Смотрит на игрока
-                 // Кастует шипы по кулдауну способности
-                 if (enemy.abilityCooldown <= 0) {
-                     console.log(`Sand Reaper ${enemy.id} summons spikes under player!`);
-                     // triggerGroundSpikes(enemy.id, playerPos.clone(), eStats.spikeDelay || 1.0, eStats.spikeRadius || 30, eStats.spikeDamage || 15); // Нужна эта функция
-                     enemy.abilityCooldown = eStats.abilityCooldown || 5.0;
-                     // TODO: playAnimation('Cast');
-                 } else {
-                     // TODO: playAnimation('Idle');
-                 }
-                 // Обычно неподвижен?
-                 break;
-            }
-
+                const eStats = enemy.stats;
+                rotateEnemyTowards(playerPos.clone());
+                if (enemy.abilityCooldown <= 0) {
+                    console.log(`Sand Reaper ${enemy.id} summons spikes under player!`);
+                    // triggerGroundSpikes(enemy.id, playerPos.clone(), eStats.spikeDelay || 1.0, eStats.spikeRadius || 30, eStats.spikeDamage || 15);
+                    enemy.abilityCooldown = eStats.abilityCooldown || 5.0; 
+                }
+                break; 
+            } 
             case 'poison_cultist': {
-                 rotateEnemyTowards(playerPos); // Смотрит на игрока
-                 const currentAtkRange = eStats.attackRange || 200;
-                 const isPlayerInAttackRange = dist <= currentAtkRange;
-
-                 // Атакует в радиусе по КД способности
-                 if (isPlayerInAttackRange && enemy.abilityCooldown <= 0) {
-                     console.log(`Cultist ${enemy.id} throws poison puddle!`);
-                     // createPoisonPuddle(enemy.id, playerPos.clone(), eStats.puddleDuration || 10.0, eStats.puddleRadius || 50, eStats.puddleDps || 3); // Нужна эта функция
-                     enemy.abilityCooldown = eStats.abilityCooldown || 8.0;
-                     // TODO: playAnimation('Attack');
-                 } else {
-                     // TODO: playAnimation('Idle');
-                 }
-                 // Патрулирует или стоит?
-                 break;
+                rotateEnemyTowards(playerPos); 
+                const currentAtkRange = eStats.attackRange || 200;
+                if (dist <= currentAtkRange && enemy.abilityCooldown <= 0) {
+                    console.log(`Cultist ${enemy.id} throws poison puddle!`);
+                    // createPoisonPuddle(enemy.id, playerPos.clone(), eStats.puddleDuration || 10.0, eStats.puddleRadius || 50, eStats.puddleDps || 3); 
+                    enemy.abilityCooldown = eStats.abilityCooldown || 8.0;
+                }
+                break;
             }
-
             default:
                 console.warn(`Неизвестный или необработанный тип врага в switch: ${enemy.type}`);
-                // TODO: playAnimation('Idle');
                 break;
         } // --- Конец switch(enemy.type) ---
-
-    }); // --- Конец enemyRefs.forEach ---
-
+    }); // --- Конец loadedEnemyRefsArray.forEach ---
 
     // ==================================
     // === 5. Снаряды Врагов ==========
     // ==================================
     const activeEnemyProjectiles = [];
-    const PLAYER_HITBOX_SIZE = { width: 25, height: 25 }; // Хитбокс игрока для снарядов врага
+    const PLAYER_HITBOX_SIZE = { width: 25, height: 25 }; 
     const playerHitboxForEnemyProj = playerObject ? {
         x: playerPos.x - PLAYER_HITBOX_SIZE.width / 2,
         y: playerPos.y - PLAYER_HITBOX_SIZE.height / 2,
@@ -2031,34 +2243,30 @@ const animate = (timestamp) => {
         height: PLAYER_HITBOX_SIZE.height
     } : null;
 
-    // Обработка снарядов врагов, только если игрок жив
-    if (playerHitboxForEnemyProj && playerHp > 0) {
+    if (playerHitboxForEnemyProj && playerHp > 0) { // playerHp - глобальная переменная или из playerStats
         enemyProjectilesRef.current.forEach(proj => {
-            proj.position.add(proj.velocity.clone().multiplyScalar(dt)); // Движение
-            proj.lifetime -= dt; // Уменьшение времени жизни
+            proj.position.add(proj.velocity.clone().multiplyScalar(dt)); 
+            proj.lifetime -= dt; 
             if (proj.mesh) {
-                proj.mesh.position.copy(proj.position); // Обновление меша
-                // Поворот меша по направлению движения
+                proj.mesh.position.copy(proj.position); 
                 proj.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), proj.velocity.clone().normalize());
             }
 
             let hitPlayer = false;
             if (proj.lifetime > 0) {
-                const projSize = 10; // Размер хитбокса снаряда врага
+                const projSize = 10; 
                 const projHitbox = { x: proj.position.x - projSize / 2, y: proj.position.y - projSize / 2, width: projSize, height: projSize };
                 if (checkCollision(projHitbox, playerHitboxForEnemyProj)) {
                     if (typeof playerTakeDamage === 'function') {
-                        playerTakeDamage(proj.damage); // Наносим урон игроку
+                        playerTakeDamage(proj.damage); 
                     } else { console.error("playerTakeDamage is not a function!"); }
                     hitPlayer = true;
                 }
-                // TODO: Проверка коллизии со стенами для снарядов врага?
             }
 
-            // Оставляем снаряд, если он жив и не попал
             if (proj.lifetime > 0 && !hitPlayer) {
                 activeEnemyProjectiles.push(proj);
-            } else { // Удаляем меш
+            } else { 
                 if (proj.mesh) {
                     currentScene?.remove(proj.mesh);
                     proj.mesh.geometry?.dispose();
@@ -2066,58 +2274,48 @@ const animate = (timestamp) => {
                 }
             }
         });
-        enemyProjectilesRef.current = activeEnemyProjectiles; // Обновляем массив
-    } else { // Если игрок мертв или не найден - удаляем все снаряды врагов
-         enemyProjectilesRef.current.forEach(proj => {
-              if (proj.mesh) {
-                   currentScene?.remove(proj.mesh);
-                   proj.mesh.geometry?.dispose();
-                   proj.mesh.material?.dispose();
-              }
-         });
-         enemyProjectilesRef.current = [];
+        enemyProjectilesRef.current = activeEnemyProjectiles; 
+    } else { 
+        enemyProjectilesRef.current.forEach(proj => {
+            if (proj.mesh) {
+                currentScene?.remove(proj.mesh);
+                proj.mesh.geometry?.dispose();
+                proj.mesh.material?.dispose();
+            }
+        });
+        enemyProjectilesRef.current = [];
     }
-
 
     // =====================================================
     // === 5.1 ОБРАБОТКА АКТИВНЫХ ЯДОВИТЫХ ОБЛАКОВ (ИЗ КОД1) ===
     // =====================================================
-     const now = Date.now();
-     const remainingClouds = [];
-     // const playerPos = playerObject?.position; // Уже получено в начале animate
-
-     activeCloudsRef.current.forEach(cloud => {
-         if (now < cloud.endTime) { // Облако еще активно
-             remainingClouds.push(cloud);
-             // Проверка урона игроку, если он жив и есть функция урона
-             if (playerPos && typeof playerTakeDamage === 'function' && playerHp > 0) {
-                 const distSq = playerPos.distanceToSquared(cloud.position);
-                 if (distSq <= cloud.radiusSq) { // Игрок внутри облака
-                     const damage = cloud.dps * dt; // Урон за этот кадр (DPS * время кадра)
-                     playerTakeDamage(damage);
-                     // console.log(`Player takes ${damage.toFixed(2)} poison cloud damage`); // Отладка
-                 }
-             }
-         } else { // Облако истекло
-             currentScene?.remove(cloud.mesh); // Удаляем меш из сцены
-             cloud.mesh.geometry?.dispose();   // Освобождаем геометрию
-             cloud.mesh.material?.dispose();   // Освобождаем материал
-             console.log("☁️ Poison cloud expired and removed.");
-         }
-     });
-     // Обновляем массив активных облаков напрямую в рефе
-     // (избегаем setActiveClouds для производительности в RAF)
-     if (remainingClouds.length !== activeCloudsRef.current.length) {
-         activeCloudsRef.current = remainingClouds;
-     }
-    // --- КОНЕЦ ОБРАБОТКИ ОБЛАКОВ ---
-
+    const now = Date.now();
+    const remainingClouds = [];
+    activeCloudsRef.current.forEach(cloud => {
+        if (now < cloud.endTime) { 
+            remainingClouds.push(cloud);
+            if (playerPos && typeof playerTakeDamage === 'function' && playerHp > 0) {
+                const distSq = playerPos.distanceToSquared(cloud.position);
+                if (distSq <= cloud.radiusSq) { 
+                    const damage = cloud.dps * dt; 
+                    playerTakeDamage(damage);
+                }
+            }
+        } else { 
+            currentScene?.remove(cloud.mesh); 
+            cloud.mesh.geometry?.dispose();  
+            cloud.mesh.material?.dispose();  
+            console.log("☁️ Poison cloud expired and removed.");
+        }
+    });
+    if (remainingClouds.length !== activeCloudsRef.current.length) {
+        activeCloudsRef.current = remainingClouds;
+    }
 
     // ==================================
     // === 6. Проверка Победы/Проигрыша =
     // ==================================
-    checkWinCondition(); // Проверка, убиты ли все необходимые враги
-
+    checkWinCondition(); 
 
     // ==================================
     // === 7. Обновление Камеры ========
@@ -2125,7 +2323,6 @@ const animate = (timestamp) => {
     if (playerObject && currentCamera && levelConfig) {
         const camWidth = currentCamera.right - currentCamera.left;
         const camHeight = currentCamera.top - currentCamera.bottom;
-        // Ограничиваем позицию камеры, чтобы она не выходила за границы мира
         const targetXCam = clamp(
             playerPos.x,
             -levelConfig.gameWorldWidth / 2 + camWidth / 2,
@@ -2136,7 +2333,6 @@ const animate = (timestamp) => {
             -levelConfig.WORLD_Y_OFFSET + camHeight / 2,
             levelConfig.gameWorldHeight - levelConfig.WORLD_Y_OFFSET - camHeight / 2
         );
-        // Плавно перемещаем камеру к целевой позиции
         currentCamera.position.lerp(new THREE.Vector3(targetXCam, targetYCam, currentCamera.position.z), 0.1);
     }
 
@@ -2145,16 +2341,15 @@ const animate = (timestamp) => {
     // ==================================
     if (currentRenderer && currentScene && currentCamera) {
         try {
-            currentRenderer.render(currentScene, currentCamera); // Отрисовка кадра
+            currentRenderer.render(currentScene, currentCamera); 
         } catch (error) {
             console.error("❌ Ошибка рендеринга:", error);
-            setLevelStatus('error'); // Переводим игру в статус ошибки
-            if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current); // Останавливаем цикл
+            setLevelStatus('error'); 
+            if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current); 
             animationFrameId.current = null;
             clock.stop();
         }
     }
-
 }; // --- Конец функции animate ---
 
         // Запуск первого кадра
@@ -2166,6 +2361,7 @@ const animate = (timestamp) => {
 
         // Функция очистки для useEffect игрового цикла
         return () => {
+            console.log(`--- ОЧИСТКА игрового цикла Effect! Статус: ${levelStatus}. Таймеров в рефе: ${effectTimersRef.current.length} ---`); // <<< ДОБАВЬ ЛОГ
             if (animationFrameId.current) {
                 cancelAnimationFrame(animationFrameId.current);
                 animationFrameId.current = null;
@@ -2176,16 +2372,21 @@ const animate = (timestamp) => {
              projectilesRef.current = [];
              enemyProjectilesRef.current.forEach(p => p.mesh && sceneRef.current?.remove(p.mesh));
              enemyProjectilesRef.current = [];
-             enemyRefs?.forEach(e => { if (e?.beamEffectMesh) removeBeamMesh(e); }); // Безопасный доступ к e
+             loadedEnemyRefsArray?.forEach(e => { if (e?.beamEffectMesh) removeBeamMesh(e); }); // Безопасный доступ к e
+             effectTimersRef.current.forEach(timerId => clearTimeout(timerId));
+             effectTimersRef.current = [];
         };
-    }, [ // Зависимости главного цикла (ОЧЕНЬ ВАЖНО)
-         isLoading, levelStatus, levelData, levelConfig, playerObject, enemyRefs, enemiesState, playerStats, beamTexturesLoaded,
-         playerTakeDamage, handleEnemyHit, winLevel, loseLevel, difficulty,
-         // Добавляем новые функции-заглушки в зависимости!
-         summonCreature, placeTotem, triggerGroundSpikes, createPoisonPuddle, applyPlayerDebuff, createProjectileToPoint
-         // applyDebuff <- если используется
-      ]);
+    }, [isLoading, levelStatus, playerObject, levelData]);
 
+    if (!fogMaterialRef.current && sceneRef.current) { // Добавим проверку на sceneRef, чтобы убедиться, что Three.js готово
+        console.log("[Level.jsx] Creating fog material");
+        fogMaterialRef.current = new THREE.MeshBasicMaterial({
+            color: 0x000000, // Черный цвет
+            transparent: true,
+            opacity: 0.8,    // Степень непрозрачности (0.0 до 1.0)
+            depthWrite: false // Важно для корректной работы прозрачности
+        });
+    }
 
     // === 11. РЕНДЕР JSX ===
     return (

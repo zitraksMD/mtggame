@@ -1,0 +1,33 @@
+{
+    "id": 102,
+    "name": "Ур. 1-2: Тест Призывателей",
+    "levelType": "standard",
+    "width": 1200,
+    "height": 1200,
+    "backgroundTexture": "/assets/main-background-game.png",
+    "playerStart": { "x": 600, "y": 1100 },
+    "walls": [
+      { "id": "wall_top", "x": 0, "y": 0, "width": 1200, "height": 50 },
+      { "id": "wall_bottom", "x": 0, "y": 1150, "width": 1200, "height": 50 },
+      { "id": "wall_left", "x": 0, "y": 50, "width": 50, "height": 1100 },
+      { "id": "wall_right", "x": 1150, "y": 50, "width": 50, "height": 1100 },
+      { "id": "obstacle_1", "x": 400, "y": 600, "width": 100, "height": 80 }
+    ],
+    "enemies": [
+      {
+        "id": "test_necro_102",
+        "type": "necromancer",
+        "x": 600, 
+        "y": 650  
+      },
+      {
+        "id": "test_carrier_102",
+        "type": "cursed_carrier",
+        "x": 300, 
+        "y": 400  
+      }
+    ],
+    "winCondition": {
+      "type": "clear_enemies"
+    }
+  }
