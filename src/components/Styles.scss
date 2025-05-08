@@ -1,13 +1,20 @@
 /* Убедись, что @use 'sass:color'; есть в начале файла, где это используется */
 @use 'sass:color';
 
+// Переменные из кода 1 для отступов
+:root {
+  --safe-inset-top: env(safe-area-inset-top, 0px); /* Системный отступ сверху */
+  --tg-header-height: 45px; /* Предполагаемая высота шапки TG (подбери!) */
+  --timer-gap: 5px;      /* Зазор под шапкой/inset до таймера */
+  --hud-gap: 20px;        /* Зазор под шапкой/inset до HUD */
+}
 
-$rarity-color-common:     #B0BEC5; // Серый (пример)
-$rarity-color-uncommon:   #81C784; // Зеленый (пример)
-$rarity-color-rare:       #64B5F6; // Синий (пример)
-$rarity-color-epic:       #BA68C8; // Фиолетовый (пример)
-$rarity-color-legendary:  #FFB74D; // Оранжевый/Золотой (пример)
-$rarity-color-mythic:     #E57373; // Красный (пример)
+$rarity-color-common:    #B0BEC5; // Серый (пример)
+$rarity-color-uncommon:  #81C784; // Зеленый (пример)
+$rarity-color-rare:      #64B5F6; // Синий (пример)
+$rarity-color-epic:      #BA68C8; // Фиолетовый (пример)
+$rarity-color-legendary: #FFB74D; // Оранжевый/Золотой (пример)
+$rarity-color-mythic:    #E57373; // Красный (пример)
 
 /* ====================================================================== */
 /* === СТИЛИ ИЗ КОДА 1 (Карусель Сундуков и связанные элементы) === */
@@ -18,9 +25,13 @@ body, html, #root /* или твой корневой элемент */ {
   margin: 0;
   padding: 0;
   overflow: hidden; /* Убрать прокрутку */
+  // background-color: black; /* Добавлено из другого блока body, html - для единого стиля */
+  // display: flex; /* Добавлено - если нужно центрирование на уровне body */
+  // justify-content: center; /* Добавлено */
+  // align-items: center; /* Добавлено */
 }
 /* ======================================================= */
-/* ===   СТИЛИ КАРУСЕЛИ (Общие для Gear и Artifacts)   === */
+/* ===    СТИЛИ КАРУСЕЛИ (Общие для Gear и Artifacts)    === */
 /* ======================================================= */
 
 .chest-carousel-container.swiper-mode {
@@ -46,16 +57,16 @@ body, html, #root /* или твой корневой элемент */ {
 
   // Фон для слайдов артефактов (пример)
   &.artifact-chest-slide {
-     background: linear-gradient(170deg, rgba(60, 45, 90, 0.9), rgba(40, 32, 65, 0.95)); // Фиолетовый оттенок
+    background: linear-gradient(170deg, rgba(60, 45, 90, 0.9), rgba(40, 32, 65, 0.95)); // Фиолетовый оттенок
   }
 
   // Анимация открытия
   &.opening {
-     // Используй ту же анимацию или определи другую
-     animation: slightShake 0.5s ease-in-out;
-     // box-shadow: 0 0 15px 5px rgba(255, 255, 150, 0.7); // Для снаряжения
-     // Для артефактов можно сделать синеватое свечение:
-     // &.artifact-chest-slide { box-shadow: 0 0 15px 5px rgba(180, 200, 255, 0.7); }
+    // Используй ту же анимацию или определи другую
+    animation: slightShake 0.5s ease-in-out;
+    // box-shadow: 0 0 15px 5px rgba(255, 255, 150, 0.7); // Для снаряжения
+    // Для артефактов можно сделать синеватое свечение:
+    // &.artifact-chest-slide { box-shadow: 0 0 15px 5px rgba(180, 200, 255, 0.7); }
   }
 }
 
@@ -84,8 +95,6 @@ body, html, #root /* или твой корневой элемент */ {
 /* ======================================================= */
 
 // --- Кнопка "i" ---
-// Можно использовать один стиль для обеих каруселей
-// Позиционируется внутри .chest-slide-graphic-area
 .chest-info-button {
   position: absolute; top: 0px; right: 5px; width: 22px; height: 22px; padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.4); color: #eee;
@@ -115,20 +124,18 @@ body, html, #root /* или твой корневой элемент */ {
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.6);
     white-space: nowrap;
 
-     // Стилизация по классу редкости (добавлен в JSX)
-     // Убедитесь, что переменные ($rarity-color-...) определены в вашем проекте
-     &.rarity-legendary { color: $rarity-color-legendary; border-color: rgba($rarity-color-legendary, 0.6); }
-     // &.rarity-epic { color: $rarity-color-epic; border-color: rgba($rarity-color-epic, 0.5); } // Если будет эпик
-     &.rarity-rare { color: $rarity-color-rare; border-color: rgba($rarity-color-rare, 0.5); }
-     // &.rarity-uncommon { ... }
-     // &.rarity-common { ... }
+    // Стилизация по классу редкости (добавлен в JSX)
+    // Убедитесь, что переменные ($rarity-color-...) определены в вашем проекте
+    &.rarity-legendary { color: $rarity-color-legendary; border-color: rgba($rarity-color-legendary, 0.6); }
+    &.rarity-epic { color: $rarity-color-epic; border-color: rgba($rarity-color-epic, 0.5); }
+    &.rarity-rare { color: $rarity-color-rare; border-color: rgba($rarity-color-rare, 0.5); }
+    // &.rarity-uncommon { ... }
+    // &.rarity-common { ... }
   }
-  // Убрали специфичный стиль для &.multiple span, так как базовый span теперь inline-block
 }
 
 
 // --- Обертка кнопок ---
-// Используем стили внутри .chest-slide, а не .chest-card
 .chest-slide .chest-button-wrapper {
   display: flex; gap: 10px; width: 90%; max-width: 380px;
   margin-top: auto; // Прижимает к низу, если есть место
@@ -153,21 +160,20 @@ body, html, #root /* или твой корневой элемент */ {
   span { font-weight: bold; margin-left: auto; padding-left: 8px; opacity: 1; font-size: 1em; } // Для x1 / x10
 
   &:disabled {
-     opacity: 0.6; cursor: not-allowed;
-     background: linear-gradient(to bottom, #777, #555) !important; // Перебиваем специфичные стили
-     border-color: #444 !important;
-     box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(0,0,0,0.1);
-     color: #aaa;
-     text-shadow: none;
+    opacity: 0.6; cursor: not-allowed;
+    background: linear-gradient(to bottom, #777, #555) !important; // Перебиваем специфичные стили
+    border-color: #444 !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(0,0,0,0.1);
+    color: #aaa;
+    text-shadow: none;
   }
   &:hover:not(:disabled) {
-     box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-     // Эффект поднятия кнопки
-     transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    transform: translateY(-1px);
   }
   &:active:not(:disabled) {
-     transform: translateY(1px) scale(0.98); // Эффект нажатия
-     box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(0,0,0,0.1);
+    transform: translateY(1px) scale(0.98); // Эффект нажатия
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(0,0,0,0.1);
   }
 
   // Стили КНОПОК по типу сундука
@@ -183,10 +189,9 @@ body, html, #root /* или твой корневой элемент */ {
 
 
 /* ======================================================= */
-/* ===    Навигация и Пагинация Карусели (Общие)       === */
+/* ===     Навигация и Пагинация Карусели (Общие)       === */
 /* ======================================================= */
 
-// Кнопки Навигации (Прозрачные)
 .carousel-nav-button {
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 15;
   background-color: transparent; color: white;
@@ -201,7 +206,6 @@ body, html, #root /* или твой корневой элемент */ {
   &.next { right: 10px; }
 }
 
-// Пагинация (точки)
 .carousel-pagination {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 10px; z-index: 12;
@@ -214,14 +218,12 @@ body, html, #root /* или твой корневой элемент */ {
     &:hover { background-color: rgba(255, 255, 255, 0.5); transform: scale(1.1); }
     &.active { background-color: #ffddaa; transform: scale(1.2); }
   }
-   // Пример специфичного стиля для пагинации артефактов
-  // .artifact-carousel & .dot.active { background-color: #aabbee; }
+  // .artifact-carousel & .dot.active { background-color: #aabbee; } // Пример
 }
 
 /* ======================================================= */
-/* ===               КЛЮЧЕВЫЕ КАДРЫ                    === */
+/* ===                 КЛЮЧЕВЫЕ КАДРЫ                  === */
 /* ======================================================= */
-// Анимация открытия для слайда
 @keyframes slightShake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-3px); }
@@ -229,8 +231,7 @@ body, html, #root /* или твой корневой элемент */ {
   75% { transform: translateX(-2px); }
 }
 
-// Старая анимация для .artifact-chest-entry.opening (если еще где-то нужна)
-@keyframes shakeAndGlowHorizontal { /* ... */ }
+// @keyframes shakeAndGlowHorizontal { /* ... */ } // Если нужна старая анимация
 
 
 /* ====================================================================== */
@@ -239,73 +240,70 @@ body, html, #root /* или твой корневой элемент */ {
 
 /* Общая обертка игры */
 .game-wrapper {
-  height: 100vh;    /* Занимает весь экран */
-  width: 100%; /* Наследует от body */
-  position: relative; /* Для позиционирования оверлеев */
-  display: flex; /* Можно использовать для центрирования, если нужно */
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  display: flex;
   justify-content: center;
   align-items: center;
+  /* Убрали padding-top отсюда (если был) */
+  padding-left: env(safe-area-inset-left, 15px);   /* <<< ИЗМЕНЕНИЕ ИЗ КОДА 1 */
+  padding-right: env(safe-area-inset-right, 15px); /* <<< ИЗМЕНЕНИЕ ИЗ КОДА 1 */
+  padding-bottom: env(safe-area-inset-bottom, 10px);/* <<< ИЗМЕНЕНИЕ ИЗ КОДА 1 */
+  overflow: hidden; /* Добавлено, чтобы внутренние элементы не выходили за пределы safe-area */
 }
 
 /* Контейнер для канваса и игрового UI */
 .game-container {
-  width: 100%; /* Занимает всю ширину обертки */
-  height: 100%; /* Занимает всю высоту обертки */
-  position: relative; /* Для позиционирования UI внутри (хелсбар и т.д.) */
-  overflow: hidden; /* Обязательно, чтобы канвас не вылезал */
-  /* background-color: transparent; */ /* Прозрачный фон, чтобы был виден фон wrapper */
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  // background-color: transparent; // Оставляем, если фон должен быть от wrapper
 }
 
-/* <<<--- ВАЖНО: Стиль для DIV, куда монтируется канвас ---<<< */
 .game-canvas {
-  width: 100%;  /* Заставляет div занять всю ширину .game-container */
-  height: 100%; /* Заставляет div занять всю высоту .game-container */
-  display: block; /* Убирает лишние отступы */
+  width: 100%;
+  height: 100%;
+  display: block;
 }
-/* --- ВАЖНО --- */
 
 .player-hud {
   position: absolute;
-  top: 20px;
-  left: 0;
-  top: calc(env(safe-area-inset-top, 0px) + 45px + 20px); // <<< Итого ~65px от системного верха
-
-  // --- Внутренние отступы для контента ВНУТРИ блока ---
-  // Небольшие отступы, чтобы контент не прилипал к краям фона HUD
-  padding: 6px 10px; // 6px сверху/снизу, 10px слева/справа (подбери)
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  border-radius: 6px; // Оставляем скругление
 
-  // --- ЗАМЕНЯЕМ ФОН НА ГРАДИЕНТ ---
-  // background-color: rgba(0, 0, 0, 0.45); // <<< Эту строку удаляем или комментируем
+  // --- НОВОЕ ПОЗИЦИОНИРОВАНИЕ с max() из КОДА 1 ---
+  --required-hud-offset: calc(var(--tg-header-height) + var(--hud-gap));
+  top: max(var(--safe-inset-top), var(--required-hud-offset));
+  // --- Конец нового позиционирования ---
 
-  // Новый фон: Линейный градиент сверху вниз
-  // Начинаем с полупрозрачного темно-синего, переходим к еще более прозрачному темно-синему
-  // Формат RGBA: (Red, Green, Blue, Alpha (прозрачность от 0.0 до 1.0))
-  background: linear-gradient(
-    to bottom,                     // Направление градиента (сверху вниз)
-    rgba(10, 20, 60, 0.75),        // Начальный цвет (темно-синий, 75% непрозрачности)
-    rgba(10, 20, 60, 0.4)         // Конечный цвет (тот же синий, 40% непрозрачности)
+  // Отступ слева из КОДА 1
+  left: calc(env(safe-area-inset-left, 0px) + 15px);
+
+  padding: 6px 10px; // Внутренние отступы из КОДА 2
+  display: flex; // Оставляем из КОДА 2
+  flex-direction: column; // Оставляем из КОДА 2
+  align-items: flex-start; // Оставляем из КОДА 2
+  border-radius: 6px; // Оставляем из КОДА 2
+
+  background: linear-gradient( // Градиентный фон из КОДА 2
+    to bottom,
+    rgba(10, 20, 60, 0.75),
+    rgba(10, 20, 60, 0.4)
   );
 
-  // Контейнер хелсбара
   .health-bar-container {
     position: relative;
-    display: block; // Занять доступную ширину внутри padding'а HUD
-    width: 120px;   // <<< Подбери желаемую ширину хелсбара/HUD
-    height: 18px;   // <<< Подбери желаемую высоту хелсбара
+    display: block;
+    width: 120px;
+    height: 18px;
     background-color: #333;
     border-radius: 4px;
     overflow: hidden;
     border: 1px solid #222;
-    margin-bottom: 4px; // Отступ под хелсбаром до текста атаки
+    margin-bottom: 4px;
 
-    // Стили для полоски заполнения .health-bar внутри (остаются)
     .health-bar {
-      // ... (как были)
       height: 100%;
       background: linear-gradient(to right, orange, limegreen);
       border-radius: 3px;
@@ -313,9 +311,7 @@ body, html, #root /* или твой корневой элемент */ {
       position: absolute; left: 0; top: 0; z-index: 1;
     }
 
-    // Стили для текста HP .health-bar-text внутри (остаются)
     .health-bar-text {
-      // ... (как были)
       position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 2;
       display: flex; justify-content: center; align-items: center;
       font-size: 11px; color: white; font-weight: bold;
@@ -324,59 +320,54 @@ body, html, #root /* или твой корневой элемент */ {
     }
   }
 
-  // Текст Атаки (под хелсбаром)
   .player-attack-text {
     font-size: 11px;
     color: white;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
-    padding-left: 2px; // Небольшой отступ слева, чтобы текст атаки был чуть правее края блока
-    // Убираем фон отсюда, так как он теперь на .player-hud
-    // background-color: rgba(0, 0, 0, 0.4);
-    // padding: 2px 5px;
-    // border-radius: 3px;
+    padding-left: 2px;
   }
 }
 
 .level-timer {
   position: absolute;
-  // Position top-center, adjusted for safe area + header
-  top: calc(env(safe-area-inset-top, 0px) + 45px + 5px); // <<< Итого ~50px от системного верха
-  left: 50%;
-  transform: translateX(-50%); // Center horizontally
-  
-  z-index: 90; // Below HUD maybe? Or same level?
-  background-color: rgba(0, 0, 0, 0.4); // Optional background
-  color: white;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 14px; // Adjust size
-  font-weight: bold;
-  text-shadow: 1px 1px 2px black;
-  min-width: 60px; // Ensure minimum width for MM:SS
-  text-align: center;
+  z-index: 95; // Код 1 имел 95, Код 2 имел 90. Возьмем 95 для большей вероятности быть сверху
+
+  // --- НОВОЕ ПОЗИЦИОНИРОВАНИЕ с max() из КОДА 1 ---
+  --required-timer-offset: calc(var(--tg-header-height) + var(--timer-gap));
+  top: max(var(--safe-inset-top), var(--required-timer-offset));
+  // --- Конец нового позиционирования ---
+
+  left: 50%; // Из КОДА 1 и КОДА 2
+  transform: translateX(-50%); // Из КОДА 1 и КОДА 2
+
+  background-color: rgba(0, 0, 0, 0.4); // Из КОДА 1 и КОДА 2
+  color: white; // Из КОДА 1 и КОДА 2
+  padding: 4px 12px; // Из КОДА 1 и КОДА 2
+  border-radius: 4px; // Из КОДА 1 и КОДА 2
+  font-size: 14px; // Из КОДА 1 и КОДА 2
+  font-weight: bold; // Дополнение из КОДА 2
+  text-shadow: 1px 1px 2px black; // Дополнение из КОДА 2
+  min-width: 60px; // Дополнение из КОДА 2
+  text-align: center; // Дополнение из КОДА 2
 }
 
 
-/* <<<--- ЗАКОММЕНТИРУЙ или УДАЛИ эти стили для тега <canvas> ---<<< */
+/* ЗАКОММЕНТИРОВАНЫ или УДАЛЕНЫ стили для тега <canvas> из кода 2, т.к. код 1 их не имел */
 /*
 canvas {
-  // max-width: 100vw;  // Не нужно, размер задаст Three.js
-  // max-height: 100dvh; // Не нужно, размер задаст Three.js
+  // max-width: 100vw;
+  // max-height: 100dvh;
   display: block;
-  // margin: 0 auto; // Не нужно, позиционирование через родительские flex/grid/position
+  // margin: 0 auto;
 }
 */
-/* --- УДАЛИ --- */
 
+/* --- Остальные стили для UI (джойстик, хелсбар, попапы и т.д. из кода 2) --- */
 
-/* --- Остальные стили для UI (джойстик, хелсбар, попапы) --- */
-
-
-/* ✅ Кнопка "Следующий уровень" */
 .next-level-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 20px; /* Этот отступ может потребовать корректировки с учетом safe-area-inset-top, если кнопка близко к краю */
+  right: calc(env(safe-area-inset-right, 0px) + 20px); /* Учет безопасной зоны справа */
   padding: 10px 20px;
   font-size: 16px;
   border: none;
@@ -384,50 +375,47 @@ canvas {
   color: white;
   cursor: pointer;
   border-radius: 8px;
+  z-index: 200; /* Чтобы был выше других элементов UI */
 }
 
 .next-level-btn:hover {
   background: #0056b3;
 }
 
-/* ✅ Контейнер джойстика */
 .joystick-container {
   position: absolute;
-  bottom: 15%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 15%); /* Учет безопасной зоны снизу */
   left: 50%;
   transform: translateX(-50%);
   width: 100px;
   height: 100px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
+  // border-radius: 50%; // Уже есть в .nipple-base
+  // background-color: rgba(255, 255, 255, 0.2); // Будет перекрыт .nipple-base
   z-index: 100;
 }
 
-/* ✅ База джойстика (неподвижная часть) */
 .nipple-base {
   width: 100px !important;
   height: 100px !important;
-  background-color: rgba(0, 0, 255, 0.5) !important;
+  background-color: rgba(0, 0, 255, 0.3) !important; /* Сделал менее ярким */
   border-radius: 50% !important;
-  border: 2px solid white !important;
+  border: 2px solid rgba(255, 255, 255, 0.7) !important; /* Сделал полупрозрачным */
   display: block !important;
   opacity: 1 !important;
-  z-index: 999 !important;
+  z-index: 999 !important; /* Оставляем */
 }
 
-/* ✅ Сам джойстик (движущаяся часть) */
 .nipple-stick {
   width: 50px !important;
   height: 50px !important;
-  background-color: rgba(255, 0, 0, 1) !important;
+  background-color: rgba(255, 0, 0, 0.8) !important; /* Сделал менее ярким */
   border-radius: 50% !important;
-  border: 2px solid black !important;
+  border: 2px solid rgba(0, 0, 0, 0.5) !important; /* Сделал полупрозрачным */
   opacity: 1 !important;
   display: block !important;
   position: absolute !important;
-  z-index: 1000 !important;
+  z-index: 1000 !important; /* Оставляем */
 }
-
 
 
 .death-popup {
@@ -440,7 +428,7 @@ canvas {
   padding: 20px;
   text-align: center;
   border-radius: 10px;
-  z-index: 100;
+  z-index: 1000; // Увеличил z-index, чтобы был поверх других UI
 }
 
 .death-popup h2 {
@@ -454,13 +442,15 @@ canvas {
   color: white;
   border: none;
   cursor: pointer;
+  border-radius: 6px; // Добавил скругление
 }
 
 .resource-bar {
   position: absolute;
-  top: 0px;
-  right: 20px;
-  z-index: 2;
+  // top: 0px; // Это будет перекрыто safe-area. Используем top из player-hud или level-timer как ориентир
+  top: max(var(--safe-inset-top), var(--required-hud-offset)); // Пример как у HUD
+  right: calc(env(safe-area-inset-right, 0px) + 15px); // Отступ справа с учетом safe-area
+  z-index: 100; // Как у HUD
   display: flex;
   gap: 12px;
   align-items: center;
@@ -483,25 +473,25 @@ canvas {
 }
 
 .reward-popup {
-  position: absolute;
+  position: fixed; // fixed, чтобы был относительно viewport
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(20, 20, 20, 0.95); // Более яркий фон
+  background: rgba(20, 20, 20, 0.95);
   padding: 15px 20px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   align-items: center;
-  animation: fade-in 0.3s ease-in-out;
+  animation: fadeInReward 0.3s ease-in-out; // Переименовал анимацию, чтобы не конфликтовать
   z-index: 50000;
   border: 2px solid rgba(255, 215, 0, 0.6);
   box-shadow: 0px 0px 10px rgba(255, 215, 0, 0.3);
 }
 
 .reward-popup.fade-out {
-  animation: fade-out 0.5s ease-in-out forwards;
+  animation: fadeOutReward 0.5s ease-in-out forwards; // Переименовал анимацию
 }
 
 .reward-title {
@@ -524,25 +514,30 @@ canvas {
 
 .reward-text {
   font-weight: bold;
+  color: white; // Добавил цвет, если он не наследуется
 }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translate(-50%, -10px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+// Переименованные анимации для reward-popup
+@keyframes fadeInReward {
+  from { opacity: 0; transform: translate(-50%, -60%); } /* Немного изменил transform для отличия */
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
-@keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes fadeOutReward {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to { opacity: 0; transform: translate(-50%, -40%); } /* Немного изменил transform для отличия */
 }
+
 
 .monster-health-container {
   position: absolute;
   width: 40px;
   height: 6px;
-  background-color: black;
-  border: 1px solid white;
-  z-index: 10;
+  background-color: rgba(0,0,0,0.5); // Сделал фон полупрозрачным
+  border: 1px solid rgba(255,255,255,0.7); // Сделал рамку полупрозрачной
+  z-index: 10; // Оставляем
+  border-radius: 2px; // Небольшое скругление
+  overflow: hidden; // Чтобы health-bar не вылезал за скругления
 }
 
 .monster-health-bar {
@@ -550,39 +545,45 @@ canvas {
   height: 100%;
   background-color: red;
   transition: width 0.2s linear;
+  border-radius: 1px; // Скругление для самой полоски
 }
+
 .boss-chest-popup,
 .level-complete-popup {
-  position: absolute;
+  position: fixed; // fixed для отображения поверх всего и центрирования на экране
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background-color: rgba(0, 0, 0, 0.9);
   color: white;
-  padding: 20px;
+  padding: 20px 25px; // Немного увеличил padding
   border-radius: 12px;
   text-align: center;
-  z-index: 1000;
-  animation: fadeIn 0.5s;
+  z-index: 2000; // Увеличил z-index
+  animation: fadeInPopup 0.5s; // Переименовал анимацию
 
   ul {
     list-style: none;
     padding: 0;
     margin-top: 10px;
+    margin-bottom: 15px; // Добавил отступ снизу
     li {
-      margin: 5px 0;
+      margin: 8px 0; // Увеличил отступ
+      font-size: 1.1em; // Немного увеличил шрифт
     }
   }
 
   button {
     margin-top: 15px;
-    padding: 10px 20px;
-    border-radius: 6px;
+    padding: 12px 24px; // Увеличил padding
+    border-radius: 8px; // Увеличил скругление
     border: none;
     background-color: #ffd700;
     color: black;
     font-weight: bold;
     cursor: pointer;
+    font-size: 1.1em; // Немного увеличил шрифт
+    transition: background-color 0.2s ease; // Добавил transition
 
     &:hover {
       background-color: #ffcc00;
@@ -590,23 +591,27 @@ canvas {
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+// Переименованная анимация для boss-chest-popup и level-complete-popup
+@keyframes fadeInPopup {
+  from { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-body, html {
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: black; /* Чтобы по бокам было чёрное поле */
-}
-.map-button {
+// body, html уже определены выше. Дублирование удалено.
+// Если нужен специфичный фон для .game-wrapper, то его там и задавать.
+// body, html {
+//   overflow: hidden;
+//   margin: 0;
+//   padding: 0;
+//   width: 100vw;
+//   height: 100vh;
+//   display: flex;
+//   justify-content: center;
+//   align-items: center;
+//   background-color: black; /* Чтобы по бокам было чёрное поле */
+// }
+
+.map-button { // Предполагается, что эта кнопка внутри .level-complete-popup или подобного
   margin-top: 12px;
   padding: 12px 24px;
   font-size: 18px;
@@ -621,10 +626,11 @@ body, html {
     background-color: #4e6da3;
   }
 }
+
 .world-map {
   width: 100vw;
-  height: 100dvh; // dynamic viewport height — важно на мобилках
-  position: fixed; // меняем с absolute
+  height: 100dvh;
+  position: fixed;
   top: 0;
   left: 0;
   background: #0f172a;
@@ -632,25 +638,30 @@ body, html {
   overflow: hidden;
   font-family: sans-serif;
   touch-action: none;
+  z-index: 10000; // Высокий z-index для отображения поверх игры
 }
 
-.map-title {
-  padding: 16px;
+.map-title { // Общий заголовок для карты, если он статичен
+  padding: env(safe-area-inset-top, 16px) 16px 16px; // Учет safe-area-inset-top
   font-size: 24px;
   text-align: center;
   font-weight: bold;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(15, 23, 42, 0.8); // Полупрозрачный фон для лучшей читаемости
+  position: relative; // Для z-index, если потребуется
+  z-index: 10; // Чтобы был над .map-scrollable
 }
 
-.worldmap-title {
+.worldmap-title { // Анимированный заголовок
   position: absolute;
-  top: 20px;
+  top: calc(env(safe-area-inset-top, 0px) + 20px); // Учет safe-area
   left: 50%;
   transform: translateX(-50%);
   font-size: 32px;
   color: white;
-  z-index: 999;
+  z-index: 999; // Должен быть выше .map-scrollable, но ниже .map-back-button
   animation: fadeTitle 2s ease-in-out forwards;
+  pointer-events: none; // Чтобы не мешал кликам
 }
 
 @keyframes fadeTitle {
@@ -664,16 +675,17 @@ body, html {
   }
   100% {
     opacity: 0;
-    transform: translateX(-50%) scale(1.2);
+    transform: translateX(-50%) scale(1.2) translateY(-20px); // Добавил смещение вверх при исчезновении
   }
 }
 
 .map-scrollable {
   width: 100%;
-  height: 100%;
-  overflow: scroll;
-  flex: 1;
-  position: relative;
+  height: 100%; // Занимает всю высоту .world-map
+  overflow: scroll; // или auto
+  // flex: 1; // Не нужно, если .world-map не flex-контейнер
+  position: relative; // Для позиционирования .map-background
+  // padding-top: 60px; // Примерный отступ для .map-title, если он фиксированный сверху. Лучше задать высоту .map-title и использовать ее.
 }
 
 .map-background {
@@ -686,7 +698,7 @@ body, html {
   top: 0;
   left: 0;
   transition: transform 0.1s ease-out;
-  touch-action: none; // важно для тача
+  touch-action: none;
 }
 
 
@@ -699,20 +711,21 @@ body, html {
   cursor: pointer;
   font-weight: bold;
   color: white;
-  transition: transform 0.2s ease, background-color 0.3s;
+  transition: transform 0.2s ease, background-color 0.3s, box-shadow 0.2s; // Добавил box-shadow в transition
   white-space: nowrap;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); // Улучшенная тень
 
   &:hover {
     transform: translate(-50%, -50%) scale(1.1);
-    background-color: rgba(59, 130, 246, 0.9);
+    background-color: rgba(59, 130, 246, 0.95); // Чуть ярче
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   }
 }
 
 .map-back-button {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: calc(env(safe-area-inset-top, 0px) + 16px); // Учет safe-area
+  right: calc(env(safe-area-inset-right, 0px) + 16px); // Учет safe-area
   background-color: #ef4444;
   color: white;
   padding: 10px 16px;
@@ -720,12 +733,13 @@ body, html {
   border: none;
   cursor: pointer;
   font-size: 16px;
-  z-index: 10;
+  z-index: 1000; // Выше чем .worldmap-title и .map-title
 
   &:hover {
     background-color: #dc2626;
   }
 }
+
 .map-island {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -733,47 +747,76 @@ body, html {
   cursor: pointer;
 
   .island-image {
-    width: 200px;
+    width: 200px; // Можно сделать адаптивным или через переменные
     height: auto;
     transition: transform 0.3s ease;
-    pointer-events: none; // чтобы не мешало drag-событиям
+    pointer-events: none;
+    filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.3)); // Добавил тень для картинки
   }
 
   .island-label {
     display: block;
-    margin-top: 6px;
+    margin-top: 8px; // Увеличил отступ
     color: white;
     font-weight: bold;
-    text-shadow: 1px 1px 3px black;
-    font-size: 14px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.7); // Усилил тень
+    font-size: 15px; // Немного увеличил шрифт
+    pointer-events: none; // Чтобы текст не мешал клику на остров
   }
 
   &:hover .island-image {
-    transform: scale(1.08);
+    transform: scale(1.08) rotate(-2deg); // Добавил небольшой поворот
+    filter: drop-shadow(0px 8px 15px rgba(0,0,0,0.4));
+  }
+   &:hover .island-label {
+    color: #FFD700; // Пример изменения цвета текста при наведении на остров
   }
 }
 
-.map-popup {
+.map-popup { // Попап подтверждения выбора уровня/острова
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100dvh;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.7); // Сделал фон темнее
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 20000; // Очень высокий z-index
+  padding: env(safe-area-inset-top, 15px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 15px) env(safe-area-inset-left, 15px); // Учет safe-area для всего попапа
+  box-sizing: border-box;
 }
 
 .popup-box {
   background: #1e293b;
-  padding: 20px 30px;
-  border-radius: 12px;
+  padding: 25px 35px; // Увеличил padding
+  border-radius: 16px; // Увеличил скругление
   text-align: center;
   color: white;
-  max-width: 80%;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+  max-width: 90%;
+  width: auto; // Для небольших текстов
+  min-width: 280px; // Минимальная ширина
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); // Усилил тень
+  animation: fadeInPopupBox 0.3s ease-out; // Анимация для появления
+
+  h3 { // Стиль для заголовка в попапе
+    font-size: 1.4em;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #cbd5e1; // Светло-серый
+  }
+  p { // Стиль для текста в попапе
+    font-size: 1em;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    color: #94a3b8; // Более тусклый серый
+  }
+}
+
+@keyframes fadeInPopupBox {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .popup-buttons {
@@ -783,33 +826,38 @@ body, html {
   gap: 16px;
 
   button {
-    padding: 8px 20px;
+    padding: 10px 22px; // Немного изменил padding
     border: none;
-    border-radius: 8px;
+    border-radius: 10px; // Увеличил скругление
     font-weight: bold;
     cursor: pointer;
     font-size: 16px;
-    transition: 0.2s;
+    transition: background-color 0.2s ease, transform 0.1s ease; // Добавил transform
+    min-width: 100px; // Минимальная ширина кнопки
+
+    &:active {
+      transform: scale(0.95);
+    }
   }
 
-  button:first-of-type {
-    background-color: #22c55e;
-
+  button:first-of-type { // "Да" или "Подтвердить"
+    background-color: #22c55e; // Зеленый
+    color: white;
     &:hover {
       background-color: #16a34a;
     }
   }
 
-  button:last-of-type {
-    background-color: #ef4444;
-
+  button:last-of-type { // "Нет" или "Отмена"
+    background-color: #ef4444; // Красный
+    color: white;
     &:hover {
       background-color: #dc2626;
     }
   }
 }
 
-.chapter-view {
+.chapter-view { // Экран загрузки/перехода к главе
   width: 100vw;
   height: 100dvh;
   background: #0f172a;
@@ -817,40 +865,69 @@ body, html {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
+  position: fixed; // fixed для отображения поверх всего
+  top: 0;
+  left: 0;
+  z-index: 60000; // Очень высокий z-index
+  padding: env(safe-area-inset-top, 15px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 15px) env(safe-area-inset-left, 15px);
+  box-sizing: border-box;
 }
 
-.chapter-zoom {
-  width: 180px;
+.chapter-zoom-image { // Контейнер для изображения, чтобы анимация применялась к нему
+  width: 180px; // или max-width
   height: auto;
-  animation: zoomIn 0.5s ease-out forwards;
+  animation: zoomInChapterImage 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; // Улучшенная анимация
 }
 
-@keyframes zoomIn {
+@keyframes zoomInChapterImage {
   0% {
-    transform: scale(0.3);
+    transform: scale(0.1) rotate(-45deg);
     opacity: 0;
   }
+  70% {
+    transform: scale(1.1) rotate(5deg);
+    opacity: 1;
+  }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
     opacity: 1;
   }
 }
 
 .chapter-title {
-  margin-top: 16px;
-  font-size: 24px;
+  margin-top: 20px; // Увеличил отступ
+  font-size: 28px; // Увеличил шрифт
   color: white;
   text-align: center;
+  font-weight: bold; // Добавил жирность
+  text-shadow: 0 0 10px rgba(255,255,255,0.3); // Легкое свечение
+  animation: fadeInText 0.5s ease-out 0.5s forwards; // Анимация появления текста с задержкой
+  opacity: 0; // Начальное состояние для анимации
 }
 
-.chapter-back {
+@keyframes fadeInText {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.chapter-back-button { // Кнопка "Назад" из экрана главы
   margin-top: 40px;
-  padding: 10px 24px;
-  font-size: 16px;
-  background-color: #ef4444;
+  padding: 12px 28px; // Увеличил padding
+  font-size: 17px; // Увеличил шрифт
+  background-color: #ef4444; // Красный
   border: none;
-  border-radius: 8px;
+  border-radius: 10px; // Увеличил скругление
   color: white;
   cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  animation: fadeInText 0.5s ease-out 0.8s forwards; // Анимация появления кнопки с задержкой
+  opacity: 0; // Начальное состояние для анимации
+
+  &:hover {
+    background-color: #dc2626;
+  }
+  &:active {
+    transform: scale(0.95);
+  }
 }
