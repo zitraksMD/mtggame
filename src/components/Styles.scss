@@ -4,9 +4,9 @@
 // Переменные из кода 1 для отступов
 :root {
   --safe-inset-top: env(safe-area-inset-top, 0px); /* Системный отступ сверху */
-  --tg-header-height: 45px; /* Предполагаемая высота шапки TG (подбери!) */
-  --timer-gap: 5px;      /* Зазор под шапкой/inset до таймера */
-  --hud-gap: 20px;        /* Зазор под шапкой/inset до HUD */
+  --tg-header-height: 50px; /* Предполагаемая высота шапки TG (подбери!) */
+  --timer-gap: 0px;      /* Зазор под шапкой/inset до таймера */
+  --hud-gap: 15px;        /* Зазор под шапкой/inset до HUD */
 }
 
 $rarity-color-common:    #B0BEC5; // Серый (пример)
