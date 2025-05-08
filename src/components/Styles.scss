@@ -5,8 +5,8 @@
 :root {
   --safe-inset-top: env(safe-area-inset-top, 0px); /* Системный отступ сверху */
   --tg-header-height: 50px; /* Предполагаемая высота шапки TG (подбери!) */
-  --timer-gap: -10px;      /* Зазор под шапкой/inset до таймера */
-  --hud-gap: 25px;        /* Зазор под шапкой/inset до HUD */
+  --timer-gap: -20px;      /* Зазор под шапкой/inset до таймера */
+  --hud-gap: 20px;        /* Зазор под шапкой/inset до HUD */
 }
 
 $rarity-color-common:    #B0BEC5; // Серый (пример)
@@ -250,8 +250,7 @@ body, html, #root /* или твой корневой элемент */ {
   /* Убрали padding-top отсюда (если был) */
   padding-left: env(safe-area-inset-left, 15px);   /* <<< ИЗМЕНЕНИЕ ИЗ КОДА 1 */
   padding-right: env(safe-area-inset-right, 15px); /* <<< ИЗМЕНЕНИЕ ИЗ КОДА 1 */
-  padding-bottom: env(safe-area-inset-bottom, 10px);/* <<< ИЗМЕНЕНИЕ ИЗ КОДА 1 */
-
+  
   overflow: hidden; /* Добавлено, чтобы внутренние элементы не выходили за пределы safe-area */
   box-sizing: border-box; /* <--- ДОБАВИТЬ ЭТО */
 
