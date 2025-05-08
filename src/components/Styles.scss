@@ -239,23 +239,12 @@ body, html, #root /* или твой корневой элемент */ {
 
 /* Общая обертка игры */
 .game-wrapper {
-  position: relative; /* Для позиционирования дочерних HUD */
   height: 100vh;    /* Занимает весь экран */
-  width: 100vw;
-  overflow: hidden;   /* Скрыть прокрутку */
-  box-sizing: border-box; /* Padding не будет увеличивать размер */
-
-  /* --- Строку background-image УДАЛЯЕМ --- */
-  /* background-image: url('/assets/main-background-game.png'); */ /* <-- УДАЛИТЬ ЭТО */
-
-  /* --- Отступ СВЕРХУ для ВСЕГО КОНТЕНТА ОСТАВЛЯЕМ --- */
-  /* 50px = ~40px шапка Telegram + 10px зазор (подбери!) */
-  padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
-  /* Опционально: отступы для других безопасных зон */
-  padding-left: env(safe-area-inset-left, 15px);
-  padding-right: env(safe-area-inset-right, 15px);
-  padding-bottom: env(safe-area-inset-bottom, 10px);
-  /* -------------------------------------------------- */
+  width: 100%; /* Наследует от body */
+  position: relative; /* Для позиционирования оверлеев */
+  display: flex; /* Можно использовать для центрирования, если нужно */
+  justify-content: center;
+  align-items: center;
 }
 
 /* Контейнер для канваса и игрового UI */
@@ -279,8 +268,7 @@ body, html, #root /* или твой корневой элемент */ {
   position: absolute;
   top: 0;
   left: 0;
-  top: 10px;  // <<< Отступ от ВЕРХНЕГО КРАЯ ИГРОВОЙ ЗОНЫ (после padding .game-wrapper)
-  left: 10px; // <<< Отступ от ЛЕВОГО КРАЯ ИГРОВОЙ ЗОНЫ (после padding .game-wrapper)
+  top: 10px;
 
   // --- Внутренние отступы для контента ВНУТРИ блока ---
   // Небольшие отступы, чтобы контент не прилипал к краям фона HUD
@@ -352,7 +340,8 @@ body, html, #root /* или твой корневой элемент */ {
 .level-timer {
   position: absolute;
   // Position top-center, adjusted for safe area + header
-  top: 10px; // <<< Отступ от ВЕРХНЕГО КРАЯ ИГРОВОЙ ЗОНЫ (подбери)  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px)); // <<< Adjust vertical offset (15px below safe area + header)
+  left: 50%;
   transform: translateX(-50%); // Center horizontally
   
   z-index: 90; // Below HUD maybe? Or same level?
