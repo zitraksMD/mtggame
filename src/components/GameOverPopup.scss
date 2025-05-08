@@ -1,66 +1,118 @@
 /* src/components/GameOverPopup.scss */
 
+// Стили для фона (оверлея)
 .game-over-overlay {
-    position: fixed; // Фиксированное позиционирование относительно окна браузера
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.75); // Полупрозрачный темный фон
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000; // Убедись, что он поверх игрового канваса и других элементов
-    backdrop-filter: blur(3px); // Небольшое размытие фона (опционально)
+  position: fixed; // Фиксированное позиционирование
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75); // Полупрозрачный темный фон
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; // Поверх других элементов
+  backdrop-filter: blur(3px); // Размытие фона (опционально)
+}
+
+// Стили для самого окна попапа
+.game-over-content {
+  background-color: #3a3a3a; // Темно-серый фон попапа
+  color: white;
+  padding: 30px 50px; // Внутренние отступы
+  border-radius: 12px; // Скругление углов
+  text-align: center;
+  border: 2px solid #555; // Рамка
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); // Тень
+
+  // Анимация появления (используется, если НЕ подключен react-transition-group)
+  // 'forwards' оставляет стили последнего кадра после завершения анимации
+  animation: fadeInPopup 0.3s ease-out forwards;
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #ff5c5c; // Красный цвет заголовка
+    font-size: 1.8em;
   }
-  
-  .game-over-content {
-    background-color: #3a3a3a; // Темно-серый фон попапа
-    color: white;
-    padding: 30px 50px;
-    border-radius: 12px;
-    text-align: center;
-    border: 2px solid #555;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); // Тень для объема
-    animation: fadeInPopup 0.3s ease-out; // Простая анимация появления
-  
-    h2 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      color: #ff5c5c; // Ярко-красный для заголовка
-      font-size: 1.8em;
-    }
-  
-    p {
-      margin-bottom: 30px;
-      font-size: 1.1em;
-    }
-  
-    button {
-      padding: 12px 25px;
-      font-size: 1.1em;
-      cursor: pointer;
-      background-color: #e0e0e0; // Светло-серый фон кнопки
-      border: none;
-      border-radius: 6px;
-      color: #333;
-      font-weight: bold;
-      transition: background-color 0.2s ease; // Плавный ховер
-  
-      &:hover {
-        background-color: #cccccc; // Чуть темнее при наведении
-      }
+
+  // Стиль для параграфа "Уровень провален"
+  p {
+    margin-bottom: 10px; // Уменьшил отступ перед временем
+    font-size: 1.1em;
+  }
+
+  // Стили для отображения времени игры
+  .time-played {
+    font-size: 0.9em;     // Шрифт чуть меньше
+    color: #cccccc;     // Светло-серый
+    margin-top: 0;      // Убрать стандартный верхний отступ параграфа
+    margin-bottom: 25px; // Отступ снизу до кнопки
+  }
+
+  // Стили для кнопки
+  button {
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    background-color: #e0e0e0; // Светло-серый фон
+    border: none;
+    border-radius: 6px;
+    color: #333;
+    font-weight: bold;
+    transition: background-color 0.2s ease; // Плавный ховер
+
+    &:hover {
+      background-color: #cccccc; // Темнее при наведении
     }
   }
-  
-  // Анимация появления
-  @keyframes fadeInPopup {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+}
+
+// --- Анимация появления @keyframes (используется со свойством animation выше) ---
+@keyframes fadeInPopup {
+  from {
+    opacity: 0;
+    transform: scale(0.9); // Начинаем чуть меньше и прозрачно
   }
+  to {
+    opacity: 1;
+    transform: scale(1); // Заканчиваем нормально
+  }
+}
+
+
+// --- Классы для анимации с react-transition-group (Опционально) ---
+// Если ты решишь использовать <CSSTransition classNames="popup-fade"> в Level.jsx,
+// то закомментируй/удали свойство 'animation: fadeInPopup...' из .game-over-content
+// и используй эти классы. Они обеспечат ПЛАВНОЕ ИСЧЕЗНОВЕНИЕ.
+
+// Появление
+.popup-fade-enter {
+  opacity: 0;
+  transform: scale(0.9);
+}
+.popup-fade-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 300ms ease-out, transform 300ms ease-out; // Длительность = timeout в CSSTransition
+}
+.popup-fade-enter-done {
+  opacity: 1;
+  transform: scale(1);
+}
+
+// Исчезновение
+.popup-fade-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+.popup-fade-exit-active {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 300ms ease-in, transform 300ms ease-in; // Длительность = timeout в CSSTransition
+}
+.popup-fade-exit-done {
+   opacity: 0;
+   transform: scale(0.9);
+}
+// --- Конец классов для react-transition-group ---

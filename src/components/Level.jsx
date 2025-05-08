@@ -96,6 +96,8 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     const [currentActiveRoomId, setCurrentActiveRoomId] = useState(null);
     const [activePuddles, setActivePuddles] = useState([]);
     const [activeBurningGrounds, setActiveBurningGrounds] = useState([]);
+    const [timePlayedSeconds, setTimePlayedSeconds] = useState(0);
+    const [elapsedTimeSec, setElapsedTimeSec] = useState(0);
 
 
 
@@ -129,6 +131,47 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         // console.log(`[Sync Ref] activeBurningGrounds state changed, updating Ref. New length: ${activeBurningGrounds.length}`);
     }, [activeBurningGrounds]);
 
+    // New useEffect for the timer interval
+useEffect(() => {
+    let intervalId = null;
+
+    // Start interval only when the level is actively playing and start time is known
+    if (levelStatus === 'playing' && levelStartTimeRef.current && !isLoading) {
+        console.log("[Timer Interval] Starting timer update interval.");
+        // Update immediately first time
+        setElapsedTimeSec(Math.floor((Date.now() - levelStartTimeRef.current) / 1000));
+        
+        intervalId = setInterval(() => {
+            if (levelStartTimeRef.current) { // Check ref still valid inside interval
+                 const currentElapsedSec = Math.floor((Date.now() - levelStartTimeRef.current) / 1000);
+                 setElapsedTimeSec(currentElapsedSec);
+            }
+        }, 1000); // Update every second
+    } else {
+        // If status is not playing or timer shouldn't run, ensure time is reset (optional)
+        // setElapsedTimeSec(0); // Resetting might not be needed if done elsewhere on level start
+    }
+
+    // Cleanup function: clear interval when status changes or component unmounts
+    return () => {
+        if (intervalId) {
+            console.log("[Timer Interval] Clearing timer update interval.");
+            clearInterval(intervalId);
+        }
+    };
+// Dependencies: status, start time ref (or a boolean flag if start time is valid), loading state
+}, [levelStatus, isLoading, levelStartTimeRef]); // Add levelStartTimeRef to deps, even though it's a ref, its value matters here conceptually for starting
+
+// Helper function (if not already defined globally or imported)
+const formatTime = (totalSeconds) => {
+    if (typeof totalSeconds !== 'number' || totalSeconds < 0 || isNaN(totalSeconds)) return '00:00';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    const paddedMinutes = String(minutes).padStart(2, '0');
+    const paddedSeconds = String(seconds).padStart(2, '0');
+    return `${paddedMinutes}:${paddedSeconds}`;
+};
+
     // === Глобальный Стор ===
     const {
         playerHp,
@@ -138,7 +181,8 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         initializeLevelHp,
         // Добавляем из code1 (если нужно будет вызывать applyDebuff)
         applyDebuff, // <- Раскомментировать, если нужно вызывать action
-        setWeakeningAuraStatus
+        setWeakeningAuraStatus,
+        incrementKills // <<< ДОБАВЬ ЭТО
     } = useGameStore(state => ({
         playerHp: state.playerHp,
         displayMaxHp: state.computedStats().hp,
@@ -146,7 +190,8 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         playerTakeDamage: state.playerTakeDamage,
         initializeLevelHp: state.initializeLevelHp,
         applyDebuff: state.applyDebuff, // <- Раскомментировать, если нужно вызывать action
-        setWeakeningAuraStatus: state.setWeakeningAuraStatus
+        setWeakeningAuraStatus: state.setWeakeningAuraStatus,
+        incrementKills: state.incrementKills // <<< И СВЯЗЫВАНИЕ ЗДЕСЬ
     }));
 
     
@@ -613,115 +658,83 @@ useEffect(() => {
 
     // --- Управление общей загрузкой ---
     useEffect(() => {
-        // Определяем, все ли необходимые ресурсы загружены
         const allLoaded = !!levelConfig && isPlayerModelLoaded && areEnemiesLoaded && beamTexturesLoaded;
-        const currentlyLoading = !allLoaded; // Обратное значение для состояния "идет загрузка"
+        const currentlyLoading = !allLoaded;
     
-        // Если состояние загрузки изменилось (например, с true на false)
         if (isLoading !== currentlyLoading) {
-            setIsLoading(currentlyLoading); // Обновляем состояние загрузки в родительском компоненте или локально
+            setIsLoading(currentlyLoading);
     
-            // Если загрузка ТОЛЬКО ЧТО завершилась
-            if (!currentlyLoading) {
-                // И если колбек onReady еще не был вызван (чтобы избежать многократного вызова)
-                if (!readyCalledRef.current) {
+            if (!currentlyLoading) { // Загрузка ТОЛЬКО ЧТО завершилась
+                if (!readyCalledRef.current) { // И onReady еще не вызывался
                     console.log("✨ Уровень ГОТОВ! Вызов onReady.");
     
-                    // Инициализация HP игрока, если соответствующая функция передана
+                    // Инициализация HP и вызов onReady (как у тебя и было)
                     if (typeof initializeLevelHp === 'function') {
                         initializeLevelHp();
                         console.log("HP игрока инициализировано после загрузки.");
-                    } else {
-                        console.error("ОШИБКА: initializeLevelHp не функция при вызове onReady!");
-                    }
-    
-                    // Вызов колбека onReady, если он передан как пропс
+                    } else { /* ошибка */ }
                     if (typeof onReady === 'function') {
                         onReady();
-                    } else {
-                        console.warn("Пропс onReady не передан в Level.");
-                    }
-                    readyCalledRef.current = true; // Помечаем, что onReady и инициализация уровня были выполнены
+                    } else { /* предупреждение */ }
+                    readyCalledRef.current = true;
     
-                    // --- НАЧАЛО ИНТЕГРИРОВАННОГО КОДА (из код1) ---
-                    // Установка стартовой комнаты после полной загрузки уровня и вызова onReady
-                    // Проверяем наличие levelData и массива комнат
-                    if (levelData && levelData.rooms && Array.isArray(levelData.rooms)) {
-                        // Ищем комнату, помеченную как стартовая
+                    // --- >>> ЗАПУСК ОБЩЕГО ТАЙМЕРА ВРЕМЕНИ ИГРЫ <<< ---
+                    // Запоминаем время начала уровня ВСЕГДА, когда уровень готов
+                    levelStartTimeRef.current = Date.now();
+                    // Сбрасываем состояние с длительностью предыдущей игры
+                    setTimePlayedSeconds(0);
+                    console.log("[Timer] Уровень готов, общий таймер времени запущен.");
+                    // --- >>> КОНЕЦ ЗАПУСКА ТАЙМЕРА <<< ---
+    
+    
+                    // Установка стартовой комнаты (как у тебя и было)
+                    if (levelData?.rooms) {
                         const startingRoom = levelData.rooms.find(room => room.isStartingRoom);
-    
                         if (startingRoom) {
                             setCurrentActiveRoomId(startingRoom.id);
                             console.log(`[Level.jsx] Starting room set to: ${startingRoom.id}`);
-                            // Согласно комментарию в код1: "Туман для стартовой комнаты уже должен быть скрыт при создании".
-                            // Если требуется дополнительная гарантия скрытия тумана здесь:
-                            // if (fogOverlaysRef.current && fogOverlaysRef.current[startingRoom.id] && fogOverlaysRef.current[startingRoom.id].visible !== false) {
+                            // Опционально: убедиться, что туман для нее скрыт
+                            // if (fogOverlaysRef.current?.[startingRoom.id]) {
                             //     fogOverlaysRef.current[startingRoom.id].visible = false;
-                            //     console.log(`[Level.jsx] Fog explicitly ensured hidden for designated starting room: ${startingRoom.id}`);
                             // }
-                        } else {
-                            console.warn("[Level.jsx] No starting room defined in levelData.rooms!");
-                            // Если стартовая комната не определена, но комнаты есть, используем первую из списка
-                            if (levelData.rooms.length > 0) {
-                                const firstRoomAsStarting = levelData.rooms[0];
-                                setCurrentActiveRoomId(firstRoomAsStarting.id);
-                                console.log(`[Level.jsx] Defaulting to first room as starting room: ${firstRoomAsStarting.id}`);
-                                // Скрыть туман для первой комнаты, если она выбрана как стартовая по умолчанию
-                                if (fogOverlaysRef.current && fogOverlaysRef.current[firstRoomAsStarting.id]) {
-                                    // Проверяем, что туман действительно видим, перед тем как его скрывать
-                                    if (fogOverlaysRef.current[firstRoomAsStarting.id].visible !== false) {
-                                        fogOverlaysRef.current[firstRoomAsStarting.id].visible = false;
-                                        console.log(`[Level.jsx] Fog cleared for default starting room: ${firstRoomAsStarting.id}`);
-                                    }
-                                } else {
-                                    // Это предупреждение может быть полезно, если ожидается, что для каждой комнаты есть оверлей тумана
-                                    console.warn(`[Level.jsx] Fog overlay not found or not applicable for default starting room: ${firstRoomAsStarting.id}`);
-                                }
-                            } else {
-                                // Если комнат вообще нет
-                                console.error("[Level.jsx] No rooms available in levelData.rooms to set as a default starting room.");
+                        } else if (levelData.rooms.length > 0) {
+                             // Логика выбора первой комнаты по умолчанию
+                            const firstRoomAsStarting = levelData.rooms[0];
+                            setCurrentActiveRoomId(firstRoomAsStarting.id);
+                            console.log(`[Level.jsx] Defaulting to first room as starting room: ${firstRoomAsStarting.id}`);
+                            // Скрыть туман для первой комнаты
+                            if (fogOverlaysRef.current?.[firstRoomAsStarting.id]) {
+                                 fogOverlaysRef.current[firstRoomAsStarting.id].visible = false;
+                                 console.log(`[Level.jsx] Fog cleared for default starting room: ${firstRoomAsStarting.id}`);
                             }
-                        }
-                    } else {
-                        // Если данные о комнатах отсутствуют или некорректны
-                        console.warn("[Level.jsx] levelData.rooms is not available or not an array. Cannot set starting room.");
-                    }
-                    // --- КОНЕЦ ИНТЕГРИРОВАННОГО КОДА ---
+                        } else { /* ошибка, если комнат нет */ }
+                    } else { /* предупреждение, если нет levelData.rooms */ }
     
-                    // Логика для условия победы "выжить определенное время"
+    
+                    // Логика для ТАЙМЕРА ВЫЖИВАНИЯ (если он нужен)
                     if (levelData?.winCondition?.type === 'survive_duration') {
-                        levelStartTimeRef.current = Date.now(); // Запоминаем время начала уровня
-                        setRemainingTime(levelData.winCondition.duration); // Устанавливаем общее время для выживания
+                        // levelStartTimeRef уже установлен выше
+                        setRemainingTime(levelData.winCondition.duration);
                         console.log(`Survival Timer Started: ${levelData.winCondition.duration}s`);
                     } else {
-                        levelStartTimeRef.current = null; // Сбрасываем время начала, если условие не "survive_duration"
-                        setRemainingTime(null); // Сбрасываем оставшееся время
+                        // Для других типов уровней
+                        setRemainingTime(null);
                     }
+    
                 } else {
-                    // Этот блок выполнится, если загрузка завершилась, но onReady уже был вызван ранее (например, из-за изменения зависимостей)
-                    console.log("[Level.jsx] Загрузка завершена, но onReady уже был вызван ранее.");
+                    // Загрузка завершилась, но onReady уже был вызван
                 }
             } else {
-                // Если загрузка еще не завершена (currentlyLoading === true)
+                // Переход в состояние загрузки
                 console.log("[Level.jsx] Переход в состояние загрузки...");
+                // Сбрасываем таймер при начале загрузки (на всякий случай)
+                levelStartTimeRef.current = null;
+                setTimePlayedSeconds(0);
             }
         }
-    }, [
-        levelConfig,            // Конфигурация уровня
-        isPlayerModelLoaded,    // Флаг загрузки модели игрока
-        areEnemiesLoaded,       // Флаг загрузки врагов
-        beamTexturesLoaded,     // Флаг загрузки текстур лучей
-        isLoading,              // Текущее состояние загрузки (из state)
-        // setIsLoading,        // Функция для установки isLoading, обычно стабильна и не требуется в зависимостях, если это setState из useState
-        onReady,                // Колбек, вызываемый по готовности уровня (пропс)
-        initializeLevelHp,      // Функция инициализации HP (пропс)
-        levelData,              // Данные уровня, включая levelData.rooms и levelData.winCondition. Важно для логики стартовой комнаты и условий победы.
-        // setCurrentActiveRoomId, // Функция для установки активной комнаты (setState), стабильна
-        // fogOverlaysRef,      // ref-объект, стабилен
-        // readyCalledRef,      // ref-объект, стабилен
-        // levelStartTimeRef,   // ref-объект, стабилен
-        // setRemainingTime     // Функция для установки оставшегося времени (setState), стабильна
-    ]);
+    // }, [ /* Старые зависимости */ ]);
+    // Добавляем все функции установки состояния, используемые внутри
+    }, [levelConfig, isPlayerModelLoaded, areEnemiesLoaded, beamTexturesLoaded, isLoading, onReady, initializeLevelHp, levelData, setIsLoading, setRemainingTime, setCurrentActiveRoomId, setTimePlayedSeconds, readyCalledRef, levelStartTimeRef]); // Добавлены зависимости (рефы и set-функции)
 
     // --- Инициализация состояния врагов ---
     useEffect(() => {
@@ -1066,70 +1079,105 @@ const createPoisonCloud = useCallback((position) => {
     // === ОБРАБОТЧИК УРОНА ВРАГУ (ФИНАЛЬНАЯ ВЕРСИЯ с БЛОКОМ и ВЗРЫВОМ) ===
 // В Level.jsx
 
-    // === ОБРАБОТЧИК УРОНА ВРАГУ (ИСПРАВЛЕННЫЙ) ===
-    const handleEnemyHit = useCallback((enemyId, damageAmount) => {
-        // <<< ИСПОЛЬЗУЕМ loadedEnemyRefsArray ИЗ СОСТОЯНИЯ >>>
-        const enemyRef = loadedEnemyRefsArray.find(ref => ref && ref.id === enemyId);
+// В Level.jsx
 
-        // Если враг не найден или уже помечен как мертвый, выходим
-        if (!enemyRef || enemyRef.isDead) {
-             // console.log(`[handleEnemyHit] Hit ignored for dead/missing enemy ${enemyId}`);
-             return;
+// === ОБРАБОТЧИК УРОНА ВРАГУ (ИСПРАВЛЕННЫЙ И ОБЪЕДИНЕННЫЙ) ===
+const handleEnemyHit = useCallback((enemyId, damageAmount) => {
+    // <<< ИСПОЛЬЗУЕМ loadedEnemyRefsArray ИЗ СОСТОЯНИЯ (как в код2) >>>
+    // или используем enemyRefs, если это более актуальная переменная в вашем контексте
+    const enemyRef = loadedEnemyRefsArray.find(ref => ref && ref.id === enemyId); // Используем loadedEnemyRefsArray из код2
+
+    // Если враг не найден или уже помечен как мертвый, выходим
+    if (!enemyRef || enemyRef.isDead) {
+        // console.log(`[handleEnemyHit] Hit ignored for dead/missing enemy ${enemyId}`);
+        return;
+    }
+
+    // --- ПРОВЕРКА БЛОКА РЫЦАРЯ (логика из обоих кодов, они идентичны) ---
+    if (enemyRef.type === 'revenant_knight') {
+        if (typeof enemyRef.blockCharges === 'undefined') {
+            enemyRef.blockCharges = enemyRef.stats.initialBlockCharges || 0;
         }
-
-        // --- ПРОВЕРКА БЛОКА РЫЦАРЯ ---
-        if (enemyRef.type === 'revenant_knight') {
-            if (typeof enemyRef.blockCharges === 'undefined') {
-                 enemyRef.blockCharges = enemyRef.stats.initialBlockCharges || 0;
-            }
-            if (enemyRef.blockCharges > 0) {
-                enemyRef.blockCharges -= 1;
-                console.log(`🛡️ Knight ${enemyId} BLOCKED! Charges left: ${enemyRef.blockCharges}`);
-                // TODO: Эффект блока
-                return; // Урон не наносим
-            } else if (enemyRef.blockCharges === 0 && !enemyRef.blockBrokenNotified) {
-                 console.log(`Knight ${enemyId} block broken!`);
-                 enemyRef.blockBrokenNotified = true;
-            }
+        if (enemyRef.blockCharges > 0) {
+            enemyRef.blockCharges -= 1;
+            console.log(`🛡️ Knight ${enemyId} BLOCKED! Charges left: ${enemyRef.blockCharges}`);
+            // TODO: Эффект блока
+            return; // Урон не наносим
+        } else if (enemyRef.blockCharges === 0 && !enemyRef.blockBrokenNotified) {
+            console.log(`Knight ${enemyId} block broken!`);
+            enemyRef.blockBrokenNotified = true;
         }
-        // --- КОНЕЦ ПРОВЕРКИ БЛОКА ---
+    }
+    // --- КОНЕЦ ПРОВЕРКИ БЛОКА ---
 
-        // Наносим урон через обновление состояния
-        let enemyDefeated = false;
-        let needsExplosion = false;
+// --- Проверяем ЗАРАНЕЕ, убьет ли этот удар врага ---
+let enemyJustDefeated = false;
+let needsExplosion = false; // Флаг для солдата
 
-        setEnemiesState(prevEnemies => {
-            const enemyIndex = prevEnemies.findIndex(e => e.id === enemyId);
-            if (enemyIndex !== -1 && prevEnemies[enemyIndex].currentHp > 0) {
-                 const newState = [...prevEnemies];
-                 const currentHp = newState[enemyIndex].currentHp;
-                 const newHp = Math.max(0, currentHp - damageAmount);
-                 // console.log(`   >> HP change for ${enemyId} (${enemyRef.type}): ${currentHp} -> ${newHp}`);
+// Находим ТЕКУЩЕЕ состояние врага ДО обновления
+// Важно: читаем из 'enemiesState', а не 'prevEnemies'
+const currentEnemyState = enemiesState.find(es => es.id === enemyId);
 
-                 if (newHp === 0) {
-                      enemyDefeated = true;
-                      console.log(`   >> Enemy ${enemyId} defeated (HP=0)!`);
-                      if (enemyRef.type === 'rotting_soldier') {
-                          needsExplosion = true;
-                      }
-                 }
-                 newState[enemyIndex] = { ...newState[enemyIndex], currentHp: newHp };
-                 return newState;
-            }
-            return prevEnemies;
-        });
+// Проверяем, только если враг найден и жив СЕЙЧАС
+if (currentEnemyState && currentEnemyState.currentHp > 0) {
+    // Считаем, каким станет HP ПОСЛЕ удара
+    const newHp = Math.max(0, currentEnemyState.currentHp - damageAmount);
+    // Если HP станет 0, то это смертельный удар
+    if (newHp === 0) {
+        enemyJustDefeated = true; // Устанавливаем флаг СИНХРОННО
+        if (enemyRef.type === 'rotting_soldier') {
+            needsExplosion = true;
+        }
+        console.log(`   >> Враг ${enemyId} БУДЕТ побежден этим ударом! (HP: ${currentEnemyState.currentHp} -> ${newHp})`);
+    }
+}
+// --- Конец предварительной проверки ---
 
-        // Установка флагов в РЕФЕ после обновления состояния
-         if (enemyDefeated && !enemyRef.isDead) {
-             enemyRef.isDead = true;
-             if (needsExplosion) {
-                 enemyRef.needsToExplode = true;
-                 console.log(`[handleEnemyHit] УСТАНОВЛЕН ФЛАГ ${enemyRef.id}.needsToExplode = ${enemyRef.needsToExplode}`);
-                }             
-             console.log(`--- Flag isDead SET for ${enemyId} AFTER state update ---`);
-         }
-    // <<< ОБНОВЛЯЕМ ЗАВИСИМОСТИ: используем loadedEnemyRefsArray из состояния >>>
-    }, [loadedEnemyRefsArray, enemiesState, playerTakeDamage]); // Добавили loadedEnemyRefsArray
+
+// --- Обновляем состояние HP врагов ---
+// Используем функциональную форму setEnemiesState для безопасности
+setEnemiesState(prevEnemies => {
+    const enemyIndex = prevEnemies.findIndex(e => e.id === enemyId);
+    if (enemyIndex !== -1 && prevEnemies[enemyIndex].currentHp > 0) {
+        const newState = [...prevEnemies];
+        // Пересчитываем newHp внутри на основе prevEnemies для точности
+        const calculatedNewHp = Math.max(0, prevEnemies[enemyIndex].currentHp - damageAmount);
+        newState[enemyIndex] = { ...newState[enemyIndex], currentHp: calculatedNewHp };
+        // Не нужно устанавливать флаг enemyJustDefeated здесь
+        return newState;
+    }
+    return prevEnemies;
+});
+// --- Конец обновления состояния ---
+
+
+// --- Действия ПОСЛЕ запроса на обновление состояния ---
+
+// Устанавливаем флаги в рефе (isDead, needsToExplode)
+// Используем флаг enemyJustDefeated, который мы рассчитали ранее
+if (enemyJustDefeated && !enemyRef.isDead) {
+    enemyRef.isDead = true;
+    if (needsExplosion) {
+        enemyRef.needsToExplode = true;
+    }
+    console.log(`--- Флаг isDead=true установлен для ${enemyId} после удара ---`);
+}
+
+// --- Вызываем счетчик убийств ---
+// Используем флаг enemyJustDefeated, рассчитанный ДО setEnemiesState
+if (enemyJustDefeated) {
+    if (typeof incrementKills === 'function') {
+         console.log(`[Kill Counter] Увеличиваем счетчик убийств (враг побежден: ${enemyId})`);
+         incrementKills(1); // Вызываем action
+    } else {
+         console.error("Action incrementKills не доступен в Level.jsx!");
+    }
+}
+// --- Конец вызова счетчика ---
+
+// }, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills]); // <<< ОБНОВЛЕННЫЕ ЗАВИСИМОСТИ
+// Добавили enemiesState, так как читаем его перед setEnemiesState
+}, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills]);
 
     // ... остальные функции и useEffect ...
 
@@ -1140,9 +1188,19 @@ const createPoisonCloud = useCallback((position) => {
     // Следим за HP игрока для проигрыша
     useEffect(() => {
         if (typeof playerHp === 'number' && playerHp <= 0 && levelStatus === 'playing') {
-            loseLevel();
+            // Игрок погиб
+            if (levelStartTimeRef.current) {
+                // Рассчитываем прошедшее время в секундах
+                const durationSeconds = Math.round((Date.now() - levelStartTimeRef.current) / 1000);
+                setTimePlayedSeconds(durationSeconds); // Сохраняем в стейт
+                console.log(`[Timer] Уровень проигран. Время игры: ${durationSeconds} сек.`);
+            } else {
+                setTimePlayedSeconds(0); // Если таймер не был запущен
+            }
+            loseLevel(); // Устанавливаем levelStatus = 'lost'
         }
-    }, [playerHp, levelStatus, loseLevel]);
+    // }, [playerHp, levelStatus, loseLevel]); // Старые зависимости
+    }, [playerHp, levelStatus, loseLevel, levelStartTimeRef]); // Добавили levelStartTimeRef (хотя он реф, для ясности)
 
 
     // Для Тотемщика
@@ -3265,6 +3323,15 @@ if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
     </div>
     )}
     {/* === Конец контейнера HUD игрока === */}
+
+    {/* === Level Timer === */}
+    {!isLoading && levelStatus === 'playing' && (
+        <div className="level-timer">
+            {formatTime(elapsedTimeSec)}
+        </div>
+    )}
+    {/* === End Level Timer === */}
+    
                 {/* Таймер выживания */}
                 {!isLoading && levelData?.winCondition?.type === 'survive_duration' && remainingTime !== null && levelStatus === 'playing' && (
                      <div className="survival-timer"> Выжить: {Math.ceil(remainingTime)} сек </div>
@@ -3278,13 +3345,15 @@ if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
 
             {/* Попап Поражения */}
             {levelStatus === 'lost' && (
-                <GameOverPopup
-                    onGoToMenu={() => {
-                        if (typeof onLevelComplete === 'function') onLevelComplete(levelData.id, 'lost');
-                        else console.warn("onLevelComplete не передан");
-                    }}
-                />
-            )}
+    <GameOverPopup
+        onGoToMenu={() => {
+            if (typeof onLevelComplete === 'function') onLevelComplete(levelData.id, 'lost');
+            else console.warn("onLevelComplete не передан");
+        }}
+        // <<< ПЕРЕДАЕМ ВРЕМЯ КАК ПРОПС >>>
+        timePlayed={timePlayedSeconds}
+    />
+)}
 
             {/* Попап Победы */}
             {levelStatus === 'won' && (

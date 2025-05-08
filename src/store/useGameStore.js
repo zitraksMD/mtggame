@@ -441,11 +441,9 @@ const useGameStore = create((set, get) => ({
 computedStats: () => {
     const state = get(); // Функция доступа к состоянию (например, из Zustand)
     const now = Date.now();
-    console.log('--- [ComputedStats] START Calculation ---');
 
     // --- Фильтрация активных дебаффов ---
     const currentActiveDebuffs = (state.activeDebuffs || []).filter(debuff => now < debuff.endTime);
-    console.log('[ComputedStats] Active Debuffs Found:', JSON.stringify(currentActiveDebuffs));
 
     // --- Расчет суммарных эффектов от дебаффов ---
     let totalWeakenDamageReductionPercent = 0;  // Для дебаффов типа 'weaken' (из логики код2)
@@ -482,12 +480,10 @@ computedStats: () => {
     totalOtherDamageReductionPercent = Math.min(totalOtherDamageReductionPercent, 80); // Предполагаем аналогичный лимит
     totalOtherMaxHpReductionPercent = Math.min(totalOtherMaxHpReductionPercent, 80);  // Предполагаем аналогичный лимит
 
-    console.log(`[ComputedStats] Total Weaken Debuff Reduction %: Damage=${totalWeakenDamageReductionPercent}%, MaxHP=${totalWeakenMaxHpReductionPercent}%`);
-    console.log(`[ComputedStats] Total Other Debuff Reduction %: Damage=${totalOtherDamageReductionPercent}%, MaxHP=${totalOtherMaxHpReductionPercent}% (Note: specific calculation for 'other' debuffs depends on their properties as per код1's incomplete snippet)`);
+    
 
     // 1. Начинаем с базовых статов (раса или дефолт)
     let finalStats = { ...DEFAULT_BASE_STATS, ...(state.playerBaseStats || {}) };
-    console.log('[ComputedStats] Stats after Base:', JSON.stringify(finalStats));
 
     // 2. Применяем бонусы от экипировки
     let totalGearAttackSpeedPercentBonus = 0;
@@ -713,7 +709,6 @@ computedStats: () => {
     const auraStrengthPercent = 10; // 10% снижение от ауры (из код1)
 
     if (auraIsActive) {
-        console.log('[ComputedStats] Weakening Aura ACTIVE! Applying 10% reduction.'); // Лог из код1
         attackBeforeModification = finalStats.attack; // Значение после всех предыдущих дебаффов
         hpBeforeModification = finalStats.hp;       // Значение после всех предыдущих дебаффов
 
@@ -726,9 +721,7 @@ computedStats: () => {
 
     // Выводим итоговый лог о примененных дебаффах/ауре
     if (debuffLogMessages.length > 0) {
-        console.log('[ComputedStats] DEBUFFS/AURA APPLIED: ' + debuffLogMessages.join('; '));
     } else {
-        console.log('[ComputedStats] No debuffs or aura to apply.');
     }
     // --- >>> КОНЕЦ БЛОКА ПРИМЕНЕНИЯ ДЕБАФФОВ И АУРЫ <<< ---
 
@@ -755,12 +748,10 @@ computedStats: () => {
     // Проверка на NaN
     for (const key in finalStats) {
         if (typeof finalStats[key] === 'number' && isNaN(finalStats[key])) {
-            console.error(`[ERROR] Computed stat ${key} resulted in NaN! Resetting to base or 0.`);
             finalStats[key] = DEFAULT_BASE_STATS[key] ?? 0;
         }
     }
 
-    console.log('--- [ComputedStats] END Calculation. Final Stats:', JSON.stringify(finalStats));
     return finalStats;
 },
 
