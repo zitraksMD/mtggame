@@ -342,7 +342,7 @@ body, html, #root /* или твой корневой элемент */ {
 .level-timer {
   position: absolute;
   // Position top-center, adjusted for safe area + header
-  top: calc(env(safe-area-inset-top, 0px) + 15px); // <<< Adjust vertical offset (15px below safe area + header)
+  top: calc(env(safe-area-inset-top, 0px)); // <<< Adjust vertical offset (15px below safe area + header)
   left: 50%;
   transform: translateX(-50%); // Center horizontally
   
