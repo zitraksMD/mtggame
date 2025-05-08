@@ -25,11 +25,15 @@ const ENEMY_COLLISION_SIZE = { width: 30, height: 30 }; // Размер хитб
 const HealthBar = ({ currentHp, maxHp }) => {
     const healthPercent = maxHp > 0 ? Math.max(0, (currentHp / maxHp) * 100) : 0;
     return (
-        <div className="health-bar-container">
-            <div className="health-bar" style={{ width: `${healthPercent}%` }}></div>
-        </div>
+      // Контейнер остается
+      <div className="health-bar-container">
+        {/* Полоска заполнения */}
+        <div className="health-bar" style={{ width: `${healthPercent}%` }}></div>
+        {/* Текст поверх полоски */}
+        <span className="health-bar-text">{`${currentHp} / ${maxHp}`}</span>
+      </div>
     );
-};
+  };
 // ---------------------------------------------
 
 // --- Вспомогательная функция для получения размеров мира ---
@@ -1557,7 +1561,75 @@ const createGroundEffect = useCallback((position, params) => {
     }, [sceneRef]); // Зависимость только от sceneRef для добавления меша
 
     // === КОНЕЦ ФУНКЦИЙ-ЗАГЛУШЕК ===
-
+    const createArrowProjectile = useCallback((casterId, casterPos, targetPos, projectileSpeed, damage) => {
+        const currentScene = sceneRef.current;
+        if (!currentScene || !casterPos || !targetPos) {
+            console.error("[createArrowProjectile] Отсутствует сцена или позиции!");
+            return;
+        }
+    
+        console.log(`[Arrow] Лучник ${casterId} стреляет в точку (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)})`);
+    
+        // --- Визуализация снаряда (Стрела) ---
+        // Простой вариант: тонкий длинный цилиндр или вытянутый куб
+        const arrowLength = 20;
+        const arrowRadius = 1;
+        // Используем CylinderGeometry(radiusTop, radiusBottom, height, radialSegments)
+        // Ось цилиндра по умолчанию - Y. Нам нужно направить его по вектору скорости.
+        const projGeometry = new THREE.CylinderGeometry(arrowRadius, arrowRadius, arrowLength, 6);
+        const projMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513, // Коричневый (SaddleBrown)
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        const projMesh = new THREE.Mesh(projGeometry, projMaterial);
+        projMesh.name = `arrow_proj_${casterId}_visual`;
+    
+        // Начальная позиция - немного впереди лучника
+        const directionToTarget = targetPos.clone().sub(casterPos).normalize();
+        const startOffset = 15; // Чуть ближе, чем у огра
+        const startPos = casterPos.clone().add(directionToTarget.clone().multiplyScalar(startOffset));
+        startPos.z = (casterPos.z || 0) + 15; // На уровне плеча/лука?
+        projMesh.position.copy(startPos);
+    
+        // --- Ориентация стрелы ---
+        // Поворачиваем меш так, чтобы его ось Y совпадала с направлением полета
+        // Сначала ставим вертикально (ось Y смотрит вверх)
+        projMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)); // Промежуточный шаг, чтобы избежать проблем с lookAt(0,0,0)
+        // Затем направляем на цель
+        projMesh.lookAt(targetPos.x, targetPos.y, startPos.z); // Смотрим на точку цели на той же высоте Z
+    
+        // Или более надежный способ ориентации по вектору скорости:
+        const finalDirection = targetPos.clone().sub(startPos).normalize();
+        // Создаем кватернион, который поворачивает ось Y объекта (0,1,0) так, чтобы она совпадала с finalDirection
+        projMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), finalDirection);
+    
+        currentScene.add(projMesh);
+    
+        // --- Расчет полета ---
+        const velocity = finalDirection.multiplyScalar(projectileSpeed); // finalDirection уже нормализован
+        const distanceToTarget = startPos.distanceTo(targetPos);
+    
+        // --- Данные для отслеживания снаряда ---
+        // Добавляем в ОБЫЧНЫЙ список снарядов врага enemyProjectilesRef
+        const projectileData = {
+            id: `arrow_${casterId}_${Date.now()}`,
+            ownerId: casterId, // ID владельца
+            mesh: projMesh,
+            position: startPos.clone(), // Сохраняем стартовую позицию для обновления
+            targetPos: targetPos.clone(), // Точка, к которой летим (для информации, не для самонаведения)
+            velocity: velocity,         // Фиксированная скорость
+            damage: damage,             // Урон при попадании
+            lifetime: distanceToTarget / projectileSpeed + 0.2, // Время жизни = время полета + небольшой запас
+            // Не создает эффект на земле
+            // type: 'arrow' // Можно добавить тип, если нужно
+        };
+    
+        // Добавляем в основной реф снарядов врага
+        enemyProjectilesRef.current.push(projectileData);
+        console.log(`[Arrow] Добавлен снаряд ${projectileData.id}. Всего вражеских снарядов: ${enemyProjectilesRef.current.length}`);
+    
+    }, [sceneRef, enemyProjectilesRef]); // Добавляем enemyProjectilesRef в зависимости
 
     // === ОСНОВНОЙ ИГРОВОЙ ЦИКЛ ===
     useEffect(() => {
@@ -2341,72 +2413,101 @@ const moveEnemyWithCollision = (directionVector, moveStep) => { // Changed param
 
             // === ДАЛЬНИЙ БОЙ (Снаряды - Лучник) ===
             case 'ranged':
-            case 'skeleton_archer':
-            {
-                const eStats = enemy.stats;
-                const atkRange = eStats.attackRange || 100;
-                const playerInAttackRange = dist <= atkRange;
-                const currentMoveSpeed = eStats.speed || 1.0; 
-
-                if (typeof enemy.patrolWaitTimer === 'undefined') enemy.patrolWaitTimer = 0;
-                if (!enemy.patrolTargetPosition) enemy.patrolTargetPosition = null;
-                if (!enemy.spawnPosition) enemy.spawnPosition = ePos.clone();
-
-                let shouldRotate = false;
-                let rotateTargetPos = null;
-                let shouldMove = false;
-                let moveTargetPos = null;
-                let isAttackingNow = false;
-
-                if (playerInAttackRange) {
-                    shouldRotate = true; rotateTargetPos = playerPos.clone();
-                    enemy.patrolTargetPosition = null; 
-                    enemy.patrolWaitTimer = 0;
-                    shouldMove = false; 
-                    if (enemy.attackCooldown <= 0) {
-                        isAttackingNow = true;
-                    }
-                } else {
-                    if (enemy.patrolWaitTimer > 0) {
-                        enemy.patrolWaitTimer -= dt;
-                        shouldMove = false; shouldRotate = false;
-                    } else if (enemy.patrolTargetPosition) {
-                        const distToPatrolTarget = ePos.distanceTo(enemy.patrolTargetPosition);
-                        if (distToPatrolTarget < 10) { 
+                case 'skeleton_archer':
+                    {
+                        const ePos = enemy.pivot.position; // --- ИЗМЕНЕНИЕ ИЗ КОД 1 --- (добавлено объявление ePos)
+                        const eStats = enemy.stats;
+                        const atkRange = eStats.attackRange || 100; // У лучника был меньше радиус (комментарий из кода 1)
+                        const playerInAttackRange = dist <= atkRange;
+                        const currentMoveSpeed = eStats.speed || 1.0; // Убери * 60, если перешли на новую систему (комментарий из кода 1)
+                    
+                        // Инициализация патрулирования (взята из код2, т.к. в код1 был только комментарий)
+                        if (typeof enemy.patrolWaitTimer === 'undefined') enemy.patrolWaitTimer = 0;
+                        if (!enemy.patrolTargetPosition) enemy.patrolTargetPosition = null;
+                        if (!enemy.spawnPosition) enemy.spawnPosition = ePos.clone();
+                    
+                        let shouldRotate = false;
+                        let rotateTargetPos = null;
+                        let shouldMove = false;
+                        let moveTargetPos = null;
+                        let isAttackingNow = false; // Флаг для атаки (из кода 1)
+                    
+                        if (playerInAttackRange) {
+                            // --- Игрок в радиусе ---
+                            shouldRotate = true; rotateTargetPos = playerPos.clone();
+                            // сброс патруля (логика из код2, но соответствует комментарию из код1)
                             enemy.patrolTargetPosition = null;
-                            enemy.patrolWaitTimer = 1.5 + Math.random() * 2; 
-                            shouldMove = false; shouldRotate = false;
-                        } else { 
-                            shouldMove = true; moveTargetPos = enemy.patrolTargetPosition.clone();
-                            shouldRotate = true; rotateTargetPos = enemy.patrolTargetPosition.clone();
+                            enemy.patrolWaitTimer = 0;
+                            shouldMove = false;
+                            if (enemy.attackCooldown <= 0) {
+                                isAttackingNow = true; // Готовы атаковать (из кода 1)
+                            }
+                        } else {
+                            // --- Игрок вне радиуса (патрулирование) ---
+                            // Логика патрулирования оставлена из код2, так как в код1 это был плейсхолдер
+                            if (enemy.patrolWaitTimer > 0) {
+                                enemy.patrolWaitTimer -= dt;
+                                shouldMove = false; shouldRotate = false;
+                            } else if (enemy.patrolTargetPosition) {
+                                const distToPatrolTarget = ePos.distanceTo(enemy.patrolTargetPosition);
+                                if (distToPatrolTarget < 10) {
+                                    enemy.patrolTargetPosition = null;
+                                    enemy.patrolWaitTimer = 1.5 + Math.random() * 2;
+                                    shouldMove = false; shouldRotate = false;
+                                } else {
+                                    shouldMove = true; moveTargetPos = enemy.patrolTargetPosition.clone();
+                                    shouldRotate = true; rotateTargetPos = enemy.patrolTargetPosition.clone();
+                                }
+                            } else {
+                                const PATROL_RADIUS = 150;
+                                const randomAngle = Math.random() * Math.PI * 2;
+                                const randomDist = Math.random() * PATROL_RADIUS;
+                                const targetX = enemy.spawnPosition.x + Math.cos(randomAngle) * randomDist;
+                                const targetY = enemy.spawnPosition.y + Math.sin(randomAngle) * randomDist;
+                                enemy.patrolTargetPosition = new THREE.Vector3(targetX, targetY, 0);
+                                console.log(`Enemy ${enemy.id} new patrol target: (${targetX.toFixed(0)}, ${targetY.toFixed(0)})`);
+                                shouldMove = true; moveTargetPos = enemy.patrolTargetPosition.clone();
+                                shouldRotate = true; rotateTargetPos = enemy.patrolTargetPosition.clone();
+                            }
                         }
-                    } else {
-                        const PATROL_RADIUS = 150;
-                        const randomAngle = Math.random() * Math.PI * 2;
-                        const randomDist = Math.random() * PATROL_RADIUS;
-                        const targetX = enemy.spawnPosition.x + Math.cos(randomAngle) * randomDist;
-                        const targetY = enemy.spawnPosition.y + Math.sin(randomAngle) * randomDist;
-                        enemy.patrolTargetPosition = new THREE.Vector3(targetX, targetY, 0);
-                        console.log(`Enemy ${enemy.id} new patrol target: (${targetX.toFixed(0)}, ${targetY.toFixed(0)})`);
-                        shouldMove = true; moveTargetPos = enemy.patrolTargetPosition.clone();
-                        shouldRotate = true; rotateTargetPos = enemy.patrolTargetPosition.clone();
-                    }
-                }
-
-                if (isAttackingNow) {
-                    console.log(`${enemy.id} firing projectile!`);
-                    // createEnemyProjectile(enemy, playerPos); // Ваша функция создания снаряда врага
-                    enemy.attackCooldown = 1 / (eStats.attackSpeed || 0.8);
-                }
-                if (shouldMove && moveTargetPos) {
-                    const direction = new THREE.Vector3().subVectors(moveTargetPos, ePos);
-                    moveEnemyWithCollision(direction, currentMoveSpeed);
-                }
-                if (shouldRotate && rotateTargetPos) {
-                    rotateEnemyTowards(rotateTargetPos);
-                }
-                break; 
-            }
+                    
+                        // --- Выполнение действий ---
+                        if (isAttackingNow) {
+                            // --- ИЗМЕНЕНИЕ ИЗ КОД 1 (логика атаки) ---
+                            console.log(`Archer ${enemy.id} firing arrow!`); // Сообщение из кода 1
+                    
+                            // Запоминаем позицию игрока в момент выстрела
+                            const targetPoint = playerPos.clone();
+                    
+                            // Вызываем новую функцию создания стрелы
+                            createArrowProjectile( // Функция из кода 1
+                                enemy.id,
+                                ePos.clone(),                       // Старт от лучника
+                                targetPoint,                        // Цель - точка, где был игрок
+                                eStats.projectileSpeed || 400,      // Скорость стрелы (добавь в статы!)
+                                eStats.damage                       // Урон стрелы
+                            );
+                    
+                            enemy.attackCooldown = 1 / (eStats.attackSpeed || 1.8); // Сброс кулдауна, attackSpeed из кода 1
+                            // TODO: Анимация выстрела из лука (комментарий из кода 1)
+                            // --- КОНЕЦ ИЗМЕНЕНИЯ ИЗ КОД 1 (логика атаки) ---
+                        }
+                    
+                        // Движение (если патрулирует)
+                        if (shouldMove && moveTargetPos) {
+                            const direction = new THREE.Vector3().subVectors(moveTargetPos, ePos);
+                            // --- ИЗМЕНЕНИЕ ИЗ КОД 1 (расчет шага) ---
+                            const moveStep = currentMoveSpeed * dt; // Рассчитываем шаг здесь
+                            moveEnemyWithCollision(direction, moveStep); // Используем обновленную функцию (и moveStep)
+                            // --- КОНЕЦ ИЗМЕНЕНИЯ ИЗ КОД 1 (расчет шага) ---
+                        }
+                    
+                        // Поворот
+                        if (shouldRotate && rotateTargetPos) {
+                            rotateEnemyTowards(rotateTargetPos);
+                        }
+                        break;
+                    } // Конец case 'skeleton_archer' / 'ranged' (комментарий из кода 1)
 
             // === КАСТЕРЫ (Маги, Чародеи и т.д.) ===
             case 'caster':
@@ -3150,12 +3251,20 @@ if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
 
             {/* Игровой контейнер */}
             <div className="game-container" style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
-                {/* HP игрока */}
-                {!isLoading && playerObject && typeof playerHp === 'number' && typeof displayMaxHp === 'number' && (
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 100 }}> {/* Обертка для позиционирования */}
-                         <HealthBar currentHp={playerHp} maxHp={displayMaxHp} />
-                    </div>
-                )}
+    {/* === Контейнер HUD игрока === */}
+    {!isLoading && playerObject && typeof playerHp === 'number' && typeof displayMaxHp === 'number' && playerStats && (
+        // Новый контейнер для хелсбара и текста
+        <div className="player-hud">
+        {/* Сначала HealthBar (который теперь содержит текст HP) */}
+        <HealthBar currentHp={playerHp} maxHp={displayMaxHp} />
+
+        {/* Потом блок с текстом Атаки */}
+        <div className="player-attack-text">
+            <span className="stat-atk">ATK: {playerStats.attack}</span>
+        </div>
+    </div>
+    )}
+    {/* === Конец контейнера HUD игрока === */}
                 {/* Таймер выживания */}
                 {!isLoading && levelData?.winCondition?.type === 'survive_duration' && remainingTime !== null && levelStatus === 'playing' && (
                      <div className="survival-timer"> Выжить: {Math.ceil(remainingTime)} сек </div>

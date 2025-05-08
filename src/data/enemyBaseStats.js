@@ -23,7 +23,8 @@ export const BASE_ENEMY_STATS = {
       hp: 40, speed: 2.0, damage: 7, attackRange: 25, attackSpeed: 1.2 // ~1 атака в 0.83 сек
     },
     'skeleton_archer': {
-      hp: 25, speed: 1.2, damage: 5, attackRange: 280, attackSpeed: 1.8 // ~1 атака в 0.55 сек
+      hp: 25, speed: 1.2, damage: 5, attackRange: 280, attackSpeed: 1.1, // ~1 атака в 0.55 сек
+      projectileSpeed: 250
     },
     'ogre_mage': {
       hp: 150, speed: 0.5, directDamage: 10, attackRange: 250, attackSpeed: 0.6, // ~1 атака в 1.67 сек

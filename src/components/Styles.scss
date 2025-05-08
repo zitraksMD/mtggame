@@ -12,7 +12,13 @@ $rarity-color-mythic:     #E57373; // Красный (пример)
 /* ====================================================================== */
 /* === СТИЛИ ИЗ КОДА 1 (Карусель Сундуков и связанные элементы) === */
 /* ====================================================================== */
-
+body, html, #root /* или твой корневой элемент */ {
+  height: 100vh; /* Занять 100% высоты видимой области */
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Убрать прокрутку */
+}
 /* ======================================================= */
 /* ===   СТИЛИ КАРУСЕЛИ (Общие для Gear и Artifacts)   === */
 /* ======================================================= */
@@ -258,6 +264,80 @@ $rarity-color-mythic:     #E57373; // Красный (пример)
 }
 /* --- ВАЖНО --- */
 
+.player-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 50px); // 50px = ~40px шапка + 10px зазор (подбери точнее)
+  // Задаем отступ СЛЕВА для всего блока
+  left: calc(env(safe-area-inset-left, 0px) + 15px); // 15px от левого края/зоны (подбери точнее)
+
+  // --- Внутренние отступы для контента ВНУТРИ блока ---
+  // Небольшие отступы, чтобы контент не прилипал к краям фона HUD
+  padding: 6px 10px; // 6px сверху/снизу, 10px слева/справа (подбери)
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 6px; // Оставляем скругление
+
+  // --- ЗАМЕНЯЕМ ФОН НА ГРАДИЕНТ ---
+  // background-color: rgba(0, 0, 0, 0.45); // <<< Эту строку удаляем или комментируем
+
+  // Новый фон: Линейный градиент сверху вниз
+  // Начинаем с полупрозрачного темно-синего, переходим к еще более прозрачному темно-синему
+  // Формат RGBA: (Red, Green, Blue, Alpha (прозрачность от 0.0 до 1.0))
+  background: linear-gradient(
+    to bottom,                     // Направление градиента (сверху вниз)
+    rgba(10, 20, 60, 0.75),        // Начальный цвет (темно-синий, 75% непрозрачности)
+    rgba(10, 20, 60, 0.4)         // Конечный цвет (тот же синий, 40% непрозрачности)
+  );
+
+  // Контейнер хелсбара
+  .health-bar-container {
+    position: relative;
+    display: block; // Занять доступную ширину внутри padding'а HUD
+    width: 120px;   // <<< Подбери желаемую ширину хелсбара/HUD
+    height: 18px;   // <<< Подбери желаемую высоту хелсбара
+    background-color: #333;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #222;
+    margin-bottom: 4px; // Отступ под хелсбаром до текста атаки
+
+    // Стили для полоски заполнения .health-bar внутри (остаются)
+    .health-bar {
+      // ... (как были)
+      height: 100%;
+      background: linear-gradient(to right, orange, limegreen);
+      border-radius: 3px;
+      transition: width 0.3s ease-in-out;
+      position: absolute; left: 0; top: 0; z-index: 1;
+    }
+
+    // Стили для текста HP .health-bar-text внутри (остаются)
+    .health-bar-text {
+      // ... (как были)
+      position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 2;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 11px; color: white; font-weight: bold;
+      text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+    }
+  }
+
+  // Текст Атаки (под хелсбаром)
+  .player-attack-text {
+    font-size: 11px;
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+    padding-left: 2px; // Небольшой отступ слева, чтобы текст атаки был чуть правее края блока
+    // Убираем фон отсюда, так как он теперь на .player-hud
+    // background-color: rgba(0, 0, 0, 0.4);
+    // padding: 2px 5px;
+    // border-radius: 3px;
+  }
+}
 
 /* <<<--- ЗАКОММЕНТИРУЙ или УДАЛИ эти стили для тега <canvas> ---<<< */
 /*
@@ -330,24 +410,7 @@ canvas {
   z-index: 1000 !important;
 }
 
-.health-bar-container {
-  position: absolute;
-  top: 50px;
-  left: 10px;
-  width: 150px;
-  height: 25px;
-  background-color: #333;
-  border: 2px solid #000;
-  border-radius: 5px;
-  overflow: hidden;
-  z-index: 1000; /* ✅ Поднимаем выше, чтобы не скрывалась */
-}
 
-.health-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #ff6600,#09ff00);
-  transition: width 0.3s ease-in-out;
-}
 
 .death-popup {
   position: absolute;
