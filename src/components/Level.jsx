@@ -8,8 +8,13 @@ import usePlayerLoader from './usePlayerLoader';
 import useEnemyLoader from './useEnemyLoader'; // Импорт из code1
 import GameOverPopup from './GameOverPopup';
 import LoadingScreen from "./LoadingScreen"; // Импорт из code1
+import LevelLootPopup from './LevelLootPopup'; // Импортируем новый компонент
 import { clamp, checkCollision, convertTiledX, convertTiledY, DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT } from './utils';
 import { BASE_ENEMY_STATS } from '../data/enemyBaseStats';
+import { getLevelChestTypeById } from '../data/levelChestData'; // Adjust path
+import { CSSTransition } from 'react-transition-group'; // Импортируем CSSTransition
+
+
 
 
 // --- Константы ---
@@ -79,6 +84,8 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     const activePuddlesRef = useRef([]);
     const activeEffectProjectilesRef = useRef([]);
     const activeBurningGroundsRef = useRef([]);
+    const levelChestsRef = useRef([]); // To store info about chests on the level
+
 
 
 
@@ -182,8 +189,10 @@ const formatTime = (totalSeconds) => {
         // Добавляем из code1 (если нужно будет вызывать applyDebuff)
         applyDebuff, // <- Раскомментировать, если нужно вызывать action
         setWeakeningAuraStatus,
-        incrementKills // <<< ДОБАВЬ ЭТО
-    } = useGameStore(state => ({
+        incrementKills, // <<< ДОБАВЬ ЭТО
+        openLevelChest, 
+        lastOpenedLevelChestRewards, 
+        clearLastLevelChestRewards    } = useGameStore(state => ({
         playerHp: state.playerHp,
         displayMaxHp: state.computedStats().hp,
         playerStats: state.computedStats(),
@@ -191,10 +200,13 @@ const formatTime = (totalSeconds) => {
         initializeLevelHp: state.initializeLevelHp,
         applyDebuff: state.applyDebuff, // <- Раскомментировать, если нужно вызывать action
         setWeakeningAuraStatus: state.setWeakeningAuraStatus,
-        incrementKills: state.incrementKills // <<< И СВЯЗЫВАНИЕ ЗДЕСЬ
-    }));
+        incrementKills: state.incrementKills, // <<< И СВЯЗЫВАНИЕ ЗДЕСЬ
+        openLevelChest: state.openLevelChest, // <<< ДОБАВЬ ЭТО
+        lastOpenedLevelChestRewards: state.lastOpenedLevelChestRewards,
+        clearLastLevelChestRewards: state.clearLastLevelChestRewards    }));
 
-    
+    const levelLootPopupRef = useRef(null);
+
     // --- Инициализация HP при монтировании/смене уровня ---
     useEffect(() => {
         console.log(`[Level ${levelData.id}] Mount/Data Change: Вызов initializeLevelHp()`);
@@ -378,6 +390,25 @@ const formatTime = (totalSeconds) => {
             rendererRef.current = null;
             cameraRef.current = null;
         };
+    }, []);
+
+    const chestResources = useMemo(() => {
+        console.log("[Chest Resources] Creating chest placeholder resources");
+        // Размеры заглушки (Ширина, Высота, Глубина) - подбери под свой масштаб
+        const geometry = new THREE.BoxGeometry(25, 30, 20);
+        // Материал для обычного сундука
+        const woodMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513, // SaddleBrown (коричневый)
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        // Материал для сундука босса
+        const goldMaterial = new THREE.MeshStandardMaterial({
+            color: 0xFFD700, // Gold (золотой)
+            roughness: 0.5,
+            metalness: 0.5 // Чуть больше металличности для золота
+        });
+        return { geometry, woodMaterial, goldMaterial };
     }, []);
 
  // --- Добавление Фона, Стен, ТУМАНА ВОЙНЫ и РАСЧЕТ ГРАНИЦ КОМНАТ ---
@@ -580,7 +611,82 @@ useEffect(() => {
     } else {
         console.log("  > No rooms data found for fog creation.");
     }
+    // --- Создание СУНДУКОВ (Заглушки) ---
+    if (levelData.chests && Array.isArray(levelData.chests)) {
+        console.log(`  > Creating ${levelData.chests.length} chest placeholders...`);
+        const chestGeometry = new THREE.BoxGeometry(25, 30, 20); // W, H, D - Example size (Chest shape)
 
+        levelData.chests.forEach(chestInstanceData => {
+            if (!chestInstanceData.id || !chestInstanceData.chestTypeId) {
+                console.warn("Skipping chest instance due to missing id or chestTypeId", chestInstanceData);
+                return;
+            }
+
+            const chestTypeData = getLevelChestTypeById(chestInstanceData.chestTypeId);
+            if (!chestTypeData) {
+                console.warn(`Chest type '${chestInstanceData.chestTypeId}' not found for instance ${chestInstanceData.id}. Skipping.`);
+                return;
+            }
+
+            // --- Placeholder Material based on type ---
+            let chestColor = 0x8B4513; // Brown default
+            if (chestInstanceData.chestTypeId === 'boss_gold') {
+                chestColor = 0xFFD700; // Gold
+            }
+            const chestMaterial = new THREE.MeshStandardMaterial({
+                color: chestColor,
+                roughness: 0.7,
+                metalness: chestTypeData.chestTypeId === 'boss_gold' ? 0.4 : 0.1 // More metalness for gold
+            });
+            // -----------------------------------------
+
+            const chestMesh = new THREE.Mesh(chestGeometry, chestMaterial);
+            chestMesh.name = `chest_${chestInstanceData.id}`;
+            chestMesh.castShadow = true;
+
+            // Calculate world position
+            const worldX = convertTiledX(chestInstanceData.x || 0, 25, levelConfig.gameWorldWidth); // Use width for centering
+            const worldY = convertTiledY(chestInstanceData.y || 0, 20, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET); // Use depth for centering? Or 0? Let's use 0 for Y center. Need height for Y placement though.
+
+            // Position the pivot/mesh. Pivot at bottom center.
+            chestMesh.position.set(worldX, worldY, 15); // Place bottom of chest slightly above ground Z=0? Let's assume pivot is bottom center, so Z = height/2 = 15. Recheck convertTiledY.
+            // convertTiledY(y, objectHeight, ...) -> WORLD_Y_OFFSET - y - objectHeight / 2
+            // Let's adjust: Calculate center X/Y first, then place.
+            const chestWidth = 25; const chestHeight = 30; // Use geometry dimensions
+            const centerWorldX = convertTiledX(chestInstanceData.x || 0, chestWidth, levelConfig.gameWorldWidth);
+            const centerWorldY = convertTiledY(chestInstanceData.y || 0, chestWidth, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET); // Using width for Y center seems wrong. Tiled Y usually refers to top edge.
+            // Let's assume Tiled x,y is top-left corner.
+            // World X = convertTiledX(chestInstanceData.x + chestWidth/2, 0, ...)
+            // World Y = convertTiledY(chestInstanceData.y + chestHeight/2, 0, ...) -> Center of chest in world coords
+            const finalWorldX = convertTiledX((chestInstanceData.x || 0) + chestWidth/2, 0, levelConfig.gameWorldWidth);
+            const finalWorldY = convertTiledY((chestInstanceData.y || 0) + chestHeight/2, 0, levelConfig.gameWorldHeight, levelConfig.WORLD_Y_OFFSET);
+
+            chestMesh.position.set(finalWorldX, finalWorldY, chestHeight / 2); // Place pivot (center of geometry) at height/2 above ground z=0
+
+            currentScene.add(chestMesh);
+
+            // Store reference and data
+            levelChestsRef.current.push({
+                instanceId: chestInstanceData.id,
+                chestTypeId: chestInstanceData.chestTypeId,
+                roomId: chestInstanceData.roomId || null,
+                object3D: chestMesh, // Reference to the THREE object
+                position: chestMesh.position.clone(), // Store world position
+                isOpened: false // Initial state
+            });
+            console.log(`    * Added chest placeholder: ${chestInstanceData.id} (${chestInstanceData.chestTypeId})`);
+        });
+
+        // Cleanup geometry (only need one instance as it's shared)
+        // Cleanup materials? Only if cloned per instance. We use one per type here.
+        // Let's handle material cleanup in the main scene cleanup instead.
+        // geometry needs cleanup only once when the component unmounts, maybe outside useEffect?
+        // We need to ensure chestGeometry is disposed, maybe memoize it like hpResources?
+
+    } else {
+        console.log("  > No chest data found in levelData.");
+    }
+    // --- Конец создания СУНДУКОВ ---
     // --- Функция очистки для этого useEffect ---
     return () => {
         console.log("[Level.jsx] Очистка фона, стен и тумана перед пересозданием/размонтированием");
@@ -627,7 +733,7 @@ useEffect(() => {
     };
 // Используем обновленные зависимости, так как levelData включает все необходимое
 // и worldRoomBoundariesRef также зависит от levelData и levelConfig
-}, [levelConfig, levelData, fogMaterialRef.current]); // sceneRef, convertTiledX, convertTiledY, worldRoomBoundariesRef - также являются зависимостями, если они не стабильны.
+}, [levelConfig, levelData, chestResources, fogMaterialRef.current]); // sceneRef, convertTiledX, convertTiledY, worldRoomBoundariesRef - также являются зависимостями, если они не стабильны.
                                                     // Однако, ref-ы (sceneRef, fogMaterialRef, worldRoomBoundariesRef) обычно стабильны.
                                                     // Функции convertTiledX, convertTiledY - если они определены вне компонента или являются useCallback с пустым массивом зависимостей,
                                                     // то их можно не включать. Если они пересоздаются при каждом рендере, их стоит включить или обернуть в useCallback.
@@ -3225,6 +3331,49 @@ if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
     }
     // === Конец обновления анимаций дверей ===
 
+    // === X. Проверка взаимодействия с сундуками ===
+// =====================================
+const interactionRadius = 45; // <<< Дистанция для открытия сундука (подбери)
+const interactionRadiusSq = interactionRadius * interactionRadius;
+
+// Проверяем, только если игрок существует и есть сундуки на уровне
+if (playerObject?.position && levelChestsRef.current?.length > 0) {
+    const playerPos = playerObject.position;
+
+    // Проходим по всем сундукам на уровне (из рефа)
+    levelChestsRef.current.forEach(chest => {
+        // Проверяем только НЕОТКРЫТЫЕ сундуки
+        if (!chest.isOpened && chest.object3D) { // Добавим проверку object3D
+            // Считаем квадрат расстояния от игрока до сундука
+            const distSq = playerPos.distanceToSquared(chest.position);
+
+            // Если игрок достаточно близко
+            if (distSq <= interactionRadiusSq) {
+                console.log(`[Chest Interaction] Игрок подошел к сундуку ${chest.instanceId}. Открываем...`);
+
+                // 1. Помечаем сундук как открытый в рефе (чтобы не открывать повторно)
+                chest.isOpened = true;
+
+                // 2. Вызываем action в сторе для генерации и добавления лута
+                if (typeof openLevelChest === 'function') {
+                     openLevelChest(chest.instanceId, chest.chestTypeId);
+                } else {
+                     console.error("Action openLevelChest не доступен!");
+                }
+
+                // 3. TODO: Запустить анимацию открытия сундука для chest.object3D
+                // Пока что просто сделаем его полупрозрачным, чтобы показать, что он открыт
+                if(chest.object3D && chest.object3D.material) {
+                    chest.object3D.material.transparent = true; // Убедимся, что прозрачность включена
+                    chest.object3D.material.opacity = 0.5;      // Делаем полупрозрачным
+                    // chest.object3D.rotation.z += Math.PI / 8; // Можно немного повернуть
+                }
+            }
+        }
+    });
+}
+// === Конец проверки сундуков ===
+
     // ==================================
     // === 6. Проверка Победы/Проигрыша =
     // ==================================
@@ -3331,7 +3480,7 @@ if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
         </div>
     )}
     {/* === End Level Timer === */}
-    
+
                 {/* Таймер выживания */}
                 {!isLoading && levelData?.winCondition?.type === 'survive_duration' && remainingTime !== null && levelStatus === 'playing' && (
                      <div className="survival-timer"> Выжить: {Math.ceil(remainingTime)} сек </div>
@@ -3339,7 +3488,19 @@ if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
                 {/* Место для рендера Three.js */}
                 <div ref={mountRef} className="game-canvas"></div>
             </div>
-
+            {/* Отображение попапа с лутом */}
+        <CSSTransition
+            in={!!lastOpenedLevelChestRewards} // Показываем, если есть данные о награде
+            timeout={300}                   // Длительность анимации (должна совпадать с CSS transition)
+            classNames="loot-popup-fade"    // Префикс для CSS классов анимации
+            mountOnEnter                    // Монтировать при появлении
+            unmountOnExit                   // Размонтировать после исчезновения
+            nodeRef={levelLootPopupRef}     // Ссылка на DOM-узел для анимации
+        >
+            {/* Передаем ref и награды в компонент */}
+            <LevelLootPopup ref={levelLootPopupRef} rewards={lastOpenedLevelChestRewards} />
+        </CSSTransition>
+        
             {/* Джойстик */}
             <div id="joystick-container" className="joystick-container" style={{ visibility: isLoading ? 'hidden' : 'visible' }}></div>
 

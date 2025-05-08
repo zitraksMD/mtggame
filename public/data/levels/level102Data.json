@@ -31,6 +31,24 @@
     { "id": "cultist_2", "type": "poison_cultist", "x": 400, "y": 400, "roomId": "room2_north", "initiallyActive": false },
     { "id": "cultist_3", "type": "poison_cultist", "x": 800, "y": 200, "roomId": "room2_north", "initiallyActive": false }
   ],
+
+    "chests": [
+      {
+        "id": "chest_level102_1", 
+        "chestTypeId": "standard_wood", 
+        "x": 200, 
+        "y": 1000, 
+        "roomId": "room1_start" 
+      },
+      {
+        "id": "chest_level102_2",
+        "chestTypeId": "standard_wood",
+        "x": 1000, 
+        "y": 300,
+        "roomId": "room2_north"
+      }
+    ],
+
   "winCondition": { 
     "type": "clear_enemies" 
   },
