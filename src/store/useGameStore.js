@@ -1,7 +1,7 @@
 // src/store/useGameStore.js
 import { create } from "zustand";
 import itemsDatabase, { getItemById } from '../data/itemsDatabase'; // <<< Добавь или убедись, что есть itemsDatabase и getItemById
-import forgeRecipes from "../data/forgeDatabase";      // Данные рецептов ковки
+import forgeRecipes from "../data/forgeDatabase";     // Данные рецептов ковки
 import { dailyShopDeals } from "../data/shopData";       // Данные магазина
 import achievementsData from '../data/achievementsDatabase'; // Импорт определений достижений
 import { RACES, getRaceDataById } from '../config/raceData';
@@ -19,7 +19,7 @@ import { v4 as uuidv4 } from 'uuid'; // <<<--- ДОБАВЬ ИМПОРТ uuid
 
 
 const STORAGE_KEY = "gameState";
-const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1; // 30 минут
+const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1; // 30 минут (исправлено с 1 на 1000)
 const DEFAULT_MAX_ENERGY = 1000000; // Максимум энергии по умолчанию
 
 // --- Конфигурация уровней достижений (без изменений) ---
@@ -28,37 +28,37 @@ export const ACHIEVEMENT_LEVEL_REWARDS = { /* ... */ };
 const getXpNeededForLevel = (level) => ACHIEVEMENT_LEVEL_XP_THRESHOLDS[level + 1] ?? Infinity;
 
 // --- Начальные базовые статы (без изменений) ---
-const DEFAULT_BASE_STATS = { hp: 100, attack: 10, attackSpeed: 1.0, critChance: 5, doubleStrikeChance: 0, speed: 5, range: 3, skin: 'default' }; // Добавил speed/range/skin из твоей логики
+const DEFAULT_BASE_STATS = { hp: 100, attack: 10, attackSpeed: 1.0, critChance: 5, doubleStrikeChance: 0, speed: 5, range: 3, skin: 'default', defense: 0, hpRegen: 0, evasion: 0, maxMana: 0, elementalDmgPercent: 0, goldFind: 0, luck: 0, bossDmg: 0, shardFind: 0, bonusProjectiles: 0, atkPercentBonus: 0, moveSpeedPercentBonus: 0 }; // Добавил все возможные статы для полноты
 
 // <<<--- ДОБАВЛЕН ХЕЛПЕР ДЛЯ СОЗДАНИЯ ЭКЗЕМПЛЯРА ПРЕДМЕТА ---<<<
 const createItemInstance = (itemTemplate) => {
     if (!itemTemplate) {
-      console.warn("Attempted to create instance from null/undefined template");
-      return null;
+        console.warn("Attempted to create instance from null/undefined template");
+        return null;
     }
     return {
-      ...itemTemplate,
-      uid: uuidv4(),      // Уникальный ID
-      currentLevel: 0,    // Начальный уровень (или level, если используешь это поле)
-      // Добавь другие свойства экземпляра, если они нужны
+        ...itemTemplate,
+        uid: uuidv4(),     // Уникальный ID
+        currentLevel: 0,   // Начальный уровень (или level, если используешь это поле)
+        // Добавь другие свойства экземпляра, если они нужны
     };
-  };
-  
-  // <<<--- ДОБАВЛЕНА ФУНКЦИЯ ПОЛУЧЕНИЯ ДЕФОЛТНОГО НАБОРА ---<<<
-  const getDefaultEquippedSet = () => {
+};
+
+// <<<--- ДОБАВЛЕНА ФУНКЦИЯ ПОЛУЧЕНИЯ ДЕФОЛТНОГО НАБОРА ---<<<
+const getDefaultEquippedSet = () => {
     const defaultSet = {
-      weapon: null, amulet: null, ring: null, helmet: null, armor: null, boots: null,
+        weapon: null, amulet: null, ring: null, helmet: null, armor: null, boots: null,
     };
     const types = Object.keys(defaultSet);
-  
+
     types.forEach(type => {
-      const commonItemTemplate = itemsDatabase.find(
-        item => item.type === type && item.rarity === 'Common' // Убедись, что 'Common' с большой буквы в базе
-      );
-      // Создаем экземпляр найденного предмета
-      defaultSet[type] = createItemInstance(commonItemTemplate);
+        const commonItemTemplate = itemsDatabase.find(
+            item => item.type === type && item.rarity === 'Common' // Убедись, что 'Common' с большой буквы в базе
+        );
+        // Создаем экземпляр найденного предмета
+        defaultSet[type] = createItemInstance(commonItemTemplate);
     });
-  
+
     // Проверяем, все ли слоты заполнены
     const missing = types.filter(type => defaultSet[type] === null);
     if (missing.length > 0) {
@@ -66,145 +66,157 @@ const createItemInstance = (itemTemplate) => {
     }
     console.log("Default common equipped set created for initialization/reset:", defaultSet);
     return defaultSet;
-  };
-  
-  
-  // --- Функция Загрузки состояния из localStorage (ИЗМЕНЕНА) ---
-  const loadFromLocalStorage = () => {
-      try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (!saved) {
-              // --- Первый запуск ---
-              console.log("No saved state found. Initializing with default Common gear.");
-              return { // Возвращаем объект с дефолтными значениями
-                  equipped: getDefaultEquippedSet(), // <<< Устанавливаем дефолтную экипировку
-                  collectedArtifacts: new Set(), // Инициализируем пустой Set
-                  // ... установи другие дефолтные значения для полей, которых не будет в {}
-                  gold: 100000,
-                  diamonds: 10000,
-                  username: null,
-                  powerLevel: 0, // Пересчитается позже
-                  playerBaseStats: { ...DEFAULT_BASE_STATS },
-                  playerHp: DEFAULT_BASE_STATS.hp,
-                  playerRace: null,
-                  inventory: [],
-                  energyMax: DEFAULT_MAX_ENERGY,
-                  energyCurrent: DEFAULT_MAX_ENERGY, // Начинаем с полной энергии
-                  lastEnergyRefillTimestamp: Date.now(), // Текущее время
-                  dailyShopPurchases: {},
-                  achievementsStatus: {},
-                  totalGoldCollected: 0,
-                  totalKills: 0,
-                  booleanFlags: {},
-                  levelsCompleted: {},
-                  achievementLevel: 1,
-                  achievementXp: 0,
-                  artifactLevels: {},
-                  artifactChestPity: {},
-                  gearKeys: 0,
-                  totalArtifactChestsOpened: 0,
-                  gearChestPity: {},
-                  totalGearChestsOpened: 0,
-                  dailyDeals: [],
-                  dailyDealsLastGenerated: null,
-                  lastOpenedChestInfo: null,
-                  lastChestRewards: null,
-              };
-          }
-  
-          // --- Если есть сохраненные данные ---
-          let parsed = JSON.parse(saved);
-          console.log("Saved state found. Processing...");
-  
-          // --- Миграция старых данных (если нужно) ---
-          // ... (твой код миграции playerBaseStats остается) ...
-          if (parsed && parsed.playerBaseStats && (parsed.playerBaseStats.defense !== undefined || parsed.playerBaseStats.health !== undefined)) {
-               console.log("Миграция старых playerBaseStats...");
-               let updatedStats = { ...parsed.playerBaseStats };
-               delete updatedStats.defense;
-               if (updatedStats.health !== undefined) { updatedStats.hp = updatedStats.health; delete updatedStats.health; }
-               Object.keys(DEFAULT_BASE_STATS).forEach(key => { updatedStats[key] = updatedStats[key] ?? DEFAULT_BASE_STATS[key]; });
-               parsed.playerBaseStats = updatedStats;
-               console.log("Миграция playerBaseStats завершена.");
-           }
-  
-  
-          // --- Инициализация полей по умолчанию, если они отсутствуют В ЗАГРУЖЕННОМ СОСТОЯНИИ ---
-          // (Важно делать это ДО проверки equipped)
-          if (!parsed.playerBaseStats) parsed.playerBaseStats = { ...DEFAULT_BASE_STATS };
-          if (parsed.playerHp === undefined) parsed.playerHp = parsed.playerBaseStats?.hp ?? DEFAULT_BASE_STATS.hp;
-          if (parsed.playerRace === undefined) parsed.playerRace = null;
-          if (parsed.inventory === undefined) parsed.inventory = [];
-          if (parsed.artifactLevels === undefined) parsed.artifactLevels = {};
-          if (parsed.artifactChestPity === undefined) parsed.artifactChestPity = {};
-          if (parsed.gearKeys === undefined) parsed.gearKeys = 0;
-          if (parsed.totalArtifactChestsOpened === undefined) parsed.totalArtifactChestsOpened = 0;
-          if (parsed.gearChestPity === undefined) parsed.gearChestPity = {};
-          if (parsed.totalGearChestsOpened === undefined) parsed.totalGearChestsOpened = 0;
-          if (parsed.dailyShopPurchases === undefined) parsed.dailyShopPurchases = {};
-          if (parsed.achievementsStatus === undefined) parsed.achievementsStatus = {};
-          if (parsed.totalGoldCollected === undefined) parsed.totalGoldCollected = 0;
-          if (parsed.totalKills === undefined) parsed.totalKills = 0;
-          if (parsed.booleanFlags === undefined) parsed.booleanFlags = {};
-          if (parsed.levelsCompleted === undefined) parsed.levelsCompleted = {};
-          if (parsed.achievementLevel === undefined) parsed.achievementLevel = 1;
-          if (parsed.achievementXp === undefined) parsed.achievementXp = 0;
-          if (parsed.dailyDeals === undefined) parsed.dailyDeals = [];
-          if (parsed.dailyDealsLastGenerated === undefined) parsed.dailyDealsLastGenerated = null;
-          if (parsed.lastOpenedChestInfo === undefined) parsed.lastOpenedChestInfo = null;
-          if (parsed.lastChestRewards === undefined) parsed.lastChestRewards = null;
-          if (parsed.energyMax === undefined) parsed.energyMax = DEFAULT_MAX_ENERGY;
-          if (parsed.energyCurrent === undefined) parsed.energyCurrent = parsed.energyMax; // Если не сохранено, считаем полным
-         if (parsed.lastEnergyRefillTimestamp === undefined) parsed.lastEnergyRefillTimestamp = Date.now(); // Если не сохранено, ставим текущее время
-          // ... добавь инициализацию для других полей, если нужно ...
-  
-          // --- Проверка и инициализация 'equipped' ---
-          const savedEquipped = parsed.equipped;
-          const isSavedEquippedInvalid = !savedEquipped || typeof savedEquipped !== 'object' || Object.keys(savedEquipped).length !== 6; // Простая проверка на объект с 6 слотами
-  
-          if (isSavedEquippedInvalid) {
-              console.warn("Saved 'equipped' state is missing or invalid. Initializing with default Common set.");
-              parsed.equipped = getDefaultEquippedSet(); // <<< Устанавливаем дефолт, если сохраненное некорректно
-          } else {
-               console.log("Using valid 'equipped' state from storage.");
-               // Опционально: можно добавить проверку, что сохраненные предметы валидны
-          }
-  
-          // --- Восстановление Set для collectedArtifacts ---
-          if (parsed.collectedArtifacts && !(parsed.collectedArtifacts instanceof Set)) {
-               try {
-                   parsed.collectedArtifacts = new Set(parsed.collectedArtifacts); // <<< Восстанавливаем Set из массива
-                   console.log("Reconstructed Set for collectedArtifacts.");
-               } catch (e) {
-                   console.error("Failed to reconstruct Set for collectedArtifacts, resetting.", e);
-                   parsed.collectedArtifacts = new Set();
+};
+
+
+// --- Функция Загрузки состояния из localStorage (ИЗМЕНЕНА) ---
+const loadFromLocalStorage = () => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            // --- Первый запуск ---
+            console.log("No saved state found. Initializing with default Common gear.");
+            return { // Возвращаем объект с дефолтными значениями
+                equipped: getDefaultEquippedSet(), // <<< Устанавливаем дефолтную экипировку
+                collectedArtifacts: new Set(), // Инициализируем пустой Set
+                // ... установи другие дефолтные значения для полей, которых не будет в {}
+                gold: 100000,
+                diamonds: 10000,
+                username: null,
+                powerLevel: 0, // Пересчитается позже
+                playerBaseStats: { ...DEFAULT_BASE_STATS },
+                playerHp: DEFAULT_BASE_STATS.hp,
+                playerRace: null,
+                inventory: [],
+                energyMax: DEFAULT_MAX_ENERGY,
+                energyCurrent: DEFAULT_MAX_ENERGY, // Начинаем с полной энергии
+                lastEnergyRefillTimestamp: Date.now(), // Текущее время
+                dailyShopPurchases: {},
+                achievementsStatus: {},
+                totalGoldCollected: 0,
+                totalKills: 0,
+                booleanFlags: {},
+                levelsCompleted: {},
+                achievementLevel: 1,
+                achievementXp: 0,
+                artifactLevels: {},
+                artifactChestPity: {},
+                gearKeys: 0,
+                totalArtifactChestsOpened: 0,
+                gearChestPity: {},
+                totalGearChestsOpened: 0,
+                dailyDeals: [],
+                dailyDealsLastGenerated: null,
+                lastOpenedChestInfo: null,
+                lastChestRewards: null,
+                activeDebuffs: [], // Инициализация дебаффов
+            };
+        }
+
+        // --- Если есть сохраненные данные ---
+        let parsed = JSON.parse(saved);
+        console.log("Saved state found. Processing...");
+
+        // --- Миграция старых данных (если нужно) ---
+        // ... (твой код миграции playerBaseStats остается) ...
+        if (parsed && parsed.playerBaseStats && (parsed.playerBaseStats.defense !== undefined || parsed.playerBaseStats.health !== undefined)) {
+            console.log("Миграция старых playerBaseStats...");
+            let updatedStats = { ...parsed.playerBaseStats };
+            delete updatedStats.defense; // Удаляем старое поле defense, если оно было напрямую в playerBaseStats
+            if (updatedStats.health !== undefined) { updatedStats.hp = updatedStats.health; delete updatedStats.health; }
+            Object.keys(DEFAULT_BASE_STATS).forEach(key => { updatedStats[key] = updatedStats[key] ?? DEFAULT_BASE_STATS[key]; });
+            parsed.playerBaseStats = updatedStats;
+            console.log("Миграция playerBaseStats завершена.");
+        }
+
+
+        // --- Инициализация полей по умолчанию, если они отсутствуют В ЗАГРУЖЕННОМ СОСТОЯНИИ ---
+        // (Важно делать это ДО проверки equipped)
+        if (!parsed.playerBaseStats) parsed.playerBaseStats = { ...DEFAULT_BASE_STATS };
+        else { // Убедимся, что все поля из DEFAULT_BASE_STATS есть в playerBaseStats
+           Object.keys(DEFAULT_BASE_STATS).forEach(key => {
+               if (parsed.playerBaseStats[key] === undefined) {
+                   parsed.playerBaseStats[key] = DEFAULT_BASE_STATS[key];
                }
-          } else if (!parsed.collectedArtifacts) {
-              parsed.collectedArtifacts = new Set(); // Инициализируем, если не было
-          }
-  
-          return parsed; // Возвращаем обработанное состояние
-  
-      } catch (error) {
-          console.error("Critical error during loadFromLocalStorage:", error);
-          localStorage.removeItem(STORAGE_KEY); // Очищаем хранилище при критической ошибке
-          // Возвращаем полный дефолтный набор при ошибке
-          return {
-              equipped: getDefaultEquippedSet(),
-              collectedArtifacts: new Set(),
-              gold: 0, diamonds: 0, username: null, powerLevel: 0,
-              playerBaseStats: { ...DEFAULT_BASE_STATS }, playerHp: DEFAULT_BASE_STATS.hp, playerRace: null,
-              inventory: [], dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0,
-              booleanFlags: {}, levelsCompleted: {}, achievementLevel: 1, achievementXp: 0, artifactLevels: {},
-              artifactChestPity: {}, gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
-              dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
-              energyMax: DEFAULT_MAX_ENERGY,
-              energyCurrent: DEFAULT_MAX_ENERGY,
-              lastEnergyRefillTimestamp: Date.now(),
-          };
-      }
-  };
-  
+           });
+        }
+
+        if (parsed.playerHp === undefined) parsed.playerHp = parsed.playerBaseStats?.hp ?? DEFAULT_BASE_STATS.hp;
+        if (parsed.playerRace === undefined) parsed.playerRace = null;
+        if (parsed.inventory === undefined) parsed.inventory = [];
+        if (parsed.artifactLevels === undefined) parsed.artifactLevels = {};
+        if (parsed.artifactChestPity === undefined) parsed.artifactChestPity = {};
+        if (parsed.gearKeys === undefined) parsed.gearKeys = 0;
+        if (parsed.totalArtifactChestsOpened === undefined) parsed.totalArtifactChestsOpened = 0;
+        if (parsed.gearChestPity === undefined) parsed.gearChestPity = {};
+        if (parsed.totalGearChestsOpened === undefined) parsed.totalGearChestsOpened = 0;
+        if (parsed.dailyShopPurchases === undefined) parsed.dailyShopPurchases = {};
+        if (parsed.achievementsStatus === undefined) parsed.achievementsStatus = {};
+        if (parsed.totalGoldCollected === undefined) parsed.totalGoldCollected = 0;
+        if (parsed.totalKills === undefined) parsed.totalKills = 0;
+        if (parsed.booleanFlags === undefined) parsed.booleanFlags = {};
+        if (parsed.levelsCompleted === undefined) parsed.levelsCompleted = {};
+        if (parsed.achievementLevel === undefined) parsed.achievementLevel = 1;
+        if (parsed.achievementXp === undefined) parsed.achievementXp = 0;
+        if (parsed.dailyDeals === undefined) parsed.dailyDeals = [];
+        if (parsed.dailyDealsLastGenerated === undefined) parsed.dailyDealsLastGenerated = null;
+        if (parsed.lastOpenedChestInfo === undefined) parsed.lastOpenedChestInfo = null;
+        if (parsed.lastChestRewards === undefined) parsed.lastChestRewards = null;
+        if (parsed.energyMax === undefined) parsed.energyMax = DEFAULT_MAX_ENERGY;
+        if (parsed.energyCurrent === undefined) parsed.energyCurrent = parsed.energyMax; // Если не сохранено, считаем полным
+        if (parsed.lastEnergyRefillTimestamp === undefined) parsed.lastEnergyRefillTimestamp = Date.now(); // Если не сохранено, ставим текущее время
+        if (parsed.activeDebuffs === undefined) parsed.activeDebuffs = []; // Инициализация дебаффов если отсутствуют
+        // ... добавь инициализацию для других полей, если нужно ...
+
+        // --- Проверка и инициализация 'equipped' ---
+        const savedEquipped = parsed.equipped;
+        const isSavedEquippedInvalid = !savedEquipped || typeof savedEquipped !== 'object' || Object.keys(savedEquipped).length !== 6; // Простая проверка на объект с 6 слотами
+
+        if (isSavedEquippedInvalid) {
+            console.warn("Saved 'equipped' state is missing or invalid. Initializing with default Common set.");
+            parsed.equipped = getDefaultEquippedSet(); // <<< Устанавливаем дефолт, если сохраненное некорректно
+        } else {
+            console.log("Using valid 'equipped' state from storage.");
+            // Опционально: можно добавить проверку, что сохраненные предметы валидны
+        }
+
+        // --- Восстановление Set для collectedArtifacts ---
+        if (parsed.collectedArtifacts && !(parsed.collectedArtifacts instanceof Set)) {
+            try {
+                parsed.collectedArtifacts = new Set(parsed.collectedArtifacts); // <<< Восстанавливаем Set из массива
+                console.log("Reconstructed Set for collectedArtifacts.");
+            } catch (e) {
+                console.error("Failed to reconstruct Set for collectedArtifacts, resetting.", e);
+                parsed.collectedArtifacts = new Set();
+            }
+        } else if (!parsed.collectedArtifacts) {
+            parsed.collectedArtifacts = new Set(); // Инициализируем, если не было
+        }
+
+        return parsed; // Возвращаем обработанное состояние
+
+    } catch (error) {
+        console.error("Critical error during loadFromLocalStorage:", error);
+        localStorage.removeItem(STORAGE_KEY); // Очищаем хранилище при критической ошибке
+        // Возвращаем полный дефолтный набор при ошибке
+        return {
+            equipped: getDefaultEquippedSet(),
+            collectedArtifacts: new Set(),
+            gold: 0, diamonds: 0, username: null, powerLevel: 0,
+            playerBaseStats: { ...DEFAULT_BASE_STATS }, playerHp: DEFAULT_BASE_STATS.hp, playerRace: null,
+            inventory: [], dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0,
+            booleanFlags: {}, levelsCompleted: {}, achievementLevel: 1, achievementXp: 0, artifactLevels: {},
+            artifactChestPity: {}, gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
+            dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
+            energyMax: DEFAULT_MAX_ENERGY,
+            energyCurrent: DEFAULT_MAX_ENERGY,
+            lastEnergyRefillTimestamp: Date.now(),
+            activeDebuffs: [], // Инициализация дебаффов
+            isAffectedByWeakeningAura: false, // <<< НОВОЕ Состояние для ауры
+        };
+    }
+};
+
 
 const RARITY_WEIGHTS = {
     common: 100,
@@ -218,42 +230,42 @@ const RARITY_WEIGHTS = {
 // Хелпер для взвешенного случайного выбора
 function weightedRandom(itemsWithWeight) { // itemsWithWeight = [{ item: data, weight: number }, ...]
     // --- >>> ЛОГ 5: Вход в функцию <<< ---
-    console.log('[weightedRandom] Функция вызвана. Входных элементов:', itemsWithWeight?.length ?? 'undefined/null');
+    // console.log('[weightedRandom] Функция вызвана. Входных элементов:', itemsWithWeight?.length ?? 'undefined/null');
     if (!itemsWithWeight || itemsWithWeight.length === 0) {
-         console.error('[weightedRandom] Получен пустой или невалидный массив!');
-         return null;
+        console.error('[weightedRandom] Получен пустой или невалидный массив!');
+        return null;
     }
 
     // --- >>> ЛОГ 6: Перед вычислением веса <<< ---
-    console.log('[weightedRandom] Вычисление totalWeight...');
+    // console.log('[weightedRandom] Вычисление totalWeight...');
     let totalWeight = itemsWithWeight.reduce((sum, entry) => {
         const weight = entry?.weight ?? 0; // Безопасное получение веса, default 0
         if (typeof weight !== 'number' || isNaN(weight) || weight < 0) {
-             console.warn('[weightedRandom] Невалидный вес у элемента:', entry, 'Используем 0.');
-             return sum;
+            console.warn('[weightedRandom] Невалидный вес у элемента:', entry, 'Используем 0.');
+            return sum;
         }
         return sum + weight;
     }, 0);
     // --- >>> ЛОГ 7: После вычисления веса <<< ---
-    console.log('[weightedRandom] Общий вес:', totalWeight);
+    // console.log('[weightedRandom] Общий вес:', totalWeight);
 
     if (totalWeight <= 0) {
-         console.warn('[weightedRandom] Общий вес <= 0. Возврат случайного элемента (если есть).');
-         // Fallback на случайный выбор, если массив не пуст
-         return itemsWithWeight.length > 0 ? itemsWithWeight[Math.floor(Math.random() * itemsWithWeight.length)].item : null;
+        console.warn('[weightedRandom] Общий вес <= 0. Возврат случайного элемента (если есть).');
+        // Fallback на случайный выбор, если массив не пуст
+        return itemsWithWeight.length > 0 ? itemsWithWeight[Math.floor(Math.random() * itemsWithWeight.length)].item : null;
     }
 
     let random = Math.random() * totalWeight;
     // --- >>> ЛОГ 8: Случайное значение <<< ---
-    console.log('[weightedRandom] Случайное значение * вес:', random);
+    // console.log('[weightedRandom] Случайное значение * вес:', random);
 
     for (let i = 0; i < itemsWithWeight.length; i++) {
         const currentWeight = itemsWithWeight[i]?.weight ?? 0; // Безопасное получение веса
-         // --- >>> ЛОГ 9: Внутри цикла <<< ---
-         console.log(`[weightedRandom] Цикл ${i}. Проверка ${random} < ${currentWeight} (Вес элемента: ${currentWeight})`);
+        // --- >>> ЛОГ 9: Внутри цикла <<< ---
+        // console.log(`[weightedRandom] Цикл ${i}. Проверка ${random} < ${currentWeight} (Вес элемента: ${currentWeight})`);
         if (random < currentWeight) {
-             // --- >>> ЛОГ 10: Успешный выбор <<< ---
-             console.log('[weightedRandom] Условие выполнено, возврат item:', itemsWithWeight[i]?.item);
+            // --- >>> ЛОГ 10: Успешный выбор <<< ---
+            // console.log('[weightedRandom] Условие выполнено, возврат item:', itemsWithWeight[i]?.item);
             return itemsWithWeight[i]?.item; // Безопасный доступ к item
         }
         random -= currentWeight; // Вычитаем корректный вес
@@ -293,9 +305,9 @@ const _selectWeightedArtifactIdFromSet_ByRarity = (setId) => {
     // Считаем общий вес для этого сета
     const totalWeight = weightedArtifactPool.reduce((sum, item) => sum + item.weight, 0);
     if (totalWeight <= 0) { // Если все веса 0, выбираем случайно
-         console.warn(`[SelectWeightedArtifact] Все веса для сета ${setId} нулевые, выбор случайный.`);
-         const randomIndex = Math.floor(Math.random() * weightedArtifactPool.length);
-         return weightedArtifactPool[randomIndex].id;
+        console.warn(`[SelectWeightedArtifact] Все веса для сета ${setId} нулевые, выбор случайный.`);
+        const randomIndex = Math.floor(Math.random() * weightedArtifactPool.length);
+        return weightedArtifactPool[randomIndex].id;
     }
 
     // Выбираем ID по весу
@@ -329,10 +341,10 @@ const _rollWeightedRarity_Gear = (rarityChances) => {
     let cumulativeWeight = 0;
     // Проходим по шансам и выбираем нужный
     for (const [rarity, chance] of Object.entries(rarityChances)) {
-      cumulativeWeight += (chance || 0);
-      if (randomValue < cumulativeWeight) {
-        return rarity; // Возвращаем строку с редкостью (e.g., "Rare")
-      }
+        cumulativeWeight += (chance || 0);
+        if (randomValue < cumulativeWeight) {
+            return rarity; // Возвращаем строку с редкостью (e.g., "Rare")
+        }
     }
     // Fallback на случай ошибок округления
     console.warn("[RollRarityGear] Не удалось выбрать редкость по весу, возврат последнего.");
@@ -406,7 +418,7 @@ const useGameStore = create((set, get) => ({
     achievementLevel: savedState.achievementLevel || 1,
     achievementXp: savedState.achievementXp || 0,
     artifactChestPity: savedState.artifactChestPity || {}, // { chestId: count }
-    gearKeys: savedState.gearKeys || 0,                   // Счетчик ключей для сундуков снаряжения
+    gearKeys: savedState.gearKeys || 0,                  // Счетчик ключей для сундуков снаряжения
     totalArtifactChestsOpened: savedState.totalArtifactChestsOpened || 0, // Счетчик для ачивок
     gearChestPity: savedState.gearChestPity || {}, // <<< Убедись, что она есть и написана ТОЧНО ТАК ЖЕ
     // --- КОНЕЦ ПРОВЕРКИ ---
@@ -416,6 +428,8 @@ const useGameStore = create((set, get) => ({
     lastChestRewards: null, // null | Array<{type: string, icon?: string, name?: string, amount?: number, rarity?: string, isNew?: boolean}>
     dailyDeals: savedState.dailyDeals ?? [], // Массив текущих сделок
     dailyDealsLastGenerated: savedState.dailyDealsLastGenerated ?? null, // Timestamp
+    activeDebuffs: savedState.activeDebuffs || [], // NEW STATE: Array to hold { id, type, strength, endTime }
+
 
     // ---------------------------------
 
@@ -425,255 +439,311 @@ const useGameStore = create((set, get) => ({
 // Убедись, что импорты getArtifactById, ARTIFACT_SETS и DEFAULT_BASE_STATS корректны
 
 computedStats: () => {
-    const state = get();
-    // console.log("--- Computing Stats ---");
+    const state = get(); // Функция доступа к состоянию (например, из Zustand)
+    const now = Date.now();
+    console.log('--- [ComputedStats] START Calculation ---');
+
+    // --- Фильтрация активных дебаффов ---
+    const currentActiveDebuffs = (state.activeDebuffs || []).filter(debuff => now < debuff.endTime);
+    console.log('[ComputedStats] Active Debuffs Found:', JSON.stringify(currentActiveDebuffs));
+
+    // --- Расчет суммарных эффектов от дебаффов ---
+    let totalWeakenDamageReductionPercent = 0;  // Для дебаффов типа 'weaken' (из логики код2)
+    let totalWeakenMaxHpReductionPercent = 0;   // Для дебаффов типа 'weaken' (из логики код2)
+
+    let totalOtherDamageReductionPercent = 0;  // Для ДРУГИХ дебаффов (из структуры код1)
+    let totalOtherMaxHpReductionPercent = 0;   // Для ДРУГИХ дебаффов (из структуры код1)
+
+    currentActiveDebuffs.forEach(debuff => {
+        if (debuff.type === 'weaken') {
+            totalWeakenDamageReductionPercent += (debuff.strength || 0);
+            totalWeakenMaxHpReductionPercent += (debuff.strength || 0);
+        } else {
+            // Обработка ДРУГИХ типов дебаффов (согласно структуре из код1)
+            // В код1 было: "// ... (цикл по currentOtherActiveDebuffs для расчета других эффектов, если они есть) ..."
+            // Так как конкретная логика расчета отсутствовала, здесь приведено предположение,
+            // что "другие" дебаффы могут иметь свойства damageReductionPercent или maxHpReductionPercent.
+            // Эту часть нужно будет адаптировать под реальную структуру "других" дебаффов.
+            if (debuff.hasOwnProperty('damageReductionPercent')) {
+                 totalOtherDamageReductionPercent += (debuff.damageReductionPercent || 0);
+            }
+            if (debuff.hasOwnProperty('maxHpReductionPercent')) {
+                 totalOtherMaxHpReductionPercent += (debuff.maxHpReductionPercent || 0);
+            }
+            // Другие типы дебаффов и их эффекты можно добавить здесь
+            // Например: else if (debuff.type === 'slow') { totalSlowPercent += debuff.strength; }
+        }
+    });
+
+    // Ограничение максимального снижения (клемпинг)
+    totalWeakenDamageReductionPercent = Math.min(totalWeakenDamageReductionPercent, 80);
+    totalWeakenMaxHpReductionPercent = Math.min(totalWeakenMaxHpReductionPercent, 80);
+
+    totalOtherDamageReductionPercent = Math.min(totalOtherDamageReductionPercent, 80); // Предполагаем аналогичный лимит
+    totalOtherMaxHpReductionPercent = Math.min(totalOtherMaxHpReductionPercent, 80);  // Предполагаем аналогичный лимит
+
+    console.log(`[ComputedStats] Total Weaken Debuff Reduction %: Damage=${totalWeakenDamageReductionPercent}%, MaxHP=${totalWeakenMaxHpReductionPercent}%`);
+    console.log(`[ComputedStats] Total Other Debuff Reduction %: Damage=${totalOtherDamageReductionPercent}%, MaxHP=${totalOtherMaxHpReductionPercent}% (Note: specific calculation for 'other' debuffs depends on their properties as per код1's incomplete snippet)`);
 
     // 1. Начинаем с базовых статов (раса или дефолт)
     let finalStats = { ...DEFAULT_BASE_STATS, ...(state.playerBaseStats || {}) };
-    // console.log("  Initial Base Stats:", JSON.stringify(finalStats));
+    console.log('[ComputedStats] Stats after Base:', JSON.stringify(finalStats));
 
     // 2. Применяем бонусы от экипировки
-    let totalGearAttackSpeedPercentBonus = 0; // Переименовал для ясности
+    let totalGearAttackSpeedPercentBonus = 0;
     for (const slot in state.equipped) {
         const item = state.equipped[slot];
         if (item) {
-            // Используем (finalStats.stat || 0) для безопасности
             finalStats.hp = (finalStats.hp || 0) + (item.hpBonus || 0);
             finalStats.attack = (finalStats.attack || 0) + (item.attackBonus || 0);
-            totalGearAttackSpeedPercentBonus += item.attackSpeedBonus || 0; // %
-            finalStats.critChance = (finalStats.critChance || 0) + (item.critChanceBonus || 0); // %
-            finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + (item.doubleStrikeChanceBonus || 0); // %
-            finalStats.speed = (finalStats.speed || 0) + (item.speedBonus || 0); // Это финальная скорость или % бонус? Уточни, если нужно
+            totalGearAttackSpeedPercentBonus += item.attackSpeedBonus || 0;
+            finalStats.critChance = (finalStats.critChance || 0) + (item.critChanceBonus || 0);
+            finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + (item.doubleStrikeChanceBonus || 0);
+            finalStats.speed = (finalStats.speed || 0) + (item.speedBonus || 0);
             finalStats.range = (finalStats.range || 0) + (item.rangeBonus || 0);
-             // Добавь другие статы от предметов, если есть, таким же образом
-             finalStats.defense = (finalStats.defense || 0) + (item.defenseBonus || 0); // Пример
-             finalStats.luck = (finalStats.luck || 0) + (item.luckBonus || 0);       // Пример
+            finalStats.defense = (finalStats.defense || 0) + (item.defenseBonus || 0);
+            finalStats.luck = (finalStats.luck || 0) + (item.luckBonus || 0);
+            finalStats.hpRegen = (finalStats.hpRegen || 0) + (item.hpRegenBonus || 0);
+            finalStats.evasion = (finalStats.evasion || 0) + (item.evasionBonus || 0);
+            finalStats.maxMana = (finalStats.maxMana || 0) + (item.maxManaBonus || 0);
+            finalStats.elementalDmgPercent = (finalStats.elementalDmgPercent || 0) + (item.elementalDmgPercentBonus || 0);
+            finalStats.goldFind = (finalStats.goldFind || 0) + (item.goldFindBonus || 0);
+            finalStats.bossDmg = (finalStats.bossDmg || 0) + (item.bossDmgBonus || 0);
+            finalStats.shardFind = (finalStats.shardFind || 0) + (item.shardFindBonus || 0);
+            finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + (item.atkPercentBonus || 0);
+            finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + (item.moveSpeedPercentBonus || 0);
+            finalStats.bonusProjectiles = (finalStats.bonusProjectiles || 0) + (item.bonusProjectiles || 0);
         }
     }
-    // console.log("  Stats after items:", JSON.stringify(finalStats), `Gear AS Bonus: ${totalGearAttackSpeedPercentBonus}%`);
+    // console.log("  Stats after items:", JSON.stringify(finalStats), `Gear AS Bonus: ${totalGearAttackSpeedPercentBonus}%`);
 
     // 3. Применяем бонусы от артефактов (уровни)
     const { artifactLevels, collectedArtifacts } = state;
-
-    // --- Переменные для СУММАРНЫХ бонусов от артефактов ---
-    // Используем стандартизированные названия
-    let totalArtifactHp = 0;
-    let totalArtifactAttack = 0;
-    let totalArtifactDefense = 0;
-    let totalArtifactHpRegen = 0;
-    let totalArtifactAttackSpeed = 0;   // Процентный бонус к базовой скорости
-    let totalArtifactEvasion = 0;       // Процентный шанс
-    let totalArtifactMoveSpeedBonus = 0; // Процентный бонус к базовой скорости
-    let totalArtifactAtkPercentBonus = 0;// Процентный бонус к базовому урону
-    let totalArtifactMaxMana = 0;
-    let totalArtifactElementalDmgPercent = 0;
-    let totalArtifactCritChance = 0;    // Процентный шанс
-    let totalArtifactDoubleStrikeChance = 0; // <<< ДОБАВЛЕНО >>> Процентный шанс
-    let totalArtifactGoldFind = 0;      // Процентный бонус
-    let totalArtifactLuck = 0;          // Плоский бонус
-    let totalArtifactBossDmg = 0;       // Процентный бонус
-    let totalArtifactShardFind = 0;     // Процентный бонус
-    // Добавь сюда переменные для других твоих статов, если нужно
+    let totalArtifactHp = 0, totalArtifactAttack = 0, totalArtifactDefense = 0, totalArtifactHpRegen = 0,
+        totalArtifactAttackSpeed = 0, totalArtifactEvasion = 0, totalArtifactMoveSpeedBonus = 0,
+        totalArtifactAtkPercentBonus = 0, totalArtifactMaxMana = 0, totalArtifactElementalDmgPercent = 0,
+        totalArtifactCritChance = 0, totalArtifactDoubleStrikeChance = 0, totalArtifactGoldFind = 0,
+        totalArtifactLuck = 0, totalArtifactBossDmg = 0, totalArtifactShardFind = 0, totalArtifactBonusProjectiles = 0;
 
     for (const artifactId in artifactLevels) {
-        // Убедимся, что артефакт собран и есть данные о нем и его состоянии
         if (collectedArtifacts.has(artifactId)) {
-            const artifactData = getArtifactById(artifactId); // Убедись, что эта функция импортирована и работает
+            const artifactData = getArtifactById(artifactId); // Предполагается, что эта функция существует
             const artifactInfo = artifactLevels[artifactId];
-
             if (artifactData && artifactInfo) {
                 const level = artifactInfo.level;
-                if (level <= 0) continue; // Пропускаем неактивные артефакты
-
-                // --- Применяем БАЗОВЫЕ статы артефакта (если есть) ---
+                if (level <= 0) continue;
                 if (artifactData.baseStats) {
                     for (const [statName, baseValue] of Object.entries(artifactData.baseStats)) {
-                        // --- ИСПРАВЛЕННЫЙ switch для baseStats ---
                         switch (statName) {
-                            case "hp":                   totalArtifactHp += baseValue; break;
-                            case "attack":               totalArtifactAttack += baseValue; break;
-                            case "defense":              totalArtifactDefense += baseValue; break;
-                            case "hpRegen":              totalArtifactHpRegen += baseValue; break;
-                            case "attackSpeed":          totalArtifactAttackSpeed += baseValue; break;
-                            case "evasion":              totalArtifactEvasion += baseValue; break;
+                            case "hp": totalArtifactHp += baseValue; break;
+                            case "attack": totalArtifactAttack += baseValue; break;
+                            case "defense": totalArtifactDefense += baseValue; break;
+                            case "hpRegen": totalArtifactHpRegen += baseValue; break;
+                            case "attackSpeed": totalArtifactAttackSpeed += baseValue; break;
+                            case "evasion": totalArtifactEvasion += baseValue; break;
                             case "moveSpeedPercentBonus": totalArtifactMoveSpeedBonus += baseValue; break;
-                            case "atkPercentBonus":       totalArtifactAtkPercentBonus += baseValue; break;
-                            case "maxMana":              totalArtifactMaxMana += baseValue; break;
-                            case "elementalDmgPercent":  totalArtifactElementalDmgPercent += baseValue; break;
-                            case "critChance":           totalArtifactCritChance += baseValue; break;
-                            case "doubleStrikeChance":   totalArtifactDoubleStrikeChance += baseValue; break; // <<< ДОБАВЛЕНО
-                            case "goldFind":             totalArtifactGoldFind += baseValue; break;
-                            case "luck":                 totalArtifactLuck += baseValue; break;
-                            case "bossDmg":              totalArtifactBossDmg += baseValue; break;
-                            case "shardFind":            totalArtifactShardFind += baseValue; break;
-                            // Добавь сюда другие твои стандартизированные базовые статы
+                            case "atkPercentBonus": totalArtifactAtkPercentBonus += baseValue; break;
+                            case "maxMana": totalArtifactMaxMana += baseValue; break;
+                            case "elementalDmgPercent": totalArtifactElementalDmgPercent += baseValue; break;
+                            case "critChance": totalArtifactCritChance += baseValue; break;
+                            case "doubleStrikeChance": totalArtifactDoubleStrikeChance += baseValue; break;
+                            case "goldFind": totalArtifactGoldFind += baseValue; break;
+                            case "luck": totalArtifactLuck += baseValue; break;
+                            case "bossDmg": totalArtifactBossDmg += baseValue; break;
+                            case "shardFind": totalArtifactShardFind += baseValue; break;
+                            case "bonusProjectiles": totalArtifactBonusProjectiles += baseValue; break;
                             default: console.warn(`[WARN] Неизвестный БАЗОВЫЙ стат артефакта '${artifactId}': ${statName}`); break;
                         }
                     }
                 }
-
-                // --- Применяем статы за УРОВЕНЬ артефакта ---
                 if (artifactData.levelStats) {
-                     for (const [statName, levelValue] of Object.entries(artifactData.levelStats)) {
-                         const bonus = levelValue * level; // Бонус = значение за уровень * текущий уровень
-                         if (bonus === 0) continue; // Пропускаем нулевой бонус
-
-                         // --- ИСПРАВЛЕННЫЙ switch для levelStats ---
-                         switch (statName) {
-                            case "hp":                   totalArtifactHp += bonus; break;
-                            case "attack":               totalArtifactAttack += bonus; break;
-                            case "defense":              totalArtifactDefense += bonus; break;
-                            case "hpRegen":              totalArtifactHpRegen += bonus; break;
-                            case "attackSpeed":          totalArtifactAttackSpeed += bonus; break;
-                            case "evasion":              totalArtifactEvasion += bonus; break;
+                    for (const [statName, levelValue] of Object.entries(artifactData.levelStats)) {
+                        const bonus = levelValue * level;
+                        if (bonus === 0) continue;
+                        switch (statName) {
+                            case "hp": totalArtifactHp += bonus; break;
+                            case "attack": totalArtifactAttack += bonus; break;
+                            case "defense": totalArtifactDefense += bonus; break;
+                            case "hpRegen": totalArtifactHpRegen += bonus; break;
+                            case "attackSpeed": totalArtifactAttackSpeed += bonus; break;
+                            case "evasion": totalArtifactEvasion += bonus; break;
                             case "moveSpeedPercentBonus": totalArtifactMoveSpeedBonus += bonus; break;
-                            case "atkPercentBonus":       totalArtifactAtkPercentBonus += bonus; break;
-                            case "maxMana":              totalArtifactMaxMana += bonus; break;
-                            case "elementalDmgPercent":  totalArtifactElementalDmgPercent += bonus; break;
-                            case "critChance":           totalArtifactCritChance += bonus; break;
-                            case "doubleStrikeChance":   totalArtifactDoubleStrikeChance += bonus; break; // <<< ДОБАВЛЕНО
-                            case "goldFind":             totalArtifactGoldFind += bonus; break;
-                            case "luck":                 totalArtifactLuck += bonus; break;
-                            case "bossDmg":              totalArtifactBossDmg += bonus; break;
-                            case "shardFind":            totalArtifactShardFind += bonus; break;
-                            // Добавь сюда другие твои стандартизированные статы за уровень
+                            case "atkPercentBonus": totalArtifactAtkPercentBonus += bonus; break;
+                            case "maxMana": totalArtifactMaxMana += bonus; break;
+                            case "elementalDmgPercent": totalArtifactElementalDmgPercent += bonus; break;
+                            case "critChance": totalArtifactCritChance += bonus; break;
+                            case "doubleStrikeChance": totalArtifactDoubleStrikeChance += bonus; break;
+                            case "goldFind": totalArtifactGoldFind += bonus; break;
+                            case "luck": totalArtifactLuck += bonus; break;
+                            case "bossDmg": totalArtifactBossDmg += bonus; break;
+                            case "shardFind": totalArtifactShardFind += bonus; break;
+                            case "bonusProjectiles": totalArtifactBonusProjectiles += bonus; break;
                             default: console.warn(`[WARN] Неизвестный стат УРОВНЯ артефакта '${artifactId}': ${statName}`); break;
-                         }
-                     }
+                        }
+                    }
                 }
             } else {
-                 console.warn(`[WARN] Не найдены данные или информация об уровне для артефакта ID: ${artifactId}`);
+                console.warn(`[WARN] Не найдены данные или информация об уровне для артефакта ID: ${artifactId}`);
             }
         }
     }
-    // console.log("  Total bonuses from Artifact Levels:", { totalArtifactHp, totalArtifactAttack, totalArtifactAttackSpeed, totalArtifactCritChance, totalArtifactDoubleStrikeChance /*... и т.д. ...*/ });
-
 
     // 4. Применяем СУММАРНЫЕ бонусы от артефактов (из п.3) к finalStats
     finalStats.hp += totalArtifactHp;
     finalStats.attack += totalArtifactAttack;
-    finalStats.defense = (finalStats.defense || 0) + totalArtifactDefense;
-    finalStats.hpRegen = (finalStats.hpRegen || 0) + totalArtifactHpRegen;
-    // Процентные бонусы пока суммируем к общим процентам
-    totalGearAttackSpeedPercentBonus += totalArtifactAttackSpeed; // Добавляем % скорости атаки от артефактов к бонусу от шмота
-    finalStats.critChance += totalArtifactCritChance; // Уже есть от шмота, добавляем
-    finalStats.doubleStrikeChance += totalArtifactDoubleStrikeChance; // Уже есть от шмота, добавляем
-    finalStats.evasion = (finalStats.evasion || 0) + totalArtifactEvasion;
+    finalStats.defense += totalArtifactDefense;
+    finalStats.hpRegen += totalArtifactHpRegen;
+    totalGearAttackSpeedPercentBonus += totalArtifactAttackSpeed; // Процентный бонус к скорости атаки суммируется
+    finalStats.critChance += totalArtifactCritChance;
+    finalStats.doubleStrikeChance += totalArtifactDoubleStrikeChance;
+    finalStats.evasion += totalArtifactEvasion;
     finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + totalArtifactMoveSpeedBonus;
     finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + totalArtifactAtkPercentBonus;
-    finalStats.maxMana = (finalStats.maxMana || 0) + totalArtifactMaxMana;
-    finalStats.elementalDmgPercent = (finalStats.elementalDmgPercent || 0) + totalArtifactElementalDmgPercent;
-    finalStats.goldFind = (finalStats.goldFind || 0) + totalArtifactGoldFind;
-    finalStats.luck = (finalStats.luck || 0) + totalArtifactLuck;
-    finalStats.bossDmg = (finalStats.bossDmg || 0) + totalArtifactBossDmg;
-    finalStats.shardFind = (finalStats.shardFind || 0) + totalArtifactShardFind;
-    // ... примени здесь остальные накопленные totalArtifact... переменные к finalStats ...
-
-    // console.log("  Stats after Artifact Level bonuses:", JSON.stringify(finalStats));
-
+    finalStats.maxMana += totalArtifactMaxMana;
+    finalStats.elementalDmgPercent += totalArtifactElementalDmgPercent;
+    finalStats.goldFind += totalArtifactGoldFind;
+    finalStats.luck += totalArtifactLuck;
+    finalStats.bossDmg += totalArtifactBossDmg;
+    finalStats.shardFind += totalArtifactShardFind;
+    finalStats.bonusProjectiles += totalArtifactBonusProjectiles;
+    // console.log("  Stats after Artifact Level bonuses:", JSON.stringify(finalStats));
 
     // 5. Применяем бонусы от АКТИВНЫХ сетов артефактов
-    ARTIFACT_SETS.forEach(set => {
-        // Считаем АКТИВНЫЕ артефакты в сете (level > 0)
+    ARTIFACT_SETS.forEach(set => { // Предполагается, что ARTIFACT_SETS определен
         const activeOwnedInSet = set.artifacts.filter(artifact => {
-             const stateInfo = artifactLevels[artifact.id];
-             return collectedArtifacts.has(artifact.id) && stateInfo && stateInfo.level > 0;
+            const stateInfo = artifactLevels[artifact.id];
+            return collectedArtifacts.has(artifact.id) && stateInfo && stateInfo.level > 0;
         }).length;
 
         set.bonuses.forEach(bonus => {
             const match = bonus.condition.match(/\[\s*Собрано\s*(\d+)\s*\]/i);
             const requiredCount = match ? parseInt(match[1], 10) : 0;
             if (requiredCount > 0 && activeOwnedInSet >= requiredCount) {
-                // Бонус активен, парсим и применяем его (эта логика парсинга все еще хрупкая!)
                 const desc = bonus.description.toLowerCase();
                 const valueMatch = desc.match(/([+-]?\d+(\.\d+)?)/);
                 const value = valueMatch ? parseFloat(valueMatch[1]) : 0;
-                let applied = false; // Флаг, что бонус был применен
+                let applied = false;
 
                 if (desc.includes('макс. hp') || desc.includes('hp')) {
-                    if (desc.includes('%')) finalStats.hp *= (1 + value / 100);
-                    else finalStats.hp += value;
+                    if (desc.includes('%')) finalStats.hp *= (1 + value / 100); else finalStats.hp += value;
                     applied = true;
                 } else if (desc.includes('сила атаки') || desc.includes('урон') || desc.includes('атак')) {
-                     if (desc.includes('%')) finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + value;
-                     else finalStats.attack += value;
-                     applied = true;
+                    if (desc.includes('%')) finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + value; else finalStats.attack += value;
+                    applied = true;
                 } else if (desc.includes('скорость атаки')) {
-                     if (desc.includes('%')) totalGearAttackSpeedPercentBonus += value; // Добавляем к общему % скорости
-                     applied = true;
+                    if (desc.includes('%')) totalGearAttackSpeedPercentBonus += value; applied = true;
                 } else if (desc.includes('регенерация hp')) {
-                     finalStats.hpRegen = (finalStats.hpRegen || 0) + value;
-                     applied = true;
+                    finalStats.hpRegen = (finalStats.hpRegen || 0) + value; applied = true;
                 } else if (desc.includes('шанс двойного удара') || desc.includes('двойной удар')) {
-                     finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + value;
-                     applied = true;
+                    finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + value; applied = true;
                 } else if (desc.includes('шанс найти золото') || desc.includes('поиск золота')) {
-                     finalStats.goldFind = (finalStats.goldFind || 0) + value;
-                     applied = true;
+                    finalStats.goldFind = (finalStats.goldFind || 0) + value; applied = true;
                 } else if (desc.includes('шанс найти осколки') || desc.includes('поиск осколков')) {
-                     finalStats.shardFind = (finalStats.shardFind || 0) + value;
-                     applied = true;
+                    finalStats.shardFind = (finalStats.shardFind || 0) + value; applied = true;
                 } else if (desc.includes('шанс крит. удара') || desc.includes('крит. шанс')) {
-                     finalStats.critChance = (finalStats.critChance || 0) + value;
-                     applied = true;
+                    finalStats.critChance = (finalStats.critChance || 0) + value; applied = true;
                 } else if (desc.includes('защита')) {
-                     finalStats.defense = (finalStats.defense || 0) + value;
-                     applied = true;
+                    finalStats.defense = (finalStats.defense || 0) + value; applied = true;
                 } else if (desc.includes('удача')) {
-                     finalStats.luck = (finalStats.luck || 0) + value;
-                     applied = true;
+                    finalStats.luck = (finalStats.luck || 0) + value; applied = true;
                 } else if (desc.includes('урон боссам')) {
-                     finalStats.bossDmg = (finalStats.bossDmg || 0) + value;
-                     applied = true;
-                 } else if (desc.includes('урон стихиями')) {
-                     finalStats.elementalDmgPercent = (finalStats.elementalDmgPercent || 0) + value;
-                     applied = true;
-                 } else if (desc.includes('макс. мана') || desc.includes('мана')) {
-                     finalStats.maxMana = (finalStats.maxMana || 0) + value;
-                     applied = true;
-                 } else if (desc.includes('шанс уклонения') || desc.includes('уклонение')) {
-                      finalStats.evasion = (finalStats.evasion || 0) + value;
-                      applied = true;
-                 } else if (desc.includes('скорость передвижения')) {
-                      finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + value;
-                      applied = true;
-                 } else if (desc.includes('+1 доп. снаряд при атаке')) {
-                      finalStats.bonusProjectiles = (finalStats.bonusProjectiles || 0) + 1;
-                      applied = true;
-                 }
-                // !!! Добавь сюда парсинг и применение ВСЕХ твоих возможных бонусов сетов !!!
-                // ... и т.д.
-
-                 if (!applied) {
-                     console.warn(`[WARN] Не удалось распознать бонус сета '${set.name}': ${bonus.description}`);
-                 }
+                    finalStats.bossDmg = (finalStats.bossDmg || 0) + value; applied = true;
+                } else if (desc.includes('урон стихиями')) {
+                    finalStats.elementalDmgPercent = (finalStats.elementalDmgPercent || 0) + value; applied = true;
+                } else if (desc.includes('макс. мана') || desc.includes('мана')) {
+                    finalStats.maxMana = (finalStats.maxMana || 0) + value; applied = true;
+                } else if (desc.includes('шанс уклонения') || desc.includes('уклонение')) {
+                    finalStats.evasion = (finalStats.evasion || 0) + value; applied = true;
+                } else if (desc.includes('скорость передвижения')) {
+                    finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + value; applied = true;
+                } else if (desc.includes('+1 доп. снаряд при атаке')) {
+                    finalStats.bonusProjectiles = (finalStats.bonusProjectiles || 0) + 1; applied = true;
+                }
+                if (!applied) console.warn(`[WARN] Не удалось распознать бонус сета '${set.name}': ${bonus.description}`);
             }
         });
     });
-    // console.log("  Stats after set bonuses:", JSON.stringify(finalStats));
+    // console.log("  Stats after set bonuses:", JSON.stringify(finalStats));
 
-    // 6. Применяем процентные бонусы и форматируем
-    // Применяем суммарные процентные бонусы АТАКИ (atkPercentBonus от артефактов + % от сетов)
+    // 6. Применяем процентные бонусы (кроме дебаффов)
     finalStats.attack = (finalStats.attack || 0) * (1 + (finalStats.atkPercentBonus || 0) / 100);
-    // Применяем суммарные процентные бонусы СКОРОСТИ АТАКИ (totalGearAttackSpeedPercentBonus от шмота + от артефактов + от сетов)
-    finalStats.attackSpeed = (finalStats.attackSpeed || DEFAULT_BASE_STATS.attackSpeed || 1) * (1 + totalGearAttackSpeedPercentBonus / 100); // Используем базовую скорость, если есть
-    // Применяем суммарные процентные бонусы СКОРОСТИ ПЕРЕДВИЖЕНИЯ
-    finalStats.speed = (finalStats.speed || DEFAULT_BASE_STATS.speed || 1) * (1 + (finalStats.moveSpeedPercentBonus || 0) / 100); // Используем базовую скорость, если есть
-    // ... примени другие процентные бонусы, если они есть (например, HP%) ...
+    finalStats.attackSpeed = (finalStats.attackSpeed || DEFAULT_BASE_STATS.attackSpeed || 1) * (1 + totalGearAttackSpeedPercentBonus / 100);
+    finalStats.speed = (finalStats.speed || DEFAULT_BASE_STATS.speed || 1) * (1 + (finalStats.moveSpeedPercentBonus || 0) / 100);
 
 
-    // Округление и проверка минимальных/максимальных значений
+    // --- >>> ПРИМЕНЯЕМ ДЕБАФФЫ И ЭФФЕКТ АУРЫ <<< ---
+    let debuffLogMessages = [];
+
+    // Сохраняем статы перед применением каждой группы модификаторов для логгирования
+    let attackBeforeModification, hpBeforeModification;
+
+    // 6.1 Применяем ДРУГИЕ дебаффы (из структуры код1, если есть)
+    if (totalOtherDamageReductionPercent > 0 || totalOtherMaxHpReductionPercent > 0) {
+        attackBeforeModification = finalStats.attack;
+        hpBeforeModification = finalStats.hp;
+
+        if (totalOtherDamageReductionPercent > 0) {
+            finalStats.attack *= (1 - totalOtherDamageReductionPercent / 100);
+            debuffLogMessages.push(`Attack reduced by ${totalOtherDamageReductionPercent}% (other debuff). (${attackBeforeModification.toFixed(1)} -> ${finalStats.attack.toFixed(1)})`);
+        }
+        if (totalOtherMaxHpReductionPercent > 0) {
+            // Если атака уже была изменена, hpBeforeModification все еще корректен для исходного значения HP перед этой группой дебаффов
+            finalStats.hp *= (1 - totalOtherMaxHpReductionPercent / 100);
+            debuffLogMessages.push(`HP reduced by ${totalOtherMaxHpReductionPercent}% (other debuff). (${hpBeforeModification.toFixed(1)} -> ${finalStats.hp.toFixed(1)})`);
+        }
+    }
+
+    // 6.2 Применяем дебаффы типа 'weaken' (из логики код2)
+    if (totalWeakenDamageReductionPercent > 0 || totalWeakenMaxHpReductionPercent > 0) {
+        attackBeforeModification = finalStats.attack; // Значение после "other" дебаффов
+        hpBeforeModification = finalStats.hp;       // Значение после "other" дебаффов
+
+        if (totalWeakenDamageReductionPercent > 0) {
+            finalStats.attack *= (1 - totalWeakenDamageReductionPercent / 100);
+            debuffLogMessages.push(`Attack reduced by ${totalWeakenDamageReductionPercent}% (weaken debuff). (${attackBeforeModification.toFixed(1)} -> ${finalStats.attack.toFixed(1)})`);
+        }
+        if (totalWeakenMaxHpReductionPercent > 0) {
+            finalStats.hp *= (1 - totalWeakenMaxHpReductionPercent / 100);
+            debuffLogMessages.push(`HP reduced by ${totalWeakenMaxHpReductionPercent}% (weaken debuff). (${hpBeforeModification.toFixed(1)} -> ${finalStats.hp.toFixed(1)})`);
+        }
+    }
+
+    // 6.3 Применяем эффект от АУРЫ ослабления (из код1, если активен)
+    const auraIsActive = state.isAffectedByWeakeningAura; // <<< ПРОВЕРКА ФЛАГА АУРЫ из код1 >>>
+    const auraStrengthPercent = 10; // 10% снижение от ауры (из код1)
+
+    if (auraIsActive) {
+        console.log('[ComputedStats] Weakening Aura ACTIVE! Applying 10% reduction.'); // Лог из код1
+        attackBeforeModification = finalStats.attack; // Значение после всех предыдущих дебаффов
+        hpBeforeModification = finalStats.hp;       // Значение после всех предыдущих дебаффов
+
+        finalStats.attack *= (1 - auraStrengthPercent / 100);
+        debuffLogMessages.push(`Attack reduced by ${auraStrengthPercent}% (aura). (${attackBeforeModification.toFixed(1)} -> ${finalStats.attack.toFixed(1)})`);
+
+        finalStats.hp *= (1 - auraStrengthPercent / 100);
+        debuffLogMessages.push(`HP reduced by ${auraStrengthPercent}% (aura). (${hpBeforeModification.toFixed(1)} -> ${finalStats.hp.toFixed(1)})`);
+    }
+
+    // Выводим итоговый лог о примененных дебаффах/ауре
+    if (debuffLogMessages.length > 0) {
+        console.log('[ComputedStats] DEBUFFS/AURA APPLIED: ' + debuffLogMessages.join('; '));
+    } else {
+        console.log('[ComputedStats] No debuffs or aura to apply.');
+    }
+    // --- >>> КОНЕЦ БЛОКА ПРИМЕНЕНИЯ ДЕБАФФОВ И АУРЫ <<< ---
+
+    // --- Финальное округление и клемпинг ---
     finalStats.hp = Math.max(1, Math.round(finalStats.hp || 0));
     finalStats.attack = Math.max(0, Math.round(finalStats.attack || 0));
-    finalStats.attackSpeed = parseFloat(Math.max(0.1, finalStats.attackSpeed || 0).toFixed(2)); // Ограничение мин. скорости
-    finalStats.critChance = Math.min(100, Math.max(0, Math.round(finalStats.critChance || 0))); // Ограничение 0-100%
-    finalStats.doubleStrikeChance = Math.min(100, Math.max(0, Math.round(finalStats.doubleStrikeChance || 0))); // Ограничение 0-100%
-    finalStats.speed = parseFloat(Math.max(0.1, finalStats.speed || 0).toFixed(2)); // Ограничение мин. скорости
+    finalStats.attackSpeed = parseFloat(Math.max(0.1, (finalStats.attackSpeed || 0)).toFixed(2));
+    finalStats.critChance = Math.min(100, Math.max(0, Math.round(finalStats.critChance || 0)));
+    finalStats.doubleStrikeChance = Math.min(100, Math.max(0, Math.round(finalStats.doubleStrikeChance || 0)));
+    finalStats.speed = parseFloat(Math.max(0.1, (finalStats.speed || 0)).toFixed(2));
     finalStats.range = Math.max(1, Math.round(finalStats.range || 0));
     finalStats.skin = finalStats.skin || DEFAULT_BASE_STATS.skin;
     finalStats.defense = Math.max(0, Math.round(finalStats.defense || 0));
     finalStats.hpRegen = Math.max(0, parseFloat((finalStats.hpRegen || 0).toFixed(1)));
-    finalStats.evasion = Math.min(90, Math.max(0, Math.round(finalStats.evasion || 0))); // Ограничение уклонения (например, 90%)
+    finalStats.evasion = Math.min(90, Math.max(0, Math.round(finalStats.evasion || 0)));
     finalStats.maxMana = Math.max(0, Math.round(finalStats.maxMana || 0));
     finalStats.elementalDmgPercent = Math.max(0, Math.round(finalStats.elementalDmgPercent || 0));
     finalStats.goldFind = Math.max(0, Math.round(finalStats.goldFind || 0));
@@ -681,21 +751,18 @@ computedStats: () => {
     finalStats.bossDmg = Math.max(0, Math.round(finalStats.bossDmg || 0));
     finalStats.shardFind = Math.max(0, Math.round(finalStats.shardFind || 0));
     finalStats.bonusProjectiles = Math.max(0, Math.round(finalStats.bonusProjectiles || 0));
-    // ... округли и проверь остальные статы ...
 
-
-    // Проверка на NaN (на всякий случай)
+    // Проверка на NaN
     for (const key in finalStats) {
         if (typeof finalStats[key] === 'number' && isNaN(finalStats[key])) {
-            console.error(`[ERROR] Computed stat ${key} resulted in NaN! Resetting to 0 or base.`);
+            console.error(`[ERROR] Computed stat ${key} resulted in NaN! Resetting to base or 0.`);
             finalStats[key] = DEFAULT_BASE_STATS[key] ?? 0;
         }
     }
 
-    // console.log("--- Final Computed Stats: ---", finalStats);
+    console.log('--- [ComputedStats] END Calculation. Final Stats:', JSON.stringify(finalStats));
     return finalStats;
 },
-
 
     // --- Остальные селекторы (без изменений) ---
     isAnyRecipeCraftable: () => { /* ... */ },
@@ -703,42 +770,42 @@ computedStats: () => {
     getCurrentLevelXpProgress: () => { /* ... */ },
     getXpNeededForCurrentLevelUp: () => { /* ... */ },
     // ... (код isAnyRecipeCraftable и селекторов достижений без изменений) ...
-    isAnyRecipeCraftable: () => {
-         const { inventory, gold, diamonds } = get();
-         const inventoryCounts = {};
-         inventory.forEach(item => {
-              if (item?.id && item?.rarity) {
-                  const key = `${item.id}_${item.rarity}`;
-                  inventoryCounts[key] = (inventoryCounts[key] || 0) + 1;
-              } else if (item?.id) {
-                   inventoryCounts[item.id] = (inventoryCounts[item.id] || 0) + 1;
-              }
-         });
+    isAnyRecipeCraftable: () => {
+        const { inventory, gold, diamonds } = get();
+        const inventoryCounts = {};
+        inventory.forEach(item => {
+            if (item?.id && item?.rarity) {
+                const key = `${item.id}_${item.rarity}`;
+                inventoryCounts[key] = (inventoryCounts[key] || 0) + 1;
+            } else if (item?.id) {
+                inventoryCounts[item.id] = (inventoryCounts[item.id] || 0) + 1;
+            }
+        });
 
-         for (const recipe of forgeRecipes) {
-             let hasEnoughItems = true;
-             for (const input of recipe.inputItems) {
-                 const key = input.rarity ? `${input.itemId}_${input.rarity}` : input.itemId;
-                 if ((inventoryCounts[key] || 0) < input.quantity) {
-                     hasEnoughItems = false;
-                     break;
-                 }
-             }
-             if (!hasEnoughItems) continue;
-             if (gold >= recipe.cost.gold && diamonds >= recipe.cost.diamonds) {
-                 return true;
-             }
-         }
-         return false;
-     },
-     getAchievementXpNeededForNextLevel: () => getXpNeededForLevel(get().achievementLevel),
-     getCurrentLevelXpProgress: () => Math.max(0, get().achievementXp - (ACHIEVEMENT_LEVEL_XP_THRESHOLDS[get().achievementLevel] ?? 0)),
-     getXpNeededForCurrentLevelUp: () => {
-         const lvl = get().achievementLevel;
-         const nextThreshold = getXpNeededForLevel(lvl);
-         const currentThreshold = ACHIEVEMENT_LEVEL_XP_THRESHOLDS[lvl] ?? 0;
-         return nextThreshold === Infinity ? Infinity : nextThreshold - currentThreshold;
-     },
+        for (const recipe of forgeRecipes) {
+            let hasEnoughItems = true;
+            for (const input of recipe.inputItems) {
+                const key = input.rarity ? `${input.itemId}_${input.rarity}` : input.itemId;
+                if ((inventoryCounts[key] || 0) < input.quantity) {
+                    hasEnoughItems = false;
+                    break;
+                }
+            }
+            if (!hasEnoughItems) continue;
+            if (gold >= recipe.cost.gold && diamonds >= recipe.cost.diamonds) {
+                return true;
+            }
+        }
+        return false;
+    },
+    getAchievementXpNeededForNextLevel: () => getXpNeededForLevel(get().achievementLevel),
+    getCurrentLevelXpProgress: () => Math.max(0, get().achievementXp - (ACHIEVEMENT_LEVEL_XP_THRESHOLDS[get().achievementLevel] ?? 0)),
+    getXpNeededForCurrentLevelUp: () => {
+        const lvl = get().achievementLevel;
+        const nextThreshold = getXpNeededForLevel(lvl);
+        const currentThreshold = ACHIEVEMENT_LEVEL_XP_THRESHOLDS[lvl] ?? 0;
+        return nextThreshold === Infinity ? Infinity : nextThreshold - currentThreshold;
+    },
 
     // ================== Действия (Actions) - Объединенные и Дополненные ==================
 
@@ -754,61 +821,59 @@ computedStats: () => {
         const initialStats = raceData ? raceData.initialStats : DEFAULT_BASE_STATS;
         set({
             playerBaseStats: { ...initialStats },
-            playerHp: initialStats.hp,
+            playerHp: initialStats.hp, // Устанавливаем текущее HP равным максимальному при смене расы
             playerRace: raceId,
         });
         get().updatePowerLevel(); // Пересчет PL при смене расы/статов
+        get().initializeLevelHp(); // Обновляем playerHp до вычисленного максимума
     },
 
-    // --- Действия с HP (без изменений) ---
-    playerTakeDamage: (damageAmount) => { /* ... */ },
-    initializeLevelHp: () => { /* ... */ },
-    healPlayer: (amount) => { /* ... */ },
+    // --- Действия с HP (без изменений) --
     // ... (код действий с HP без изменений) ...
-    playerTakeDamage: (damageAmount) => {
-         set((state) => {
-             const newHp = Math.max(0, state.playerHp - damageAmount);
-             // console.log(`Игрок получает ${damageAmount} урона. HP: ${state.playerHp} -> ${newHp}`);
-             return { playerHp: newHp };
-         });
-         if (get().playerHp <= 0) {
-            console.log("Игрок погиб!");
-         }
-     },
-     initializeLevelHp: () => {
-         const maxHp = get().computedStats().hp;
-         // console.log(`Инициализация HP уровня: ${maxHp}`);
-         set({ playerHp: maxHp });
-     },
-     healPlayer: (amount) => {
-         set((state) => {
-             const maxHp = get().computedStats().hp;
-             const newHp = Math.min(maxHp, state.playerHp + amount);
-             // console.log(`Игрок лечится на ${amount}. HP: ${state.playerHp} -> ${newHp}`);
-             return { playerHp: newHp };
-         });
-     },
+    playerTakeDamage: (damageAmount) => {
+        set((state) => {
+            const newHp = Math.max(0, state.playerHp - damageAmount);
+            // console.log(`Игрок получает ${damageAmount} урона. HP: ${state.playerHp} -> ${newHp}`);
+            return { playerHp: newHp };
+        });
+        if (get().playerHp <= 0) {
+            console.log("Игрок погиб!");
+        }
+    },
+    initializeLevelHp: () => {
+        const maxHp = get().computedStats().hp;
+        // console.log(`Инициализация HP уровня: ${maxHp}`);
+        set({ playerHp: maxHp });
+    },
+    healPlayer: (amount) => {
+        set((state) => {
+            const maxHp = get().computedStats().hp;
+            const newHp = Math.min(maxHp, state.playerHp + amount);
+            // console.log(`Игрок лечится на ${amount}. HP: ${state.playerHp} -> ${newHp}`);
+            return { playerHp: newHp };
+        });
+    },
 
 
 
     // ... (код действий с валютой и киллами без изменений) ...
-    addGold: (amount) => {
-         set((state) => ({
-             gold: state.gold + amount,
-             totalGoldCollected: amount > 0 ? state.totalGoldCollected + amount : state.totalGoldCollected,
-         }));
-         get().checkAllAchievements();
-     },
-     addDiamonds: (amount) => {
-         set((state) => ({ diamonds: state.diamonds + amount }));
-         get().checkAllAchievements();
-     },
-     incrementKills: (count = 1) => {
-         set((state) => ({ totalKills: state.totalKills + count }));
-         get().checkAllAchievements();
-     },
+    addGold: (amount) => {
+        set((state) => ({
+            gold: state.gold + amount,
+            totalGoldCollected: amount > 0 ? state.totalGoldCollected + amount : state.totalGoldCollected,
+        }));
+        get().checkAllAchievements();
+    },
+    addDiamonds: (amount) => {
+        set((state) => ({ diamonds: state.diamonds + amount }));
+        get().checkAllAchievements();
+    },
+    incrementKills: (count = 1) => {
+        set((state) => ({ totalKills: state.totalKills + count }));
+        get().checkAllAchievements();
+    },
 
- refillEnergyOnLoad: () => {
+refillEnergyOnLoad: () => {
     set((state) => {
         const now = Date.now();
         const { energyCurrent, energyMax, lastEnergyRefillTimestamp } = state;
@@ -838,7 +903,7 @@ computedStats: () => {
         // поинта, НЕ сдвигается на "now", чтобы не дарить лишнее время.
         const newTimestamp = lastEnergyRefillTimestamp + pointsAdded * ENERGY_REFILL_INTERVAL_MS;
 
-        console.log(`Refill Check: Прошло ${Math.floor(elapsedMs / 1000)} сек. Интервалов: ${refillIntervalsPassed}. Добавлено: ${pointsAdded}. Новая энергия: ${newEnergy}. Новый timestamp: ${new Date(newTimestamp).toLocaleTimeString()}`);
+        // console.log(`Refill Check: Прошло ${Math.floor(elapsedMs / 1000)} сек. Интервалов: ${refillIntervalsPassed}. Добавлено: ${pointsAdded}. Новая энергия: ${newEnergy}. Новый timestamp: ${new Date(newTimestamp).toLocaleTimeString()}`);
 
         return {
             energyCurrent: newEnergy,
@@ -870,7 +935,7 @@ consumeEnergy: (cost) => {
         // время до следующего поинта.
         const newTimestamp = wasFull ? Date.now() : lastEnergyRefillTimestamp;
 
-        console.log(`Consume Energy: Потрачено ${cost}. Осталось: ${newEnergy}. Timestamp ${wasFull ? 'обновлен на текущее' : 'не изменен'}.`);
+        // console.log(`Consume Energy: Потрачено ${cost}. Осталось: ${newEnergy}. Timestamp ${wasFull ? 'обновлен на текущее' : 'не изменен'}.`);
         success = true;
         return {
             energyCurrent: newEnergy,
@@ -882,13 +947,13 @@ consumeEnergy: (cost) => {
 
 // (Опционально) Action для добавления энергии (награды и т.п.)
 addEnergy: (amount) => {
-     if (amount <= 0) return;
-     set((state) => {
-         const newEnergy = Math.min(state.energyMax, state.energyCurrent + amount);
-         console.log(`Add Energy: Добавлено ${amount}. Текущее: ${newEnergy}`);
-         // Timestamp НЕ меняем принудительно, пусть refillOnLoad разберется
-         return { energyCurrent: newEnergy };
-     });
+    if (amount <= 0) return;
+    set((state) => {
+        const newEnergy = Math.min(state.energyMax, state.energyCurrent + amount);
+        // console.log(`Add Energy: Добавлено ${amount}. Текущее: ${newEnergy}`);
+        // Timestamp НЕ меняем принудительно, пусть refillOnLoad разберется
+        return { energyCurrent: newEnergy };
+    });
 },
 
 
@@ -909,7 +974,7 @@ addEnergy: (amount) => {
             inventory: state.inventory.filter(item => item.uid !== uid)
         }));
     },
-     equipItem: (itemToEquip) => { // Принимает экземпляр
+    equipItem: (itemToEquip) => { // Принимает экземпляр
         if (!itemToEquip?.type || !itemToEquip.uid) return;
         const slot = itemToEquip.type;
         set((state) => {
@@ -919,50 +984,52 @@ addEnergy: (amount) => {
 
             let flagUpdate = {};
             if (itemToEquip.rarity.toLowerCase() === 'epic' && !state.booleanFlags.equippedEpic) {
-                 flagUpdate = { booleanFlags: { ...state.booleanFlags, equippedEpic: true } };
+                flagUpdate = { booleanFlags: { ...state.booleanFlags, equippedEpic: true } };
             }
 
             return {
-                 equipped: { ...state.equipped, [slot]: itemToEquip }, // Кладем новый экземпляр
-                 inventory: updatedInventory,
-                 ...flagUpdate
+                equipped: { ...state.equipped, [slot]: itemToEquip }, // Кладем новый экземпляр
+                inventory: updatedInventory,
+                ...flagUpdate
             };
         });
         get().updatePowerLevel();
+        get().initializeLevelHp(); // Обновляем playerHp, так как максимальное HP могло измениться
     },
     unequipItem: (slot) => { // Снимает по имени слота
         set((state) => {
             const itemToUnequip = state.equipped[slot]; // Получаем экземпляр
             if (!itemToUnequip) return {};
             return {
-                 equipped: { ...state.equipped, [slot]: null },
-                 inventory: [...state.inventory, itemToUnequip], // Возвращаем экземпляр
+                equipped: { ...state.equipped, [slot]: null },
+                inventory: [...state.inventory, itemToUnequip], // Возвращаем экземпляр
             };
         });
         get().updatePowerLevel();
+        get().initializeLevelHp(); // Обновляем playerHp
     },
 
-    
+
     executeForgeRecipe: (recipe) => {
         if (!recipe?.inputItems || !recipe.outputItemId || !recipe.cost) {
             console.error("Forge Error: Invalid recipe data received.", recipe);
             return false;
         }
         const state = get(); // Get current state
-    
+
         // Check currency first (quick check)
         if (state.gold < recipe.cost.gold || state.diamonds < recipe.cost.diamonds) {
             console.warn("Forge Warning: Insufficient currency.");
             return false;
         }
-    
+
         const itemsToRemoveUids = new Set(); // Store UIDs of items to be consumed
-        let canSatisfyAllInputs = true;     // Assume true initially
-    
+        let canSatisfyAllInputs = true;      // Assume true initially
+
         // --- Refined item finding logic ---
         for (const input of recipe.inputItems) { // Iterate through each required input slot {itemId, rarity, quantity: 1}
             let foundMatchingItemForThisInput = false; // Flag for this specific input slot
-    
+
             // Search the entire current inventory for a suitable item that hasn't been marked yet
             for (const invItem of state.inventory) {
                 // Check criteria: matching ID, matching rarity, and NOT already marked for removal
@@ -975,12 +1042,12 @@ addEnergy: (amount) => {
                 ) {
                     // Found a suitable, available item instance for this input requirement
                     itemsToRemoveUids.add(invItem.uid);       // Mark this item instance (by UID) for removal
-                    foundMatchingItemForThisInput = true;    // Mark that we satisfied this input slot
-                    console.log(`Marked item UID ${invItem.uid} (${invItem.id}) for removal.`);
+                    foundMatchingItemForThisInput = true;     // Mark that we satisfied this input slot
+                    // console.log(`Marked item UID ${invItem.uid} (${invItem.id}) for removal.`);
                     break; // Stop searching the inventory for THIS input slot, move to the next required input
                 }
             }
-    
+
             // If after searching the whole inventory, we couldn't find a suitable item for THIS input slot
             if (!foundMatchingItemForThisInput) {
                 console.error(`Forge Error: Could not find an available item instance for input:`, input);
@@ -989,43 +1056,44 @@ addEnergy: (amount) => {
             }
         }
         // --- End of refined logic ---
-    
+
         // If any input requirement wasn't met, stop the process
         if (!canSatisfyAllInputs) {
-             console.error("Forge Error: Failed to satisfy all input item requirements.");
+            console.error("Forge Error: Failed to satisfy all input item requirements.");
             return false;
         }
-    
+
         // --- Proceed with crafting if all inputs satisfied ---
-    
+
         // Find output item base data (using itemsDatabase directly might be less safe than getItemById)
         // const outputItemBaseData = itemsDatabase.find(item => item.id === recipe.outputItemId); // Original
         const outputItemBaseData = getItemById(recipe.outputItemId); // Safer using helper
         if (!outputItemBaseData) {
-             console.error(`Forge Error: Output item base data not found for ID: ${recipe.outputItemId}`);
+            console.error(`Forge Error: Output item base data not found for ID: ${recipe.outputItemId}`);
             return false; // Cannot craft if output definition is missing
         }
-    
+
         // Create the new item instance
-        const forgedItem = {
-             ...outputItemBaseData, // Spread base data (name, stats, image, etc.)
-             uid: `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // Generate a more unique UID
-             // Add other instance-specific properties if needed, e.g., level: 0
-        };
-    
+        const forgedItem = createItemInstance(outputItemBaseData); // Используем хелпер
+        if (!forgedItem) {
+             console.error(`Forge Error: Could not create instance for output item ID: ${recipe.outputItemId}`);
+             return false;
+        }
+
+
         // Handle boolean flags (seems okay)
         const currentForgeFlag = state.booleanFlags.hasForgedOrUpgraded;
         let flagUpdate = !currentForgeFlag ? { booleanFlags: { ...state.booleanFlags, hasForgedOrUpgraded: true } } : {};
-    
+
         // --- Update the state ---
         set((prevState) => {
             // Filter the *previous* inventory state based on the collected UIDs
             const newInventory = prevState.inventory.filter(item => !itemsToRemoveUids.has(item.uid));
             // Add the newly forged item
             newInventory.push(forgedItem);
-    
-            console.log("Updating state. Items removed:", itemsToRemoveUids.size, "New item added:", forgedItem.id);
-    
+
+            // console.log("Updating state. Items removed:", itemsToRemoveUids.size, "New item added:", forgedItem.id);
+
             return {
                 inventory: newInventory,
                 gold: prevState.gold - recipe.cost.gold,
@@ -1033,11 +1101,11 @@ addEnergy: (amount) => {
                 ...flagUpdate
             };
         });
-    
+
         // Optional: Trigger other actions after state update
         get().checkAllAchievements();
-    
-        console.log("Forge Success!");
+
+        // console.log("Forge Success!");
         return true; // Indicate success
     },
 
@@ -1049,27 +1117,27 @@ addEnergy: (amount) => {
         // --- НОВОЕ: Ищем сделку в состоянии ---
         const deal = state.dailyDeals.find(d => d.id === dealId);
         // --- КОНЕЦ НОВОГО ---
-    
+
         if (!deal) {
             console.error("Сделка не найдена в текущих dailyDeals:", dealId);
             return false;
         }
         // const state = get(); // Уже получили выше
         if (state.dailyShopPurchases[dealId]) {
-             console.warn("Товар уже куплен:", dealId);
-             return false; // Уже куплено
+            console.warn("Товар уже куплен:", dealId);
+            return false; // Уже куплено
         }
         const currency = deal.currency;
         const price = deal.price;
         if (state[currency] < price) {
-             alert(`Недостаточно ${currency}!`); // Или другой фидбек
-             return false; // Не хватает валюты
+            alert(`Недостаточно ${currency}!`); // Или другой фидбек
+            return false; // Не хватает валюты
         }
-    
+
         // --- НОВОЕ: Логика добавления в инвентарь/осколки ---
         let inventoryUpdate = {};
         let artifactLevelUpdate = {};
-    
+
         if (deal.type === 'item') {
             // Вызываем существующий action добавления предмета
             // Он должен сам найти baseItem и создать экземпляр с uid
@@ -1078,14 +1146,14 @@ addEnergy: (amount) => {
         } else if (deal.type === 'artifact_shard') {
             // Вызываем существующий action добавления осколков
             get().addArtifactShards(deal.itemId, deal.quantity || 1);
-             // addArtifactShards сам обновит artifactLevels через set()
+            // addArtifactShards сам обновит artifactLevels через set()
         }
         // --- КОНЕЦ НОВОГО ---
-    
+
         // Отмечаем покупку и списываем валюту
         const currentShopFlag = state.booleanFlags.hasMadeShopPurchase;
         let flagUpdate = !currentShopFlag ? { booleanFlags: { ...state.booleanFlags, hasMadeShopPurchase: true } } : {};
-    
+
         // Обновляем только валюту и статус покупки (инвентарь/осколки обновляются в вызванных actions)
         set((prevState) => ({
             [currency]: prevState[currency] - price,
@@ -1094,24 +1162,24 @@ addEnergy: (amount) => {
             // inventory: ..., // Не обновляем инвентарь здесь напрямую
             // artifactLevels: ..., // Не обновляем осколки здесь напрямую
         }));
-    
+
         get().checkAllAchievements(); // Проверяем ачивки
         return true; // Покупка успешна
     },
     // ... (код флагов и уровней без изменений) ...
-    setBooleanFlag: (flagName, value = true) => {
-         if (get().booleanFlags[flagName] !== true) {
-             set((state) => ({ booleanFlags: { ...state.booleanFlags, [flagName]: value } }));
-             get().checkAllAchievements();
-         }
-     },
-     completeLevelAction: (chapterId, levelId) => {
-         const levelKey = `c${chapterId}_l${levelId}`;
-         if (get().levelsCompleted[levelKey] !== true) {
-             set((state) => ({ levelsCompleted: { ...state.levelsCompleted, [levelKey]: true } }));
-             get().checkAllAchievements();
-         }
-     },
+    setBooleanFlag: (flagName, value = true) => {
+        if (get().booleanFlags[flagName] !== true) {
+            set((state) => ({ booleanFlags: { ...state.booleanFlags, [flagName]: value } }));
+            get().checkAllAchievements();
+        }
+    },
+    completeLevelAction: (chapterId, levelId) => {
+        const levelKey = `c${chapterId}_l${levelId}`;
+        if (get().levelsCompleted[levelKey] !== true) {
+            set((state) => ({ levelsCompleted: { ...state.levelsCompleted, [levelKey]: true } }));
+            get().checkAllAchievements();
+        }
+    },
 
     claimAchievementReward: (achievementId) => {
         const state = get();
@@ -1135,7 +1203,7 @@ addEnergy: (amount) => {
         };
         let finalGold = state.gold;
         let finalDiamonds = state.diamonds;
-        let finalInventory = [...state.inventory];
+        let finalInventoryAdditions = []; // Собираем новые предметы здесь
         let finalTotalGoldCollected = state.totalGoldCollected;
 
         // Achievement reward
@@ -1143,12 +1211,14 @@ addEnergy: (amount) => {
         if (definition.reward?.diamonds > 0) { finalDiamonds += definition.reward.diamonds; }
         if (definition.reward?.items?.length > 0) {
             definition.reward.items.forEach(rewardItem => {
-                const itemBase = itemsDatabase.find(i => i.id === rewardItem.itemId);
+                const itemBase = getItemById(rewardItem.itemId); // Используем getItemById
                 if (itemBase) {
-                    for (let i = 0; i < (rewardItem.quantity || 1); i++) { finalInventory.push({ ...itemBase, uid: Date.now() + Math.random() }); }
+                    for (let i = 0; i < (rewardItem.quantity || 1); i++) {
+                         const newItem = createItemInstance(itemBase); // Создаем экземпляр
+                         if(newItem) finalInventoryAdditions.push(newItem);
+                    }
                 }
             });
-            newStateChanges.inventory = finalInventory;
         }
 
         // XP gain and level up
@@ -1183,7 +1253,11 @@ addEnergy: (amount) => {
         newStateChanges.diamonds = finalDiamonds;
         newStateChanges.totalGoldCollected = finalTotalGoldCollected;
 
-        set(newStateChanges);
+        // Применяем изменения к состоянию
+        set(prevState => ({
+            ...newStateChanges,
+            inventory: [...prevState.inventory, ...finalInventoryAdditions] // Добавляем предметы в инвентарь
+        }));
         get().checkAllAchievements();
     },
     checkAllAchievements: () => {
@@ -1222,31 +1296,29 @@ addEnergy: (amount) => {
     },
 
     generateDailyDeals: () => {
-        console.log("Генерация новых ежедневных предложений...");
+        // console.log("Генерация новых ежедневных предложений...");
         const state = get();
 
         // --- Шаг 1: itemPool ---
-        console.log("Создание itemPool...");
-        const itemPool = itemsDatabase.filter(item => item && DAILY_DEAL_RARITY_WEIGHTS[item.rarity] !== undefined)
+        // console.log("Создание itemPool...");
+        const itemPool = itemsDatabase.filter(item => item && DAILY_DEAL_RARITY_WEIGHTS[item.rarity.toLowerCase()] !== undefined) // Приводим к нижнему регистру для надежности
             .map(item => ({ type: 'item', data: item, rarity: item.rarity }));
-        console.log(`itemPool создан. Размер: ${itemPool.length}`); // <-- ЛОГ A
+        // console.log(`itemPool создан. Размер: ${itemPool.length}`); // <-- ЛОГ A
 
         // --- Шаг 2: artifactsForShards ---
-        console.log("Создание artifactsForShards...");
-        // !!! Убедитесь, что ALL_ARTIFACTS_ARRAY правильно импортирован или создан !!!
-        // const artifactsForShards = []; // <-- Это должно быть заменено на правильную логику
-        const artifactsForShards = ALL_ARTIFACTS_ARRAY.filter(art => art && DAILY_DEAL_RARITY_WEIGHTS[art.rarity] !== undefined);
-        console.log(`artifactsForShards создан. Размер: ${artifactsForShards.length}`); // <-- ЛОГ B
+        // console.log("Создание artifactsForShards...");
+        const artifactsForShards = ALL_ARTIFACTS_ARRAY.filter(art => art && DAILY_DEAL_RARITY_WEIGHTS[art.rarity.toLowerCase()] !== undefined); // Приводим к нижнему регистру
+        // console.log(`artifactsForShards создан. Размер: ${artifactsForShards.length}`); // <-- ЛОГ B
 
         // --- Шаг 3: shardPool ---
-        console.log("Создание shardPool...");
+        // console.log("Создание shardPool...");
         const shardPool = artifactsForShards.map(artifact => ({ type: 'artifact_shard', data: artifact, rarity: artifact.rarity }));
-        console.log(`shardPool создан. Размер: ${shardPool.length}`); // <-- ЛОГ C
+        // console.log(`shardPool создан. Размер: ${shardPool.length}`); // <-- ЛОГ C
 
         // --- Шаг 4: combinedPool ---
-        console.log("Создание combinedPool...");
+        // console.log("Создание combinedPool...");
         const combinedPool = [...itemPool, ...shardPool];
-        console.log(`combinedPool создан. Размер: ${combinedPool.length}`); // <-- ЛОГ D
+        // console.log(`combinedPool создан. Размер: ${combinedPool.length}`); // <-- ЛОГ D
 
         if (combinedPool.length === 0) {
             console.error("Пул для ежедневных предложений пуст!");
@@ -1262,197 +1334,164 @@ addEnergy: (amount) => {
             }
             return {
                 item: entry, // item здесь - это { type, data, rarity }
-                weight: DAILY_DEAL_RARITY_WEIGHTS[entry.rarity] || 1
+                weight: DAILY_DEAL_RARITY_WEIGHTS[entry.rarity.toLowerCase()] || 1 // Приводим к нижнему регистру
             };
         }).filter(Boolean);
-        console.log(`weightedPool создан. Размер: ${weightedPool.length}`);
-    
+        // console.log(`weightedPool создан. Размер: ${weightedPool.length}`);
+
         const numberOfDeals = 6;
         const generatedDeals = [];
         const selectedItemIds = new Set(); // Отслеживаем УЖЕ ДОБАВЛЕННЫЕ в deals (тип_id)
         let currentWeightedPool = [...weightedPool]; // Копия пула для изменения
         let iterations = 0;
-    
-        console.log(`[generateDailyDeals] Начинаем цикл. Цель: ${numberOfDeals} сделок. Пул: ${currentWeightedPool.length}`);
-    
+
+        // console.log(`[generateDailyDeals] Начинаем цикл. Цель: ${numberOfDeals} сделок. Пул: ${currentWeightedPool.length}`);
+
         while (generatedDeals.length < numberOfDeals && currentWeightedPool.length > 0 && iterations < 1000) {
             iterations++;
-            console.log(`[generateDailyDeals] Итерация ${iterations}. Пул: ${currentWeightedPool.length}. Сделок: ${generatedDeals.length}. Перед weightedRandom.`);
-    
-            // --- >>> ИСПРАВЛЕНИЕ ПРИСВАИВАНИЯ <<< ---
-            // weightedRandom возвращает сам объект { type, data, rarity }
+            // console.log(`[generateDailyDeals] Итерация ${iterations}. Пул: ${currentWeightedPool.length}. Сделок: ${generatedDeals.length}. Перед weightedRandom.`);
+
             const selectedEntry = weightedRandom(currentWeightedPool);
-            // --- >>> КОНЕЦ ИСПРАВЛЕНИЯ <<< ---
-    
-            console.log(`[generateDailyDeals] Результат weightedRandom (selectedEntry):`, selectedEntry); // Теперь не должно быть undefined
-    
-            // Проверка, что weightedRandom что-то вернул и у результата есть data
+            // console.log(`[generateDailyDeals] Результат weightedRandom (selectedEntry):`, selectedEntry);
+
             if (!selectedEntry || !selectedEntry.data) {
-                console.warn("[generateDailyDeals] weightedRandom вернул некорректный entry или нет data. Прерываем итерацию.");
-                // Попытка удалить проблемный элемент, если он все еще там (хотя weightedRandom не должен возвращать null при totalWeight > 0)
-                 const problemIndex = currentWeightedPool.findIndex(poolEntry => poolEntry.item === selectedEntry); // Ищем по ссылке на item
-                 if (problemIndex !== -1) {
-                     console.warn(`[generateDailyDeals] Удаляем некорректный/null элемент из пула, индекс: ${problemIndex}`);
-                     currentWeightedPool.splice(problemIndex, 1);
-                 } else {
-                      console.warn(`[generateDailyDeals] Не удалось найти индекс для некорректного/null элемента.`);
-                 }
-                continue; // Переходим к следующей итерации
+                // console.warn("[generateDailyDeals] weightedRandom вернул некорректный entry или нет data. Прерываем итерацию.");
+                const problemIndex = currentWeightedPool.findIndex(poolEntry => poolEntry.item === selectedEntry);
+                if (problemIndex !== -1) {
+                    // console.warn(`[generateDailyDeals] Удаляем некорректный/null элемент из пула, индекс: ${problemIndex}`);
+                    currentWeightedPool.splice(problemIndex, 1);
+                } else {
+                    // console.warn(`[generateDailyDeals] Не удалось найти индекс для некорректного/null элемента.`);
+                }
+                continue;
             }
-    
-            // --- >>> ИСПРАВЛЕНИЕ findIndex <<< ---
-            // Ищем индекс элемента в currentWeightedPool, у которого поле item совпадает с selectedEntry
+
             const selectedIndex = currentWeightedPool.findIndex(poolEntry => poolEntry.item === selectedEntry);
-            // --- >>> КОНЕЦ ИСПРАВЛЕНИЯ <<< ---
-            console.log(`[generateDailyDeals] Найден индекс выбранного элемента: ${selectedIndex}`);
-    
-    
+            // console.log(`[generateDailyDeals] Найден индекс выбранного элемента: ${selectedIndex}`);
+
+
             const uniqueKey = `${selectedEntry.type}_${selectedEntry.data.id}`;
-            console.log(`[generateDailyDeals] Проверяем ключ: ${uniqueKey}. Уже добавлен в deals? ${selectedItemIds.has(uniqueKey)}`);
-    
+            // console.log(`[generateDailyDeals] Проверяем ключ: ${uniqueKey}. Уже добавлен в deals? ${selectedItemIds.has(uniqueKey)}`);
+
             if (!selectedItemIds.has(uniqueKey)) {
                 selectedItemIds.add(uniqueKey);
-                console.log(`[generateDailyDeals] Ключ ${uniqueKey} добавлен.`);
-    
-                // --- Логика цены/валюты/количества (БЕЗ ИЗМЕНЕНИЙ) ---
+                // console.log(`[generateDailyDeals] Ключ ${uniqueKey} добавлен.`);
+
                 let quantity = 1;
                 let currency = (Math.random() < 0.7) ? 'gold' : 'diamonds';
                 let price = 100;
-                const rarityMultiplier = { common: 1, uncommon: 3, rare: 10 };
-    
+                const rarityMultiplier = { common: 1, uncommon: 3, rare: 10 }; // Убедись, что ключи в нижнем регистре
+
                 if (selectedEntry.type === 'item') {
-                    price = (selectedEntry.data.basePrice || 100) * (rarityMultiplier[selectedEntry.rarity] || 1);
+                    price = (selectedEntry.data.basePrice || 100) * (rarityMultiplier[selectedEntry.rarity.toLowerCase()] || 1);
                     quantity = 1;
                 } else if (selectedEntry.type === 'artifact_shard') {
-                    price = (selectedEntry.data.baseShardCost || 50) * (rarityMultiplier[selectedEntry.rarity] || 1) * 3;
+                    price = (selectedEntry.data.baseShardCost || 50) * (rarityMultiplier[selectedEntry.rarity.toLowerCase()] || 1) * 3;
                     quantity = Math.random() < 0.5 ? 3 : 5;
-                    if (selectedEntry.rarity === 'rare') currency = 'diamonds';
+                    if (selectedEntry.rarity.toLowerCase() === 'rare') currency = 'diamonds';
                     price = Math.round(price / (currency === 'diamonds' ? 10 : 1));
                 }
                 price = Math.max(10, Math.round(price * (0.8 + Math.random() * 0.4)));
-                // --- Конец логики цены ---
-    
+
                 const dealId = `daily_${uniqueKey}_${Date.now()}_${generatedDeals.length}`;
-                // --- >>> ДОБАВЛЯЕМ ЛОГИ ЗДЕСЬ <<< ---
-        const newDealObject = { // Сначала создаем объект
-            id: dealId,
-            type: selectedEntry.type,
-            itemId: selectedEntry.data.id,
-            quantity: quantity,
-            currency: currency,
-            price: price,
-            rarity: selectedEntry.rarity,
-            discount: 0,
-            purchaseLimit: 1,
-        };
-        // ЛОГ G: Смотрим на объект ПЕРЕД добавлением
-        console.log("[generateDailyDeals] Создан объект сделки для push:", JSON.stringify(newDealObject));
-                generatedDeals.push(newDealObject); // Добавляем созданный объект
-        console.log(`[generateDailyDeals] Сделка добавлена: ${dealId}. Всего сделок: ${generatedDeals.length}`);
-    
+                const newDealObject = {
+                    id: dealId,
+                    type: selectedEntry.type,
+                    itemId: selectedEntry.data.id,
+                    quantity: quantity,
+                    currency: currency,
+                    price: price,
+                    rarity: selectedEntry.rarity,
+                    discount: 0,
+                    purchaseLimit: 1,
+                };
+                // console.log("[generateDailyDeals] Создан объект сделки для push:", JSON.stringify(newDealObject));
+                generatedDeals.push(newDealObject);
+                // console.log(`[generateDailyDeals] Сделка добавлена: ${dealId}. Всего сделок: ${generatedDeals.length}`);
+
             } else {
-                console.log(`[generateDailyDeals] Ключ ${uniqueKey} уже был добавлен в deals ранее, пропускаем элемент.`);
+                // console.log(`[generateDailyDeals] Ключ ${uniqueKey} уже был добавлен в deals ранее, пропускаем элемент.`);
             }
-    
-            // Удаляем обработанный элемент из ТЕКУЩЕГО пула
+
             if (selectedIndex !== -1) {
-                console.log(`[generateDailyDeals] Удаляем элемент с индексом ${selectedIndex} из currentWeightedPool.`);
+                // console.log(`[generateDailyDeals] Удаляем элемент с индексом ${selectedIndex} из currentWeightedPool.`);
                 currentWeightedPool.splice(selectedIndex, 1);
             } else {
                 console.error("[generateDailyDeals] Не удалось найти индекс выбранного элемента для удаления! Прерываем.");
                 break;
             }
-    
-            // Безопасные выходы
+
             if (currentWeightedPool.length === 0 && generatedDeals.length < numberOfDeals) {
-                 console.warn("[generateDailyDeals] Пул закончился раньше, чем набралось нужное количество сделок.");
-                 break;
+                console.warn("[generateDailyDeals] Пул закончился раньше, чем набралось нужное количество сделок.");
+                break;
             }
             if (iterations >= 999) {
                 console.error("[generateDailyDeals] Превышено максимальное количество итераций!");
                 break;
             }
-    
-        } // Конец while
-    
-        console.log(`[generateDailyDeals] Цикл завершен. Итераций: ${iterations}. Сгенерировано сделок: ${generatedDeals.length}`);
-    
-        console.log("[generateDailyDeals] Финальные сделки ПЕРЕД записью в стейт:", JSON.stringify(generatedDeals, null, 2)); // <-- ВАЖНЫЙ ЛОГ
 
-        // 4. Обновляем состояние
+        } // Конец while
+
+        // console.log(`[generateDailyDeals] Цикл завершен. Итераций: ${iterations}. Сгенерировано сделок: ${generatedDeals.length}`);
+        // console.log("[generateDailyDeals] Финальные сделки ПЕРЕД записью в стейт:", JSON.stringify(generatedDeals, null, 2));
+
         set({
             dailyDeals: generatedDeals,
             dailyDealsLastGenerated: Date.now(),
             dailyShopPurchases: {}
         });
-        console.log("Ежедневные предложения обновлены:", generatedDeals);
+        // console.log("Ежедневные предложения обновлены:", generatedDeals);
     }, // Конец generateDailyDeals
-    
+
     checkAndRefreshDailyDeals: () => {
         const state = get();
-        const lastGeneratedTs = state.dailyDealsLastGenerated; // Timestamp последней генерации
-        const nowTs = Date.now(); // Текущий timestamp (UTC по определению)
+        const lastGeneratedTs = state.dailyDealsLastGenerated;
+        const nowTs = Date.now();
 
-        // Если генерации еще не было, точно генерируем
         if (!lastGeneratedTs) {
-            console.log("Первая генерация ежедневных предложений.");
+            // console.log("Первая генерация ежедневных предложений.");
             get().generateDailyDeals();
             return;
         }
 
-        // --- Вычисляем timestamp ПОСЛЕДНЕЙ прошедшей отметки времени сброса (21:00 UTC) ---
-        const nowUtcDate = new Date(nowTs); // Текущая дата/время в UTC
-        // Создаем дату для СЕГОДНЯШНЕГО времени сброса в UTC
+        const nowUtcDate = new Date(nowTs);
         const targetTodayUtcTs = Date.UTC(
             nowUtcDate.getUTCFullYear(),
             nowUtcDate.getUTCMonth(),
             nowUtcDate.getUTCDate(),
-            REFRESH_HOUR_UTC, // Час сброса по UTC
-            0, 0, 0 // Минуты, секунды, мс
+            REFRESH_HOUR_UTC, 0, 0, 0
         );
 
-        // Определяем, какой маркер времени сброса был последним:
-        // Если сейчас ПОСЛЕ сегодняшнего времени сброса, то маркер - сегодня в 21:00 UTC.
-        // Если сейчас ДО сегодняшнего времени сброса, то маркер - вчера в 21:00 UTC.
         let lastRefreshMarkerTs;
         if (nowTs >= targetTodayUtcTs) {
-             // Текущее время >= сегодня в 21:00 UTC
-             lastRefreshMarkerTs = targetTodayUtcTs;
-             console.log(`Последний маркер обновления: СЕГОДНЯ в ${REFRESH_HOUR_UTC}:00 UTC`);
+            lastRefreshMarkerTs = targetTodayUtcTs;
+            // console.log(`Последний маркер обновления: СЕГОДНЯ в ${REFRESH_HOUR_UTC}:00 UTC`);
         } else {
-             // Текущее время < сегодня в 21:00 UTC -> берем вчерашнюю дату
-             const targetYesterdayUtcTs = Date.UTC(
-                 nowUtcDate.getUTCFullYear(),
-                 nowUtcDate.getUTCMonth(),
-                 nowUtcDate.getUTCDate() - 1, // <<< Вчерашний день
-                 REFRESH_HOUR_UTC, 0, 0, 0
-             );
-             lastRefreshMarkerTs = targetYesterdayUtcTs;
-              console.log(`Последний маркер обновления: ВЧЕРА в ${REFRESH_HOUR_UTC}:00 UTC`);
+            const targetYesterdayUtcTs = Date.UTC(
+                nowUtcDate.getUTCFullYear(),
+                nowUtcDate.getUTCMonth(),
+                nowUtcDate.getUTCDate() - 1,
+                REFRESH_HOUR_UTC, 0, 0, 0
+            );
+            lastRefreshMarkerTs = targetYesterdayUtcTs;
+            // console.log(`Последний маркер обновления: ВЧЕРА в ${REFRESH_HOUR_UTC}:00 UTC`);
         }
-        // --- Конец вычисления маркера ---
 
-        // Сравниваем время последней генерации с последним маркером
         if (lastGeneratedTs < lastRefreshMarkerTs) {
-            // Последняя генерация была ДО того, как прошла точка сброса
-            console.log(`Время обновить ежедневные предложения (последняя генерация ${new Date(lastGeneratedTs).toLocaleString()} была до маркера ${new Date(lastRefreshMarkerTs).toLocaleString()}).`);
-            get().generateDailyDeals(); // Вызываем генерацию
+            // console.log(`Время обновить ежедневные предложения (последняя генерация ${new Date(lastGeneratedTs).toLocaleString()} была до маркера ${new Date(lastRefreshMarkerTs).toLocaleString()}).`);
+            get().generateDailyDeals();
         } else {
-            // Генерация была ПОСЛЕ последнего маркера, значит предложения еще актуальны
             const timeSinceLastGenerate = nowTs - lastGeneratedTs;
-            console.log(`Ежедневные предложения еще актуальны (сгенерированы ${Math.round(timeSinceLastGenerate / 1000 / 60)} мин. назад).`);
-            // Убедимся, что сделки загружены из localStorage при старте (если не было генерации)
+            // console.log(`Ежедневные предложения еще актуальны (сгенерированы ${Math.round(timeSinceLastGenerate / 1000 / 60)} мин. назад).`);
             if (state.dailyDeals.length === 0 && savedState.dailyDeals && savedState.dailyDeals.length > 0) {
-                 console.log("Загрузка сохраненных dailyDeals...");
-                 set({ dailyDeals: savedState.dailyDeals });
+                // console.log("Загрузка сохраненных dailyDeals...");
+                set({ dailyDeals: savedState.dailyDeals });
             }
         }
     }, // Конец checkAndRefreshDailyDeals
 
     // <<< НОВОЕ >>> Действия для Артефактов
     collectArtifact: (artifactId) => {
-        // Это действие больше не нужно, активация будет через activateArtifact
-        // Оставляем на случай, если артефакты можно получить другим способом (не за осколки)
         const artifactData = getArtifactById(artifactId);
         if (!artifactData) return;
         set((state) => {
@@ -1461,12 +1500,11 @@ addEnergy: (amount) => {
             newCollected.add(artifactId);
             const newLevels = { ...state.artifactLevels };
             if (!newLevels[artifactId]) {
-                // При простом получении (не активации) - ставим level 0
                 newLevels[artifactId] = { level: 0, shards: 0 };
             }
-            console.log(`Артефакт ${artifactData.name} получен (не активирован).`);
+            // console.log(`Артефакт ${artifactData.name} получен (не активирован).`);
             return {
-                collectedArtifacts: newCollected, // Отмечаем как "известный", но уровень 0
+                collectedArtifacts: newCollected,
                 artifactLevels: newLevels,
             };
         });
@@ -1476,30 +1514,26 @@ addEnergy: (amount) => {
 
     addArtifactShards: (artifactId, amount) => {
         if (amount <= 0) return;
-        const artifactData = getArtifactById(artifactId); // Получаем данные, чтобы знать, существует ли он
+        const artifactData = getArtifactById(artifactId);
         if (!artifactData) {
-             console.warn(`Попытка добавить осколки для несуществующего артефакта: ${artifactId}`);
-             return;
+            console.warn(`Попытка добавить осколки для несуществующего артефакта: ${artifactId}`);
+            return;
         }
 
         set((state) => {
-            // Добавляем осколки ДАЖЕ ЕСЛИ артефакт не активирован (уровень 0)
-            // или еще не известен (нет в collectedArtifacts).
-            // Это позволяет копить осколки до активации.
             const currentInfo = state.artifactLevels[artifactId] || { level: 0, shards: 0 };
             const newShards = currentInfo.shards + amount;
 
-            console.log(`Добавлено ${amount} осколков для ${artifactId}. Итого: ${newShards}`);
+            // console.log(`Добавлено ${amount} осколков для ${artifactId}. Итого: ${newShards}`);
             return {
                 artifactLevels: {
                     ...state.artifactLevels,
-                    [artifactId]: { ...currentInfo, shards: newShards } // Просто обновляем кол-во осколков
+                    [artifactId]: { ...currentInfo, shards: newShards }
                 }
             };
         });
     },
 
-    // <<< НОВОЕ >>> Активация артефакта (перевод с уровня 0 на 1)
     activateArtifact: (artifactId) => {
         const artifactData = getArtifactById(artifactId);
         if (!artifactData) { console.error("Арт не найден:", artifactId); return; }
@@ -1509,49 +1543,45 @@ addEnergy: (amount) => {
             const currentLevel = currentInfo.level;
             const currentShards = currentInfo.shards;
 
-            // Активировать можно только артефакт 0 уровня
             if (currentLevel !== 0) {
                 console.warn(`Попытка активировать уже активный/улучшенный артефакт: ${artifactId}`);
                 return {};
             }
 
-            // Стоимость активации = стоимость перехода с 0 на 1 уровень
-            const shardsNeeded = (0 + 1) * artifactData.baseShardCost; // Т.е. 1 * baseCost
+            const shardsNeeded = (0 + 1) * artifactData.baseShardCost;
 
             if (currentShards < shardsNeeded) {
-                console.log(`Недостаточно осколков для активации ${artifactId}. Нужно ${shardsNeeded}, есть ${currentShards}`);
+                // console.log(`Недостаточно осколков для активации ${artifactId}. Нужно ${shardsNeeded}, есть ${currentShards}`);
                 return {};
             }
 
             const remainingShards = currentShards - shardsNeeded;
-
-            // Добавляем в collectedArtifacts, если его там еще не было
             const newCollected = new Set(state.collectedArtifacts);
             newCollected.add(artifactId);
 
-            console.log(`Активируем ${artifactData.name} (Уровень 1). Потрачено ${shardsNeeded} осколков. Осталось осколков: ${remainingShards}`);
+            // console.log(`Активируем ${artifactData.name} (Уровень 1). Потрачено ${shardsNeeded} осколков. Осталось осколков: ${remainingShards}`);
 
             return {
-                collectedArtifacts: newCollected, // Убеждаемся, что он в списке собранных
+                collectedArtifacts: newCollected,
                 artifactLevels: {
                     ...state.artifactLevels,
-                    [artifactId]: { level: 1, shards: remainingShards } // Ставим уровень 1 и вычитаем осколки
+                    [artifactId]: { level: 1, shards: remainingShards }
                 }
             };
         });
-        get().updatePowerLevel(); // Пересчет статов и PL
+        get().updatePowerLevel();
         get().checkAllAchievements();
+        get().initializeLevelHp(); // Обновляем HP, так как активация могла изменить статы
     },
 
 
     upgradeArtifact: (artifactId) => {
-        const artifactData = getArtifactById(artifactId); // Используем хелпер getById
+        const artifactData = getArtifactById(artifactId);
         if (!artifactData) { console.error("Арт не найден:", artifactId); return; }
 
         set((state) => {
-            const currentInfo = state.artifactLevels[artifactId]; // Берем только если он точно есть
+            const currentInfo = state.artifactLevels[artifactId];
 
-            // Улучшать можно только существующий и активированный (level > 0) артефакт
             if (!currentInfo || currentInfo.level === 0) {
                 console.warn(`Попытка улучшить неактивированный или несуществующий артефакт: ${artifactId}`);
                 return {};
@@ -1561,21 +1591,21 @@ addEnergy: (amount) => {
             const currentShards = currentInfo.shards;
 
             if (currentLevel >= artifactData.maxLevel) {
-                console.log("Арт уже макс. уровня."); return {};
+                // console.log("Арт уже макс. уровня.");
+                return {};
             }
 
-            // Стоимость следующего уровня
             const shardsNeeded = (currentLevel + 1) * artifactData.baseShardCost;
 
             if (currentShards < shardsNeeded) {
-                console.log(`Недостаточно осколков для ${artifactId}. Нужно ${shardsNeeded}, есть ${currentShards}`);
+                // console.log(`Недостаточно осколков для ${artifactId}. Нужно ${shardsNeeded}, есть ${currentShards}`);
                 return {};
             }
 
             const newLevel = currentLevel + 1;
             const remainingShards = currentShards - shardsNeeded;
 
-            console.log(`Улучшаем ${artifactData.name} до уровня ${newLevel}. Потрачено ${shardsNeeded} осколков. Осталось осколков: ${remainingShards}`);
+            // console.log(`Улучшаем ${artifactData.name} до уровня ${newLevel}. Потрачено ${shardsNeeded} осколков. Осталось осколков: ${remainingShards}`);
 
             return {
                 artifactLevels: {
@@ -1584,81 +1614,60 @@ addEnergy: (amount) => {
                 }
             };
         });
-        get().updatePowerLevel(); // Пересчет статов и PL
+        get().updatePowerLevel();
         get().checkAllAchievements();
+        get().initializeLevelHp(); // Обновляем HP, так как улучшение могло изменить статы
     },
 
 
-    // <<< ИЗМЕНЕНО >>> Обновление PowerLevel теперь зависит и от артефактов
     updatePowerLevel: () => {
         const { equipped, artifactLevels, collectedArtifacts } = get();
         let totalPower = 0;
-        console.log("updatePowerLevel: Начало расчета."); // Лог начала
+        // console.log("updatePowerLevel: Начало расчета.");
 
-        // --- >>> ИЗМЕНЕНИЕ: Расчет силы от ЭКИПИРОВКИ <<< ---
-        console.log("updatePowerLevel: Расчет силы от ЭКИПИРОВКИ:");
+        // console.log("updatePowerLevel: Расчет силы от ЭКИПИРОВКИ:");
         Object.values(equipped).filter(Boolean).forEach(item => {
-            // Получаем текущий уровень предмета (предполагаем, что он есть и равен 0+, если нет - будет 0)
-            const itemLevel = item?.level || 0;
-            // Получаем базовую силу и силу за уровень из данных предмета
-            // (Используем getItemById, если item содержит только ID, или читаем прямо из item, если он содержит все данные)
-            // Предположим, что 'item' в 'equipped' содержит все данные из itemsDatabase + uid + level
+            const itemLevel = item?.currentLevel || 0; // Используем currentLevel
             const basePower = item?.basePowerLevel || 0;
             const powerPerLvl = item?.powerPerLevel || 0;
-
-            // Рассчитываем силу предмета на его текущем уровне
             const currentItemPower = basePower + (powerPerLvl * itemLevel);
-
-            console.log(` - Предмет: ${item?.id}, Уровень: ${itemLevel}, Баз.сила: ${basePower}, Сила/ур: ${powerPerLvl} => Тек.сила: ${currentItemPower}`); // Подробный лог
-
-            totalPower += Math.round(currentItemPower); // Добавляем округленную силу предмета
+            // console.log(` - Предмет: ${item?.id}, Уровень: ${itemLevel}, Баз.сила: ${basePower}, Сила/ур: ${powerPerLvl} => Тек.сила: ${currentItemPower}`);
+            totalPower += Math.round(currentItemPower);
         });
-        console.log("updatePowerLevel: totalPower ПОСЛЕ экипировки:", totalPower);
-        // --- >>> КОНЕЦ ИЗМЕНЕНИЙ <<< ---
+        // console.log("updatePowerLevel: totalPower ПОСЛЕ экипировки:", totalPower);
 
-
-        // --- Расчет силы от артефактов (БЕЗ ИЗМЕНЕНИЙ) ---
-        console.log("updatePowerLevel: Расчет силы от АРТЕФАКТОВ:");
+        // console.log("updatePowerLevel: Расчет силы от АРТЕФАКТОВ:");
         for (const artifactId in artifactLevels) {
             if (collectedArtifacts.has(artifactId)) {
-                const level = artifactLevels[artifactId]?.level || 0; // Безопасный доступ
+                const level = artifactLevels[artifactId]?.level || 0;
                 const artifactData = getArtifactById(artifactId);
-
                 if (artifactData) {
                     const artifactBasePower = artifactData.basePowerLevel || 0;
                     const artifactPowerPerLevel = artifactData.powerLevelPerLevel || 0;
                     const currentArtifactPower = artifactBasePower + (artifactPowerPerLevel * level);
-                    console.log(` - Артефакт: ${artifactId}, Уровень: ${level}, Баз.сила: ${artifactBasePower}, Сила/ур: ${artifactPowerPerLevel} => Тек.сила: ${currentArtifactPower}`);
+                    // console.log(` - Артефакт: ${artifactId}, Уровень: ${level}, Баз.сила: ${artifactBasePower}, Сила/ур: ${artifactPowerPerLevel} => Тек.сила: ${currentArtifactPower}`);
                     totalPower += Math.round(currentArtifactPower);
                 } else {
-                     console.warn(`Данные для артефакта ${artifactId} не найдены при расчете PL.`);
+                    console.warn(`Данные для артефакта ${artifactId} не найдены при расчете PL.`);
                 }
             }
         }
-        console.log("updatePowerLevel: totalPower ПОСЛЕ артефактов:", totalPower);
-        // --- КОНЕЦ Расчета силы от артефактов ---
+        // console.log("updatePowerLevel: totalPower ПОСЛЕ артефактов:", totalPower);
 
         const finalPowerLevel = Math.max(0, totalPower);
-        console.log(`updatePowerLevel: Установка итогового powerLevel: ${finalPowerLevel}`);
-        set({ powerLevel: finalPowerLevel }); // Устанавливаем итоговый PL
+        // console.log(`updatePowerLevel: Установка итогового powerLevel: ${finalPowerLevel}`);
+        set({ powerLevel: finalPowerLevel });
     },
 
-  // Внутри create((set, get) => ({ ...
-
-    // <<< Убедись, что твоя логика/action добавления предмета здесь >>>
-    addItemToInventoryLogic: (currentInventory, itemData) => {
-        console.log(`[addItemToInventoryLogic] Добавление ${itemData.name} в инвентарь...`);
-        const newItemInstance = {
-            ...itemData,
-            uid: `item-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            level: 0
-        };
+    addItemToInventoryLogic: (currentInventory, itemData) => { // Этот хелпер используется в openGearChest
+        // console.log(`[addItemToInventoryLogic] Добавление ${itemData.name} в инвентарь...`);
+        const newItemInstance = createItemInstance(itemData); // Используем основной хелпер
+        if(!newItemInstance) return currentInventory;
         return [...currentInventory, newItemInstance];
     },
 
-    // --- Action открытия сундука снаряжения ---
     openGearChest: (chestId) => {
-        const state = get(); // Получаем текущее состояние для проверок
+        const state = get();
         const chestData = getGearChestById(chestId);
 
         if (!chestData) {
@@ -1666,127 +1675,102 @@ addEnergy: (amount) => {
             return;
         }
 
-        // 1. Проверка валюты
         const cost = chestData.cost;
-        // <<< Используем state для проверки валюты >>>
         if (state[cost.currency] < cost.price) {
             alert(`Недостаточно ${cost.currency}! Нужно ${cost.price}`);
             return;
         }
 
-        // 2. Работа с Pity
-        // <<< Используем state для получения текущего pity >>>
         const currentPity = state.gearChestPity[chestId] || {};
         let nextPity = { ...currentPity };
         let guaranteedRarity = null;
         let finalRarity = null;
 
-        // Инкремент и проверка Pity
         if (chestData.pity) {
             const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
             pityConfigs.forEach(p => {
-                const key = p.rarity.toLowerCase();
+                const key = p.rarity.toLowerCase(); // Используем lowercase
                 nextPity[key] = (nextPity[key] || 0) + 1;
-                console.log(`[GearChest ${chestId}] Pity for ${p.rarity} incremented to ${nextPity[key]}/${p.limit}`);
+                // console.log(`[GearChest ${chestId}] Pity for ${p.rarity} incremented to ${nextPity[key]}/${p.limit}`);
             });
-            const epicPityConfig = pityConfigs.find(p => p.rarity === 'Epic');
-            if (epicPityConfig && nextPity.epic >= epicPityConfig.limit) { // <<< Теперь это высший гарант
+            // Проверяем гаранты в порядке убывания редкости (или как определено логикой)
+            const epicPityConfig = pityConfigs.find(p => p.rarity === 'Epic'); // Проверяем Epic
+            if (epicPityConfig && nextPity.epic >= epicPityConfig.limit) {
                 guaranteedRarity = 'Epic';
-                console.log(`[GearChest ${chestId}] Epic Pity Triggered!`);
+                // console.log(`[GearChest ${chestId}] Epic Pity Triggered!`);
             } else {
-                const rarePityConfig = pityConfigs.find(p => p.rarity === 'Rare');x
+                const rarePityConfig = pityConfigs.find(p => p.rarity === 'Rare'); // Затем Rare
                 if (rarePityConfig && nextPity.rare >= rarePityConfig.limit) {
                     guaranteedRarity = 'Rare';
-                    console.log(`[GearChest ${chestId}] Rare Pity Triggered!`);
+                    // console.log(`[GearChest ${chestId}] Rare Pity Triggered!`);
                 }
             }
         }
 
-        // 3. Определение редкости награды
         if (guaranteedRarity) {
             finalRarity = guaranteedRarity;
-            console.log(`[GearChest ${chestId}] Awarding guaranteed ${finalRarity}`);
+            // console.log(`[GearChest ${chestId}] Awarding guaranteed ${finalRarity}`);
         } else {
-            // <<< Используем хелперы НЕ из state, а внешние (или через get(), если они внутри create) >>>
             finalRarity = _rollWeightedRarity_Gear(chestData.rarityChances);
-            console.log(`[GearChest ${chestId}] Rolled rarity: ${finalRarity}`);
+            // console.log(`[GearChest ${chestId}] Rolled rarity: ${finalRarity}`);
         }
 
-        // 4. Выбор конкретного предмета этой редкости
-        // <<< Используем хелперы НЕ из state, а внешние (или через get()) >>>
         const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
         if (!obtainedItemData) {
             console.error(`[GearChest] Не удалось получить предмет редкости ${finalRarity}. Отмена.`);
             return;
         }
-        const obtainedRarity = obtainedItemData.rarity;
+        const obtainedRarity = obtainedItemData.rarity; // Это строка, например "Epic"
 
-        // 5. Сброс Pity счетчиков
-         if (chestData.pity) {
+        if (chestData.pity) {
             const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-            let resetRare = false;
-            let resetEpic = false;
+            // Сбрасываем pity для полученной редкости и всех более низких (если такая логика)
+            // Или только для полученной, или для полученной и более высоких, если так задумано
+            // Текущая логика из кода: если выпал Epic, сбрасываем Epic и Rare. Если Rare, сбрасываем Rare.
             if (obtainedRarity === 'Epic') {
-                resetEpic = true;
-                if (pityConfigs.some(p => p.rarity === 'Rare')) { resetRare = true; }
-                console.log(`[GearChest ${chestId}] Resetting Epic and Rare pity due to Epic drop.`);
+                if (pityConfigs.some(p => p.rarity === 'Epic')) nextPity.epic = 0;
+                if (pityConfigs.some(p => p.rarity === 'Rare')) nextPity.rare = 0; // Сброс Rare при Epic
+                // console.log(`[GearChest ${chestId}] Resetting Epic and Rare pity due to Epic drop.`);
             } else if (obtainedRarity === 'Rare') {
-                if (pityConfigs.some(p => p.rarity === 'Rare')) { resetRare = true; }
-                console.log(`[GearChest ${chestId}] Resetting Rare pity due to Rare drop.`);
+                if (pityConfigs.some(p => p.rarity === 'Rare')) nextPity.rare = 0;
+                // console.log(`[GearChest ${chestId}] Resetting Rare pity due to Rare drop.`);
             }
-            if (resetEpic && typeof nextPity.legendary !== 'undefined') { nextPity.legendary = 0; }
-            if (resetRare && typeof nextPity.rare !== 'undefined') { nextPity.rare = 0; }
+            // Добавить сброс для других редкостей, если они есть в pity
         }
-        console.log(`[GearChest ${chestId}] Final pity state for next save:`, nextPity);
+        // console.log(`[GearChest ${chestId}] Final pity state for next save:`, nextPity);
 
-        // 6. Формирование данных для попапа
         const rewardDetails = {
-            type: 'gear',            // Тип награды
-            id: obtainedItemData.id, // ID предмета
+            type: 'gear',
+            id: obtainedItemData.id,
             name: obtainedItemData.name,
-            icon: obtainedItemData.image, // <<< Вот здесь: icon берет значение из image
+            icon: obtainedItemData.image,
             rarity: obtainedItemData.rarity,
             amount: 1,
-            // Можно добавить другие нужные поля из obtainedItemData, если они используются в попапе
         };
 
-        // 7. Обновление состояния стора для ОТКРЫТИЯ ОДНОГО (x1) СУНДУКА
-      set(prevState => {
-        // Проверка на всякий случай
-        if (!prevState) {
-            console.error("[GearChest] prevState is undefined in set function!");
-            return {};
-        }
-        return {
-            // Списываем стоимость ОДНОГО сундука
-            [cost.currency]: prevState[cost.currency] - cost.price, // <<< Используем cost.price (не totalCost)
+        set(prevState => {
+            if (!prevState) {
+                console.error("[GearChest] prevState is undefined in set function!");
+                return {};
+            }
+            return {
+                [cost.currency]: prevState[cost.currency] - cost.price,
+                totalGearChestsOpened: prevState.totalGearChestsOpened + 1,
+                gearChestPity: {
+                    ...prevState.gearChestPity,
+                    [chestId]: nextPity
+                },
+                inventory: get().addItemToInventoryLogic(prevState.inventory, obtainedItemData),
+                lastOpenedChestInfo: {
+                    chestId: chestId,
+                    amount: 1,
+                    type: 'gear'
+                },
+                lastChestRewards: [rewardDetails]
+            };
+        });
 
-            // Увеличиваем счетчик на 1
-            totalGearChestsOpened: prevState.totalGearChestsOpened + 1, // <<< Увеличиваем на 1 (не 10)
-
-            // Обновляем pity
-            gearChestPity: {
-                ...prevState.gearChestPity,
-                [chestId]: nextPity // nextPity был рассчитан ранее в функции
-            },
-
-            // Добавляем ОДИН предмет в инвентарь
-            inventory: get().addItemToInventoryLogic(prevState.inventory, obtainedItemData),
-
-            // Устанавливаем информацию о последнем открытии (для кнопки "Открыть еще")
-            lastOpenedChestInfo: {
-                chestId: chestId,
-                amount: 1,        // <<< Указываем amount: 1
-                type: 'gear'
-            },
-
-            // Устанавливаем результат для попапа (массив с одним элементом)
-            lastChestRewards: [rewardDetails]
-         };
-     }); // Конец set
-
-
-        console.log(`[GearChest ${chestId}] Opened! Received: ${obtainedItemData.name} (${obtainedItemData.rarity})`);
+        // console.log(`[GearChest ${chestId}] Opened! Received: ${obtainedItemData.name} (${obtainedItemData.rarity})`);
         get().checkAllAchievements();
     },
     openGearChestX10: (chestId) => {
@@ -1797,9 +1781,7 @@ addEnergy: (amount) => {
             console.error(`[GearChestX10] Сундук с ID ${chestId} не найден.`);
             return;
         }
-        // --- Проверка, можно ли вообще открывать x10 (доп. защита) ---
 
-        // 1. Проверка валюты для x10
         const cost = chestData.cost;
         const totalCost = cost.price * 10;
         if (state[cost.currency] < totalCost) {
@@ -1807,169 +1789,152 @@ addEnergy: (amount) => {
             return;
         }
 
-        // 2. Инициализация
-        const currentPity = state.gearChestPity[chestId] || {}; // { rare: x, legendary: y }
-        let nextPity = { ...currentPity }; // Pity будет меняться ВНУТРИ цикла
-        const rewardsDetailed = []; // Массив для деталей наград для попапа
-        const newItemInstances = []; // Массив для НОВЫХ экземпляров предметов для инвентаря
+        const currentPityForChest = state.gearChestPity[chestId] || {};
+        let workingPity = { ...currentPityForChest }; // Pity будет меняться ВНУТРИ цикла
+        const rewardsDetailed = [];
+        const newItemInstances = [];
 
-        console.log(`[GearChestX10 ${chestId}] Starting batch open. Initial pity:`, JSON.stringify(currentPity));
+        // console.log(`[GearChestX10 ${chestId}] Starting batch open. Initial pity:`, JSON.stringify(workingPity));
 
-        // --- Цикл для 10 открытий ---
         for (let i = 0; i < 10; i++) {
             let guaranteedRarity = null;
             let finalRarity = null;
             let obtainedItemData = null;
-            let obtainedRarity = null;
+            let obtainedRarity = null; // Строка с редкостью
 
-            // Инкремент и проверка Pity для ЭТОГО открытия
             if (chestData.pity) {
                 const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-                // Инкрементируем все счетчики
                 pityConfigs.forEach(p => {
                     const key = p.rarity.toLowerCase();
-                    nextPity[key] = (nextPity[key] || 0) + 1;
-                    // console.log(`  [Pull ${i+1}] Pity for ${p.rarity} -> ${nextPity[key]}/${p.limit}`); // Детальный лог pity
+                    workingPity[key] = (workingPity[key] || 0) + 1;
                 });
-                // Проверяем гаранты (сначала самый редкий)
-                const legendaryPityConfig = pityConfigs.find(p => p.rarity === 'Epic');
-                if (legendaryPityConfig && nextPity.legendary >= legendaryPityConfig.limit) {
+
+                const epicPityConfig = pityConfigs.find(p => p.rarity === 'Epic');
+                if (epicPityConfig && workingPity.epic >= epicPityConfig.limit) {
                     guaranteedRarity = 'Epic';
                 } else {
                     const rarePityConfig = pityConfigs.find(p => p.rarity === 'Rare');
-                    if (rarePityConfig && nextPity.rare >= rarePityConfig.limit) {
+                    if (rarePityConfig && workingPity.rare >= rarePityConfig.limit) {
                         guaranteedRarity = 'Rare';
                     }
                 }
             }
 
-            // Определение редкости награды
             if (guaranteedRarity) {
                 finalRarity = guaranteedRarity;
-                console.log(`  [Pull ${i+1}] Awarding guaranteed ${finalRarity}`);
             } else {
                 finalRarity = _rollWeightedRarity_Gear(chestData.rarityChances);
-                // console.log(`  [Pull ${i+1}] Rolled rarity: ${finalRarity}`);
             }
 
-            // Выбор конкретного предмета
             obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
             if (!obtainedItemData) {
                 console.error(`  [Pull ${i+1}] Не удалось получить предмет редкости ${finalRarity}! Пропускаем.`);
-                // Пропускаем это открытие или добавляем заглушку? Пока пропускаем.
-                // Важно: Pity все равно инкрементировался! Нужно решить, сбрасывать ли его тут. Пока оставим как есть.
-                continue; // Переходим к следующей итерации цикла
+                // Важно: Pity инкрементировался. Если предмет не получен, нужно решить, что делать с pity.
+                // Для простоты, если предмет не найден, можно откатить инкремент pity или выдать Common.
+                // Пока пропускаем и pity остается инкрементированным.
+                rewardsDetailed.push({ type: 'error', name: `Ошибка получения ${finalRarity}` });
+                continue;
             }
-            obtainedRarity = obtainedItemData.rarity;
+            obtainedRarity = obtainedItemData.rarity; // Например, "Epic"
 
-            // Сброс Pity счетчиков СРАЗУ ЖЕ, если выпала нужная редкость
+            // Сброс Pity счетчиков СРАЗУ ЖЕ
             if (chestData.pity) {
                 const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-                let resetRare = false;
-                let resetEpic = false;
                 if (obtainedRarity === 'Epic') {
-                    resetEpic = true;
-                    if (pityConfigs.some(p => p.rarity === 'Rare')) { resetRare = true; }
-                    console.log(`  [Pull ${i+1}] Resetting Epic (to 0) and Rare (to 0) pity due to Epic drop.`);
+                    if (pityConfigs.some(p => p.rarity === 'Epic')) workingPity.epic = 0;
+                    if (pityConfigs.some(p => p.rarity === 'Rare')) workingPity.rare = 0;
                 } else if (obtainedRarity === 'Rare') {
-                    if (pityConfigs.some(p => p.rarity === 'Rare')) { resetRare = true; }
-                     console.log(`  [Pull ${i+1}] Resetting Rare pity (to 0) due to Rare drop.`);
+                    if (pityConfigs.some(p => p.rarity === 'Rare')) workingPity.rare = 0;
                 }
-                if (resetEpic && typeof nextPity.legendary !== 'undefined') { nextPity.legendary = 0; }
-                if (resetRare && typeof nextPity.rare !== 'undefined') { nextPity.rare = 0; }
             }
 
-            // Формирование данных для попапа
             const rewardDetails = { type: 'gear', ...obtainedItemData, amount: 1, icon: obtainedItemData.image };
             rewardsDetailed.push(rewardDetails);
 
-            // Создание экземпляра предмета для инвентаря
-            // Используем твою логику создания экземпляра (например, из addItemToInventoryLogic)
-            const newItemInstance = {
-                ...obtainedItemData,
-                uid: `item-${Date.now()}-${Math.random().toString(16).slice(2)}-${i}`, // Уникальный ID
-                level: 0 // Начальный уровень
-            };
-            newItemInstances.push(newItemInstance);
+            const newItem = createItemInstance(obtainedItemData);
+            if(newItem) newItemInstances.push(newItem);
 
-            console.log(`  [Pull ${i+1}] Received: ${obtainedItemData.name} (${obtainedRarity}). Current pity state:`, JSON.stringify(nextPity));
+            // console.log(`  [Pull ${i+1}] Received: ${obtainedItemData.name} (${obtainedRarity}). Current pity state:`, JSON.stringify(workingPity));
+        }
 
-        } // --- Конец цикла for ---
+        
+        // console.log(`[GearChestX10 ${chestId}] Finished batch. Final pity state for save:`, JSON.stringify(workingPity));
+        // console.log(`[GearChestX10 ${chestId}] Items to add:`, newItemInstances.length);
 
-        console.log(`[GearChestX10 ${chestId}] Finished batch. Final pity state for save:`, JSON.stringify(nextPity));
-        console.log(`[GearChestX10 ${chestId}] Items to add:`, newItemInstances.length);
-
-
-        // --- Обновление состояния стора ПОСЛЕ цикла ---
         set(prevState => {
             if (!prevState) return {};
             return {
-                // --- Списываем валюту, обновляем счетчики, pity, инвентарь ---
                 [cost.currency]: prevState[cost.currency] - totalCost,
                 totalGearChestsOpened: prevState.totalGearChestsOpened + 10,
                 gearChestPity: {
                     ...prevState.gearChestPity,
-                    [chestId]: nextPity
+                    [chestId]: workingPity // Сохраняем измененный pity
                 },
                 inventory: [...prevState.inventory, ...newItemInstances],
-   
-                // --- Устанавливаем ИНФОРМАЦИЮ о последнем открытии ---
-                lastOpenedChestInfo: { // <<< Отдельное поле №1
+                lastOpenedChestInfo: {
                     chestId: chestId,
-                    amount: 10,        // Количество (10 для X10)
-                    type: 'gear'      // Тип сундука
-                }, // <<< Закрыли объект info и поставили ЗАПЯТУЮ
-   
-                // --- Устанавливаем СПИСОК наград для попапа ---
-                lastChestRewards: rewardsDetailed // <<< Отдельное поле №2
-   
-                // --- Другие поля состояния НЕ МЕНЯЮТСЯ в этом set ---
-            }; // <<< Закрыли весь объект для set
+                    amount: 10,
+                    type: 'gear'
+                },
+                lastChestRewards: rewardsDetailed
+            };
         });
 
-        console.log(`[GearChestX10 ${chestId}] Opened! Received ${rewardsDetailed.length} items.`);
+        // console.log(`[GearChestX10 ${chestId}] Opened! Received ${rewardsDetailed.length} items.`);
         get().checkAllAchievements();
     },
-  // ... остальные actions ...
-  // })); // Конец create
 
-  processArtifactReward: (dropType, targetArtifactId) => {
-    // ... (Код этой функции из ответа #105, он обрабатывает shard или full) ...
-    if (!targetArtifactId) return { details: null };
-    const artifactData = getArtifactById(targetArtifactId);
-    if (!artifactData) { console.error(`[ProcessArtifact] Data not found for ${targetArtifactId}`); return { details: null }; }
-    let rewardDetails = null;
-    let obtainedFullArtifact = false;
+    processArtifactReward: (dropType, targetArtifactId) => {
+        if (!targetArtifactId) return { details: null, obtainedFullArtifact: false }; // Добавил obtainedFullArtifact
+        const artifactData = getArtifactById(targetArtifactId);
+        if (!artifactData) { console.error(`[ProcessArtifact] Data not found for ${targetArtifactId}`); return { details: null, obtainedFullArtifact: false }; } // Добавил obtainedFullArtifact
+        let rewardDetails = null;
+        let obtainedFullArtifact = false; // Этот флаг будет возвращен
 
-    if (dropType === 'artifact_shard') {
-        const amount = 1; // Всегда 1 осколок
-        get().addArtifactShards(targetArtifactId, amount);
-        rewardDetails = { type: 'artifact_shard', amount, artifactId: targetArtifactId, icon: artifactData.icon, name: `${artifactData.name} (осколок)`, rarity: artifactData.rarity };
-        // console.log(`+${amount} осколок для ${artifactData.name}`);
-    }
-    else if (dropType === 'full_artifact') {
-        obtainedFullArtifact = true;
-         const currentArtifactState = get().artifactLevels[targetArtifactId];
-         const isActive = currentArtifactState && currentArtifactState.level > 0;
-         const shardAmountOnDuplicate = artifactData.shardValueOnDuplicate || 10;
-         let isNew = false;
-         if (isActive) {
-             get().addArtifactShards(targetArtifactId, shardAmountOnDuplicate);
-         } else {
-             get().collectArtifact(targetArtifactId);
-             // Возможно, нужно вызвать activateArtifact, если collect не ставит level 1
-             if (!get().artifactLevels[targetArtifactId] || get().artifactLevels[targetArtifactId].level === 0) {
-                get().activateArtifact(targetArtifactId);
-             }
-             isNew = true;
-         }
-         rewardDetails = { type: 'full_artifact', artifactId: targetArtifactId, isNew, shardAmount: isActive ? shardAmountOnDuplicate : undefined, icon: artifactData.icon, name: artifactData.name, rarity: artifactData.rarity };
-    } else { console.warn("Unknown dropType in processArtifactReward:", dropType); }
-    return { details: rewardDetails, obtainedFullArtifact };
-},
+        if (dropType === 'artifact_shard') {
+            const amount = 1; // Всегда 1 осколок по текущей логике
+            get().addArtifactShards(targetArtifactId, amount);
+            rewardDetails = { type: 'artifact_shard', amount, artifactId: targetArtifactId, icon: artifactData.icon, name: `${artifactData.name} (осколок)`, rarity: artifactData.rarity };
+        }
+        else if (dropType === 'full_artifact') {
+            obtainedFullArtifact = true; // Устанавливаем флаг
+            const currentArtifactState = get().artifactLevels[targetArtifactId];
+            const isActive = currentArtifactState && currentArtifactState.level > 0;
+            const shardAmountOnDuplicate = artifactData.shardValueOnDuplicate || 10;
+            let isNew = false;
+            if (isActive) { // Если артефакт уже активен (есть уровень > 0)
+                get().addArtifactShards(targetArtifactId, shardAmountOnDuplicate);
+            } else { // Артефакт не активен (уровень 0 или его нет в artifactLevels)
+                // Сначала "собираем" его, если он еще не известен (для UI, чтобы он появился в списке)
+                if (!get().collectedArtifacts.has(targetArtifactId)) {
+                    get().collectArtifact(targetArtifactId); // Это установит level 0, shards 0
+                }
+                // Затем активируем его (переводим на уровень 1, если достаточно осколков - в данном случае осколки не тратятся при получении целого)
+                // Если активация требует осколков, и мы хотим, чтобы первый "целый" артефакт активировался бесплатно:
+                // Вместо get().activateArtifact(targetArtifactId) можно сделать:
+                 set(state => {
+                     const newCollected = new Set(state.collectedArtifacts);
+                     newCollected.add(targetArtifactId);
+                     return {
+                         collectedArtifacts: newCollected,
+                         artifactLevels: {
+                             ...state.artifactLevels,
+                             [targetArtifactId]: {
+                                 level: 1, // Сразу уровень 1
+                                 shards: (state.artifactLevels[targetArtifactId]?.shards || 0) // Сохраняем имеющиеся осколки
+                             }
+                         }
+                     };
+                 });
+                 get().updatePowerLevel(); // Важно после изменения уровня
+                 isNew = true; // Считаем новым, если он не был активен
+            }
+            rewardDetails = { type: 'full_artifact', artifactId: targetArtifactId, isNew, shardAmount: isActive ? shardAmountOnDuplicate : undefined, icon: artifactData.icon, name: artifactData.name, rarity: artifactData.rarity };
+        } else { console.warn("Unknown dropType in processArtifactReward:", dropType); }
+        return { details: rewardDetails, obtainedFullArtifact }; // Возвращаем флаг
+    },
 
 
-// --- ИСПРАВЛЕННЫЙ openArtifactChest (x1) ---
 openArtifactChest: (chestId) => {
     const state = get();
     const chestData = getArtifactChestById(chestId);
@@ -1977,48 +1942,54 @@ openArtifactChest: (chestId) => {
     if (state[chestData.cost.currency] < chestData.cost.price) { alert(`Недостаточно ${chestData.cost.currency}!`); return; }
 
     const currentPity = state.artifactChestPity[chestId] || 0;
-    const newPity = currentPity + 1;
+    let newPity = currentPity + 1; // Инкремент pity для этого открытия
     const newTotalOpened = state.totalArtifactChestsOpened + 1;
 
     let rewardTypeObj = null;
-    let rewardDetails = null;
-    let obtainedFullArtifact = false;
-    let finalPityValue = newPity;
+    let rewardProcessingResult = { details: null, obtainedFullArtifact: false }; // Используем результат processArtifactReward
+    let finalPityValue = newPity; // Pity после этого открытия
 
     // 1. Определяем ТИП награды (Pity или Ролл)
-    if (newPity >= chestData.pityLimit) {
-        rewardTypeObj = chestData.rewardPool.find(r => r.type === 'full_artifact');
-        obtainedFullArtifact = true; finalPityValue = 0;
-        console.log(`[ArtifactChest ${chestId}] Pity! Type: ${rewardTypeObj?.type}`);
-    } else {
-        rewardTypeObj = selectWeightedRewardType(chestData.rewardPool); // <<< Используем хелпер из artifactChestData.js
-        console.log(`[ArtifactChest ${chestId}] Rolled type object:`, rewardTypeObj);
-        if (rewardTypeObj?.type === 'full_artifact') {
-            obtainedFullArtifact = true; finalPityValue = 0;
-            console.log(`[ArtifactChest ${chestId}] Rolled Full Artifact, pity reset.`);
+    if (newPity >= chestData.pityLimit) { // Сначала проверяем, сработал ли pity
+        rewardTypeObj = chestData.rewardPool.find(r => r.type === 'full_artifact'); // Pity всегда дает full_artifact
+        // console.log(`[ArtifactChest ${chestId}] Pity! Type: ${rewardTypeObj?.type}`);
+        if (rewardTypeObj) { // Если найден тип full_artifact для pity
+             rewardProcessingResult.obtainedFullArtifact = true; // Устанавливаем флаг, что это гарантированный артефакт
         }
+    } else {
+        rewardTypeObj = selectWeightedRewardType(chestData.rewardPool);
+        // console.log(`[ArtifactChest ${chestId}] Rolled type object:`, rewardTypeObj);
     }
+
     if (!rewardTypeObj) { console.error("Не удалось определить тип награды."); return; }
+    const rewardType = rewardTypeObj.type; // Тип награды, который будет обработан
+
+    // Если по pity или роллу должен выпасть full_artifact, устанавливаем флаг для сброса pity
+    if (rewardType === 'full_artifact' || rewardProcessingResult.obtainedFullArtifact) {
+        finalPityValue = 0; // Сбрасываем pity, если выпал целый артефакт
+        // console.log(`[ArtifactChest ${chestId}] Full artifact obtained, pity reset to 0.`);
+    }
+
 
     // 2. Обрабатываем награду
-    const rewardType = rewardTypeObj.type;
     if (rewardType === 'gold') {
         const amount = Math.floor(Math.random() * (rewardTypeObj.max - rewardTypeObj.min + 1)) + rewardTypeObj.min;
         get().addGold(amount);
-        rewardDetails = { type: 'gold', amount, icon: '/assets/coin-icon.png', name: 'Золото' };
+        rewardProcessingResult.details = { type: 'gold', amount, icon: '/assets/coin-icon.png', name: 'Золото' };
     } else if (rewardType === 'diamonds') {
         const amount = rewardTypeObj.amount;
         get().addDiamonds(amount);
-        rewardDetails = { type: 'diamonds', amount, icon: '/assets/diamond-image.png', name: 'Алмазы' };
+        rewardProcessingResult.details = { type: 'diamonds', amount, icon: '/assets/diamond-image.png', name: 'Алмазы' };
     } else if (rewardType === 'artifact_shard' || rewardType === 'full_artifact') {
-        // <<< Выбираем КОНКРЕТНЫЙ артефакт с УЧЕТОМ РЕДКОСТИ >>>
         const targetArtifactId = _selectWeightedArtifactIdFromSet_ByRarity(chestData.setId);
         if (!targetArtifactId) { console.error("Не удалось выбрать артефакт из сета."); return; }
-        console.log(`[ArtifactChest ${chestId}] Selected weighted artifact ID: ${targetArtifactId}`);
-        // <<< Обрабатываем и получаем детали >>>
-        const result = get().processArtifactReward(rewardType, targetArtifactId);
-        rewardDetails = result.details;
-        // obtainedFullArtifact и finalPityValue уже установлены выше для full_artifact
+        // console.log(`[ArtifactChest ${chestId}] Selected weighted artifact ID: ${targetArtifactId}`);
+        // Передаем rewardType, который был определен (pity или ролл)
+        rewardProcessingResult = get().processArtifactReward(rewardType, targetArtifactId);
+        // Если processArtifactReward подтвердил, что это был full_artifact, pity сбросится
+        if (rewardProcessingResult.obtainedFullArtifact) {
+            finalPityValue = 0;
+        }
     } else {
         console.warn(`Неизвестный тип награды из пула: ${rewardType}`);
     }
@@ -2031,121 +2002,223 @@ openArtifactChest: (chestId) => {
             artifactChestPity: { ...prevState.artifactChestPity, [chestId]: finalPityValue },
             totalArtifactChestsOpened: newTotalOpened,
             lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'artifact' },
-            lastChestRewards: rewardDetails ? [rewardDetails] : [],
-         };
+            lastChestRewards: rewardProcessingResult.details ? [rewardProcessingResult.details] : [],
+        };
     });
     get().checkAllAchievements();
+    if(rewardProcessingResult.obtainedFullArtifact || rewardType === 'artifact_shard'){
+        get().initializeLevelHp(); // Обновляем HP, если был получен артефакт/осколок
+    }
 },
 
 
-// --- ИСПРАВЛЕННЫЙ openArtifactChestX10 ---
- openArtifactChestX10: (chestId) => {
-     const state = get();
-     const chestData = getArtifactChestById(chestId);
-     if (!chestData || !chestData.isEnabled) { /* ... проверка ... */ return; }
-     const totalCost = chestData.cost.price * 10;
-     if (state[chestData.cost.currency] < totalCost) { /* ... проверка ... */ return; }
+openArtifactChestX10: (chestId) => {
+    const state = get();
+    const chestData = getArtifactChestById(chestId);
+    if (!chestData || !chestData.isEnabled) { console.error(`Сундук ${chestId} не найден или не активен.`); return; }
+    const totalCost = chestData.cost.price * 10;
+    if (state[chestData.cost.currency] < totalCost) { alert(`Недостаточно ${chestData.cost.currency}!`); return; }
 
-     let currentPity = state.artifactChestPity[chestId] || 0;
-     const newTotalOpened = state.totalArtifactChestsOpened + 10;
-     const rewardsDetailed = []; // Собираем детали всех 10 наград
+    let workingPity = state.artifactChestPity[chestId] || 0; // Pity на начало серии из 10
+    const newTotalOpened = state.totalArtifactChestsOpened + 10;
+    const rewardsDetailed = []; // Собираем детали всех 10 наград
+    let hasObtainedArtifactInBatch = false; // Флаг, если в этой пачке был артефакт/осколок
 
-     // Цикл 10 открытий
-     for (let i = 0; i < 10; i++) {
-         currentPity++;
-         let rewardTypeObj = null;
-         let rewardDetails = null;
-         let obtainedFullArtifactThisPull = false;
+    // Цикл 10 открытий
+    for (let i = 0; i < 10; i++) {
+        workingPity++; // Инкремент pity для ТЕКУЩЕГО открытия в серии
+        let rewardTypeObj = null;
+        let rewardProcessingResultCurrentPull = { details: null, obtainedFullArtifact: false };
 
-         // 1. Определяем ТИП награды
-         if (currentPity >= chestData.pityLimit) {
-             rewardTypeObj = chestData.rewardPool.find(r => r.type === 'full_artifact');
-             obtainedFullArtifactThisPull = true;
-         } else {
-             rewardTypeObj = selectWeightedRewardType(chestData.rewardPool); // <<< Используем хелпер из artifactChestData.js
-             if (rewardTypeObj?.type === 'full_artifact') obtainedFullArtifactThisPull = true;
-         }
-          if (!rewardTypeObj) { console.error(`[X10 Pull ${i+1}] Failed type roll!`); continue; }
+        // 1. Определяем ТИП награды для текущего пулла
+        if (workingPity >= chestData.pityLimit) {
+            rewardTypeObj = chestData.rewardPool.find(r => r.type === 'full_artifact');
+            if (rewardTypeObj) rewardProcessingResultCurrentPull.obtainedFullArtifact = true;
+        } else {
+            rewardTypeObj = selectWeightedRewardType(chestData.rewardPool);
+        }
 
-         const rewardType = rewardTypeObj.type;
+        if (!rewardTypeObj) { console.error(`[X10 Pull ${i+1}] Failed type roll!`); rewardsDetailed.push({ type: 'error', name: 'Ошибка ролла типа' }); continue; }
+        const rewardType = rewardTypeObj.type;
 
-         // 2. Обрабатываем награду
-         if (rewardType === 'gold') {
-              const amount = Math.floor(Math.random() * (rewardTypeObj.max - rewardTypeObj.min + 1)) + rewardTypeObj.min;
-              get().addGold(amount);
-              rewardDetails = { type: 'gold', amount, icon: '/assets/coin-icon.png', name: 'Золото' };
-         } else if (rewardType === 'diamonds') {
-              const amount = rewardTypeObj.amount;
-              get().addDiamonds(amount);
-              rewardDetails = { type: 'diamonds', amount, icon: '/assets/diamond-image.png', name: 'Алмазы' };
-         } else if (rewardType === 'artifact_shard' || rewardType === 'full_artifact') {
-             const targetArtifactId = _selectWeightedArtifactIdFromSet_ByRarity(chestData.setId); // <<< Взвешенный выбор
-             if (!targetArtifactId) { console.error(`[X10 Pull ${i+1}] Failed artifact selection!`); continue; }
-             const result = get().processArtifactReward(rewardType, targetArtifactId);
-             rewardDetails = result.details;
-             // Флаг obtainedFullArtifactThisPull уже установлен
-         } else { console.warn(`[X10 Pull ${i+1}] Unknown type: ${rewardType}`); }
+        // Если по pity или роллу должен выпасть full_artifact
+        if (rewardType === 'full_artifact' || rewardProcessingResultCurrentPull.obtainedFullArtifact) {
+             // Флаг obtainedFullArtifact уже должен быть установлен в rewardProcessingResultCurrentPull, если это pity
+             // Если это ролл full_artifact, то processArtifactReward это подтвердит
+        }
 
-         // Добавляем детали в массив
-         if (rewardDetails) rewardsDetailed.push(rewardDetails);
-         else rewardsDetailed.push({ type: 'error', name: 'Ошибка' }); // Заглушка
+        // 2. Обрабатываем награду для текущего пулла
+        if (rewardType === 'gold') {
+            const amount = Math.floor(Math.random() * (rewardTypeObj.max - rewardTypeObj.min + 1)) + rewardTypeObj.min;
+            get().addGold(amount); // Сразу добавляем золото
+            rewardProcessingResultCurrentPull.details = { type: 'gold', amount, icon: '/assets/coin-icon.png', name: 'Золото' };
+        } else if (rewardType === 'diamonds') {
+            const amount = rewardTypeObj.amount;
+            get().addDiamonds(amount); // Сразу добавляем алмазы
+            rewardProcessingResultCurrentPull.details = { type: 'diamonds', amount, icon: '/assets/diamond-image.png', name: 'Алмазы' };
+        } else if (rewardType === 'artifact_shard' || rewardType === 'full_artifact') {
+            const targetArtifactId = _selectWeightedArtifactIdFromSet_ByRarity(chestData.setId);
+            if (!targetArtifactId) { console.error(`[X10 Pull ${i+1}] Failed artifact selection!`); rewardsDetailed.push({ type: 'error', name: 'Ошибка выбора артефакта' }); continue; }
+            // processArtifactReward добавит осколки/артефакт и вернет детали
+            rewardProcessingResultCurrentPull = get().processArtifactReward(rewardType, targetArtifactId);
+            hasObtainedArtifactInBatch = true; // Отмечаем, что в этой пачке был артефакт/осколок
+        } else {
+            console.warn(`[X10 Pull ${i+1}] Unknown type: ${rewardType}`);
+            rewardProcessingResultCurrentPull.details = { type: 'error', name: `Неизвестный тип ${rewardType}` };
+        }
 
-         // 3. Сбрасываем pity, если выпал целый артефакт
-         if (obtainedFullArtifactThisPull) currentPity = 0;
+        // Добавляем детали в массив
+        if (rewardProcessingResultCurrentPull.details) {
+            rewardsDetailed.push(rewardProcessingResultCurrentPull.details);
+        } else {
+            rewardsDetailed.push({ type: 'error', name: 'Ошибка обработки награды' }); // Заглушка на всякий случай
+        }
 
-     } // Конец цикла
+        // 3. Сбрасываем pity, если выпал целый артефакт в ЭТОМ пулле
+        if (rewardProcessingResultCurrentPull.obtainedFullArtifact) {
+            workingPity = 0;
+        }
+    } // Конец цикла
 
-     const finalPityValue = currentPity;
+    const finalPityValueForChest = workingPity; // Pity, который будет сохранен после всей серии
 
-     // Обновляем состояние ОДИН РАЗ
-     set((prevState) => ({
-         [chestData.cost.currency]: prevState[chestData.cost.currency] - totalCost,
-         artifactChestPity: { ...prevState.artifactChestPity, [chestId]: finalPityValue },
-         totalArtifactChestsOpened: newTotalOpened,
-         lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'artifact' },
-         lastChestRewards: rewardsDetailed,
-     }));
+    // Обновляем состояние ОДИН РАЗ после всех 10 открытий
+    set((prevState) => ({
+        [chestData.cost.currency]: prevState[chestData.cost.currency] - totalCost,
+        artifactChestPity: { ...prevState.artifactChestPity, [chestId]: finalPityValueForChest },
+        totalArtifactChestsOpened: newTotalOpened,
+        lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'artifact' },
+        lastChestRewards: rewardsDetailed,
+    }));
 
-     get().checkAllAchievements();
- },
-    
-    // Action для очистки временного состояния наград (без изменений)
+    get().checkAllAchievements();
+    if(hasObtainedArtifactInBatch){
+        get().initializeLevelHp(); // Обновляем HP, если в пачке был артефакт/осколок
+    }
+},
+
     clearLastChestData: () => set({
         lastChestRewards: null,
-        lastOpenedChestInfo: null // <<< Важно, чтобы он сбрасывал ОБА поля
+        lastOpenedChestInfo: null
     }),
-    
 
-    // --- Сброс Игры (ИЗМЕНЕН) ---
+
     resetGame: () => {
-        const defaultEquipped = getDefaultEquippedSet(); // <<< Получаем набор Common при сбросе
-        console.log("Resetting game state with default gear...");
+        const defaultEquipped = getDefaultEquippedSet();
+        // console.log("Resetting game state with default gear...");
         set({
-          gold: 0, diamonds: 0, username: null, powerLevel: 0, // Сбрасываем PL, он пересчитается
-          playerBaseStats: { ...DEFAULT_BASE_STATS },
-          playerHp: DEFAULT_BASE_STATS.hp,
-          playerRace: null,
-          inventory: [], // Очищаем инвентарь
-          equipped: defaultEquipped, // <<< Устанавливаем Common экипировку (новые экземпляры)
-          // Сброс всех остальных состояний...
-          dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0,
-          booleanFlags: {}, levelsCompleted: {}, achievementLevel: 1, achievementXp: 0,
-          collectedArtifacts: new Set(), artifactLevels: {}, artifactChestPity: {},
-          gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
-          dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
+            gold: 0, diamonds: 0, username: null, powerLevel: 0,
+            playerBaseStats: { ...DEFAULT_BASE_STATS },
+            playerHp: DEFAULT_BASE_STATS.hp,
+            playerRace: null,
+            inventory: [],
+            equipped: defaultEquipped,
+            dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0,
+            booleanFlags: {}, levelsCompleted: {}, achievementLevel: 1, achievementXp: 0,
+            collectedArtifacts: new Set(), artifactLevels: {}, artifactChestPity: {},
+            gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
+            dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
+            activeDebuffs: [], // Сброс дебаффов
+            isAffectedByWeakeningAura: false, // <<< НОВОЕ Состояние для ауры
+            energyMax: DEFAULT_MAX_ENERGY, // Сброс энергии
+            energyCurrent: DEFAULT_MAX_ENERGY,
+            lastEnergyRefillTimestamp: Date.now(),
         });
-        localStorage.removeItem(STORAGE_KEY); // Очищаем сохранение
-        console.log("Game reset complete.");
-        get().updatePowerLevel(); // <<< Вызываем пересчет PL после сброса
-        get().checkAndRefreshDailyDeals(); // <<< Генерируем новые сделки после сброса
-      },
-  
-  })); // Конец create
+        localStorage.removeItem(STORAGE_KEY);
+        // console.log("Game reset complete.");
+        get().updatePowerLevel();
+        get().checkAndRefreshDailyDeals();
+        get().initializeLevelHp(); // Инициализируем HP после сброса
+    },
+
+    // --- Действия для дебаффов ---
+    addDebuff: (debuff) => { // debuff: { id (optional, for unique tracking), type, strength, durationMs }
+        const newDebuff = {
+            ...debuff,
+            id: debuff.id || uuidv4(), // Генерируем id, если не предоставлен
+            endTime: Date.now() + debuff.durationMs,
+        };
+        set(state => ({
+            activeDebuffs: [...state.activeDebuffs, newDebuff]
+        }));
+        get().updatePowerLevel(); // Дебаффы влияют на статы, значит и на PL
+        get().initializeLevelHp(); // Максимальное HP могло измениться
+        // console.log("Debuff added:", newDebuff, "Current debuffs:", get().activeDebuffs);
+    },
+
+    removeDebuff: (debuffId) => {
+        set(state => ({
+            activeDebuffs: state.activeDebuffs.filter(d => d.id !== debuffId)
+        }));
+        get().updatePowerLevel();
+        get().initializeLevelHp();
+        // console.log("Debuff removed:", debuffId, "Current debuffs:", get().activeDebuffs);
+    },
+
+    clearExpiredDebuffs: () => {
+        const now = Date.now();
+        const currentDebuffs = get().activeDebuffs;
+        const activeDebuffs = currentDebuffs.filter(debuff => now < debuff.endTime);
+        if (activeDebuffs.length < currentDebuffs.length) {
+            set({ activeDebuffs });
+            get().updatePowerLevel();
+            get().initializeLevelHp();
+            // console.log("Expired debuffs cleared. Remaining:", activeDebuffs);
+        }
+    },
+
+    applyDebuff: (type, duration, strength) => {
+        const now = Date.now();
+        const endTime = now + duration * 1000;
+        const newDebuff = {
+            id: uuidv4(), // Use uuid for unique ID
+            type,
+            strength,
+            endTime,
+        };
+        console.log("Applying Debuff:", newDebuff);
+        set((state) => ({
+            // Add the new debuff to the existing array
+            // Consider logic for stacking or refreshing durations if needed
+            // For now, just add it as a new instance
+            activeDebuffs: [...state.activeDebuffs, newDebuff],
+        }));
+        // Optional: Schedule a cleanup check slightly after the debuff expires
+        // setTimeout(() => get().cleanupExpiredDebuffs(), duration * 1000 + 500);
+    },
+
+    setWeakeningAuraStatus: (isActive) => {
+        // Обновляем состояние, только если статус действительно изменился
+        if (get().isAffectedByWeakeningAura !== isActive) {
+            console.log(`[Store Action] Setting Weakening Aura Status to: ${isActive}`);
+            set({ isAffectedByWeakeningAura: isActive });
+        }
+    },
+
+    // --- NEW ACTION: Cleanup Expired Debuffs ---
+    // This should be called periodically or when needed, e.g., from Level.jsx
+    cleanupExpiredDebuffs: () => {
+        const now = Date.now();
+        let changed = false;
+        set((state) => {
+            const stillActive = state.activeDebuffs.filter(debuff => now < debuff.endTime);
+            if (stillActive.length !== state.activeDebuffs.length) {
+                changed = true;
+                console.log(`[Debuff Cleanup] Removed ${state.activeDebuffs.length - stillActive.length} expired debuffs.`);
+                return { activeDebuffs: stillActive };
+            }
+            return {}; // No changes needed
+        });
+        // If debuffs were removed, stats might change implicitly on next computedStats call.
+        // No need to call updatePowerLevel here unless debuffs directly contribute to it.
+    },
+
+})); // Конец create
 
 // ================== Сохранение в localStorage <<< ИЗМЕНЕНО >>> ==================
 useGameStore.subscribe((state) => {
 
-    
+
     const {
         gold, diamonds, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
@@ -2156,13 +2229,14 @@ useGameStore.subscribe((state) => {
         achievementsStatus, totalGoldCollected, totalKills,
         booleanFlags, levelsCompleted,
         achievementLevel, achievementXp,
-        artifactChestPity,         // <<< ДОБАВЛЕНО
-        gearKeys,                // <<< ДОБАВЛЕНО
+        artifactChestPity,      // <<< ДОБАВЛЕНО
+        gearKeys,               // <<< ДОБАВЛЕНО
         totalArtifactChestsOpened, // <<< ДОБАВЛЕНО
         // <<< НОВОЕ >>> Добавляем поля артефактов для сохранения
         collectedArtifacts, artifactLevels, // playerShards (если бы были)
         gearChestPity,
         totalGearChestsOpened,
+        activeDebuffs, // Сохраняем активные дебаффы
     } = state;
 
     const stateToSave = {
@@ -2175,9 +2249,6 @@ useGameStore.subscribe((state) => {
         achievementsStatus, totalGoldCollected, totalKills,
         booleanFlags, levelsCompleted,
         achievementLevel, achievementXp,
-        // <<< НОВОЕ >>> Преобразуем Set в массив для сохранения
-        collectedArtifacts: Array.from(collectedArtifacts),
-        artifactLevels,
         collectedArtifacts: Array.from(collectedArtifacts), // Сохраняем Set как массив
         artifactLevels,
         artifactChestPity,
@@ -2185,6 +2256,7 @@ useGameStore.subscribe((state) => {
         totalArtifactChestsOpened,
         gearChestPity,
         totalGearChestsOpened,
+        activeDebuffs, // Сохраняем активные дебаффы
         // playerShards, // Если бы были
     };
 
@@ -2194,5 +2266,11 @@ useGameStore.subscribe((state) => {
         console.error("Ошибка сохранения состояния в localStorage:", error);
     }
 });
+
+// Периодическая очистка истекших дебаффов (например, каждые 5 секунд)
+setInterval(() => {
+    useGameStore.getState().clearExpiredDebuffs();
+}, 5000);
+
 
 export default useGameStore;

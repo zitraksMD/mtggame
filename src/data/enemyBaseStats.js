@@ -26,7 +26,11 @@ export const BASE_ENEMY_STATS = {
       hp: 25, speed: 1.2, damage: 5, attackRange: 280, attackSpeed: 1.8 // ~1 атака в 0.55 сек
     },
     'ogre_mage': {
-      hp: 150, speed: 0.5, damage: 15, attackRange: 250, attackSpeed: 0.6 // ~1 атака в 1.67 сек
+      hp: 150, speed: 0.5, directDamage: 10, attackRange: 250, attackSpeed: 0.6, // ~1 атака в 1.67 сек
+      projectileSpeed: 300, // <<< УВЕЛИЧЬ ЗНАЧЕНИЕ ЗДЕСЬ (например, до 300)
+      groundEffectDuration: 3.0, // Оставляем
+      groundEffectRadius: 40,    // Добавь эти, если еще не добавил
+      groundEffectDps: 5   
       // Атакует снарядом в точку
     },
     'bone_dancer': {
@@ -75,26 +79,26 @@ export const BASE_ENEMY_STATS = {
       attackRange: 350,   // Дальность луча
       attackSpeed: 0.6,   // ~1 каст в 1.67 сек
       attackType: 'beam',   // Тип атаки - луч
-      beamType: 'weaken', // Тип луча - ослабление
-      beamEffectDuration: 1.0, // Длительность самого визуала луча
-      debuffDuration: 6.0,   // Длительность дебаффа на игроке
-      debuffStrength: 0.25  // Сила дебаффа (уменьшение урона на 25%)
+      auraRadius: 150, // <<< НОВЫЙ ПАРАМЕТР: Радиус ауры ослабления (подбери значение)
+
     },
     'cursed_gladiator': {
       hp: 160, speed: 1.6, damage: 10, attackRange: 30, attackSpeed: 1.3, // ~1 атака в 0.77 сек
       stackDamageBonus: 2 // +2 урона за каждую предыдущую атаку
     },
     'poison_cultist': {
-      hp: 110, speed: 1.1, // Двигается или стоит?
+      hp: 110, speed: 1.5, // Двигается или стоит?
       attackRange: 220,   // Дальность броска лужи
       attackSpeed: 0.7,   // Не используется? Атака по кулдауну?
-      abilityCooldown: 8.0, // Кулдаун лужи
+      abilityCooldown: 4.0, // Кулдаун лужи
       puddleDuration: 10.0, // Время жизни лужи
       puddleRadius: 50,   // Радиус лужи
-      puddleDps: 4        // Урон лужи в секунду
+      puddleDps: 4,        // Урон лужи в секунду
+      projectileSpeed: 250, // Скорость летящей сферы для лужи
+      patrolRadius: 80 // <<< НОВЫЙ ПАРАМЕТР: Радиус квадрата патрулирования
     },
   
 
     // Добавь сюда 'skeleton_swordsman', если он призывается Носильщиком,
     // или используй статы обычного мечника выше.
-  };
+  };  

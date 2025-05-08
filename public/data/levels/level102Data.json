@@ -1,33 +1,51 @@
 {
-    "id": 102,
-    "name": "Ур. 1-2: Тест Призывателей",
-    "levelType": "standard",
-    "width": 1200,
-    "height": 1200,
-    "backgroundTexture": "/assets/main-background-game.png",
-    "playerStart": { "x": 600, "y": 1100 },
-    "walls": [
-      { "id": "wall_top", "x": 0, "y": 0, "width": 1200, "height": 50 },
-      { "id": "wall_bottom", "x": 0, "y": 1150, "width": 1200, "height": 50 },
-      { "id": "wall_left", "x": 0, "y": 50, "width": 50, "height": 1100 },
-      { "id": "wall_right", "x": 1150, "y": 50, "width": 50, "height": 1100 },
-      { "id": "obstacle_1", "x": 400, "y": 600, "width": 100, "height": 80 }
-    ],
-    "enemies": [
-      {
-        "id": "test_necro_102",
-        "type": "necromancer",
-        "x": 600, 
-        "y": 650  
-      },
-      {
-        "id": "test_carrier_102",
-        "type": "cursed_carrier",
-        "x": 300, 
-        "y": 400  
-      }
-    ],
-    "winCondition": {
-      "type": "clear_enemies"
+  "id": 102,
+  "name": "Ур. 1-1: Тест Комнат", 
+  "levelType": "standard",
+  "width": 1200,
+  "height": 1200,
+  "backgroundTexture": "/assets/main-background-game.png",
+  "playerStart": { "x": 600, "y": 1100 },
+  "walls": [
+    { "id": "wall_top", "x": 0, "y": 0, "width": 1200, "height": 50 },
+    { "id": "wall_bottom", "x": 0, "y": 1150, "width": 1200, "height": 50 },
+    { "id": "wall_left", "x": 0, "y": 50, "width": 50, "height": 1100 },
+    { "id": "wall_right", "x": 1150, "y": 50, "width": 50, "height": 1100 },
+   
+    {
+      "id": "door_room1_to_room2",
+      "x": 50,                 
+      "y": 590,                
+      "width": 1100,           
+      "height": 20,           
+      "isDoor": true,           
+      "opensWhenRoomCleared": "room1_start", 
+      "targetRoomIdForDoor": "room2_north"  
     }
-  }
+  ],
+"enemies": [
+    { "id": "cultist_1", "type": "poison_cultist", "x": 600, "y": 850, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "enchanter_1", "type": "ghostly_enchanter", "x": 800, "y": 850, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "ogre_mage_1", "type": "ogre_mage", "x": 600, "y": 700, "roomId": "room1_start", "initiallyActive": true },
+
+    { "id": "cultist_2", "type": "poison_cultist", "x": 400, "y": 400, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "cultist_3", "type": "poison_cultist", "x": 800, "y": 200, "roomId": "room2_north", "initiallyActive": false }
+  ],
+  "winCondition": { 
+    "type": "clear_enemies" 
+  },
+
+  "rooms": [
+      {
+        "id": "room1_start",
+        "name": "Стартовая локация",
+        "area": { "x_min": 50, "y_min": 610, "x_max": 1150, "y_max": 1150 },
+        "isStartingRoom": true 
+      },
+    {
+      "id": "room2_north",
+      "name": "Северный зал",
+      "area": { "x_min": 50, "y_min": 50, "x_max": 1150, "y_max": 590 }
+    }
+  ]
+}

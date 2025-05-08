@@ -71,6 +71,11 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     const fogMaterialRef = useRef(null); // Для создания материала тумана один раз
     const worldRoomBoundariesRef = useRef({});
     const [clearedRoomIds, setClearedRoomIds] = useState(new Set());
+    const animatingDoorsRef = useRef([]); // Массив для хранения данных об активных анимациях дверей
+    const activePuddlesRef = useRef([]);
+    const activeEffectProjectilesRef = useRef([]);
+    const activeBurningGroundsRef = useRef([]);
+
 
 
     
@@ -85,6 +90,9 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
     const activeCloudsRef = useRef([]); // Реф для доступа в animate
     const enemiesStateRef = useRef(enemiesState); // Реф для актуального состояния врагов
     const [currentActiveRoomId, setCurrentActiveRoomId] = useState(null);
+    const [activePuddles, setActivePuddles] = useState([]);
+    const [activeBurningGrounds, setActiveBurningGrounds] = useState([]);
+
 
 
     useEffect(() => {
@@ -92,8 +100,31 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         console.log("[enemiesStateRef updated] Length:", enemiesState.length, enemiesState); // Лог для проверки
     }, [enemiesState]); // Этот эффект сработает КАЖДЫЙ РАЗ при изменении enemiesState
 
+    useEffect(() => {
+        activePuddlesRef.current = activePuddles;
+        console.log(`[Sync Ref] activePuddles state changed, updating activePuddlesRef. New length: ${activePuddles.length}`);
+    }, [activePuddles]);
+
+    useEffect(() => {
+        console.log("[Debuff Cleanup] Starting periodic cleanup interval.");
+        // Запускаем интервал, который вызывает очистку каждые, например, 2 секунды
+        const intervalId = setInterval(() => {
+            // Используем useGameStore.getState() для вызова action вне React-компонента/хука
+            useGameStore.getState().cleanupExpiredDebuffs();
+        }, 2000); // Проверять каждые 2000 мс (2 секунды)
     
+        // Функция очистки для useEffect: убираем интервал при размонтировании компонента
+        return () => {
+            console.log("[Debuff Cleanup] Clearing periodic cleanup interval.");
+            clearInterval(intervalId);
+        };
+    }, []); // Пустой массив зависимостей, чтобы эффект запустился один раз при монтировании
     
+    useEffect(() => { // Синхронизация состояния с рефом
+        activeBurningGroundsRef.current = activeBurningGrounds;
+        // console.log(`[Sync Ref] activeBurningGrounds state changed, updating Ref. New length: ${activeBurningGrounds.length}`);
+    }, [activeBurningGrounds]);
+
     // === Глобальный Стор ===
     const {
         playerHp,
@@ -102,14 +133,16 @@ const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) =
         playerTakeDamage,
         initializeLevelHp,
         // Добавляем из code1 (если нужно будет вызывать applyDebuff)
-        // applyDebuff // <- Раскомментировать, если нужно вызывать action
+        applyDebuff, // <- Раскомментировать, если нужно вызывать action
+        setWeakeningAuraStatus
     } = useGameStore(state => ({
         playerHp: state.playerHp,
         displayMaxHp: state.computedStats().hp,
         playerStats: state.computedStats(),
         playerTakeDamage: state.playerTakeDamage,
         initializeLevelHp: state.initializeLevelHp,
-        // applyDebuff: state.applyDebuff // <- Раскомментировать, если нужно вызывать action
+        applyDebuff: state.applyDebuff, // <- Раскомментировать, если нужно вызывать action
+        setWeakeningAuraStatus: state.setWeakeningAuraStatus
     }));
 
     
@@ -754,7 +787,7 @@ useEffect(() => {
     
         const monstersInCurrentRoom = levelData.enemies.filter(enemyDef => enemyDef.roomId === currentActiveRoomId);
         console.log(`[RoomCheck DEBUG] For room '${currentActiveRoomId}', monstersInCurrentRoom (from levelData):`, monstersInCurrentRoom.map(m => m.id), `Count: ${monstersInCurrentRoom.length}`);
-        
+    
         if (monstersInCurrentRoom.length === 0 && currentActiveRoomId && !levelData.rooms.find(r => r.id === currentActiveRoomId)?.isStartingRoom) {
             console.log(`[RoomCheck DEBUG] Room '${currentActiveRoomId}' is defined as empty in levelData and not starting room. Returning.`);
             return;
@@ -773,16 +806,6 @@ useEffect(() => {
                         break;
                     }
                 } else {
-                    // Если монстр определен для комнаты в levelData, но его нет в enemiesState
-                    // Это может быть нормально, если он еще не активирован (initiallyActive: false и комната еще не посещалась)
-                    // Но если ВСЕ монстры комнаты, которые ДОЛЖНЫ БЫТЬ активны, мертвы, комната зачищена.
-                    // Если монстр initiallyActive: true, он ДОЛЖЕН быть в enemiesState.
-                    // Если initiallyActive: false, и комната только что стала активной, он должен появиться в enemiesState.
-                    // Этот момент нужно аккуратно продумать: как мы считаем монстров, которые еще не были добавлены в enemiesState?
-                    // Пока что, если его нет в enemiesState, мы его не считаем "живым", что может привести к преждевременной зачистке,
-                    // ЕСЛИ не все монстры комнаты добавляются в enemiesState при активации комнаты.
-                    // Но useEnemyLoader должен добавлять всех (даже неактивных initiallyActive:false) в initialEnemyStates,
-                    // так что они должны быть в enemiesState с самого начала.
                     console.warn(`[RoomCheck DEBUG] Monster ${enemyDef.id} (defined for room ${currentActiveRoomId}) NOT FOUND in enemiesState. This might be an issue.`);
                     // Если мы хотим, чтобы все монстры, перечисленные для комнаты, были УЧТЕНЫ (т.е. были в enemiesState и имели hp <=0),
                     // то отсутствие в enemiesState должно считаться как "комната не зачищена".
@@ -791,60 +814,88 @@ useEffect(() => {
                 }
             }
         } else {
-            // Если в levelData.enemies нет монстров для этой комнаты
             allMonstersInRoomDead = false;
             console.log(`[RoomCheck DEBUG] No monsters defined for room ${currentActiveRoomId} in levelData, so allMonstersInRoomDead = false (nothing to clear).`);
         }
-        
-        console.log(`[RoomCheck DEBUG] Final check: allMonstersInRoomDead = ${allMonstersInRoomDead}, monstersInCurrentRoom.length = ${monstersInCurrentRoom.length}`);
     
+        console.log(`[RoomCheck DEBUG] Final check: allMonstersInRoomDead = ${allMonstersInRoomDead}, monstersInCurrentRoom.length = ${monstersInCurrentRoom.length}`);
     
         if (allMonstersInRoomDead && monstersInCurrentRoom.length > 0) {
             console.log(`[RoomCheck] 🎉 Комната ${currentActiveRoomId} ЗАЧИЩЕНА!`);
-            
-            // --- Шаг B: Найти дверь(и), которая открывается этой комнатой ---
+    
             const doorsToOpenData = levelData.walls.filter(wallDataInLevel =>
                 wallDataInLevel.isDoor === true && wallDataInLevel.opensWhenRoomCleared === currentActiveRoomId
             );
-        
+    
             if (doorsToOpenData.length > 0) {
                 doorsToOpenData.forEach(doorData => {
                     console.log(`[DoorLogic] Найдена дверь для открытия: ID='${doorData.id}', ведет в '${doorData.targetRoomIdForDoor || 'не указано'}'`);
-                    
-                    // Теперь найдем соответствующий 3D объект (меш) этой двери в wallsRef.current
+    
                     const doorWallObjectInRef = wallsRef.current.find(wallRef => wallRef.id === doorData.id);
-        
+    
+                    // --- НАЧАЛО ИЗМЕНЕНИЙ: Внедрение логики из код1 ---
                     if (doorWallObjectInRef && doorWallObjectInRef.mesh) {
                         const doorMesh = doorWallObjectInRef.mesh;
-                        const doorId = doorData.id; // Сохраним ID для использования в логах и filter
-                    
-                        console.log(`[DoorLogic] Найден 3D объект (меш) для двери ${doorId}. Открываем (удаляем).`);
-                    
-                        // 1. Удаляем 3D объект двери со сцены
-                        if (sceneRef.current && doorMesh.parent === sceneRef.current) { // Убедимся, что он на сцене
-                            sceneRef.current.remove(doorMesh);
-                        } else if (sceneRef.current && doorMesh.parent !== sceneRef.current && doorMesh.parent instanceof THREE.Object3D) {
-                            // Если меш вложен в другой объект (например, в pivot самого wallRef, что вероятно)
-                            doorMesh.parent.remove(doorMesh);
-                        }
-                        wallsRef.current = wallsRef.current.filter(wallInRef => wallInRef.id !== doorId);
+                        const doorIdToOpen = doorData.id; // ID двери из levelData
+                        
+                        // ПРЕДПОЛОЖЕНИЕ: doorData содержит свойство height. Убедитесь, что это так.
+                        // Если doorData.height не определено, анимация не будет работать корректно.
+                        const doorHeight = doorData.height; 
     
-                        console.log(`[DoorLogic] Дверь ${doorId} удалена со сцены и из массива стен для коллизий.`);
-                    
+                        if (typeof doorHeight !== 'number') {
+                            console.warn(`[DoorLogic] Высота для двери ${doorIdToOpen} не определена или не является числом. Пропуск анимации.`);
+                            return; // Пропустить эту дверь, если высота не задана
+                        }
+    
+                        // --- Логика ЗАПУСКА анимации ---
+    
+                        // 1. Проверяем, не анимируется ли уже эта дверь
+                        // ПРЕДПОЛОЖЕНИЕ: animatingDoorsRef существует и является ref (например, const animatingDoorsRef = useRef([]))
+                        const isAlreadyAnimating = animatingDoorsRef.current.some(anim => anim.id === doorIdToOpen);
+    
+                        if (!isAlreadyAnimating) {
+                            console.log(`[DoorLogic] Дверь ${doorIdToOpen} найдена. Запускаем анимацию опускания.`);
+    
+                            // 2. Убираем дверь из коллизий НЕМЕДЛЕННО, чтобы игрок мог пройти
+                            wallsRef.current = wallsRef.current.filter(wallInRef => wallInRef.id !== doorIdToOpen);
+                            console.log(`[DoorLogic] Дверь ${doorIdToOpen} удалена из массива стен для коллизий.`);
+    
+                            // 3. Готовим данные для анимации
+                            const animationDuration = 1.5; // Длительность анимации в секундах (можно настроить)
+                            const startY = doorMesh.position.y; // Текущая позиция Y центра меша
+                            // Опускаем на высоту двери + небольшой запас (10%), чтобы точно ушла
+                            const descendAmount = doorHeight * 1.1;
+                            const targetY = startY - descendAmount; // Конечная позиция Y
+    
+                            // 4. Добавляем информацию об анимации в реф
+                            animatingDoorsRef.current.push({
+                                id: doorIdToOpen, // Сохраняем ID для отладки и проверки
+                                mesh: doorMesh,
+                                startY: startY,
+                                targetY: targetY,
+                                duration: animationDuration,
+                                elapsedTime: 0 // Счетчик времени анимации
+                            });
+    
+                            // Убедимся, что дверь видима на начало анимации
+                            doorMesh.visible = true;
+    
+                        } else {
+                            console.log(`[DoorLogic] Анимация для двери ${doorIdToOpen} уже запущена.`);
+                        }
                     } else {
-                        console.warn(`[DoorLogic] Не найден 3D объект (меш) для двери с ID '${doorData.id}' в wallsRef.current. Проверьте ID.`);
+                        console.warn(`[DoorLogic] Не найден 3D объект (меш) для двери с ID '${doorData.id}' в wallsRef.current.`);
                     }
+                    // --- КОНЕЦ ИЗМЕНЕНИЙ ---
                 });
             } else {
                 console.log(`[DoorLogic] Для зачищенной комнаты ${currentActiveRoomId} не найдено дверей в levelData.walls, которые должны открыться.`);
             }
-            // --- Конец Шага B ---
-        
-            // Помечаем комнату как зачищенную (это у тебя уже есть)
+    
             setClearedRoomIds(prevCleared => new Set(prevCleared).add(currentActiveRoomId));
         }
     
-    }, [enemiesState, currentActiveRoomId, clearedRoomIds, levelData]); // Следим за этими зависимостями
+    }, [enemiesState, currentActiveRoomId, clearedRoomIds, levelData, wallsRef, /* animatingDoorsRef - добавьте, если это state/prop */ ]);
 
 const createPoisonCloud = useCallback((position) => {
     const currentScene = sceneRef.current;
@@ -1211,41 +1262,299 @@ const triggerGroundSpikes = useCallback((casterId, targetPos, delay, radius, dam
 
 }, [sceneRef, playerObject, playerTakeDamage, playerHp]); // Зависимости
 
+
     // Для Культиста
     const createPoisonPuddle = useCallback((casterId, targetPos, duration, radius, dps) => {
-        console.warn(`[${casterId}] CREATE PUDDLE STUB at (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)}), ${dps} dps for ${duration}s - НЕ РЕАЛИЗОВАНО`);
-        // TODO:
-        // 1. Создать визуальный эффект лужи (декаль, плоскость с текстурой?).
-        // 2. Добавить меш на сцену в targetPos.
-        // 3. Добавить информацию о луже (id, position, radius, dps, endTime, mesh) в новый массив состояния `activePuddles`.
-        // 4. В основном цикле `animate` нужно будет:
-        //     - Удалять лужи со сцены и из состояния, если время вышло.
-        //     - Проверять, находится ли игрок внутри активных луж.
-        //     - Если да, наносить периодический урон: playerTakeDamage(dps * dt).
-    }, [playerTakeDamage]); // Зависит от playerTakeDamage
+        const currentScene = sceneRef.current;
+        if (!currentScene) {
+            console.error("[createPoisonPuddle] Scene not available!");
+            return;
+        }
+        // Проверка входных параметров
+        if (!targetPos || typeof duration !== 'number' || typeof radius !== 'number' || typeof dps !== 'number' || radius <= 0 || duration <= 0) {
+            console.error("[createPoisonPuddle] Invalid parameters received.", { casterId, targetPos, duration, radius, dps });
+            return;
+        }
+    
+        console.log(`[${casterId}] Creating poison puddle at (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)}) R=${radius}, DPS=${dps}, Duration=${duration}s`);
+    
+        // --- Создание визуального эффекта (Плоский круг) ---
+        const puddleGeometry = new THREE.CircleGeometry(radius, 32); // Круг с нужным радиусом
+        // Простой зеленый полупрозрачный материал
+        const puddleMaterial = new THREE.MeshBasicMaterial({
+            color: 0x228B22, // ForestGreen
+            transparent: true,
+            opacity: 0.65,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        // TODO: В будущем можно заменить на более красивый материал с текстурой или шейдером
+    
+        const puddleMesh = new THREE.Mesh(puddleGeometry, puddleMaterial);
+        puddleMesh.name = `puddle_${casterId}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        puddleMesh.position.copy(targetPos);
+        puddleMesh.position.z = 1; // Оставляем Z=5 для теста
+        // puddleMesh.rotation.x = -Math.PI / 2;
+        puddleMesh.renderOrder = 8; // Оставляем renderOrder
+    
+        currentScene.add(puddleMesh); // Добавляем меш лужи на сцену
+        console.log(`[createPoisonPuddle DEBUG] Attempted to add mesh ${puddleMesh.name}. Scene children count: ${currentScene.children.length}`);
+        const addedMesh = currentScene.getObjectByName(puddleMesh.name);
+        if (addedMesh) {
+            console.log(`[createPoisonPuddle DEBUG] Mesh ${puddleMesh.name} FOUND in scene. Name: ${addedMesh.name}, Visible: ${addedMesh.visible}, Position: (${addedMesh.position.x.toFixed(0)}, ${addedMesh.position.y.toFixed(0)}, ${addedMesh.position.z.toFixed(0)})`);
+            // Дополнительно проверим scale
+            console.log(`[createPoisonPuddle DEBUG] Mesh Scale: (${addedMesh.scale.x}, ${addedMesh.scale.y}, ${addedMesh.scale.z})`);
+        } else {
+            console.error(`[createPoisonPuddle DEBUG] Mesh ${puddleMesh.name} NOT FOUND in scene by name immediately after adding!`);
+        }
+
+        // --- Добавление информации о луже в состояние ---
+        const puddleData = {
+            id: `puddle_${casterId}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+            mesh: puddleMesh,              // Ссылка на 3D объект
+            position: targetPos.clone(),   // Центр лужи
+            radiusSq: radius * radius,     // Квадрат радиуса для быстрой проверки дистанции
+            dps: dps,                      // Урон в секунду
+            endTime: Date.now() + duration * 1000, // Время "смерти" лужи в миллисекундах
+        };
+    
+        // Используем функциональное обновление состояния, чтобы избежать гонок
+        setActivePuddles(prevPuddles => {
+            const newPuddles = [...prevPuddles, puddleData];
+            // console.log(`[setActivePuddles] Добавлена лужа ${puddleData.id}. Всего: ${newPuddles.length}`);
+            return newPuddles;
+        });
+    
+    // }, [sceneRef, setActivePuddles]); // <--- ОБНОВИ ЗАВИСИМОСТИ
+       // Добавляем зависимости playerTakeDamage и activePuddles, если setActivePuddles используется
+    }, [sceneRef, setActivePuddles, playerTakeDamage]); // Добавили setActivePuddles. playerTakeDamage уже был. sceneRef тоже нужен.
+
+    // Новая функция для запуска снаряда, который создаст лужу при попадании
+const launchPoisonProjectile = useCallback((casterId, casterPos, targetPos, projectileSpeed, puddleDuration, puddleRadius, puddleDps) => {
+    const currentScene = sceneRef.current;
+    // Проверки на наличие сцены и позиций
+    if (!currentScene || !casterPos || !targetPos) {
+        console.error("[launchPoisonProjectile] Missing scene or positions");
+        return;
+    }
+
+    console.log(`[launchPoisonProjectile] Caster ${casterId} launching poison projectile towards (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)})`);
+
+    // --- Визуальное представление снаряда (Зеленая сфера) ---
+    const projRadius = 8; // Размер сферы (подбери)
+    const projGeometry = new THREE.SphereGeometry(projRadius, 16, 8);
+    const projMaterial = new THREE.MeshStandardMaterial({
+        color: 0x33cc33,    // Ярко-зеленый
+        emissive: 0x114411, // Легкое свечение
+        roughness: 0.4,
+        metalness: 0.0
+        // Можно добавить прозрачность, если хочется
+        // transparent: true, opacity: 0.8,
+    });
+    const projMesh = new THREE.Mesh(projGeometry, projMaterial);
+    projMesh.name = `poison_proj_${casterId}_visual`;
+
+    // Начальная позиция - немного перед кастером
+    const directionToTarget = targetPos.clone().sub(casterPos).normalize();
+    const startOffset = 20; // Насколько перед кастером появится снаряд
+    const startPos = casterPos.clone().add(directionToTarget.clone().multiplyScalar(startOffset));
+    startPos.z = (casterPos.z || 0) + 15; // Немного выше центра кастера (подбери высоту)
+    projMesh.position.copy(startPos);
+
+    currentScene.add(projMesh);
+
+    // --- Расчет полета ---
+    // Направление от фактической точки старта к цели
+    const finalDirection = targetPos.clone().sub(startPos).normalize();
+    const velocity = finalDirection.multiplyScalar(projectileSpeed);
+    // Общее расстояние до цели от точки старта
+    const distanceToTarget = startPos.distanceTo(targetPos);
+
+    // --- Данные для отслеживания снаряда ---
+    const projectileData = {
+        id: `poison_proj_${casterId}_${Date.now()}`,
+        type: 'poison_puddle_projectile', // <<< Тип снаряда
+        mesh: projMesh,
+        targetPos: targetPos.clone(),
+        velocity: velocity,
+        distanceToTarget: distanceToTarget,
+        elapsedDistance: 0,
+        directDamage: 0, // Нет прямого урона
+        createsGroundEffect: true, // <<< Флаг, что создает эффект на земле
+        groundEffectParams: { // <<< Переименовано + добавлен тип
+            casterId: casterId,
+            type: 'poison', // <<< Тип эффекта
+            duration: puddleDuration,
+            radius: puddleRadius,
+            dps: puddleDps
+        }
+    };
+    activeEffectProjectilesRef.current.push(projectileData);
+    console.log(`[launchPoisonProjectile] Projectile ${projectileData.id} added. Total active: ${activeEffectProjectilesRef.current.length}`);
+
+    // Зависимости useCallback: sceneRef нужен для добавления меша.
+    // Другие параметры приходят извне.
+}, [sceneRef]); // createPoisonPuddle тут не нужен, он будет вызван из animate
+
+// Новая функция для создания огненной зоны
+const createBurningGround = useCallback((casterId, position, duration, radius, dps) => {
+    const currentScene = sceneRef.current;
+    if (!currentScene || !position || radius <= 0 || duration <= 0) {
+        console.error("[createBurningGround] Некорректные параметры или сцена.", {casterId, position, duration, radius, dps});
+        return;
+    }
+
+    console.log(`[${casterId}] Создание горящей земли в (${position.x.toFixed(0)}, ${position.y.toFixed(0)}) R=${radius}, DPS=${dps}, Duration=${duration}s`);
+
+    // --- Визуальный эффект (Огненный круг) ---
+    const groundGeometry = new THREE.CircleGeometry(radius, 32);
+    // Пример материала для огня (подбери цвета и прозрачность)
+    const groundMaterial = new THREE.MeshBasicMaterial({
+        color: 0xFF8C00, // DarkOrange
+        transparent: true,
+        opacity: 0.6,
+        // blending: THREE.AdditiveBlending, // Можно попробовать для яркости
+        side: THREE.DoubleSide,
+        depthWrite: false
+        // TODO: Позже можно улучшить: анимированная текстура огня, система частиц и т.д.
+    });
+
+    const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+    groundMesh.position.copy(position);
+    groundMesh.position.z = 0.1; // Снова немного над землей (можно чуть выше лужи - 0.15?)
+    groundMesh.renderOrder = 3; // Порядок отрисовки
+
+    currentScene.add(groundMesh);
+
+    // --- Добавляем данные в состояние ---
+    const groundData = {
+        id: `burn_ground_${casterId}_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        mesh: groundMesh,
+        position: position.clone(),
+        radiusSq: radius * radius,
+        dps: dps,
+        endTime: Date.now() + duration * 1000,
+    };
+
+    setActiveBurningGrounds(prevGrounds => {
+        const newGrounds = [...prevGrounds, groundData];
+        // console.log(`[setActiveBurningGrounds] Добавлена горящая зона ${groundData.id}. Всего: ${newGrounds.length}`);
+        return newGrounds;
+    });
+
+}, [sceneRef, setActiveBurningGrounds]); // Зависимости
+
+const createGroundEffect = useCallback((position, params) => {
+    // Параметры params: { casterId, type, duration, radius, dps }
+    if (!params || !position) {
+        console.error("[createGroundEffect] Invalid position or params received.");
+        return;
+    }
+
+    console.log(`[GroundEffect] Creating effect type '${params.type}' at (${position.x.toFixed(0)}, ${position.y.toFixed(0)})`);
+
+    switch (params.type) {
+        case 'poison':
+            // Вызываем функцию создания ядовитой лужи (она у нас уже есть)
+            if (typeof createPoisonPuddle === 'function') {
+                 createPoisonPuddle(params.casterId, position, params.duration, params.radius, params.dps);
+            } else {
+                 console.error("createPoisonPuddle is not defined!");
+            }
+            break;
+        case 'fire':
+            // Вызываем НОВУЮ функцию создания огненной земли
+            if (typeof createBurningGround === 'function') {
+                createBurningGround(params.casterId, position, params.duration, params.radius, params.dps);
+            } else {
+                console.error("createBurningGround is not defined yet!"); // Она еще не создана
+            }
+            break;
+        default:
+            console.warn(`[GroundEffect] Unknown ground effect type: ${params.type}`);
+    }
+}, [createPoisonPuddle, createBurningGround]); // <<< Добавили createBurningGround
 
     // Для Призрачного заклинателя
     const applyPlayerDebuff = useCallback((casterId, type, duration, strength) => {
-        console.warn(`[${casterId}] APPLY DEBUFF STUB: ${type}, duration: ${duration}s, strength: ${strength} - НЕ РЕАЛИЗОВАНО`);
-        // TODO:
-        // 1. Вызвать action из useGameStore для применения дебаффа:
-        //     store.applyDebuff(type, duration, strength); // <-- нужно импортировать applyDebuff из стора
-        // 2. В useGameStore должна быть логика:
-        //     - Добавления дебаффа в список активных дебаффов игрока (с временем окончания).
-        //     - Обновления computedStats, чтобы они учитывали активные дебаффы (например, уменьшали урон игрока).
-        //     - Удаления дебаффа из списка по истечении duration.
-    }, [/* applyDebuff */]); // <- Раскомментировать зависимость, если нужно
+        // Проверяем, что функция applyDebuff была успешно получена из стора
+        if (typeof applyDebuff === 'function') {
+            console.log(`[${casterId}] Applying debuff to player: Type=${type}, Duration=${duration}s, Strength=${strength}`);
+            // Вызываем action из useGameStore
+            applyDebuff(type, duration, strength);
+        } else {
+            console.error("useGameStore action 'applyDebuff' is not available in Level component!");
+        }
+    // }, [/* applyDebuff */]); // <--- Старая зависимость
+    }, [applyDebuff]);
 
     // Для Огра-мага
-    const createProjectileToPoint = useCallback((enemyId, startPos, targetPos, damage, speed) => {
-        console.warn(`[${enemyId}] CREATE PROJECTILE TO POINT STUB from (${startPos.x.toFixed(0)}, ${startPos.y.toFixed(0)}) to (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)}) - НЕ РЕАЛИЗОВАНО`);
-        // TODO:
-        // 1. Рассчитать вектор направления velocity от startPos к targetPos.
-        // 2. Создать данные снаряда (id, ownerId, position=startPos, velocity, damage, lifetime).
-        // 3. Добавить снаряд в массив enemyProjectilesRef.current.
-        // 4. Создать и добавить меш снаряда на сцену (addEnemyProjectileMesh).
-        // 5. Логика движения и коллизии в основном цикле animate уже должна работать для enemyProjectilesRef.
-    }, []); // Пока без зависимостей, но может понадобиться sceneRef
+    const createProjectileToPoint = useCallback((casterId, casterPos, targetPos, projectileSpeed, directDamage, groundEffectDuration, groundEffectRadius, groundEffectDps) => {
+        const currentScene = sceneRef.current;
+        if (!currentScene || !casterPos || !targetPos) {
+            console.error("[ProjectileToPoint] Отсутствует сцена или позиции!");
+            return;
+        }
+    
+        // Проверим параметры для эффекта земли
+        if (typeof groundEffectDuration !== 'number' || typeof groundEffectRadius !== 'number' || typeof groundEffectDps !== 'number') {
+             console.warn(`[ProjectileToPoint] Некорректные параметры для groundEffect для кастера ${casterId}`);
+             // Можно либо прервать, либо создать снаряд без наземного эффекта
+             // return;
+        }
+    
+    
+        console.log(`[ProjectileToPoint] Кастер ${casterId} запускает снаряд к точке (${targetPos.x.toFixed(0)}, ${targetPos.y.toFixed(0)})`);
+    
+        // --- Визуализация снаряда (Огненная сфера) ---
+        const projRadius = 10; // Радиус сферы снаряда
+        const projGeometry = new THREE.SphereGeometry(projRadius, 16, 8);
+        const projMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffA500,     // Оранжевый
+            emissive: 0xcc5500,  // Оранжевое свечение
+            roughness: 0.6,
+            // Можно добавить emissiveMap для текстуры огня
+        });
+        const projMesh = new THREE.Mesh(projGeometry, projMaterial);
+        projMesh.name = `point_proj_${casterId}_visual`;
+    
+        // Начальная позиция снаряда - немного впереди кастера
+        const directionToTarget = targetPos.clone().sub(casterPos).normalize();
+        const startOffset = 25; // Как далеко от кастера появится
+        const startPos = casterPos.clone().add(directionToTarget.clone().multiplyScalar(startOffset));
+        startPos.z = (casterPos.z || 0) + 20; // На уровне "груди" огра? Подбери высоту
+        projMesh.position.copy(startPos);
+    
+        currentScene.add(projMesh);
+    
+        // --- Расчет траектории ---
+        const finalDirection = targetPos.clone().sub(startPos).normalize(); // Направление от реального старта
+        const velocity = finalDirection.multiplyScalar(projectileSpeed);
+        const distanceToTarget = startPos.distanceTo(targetPos);
+    
+        // --- Данные для отслеживания снаряда ---
+        const projectileData = {
+            id: `point_proj_${casterId}_${Date.now()}`,
+            type: 'ogre_fire_projectile', // Оставляем или делаем более общим
+            mesh: projMesh,
+            targetPos: targetPos.clone(),
+            velocity: velocity,
+            distanceToTarget: distanceToTarget,
+            elapsedDistance: 0,
+            directDamage: directDamage || 0,
+            createsGroundEffect: true, // Флаг уже был
+            groundEffectParams: {
+                casterId: casterId, // <<< Добавили ID кастера
+                type: 'fire', // <<< Добавили тип эффекта
+                duration: groundEffectDuration,
+                radius: groundEffectRadius,
+                dps: groundEffectDps
+            }
+        };
+        activeEffectProjectilesRef.current.push(projectileData);
+        console.log(`[ProjectileToPoint] Добавлен снаряд ${projectileData.id}. Активных эффект-снарядов: ${activeEffectProjectilesRef.current.length}`);
+    
+    }, [sceneRef]); // Зависимость только от sceneRef для добавления меша
 
     // === КОНЕЦ ФУНКЦИЙ-ЗАГЛУШЕК ===
 
@@ -1513,6 +1822,9 @@ const triggerGroundSpikes = useCallback((casterId, targetPos, delay, radius, dam
 // УЖЕ ОПРЕДЕЛЕНЫ И ДОСТУПНЫ В ЭТОЙ ОБЛАСТИ ВИДИМОСТИ.
 
 const animate = (timestamp) => {
+    const currentStats = playerStats; // Получаем статы (они у тебя уже есть из useGameStore)
+// Выводим только нужные для проверки статы
+
     if (levelStatus !== 'playing') {
         console.log(`Game loop stopping. Status: ${levelStatus}`);
         if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
@@ -1821,52 +2133,83 @@ if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
 
         const ENEMY_COLLISION_SIZE = { width: 30, height: 30 }; 
 
-        const moveEnemyWithCollision = (directionVector, speedValue) => {
-            if (typeof dt === 'undefined') console.error("DT IS UNDEFINED IN moveEnemyWithCollision!");
-            if (speedValue <= 0) return { collidedX: false, collidedY: false };
-            const moveDir = directionVector.clone().normalize();
-            const moveAmount = speedValue * dt * 60; 
+// Recommended new version accepting moveStep
+const moveEnemyWithCollision = (directionVector, moveStep) => { // Changed parameter name
+    // console.log(`[Move Fn DEBUG] Called with moveStep: ${moveStep.toFixed(3)}`); // Debug log
+    if (!directionVector || moveStep <= 0) return { collidedX: false, collidedY: false };
 
-            const nextX = ePos.x + moveDir.x * moveAmount;
-            const nextY = ePos.y + moveDir.y * moveAmount; 
+    // Assuming ePos, ENEMY_COLLISION_SIZE, wallsRef, checkCollision, levelConfig, clamp are accessible from closure
 
-            const enemyHitbox = {
-                x: ePos.x - ENEMY_COLLISION_SIZE.width / 2,
-                y: ePos.y - ENEMY_COLLISION_SIZE.height / 2,
-                width: ENEMY_COLLISION_SIZE.width,
-                height: ENEMY_COLLISION_SIZE.height
-            };
+    // 1. Normalize direction
+    const moveDir = directionVector.clone().normalize();
 
-            const nextHitboxX = { ...enemyHitbox, x: nextX - ENEMY_COLLISION_SIZE.width / 2 };
-            let canMoveX = true;
-            for (const wall of wallsRef.current) {
-                if (checkCollision(nextHitboxX, wall)) {
-                    canMoveX = false; break;
-                }
-            }
+    // 2. Calculate potential next position using the provided moveStep
+    const currentX = ePos.x;
+    const currentY = ePos.y;
+    const nextX = currentX + moveDir.x * moveStep; // Use moveStep directly
+    const nextY = currentY + moveDir.y * moveStep; // Use moveStep directly
 
-            const nextHitboxY = { ...enemyHitbox, y: nextY - ENEMY_COLLISION_SIZE.height / 2 };
-            let canMoveY = true;
-            for (const wall of wallsRef.current) {
-                if (checkCollision(nextHitboxY, wall)) {
-                    canMoveY = false; break;
-                }
-            }
+    // 3. Check collision along X axis
+    const enemyHitbox = { 
+        x: currentX - ENEMY_COLLISION_SIZE.width / 2, 
+        y: currentY - ENEMY_COLLISION_SIZE.height / 2, 
+        width: ENEMY_COLLISION_SIZE.width, 
+        height: ENEMY_COLLISION_SIZE.height 
+    };
+    const nextHitboxX = { ...enemyHitbox, x: nextX - ENEMY_COLLISION_SIZE.width / 2 };
+    let canMoveX = true;
+    for (const wall of wallsRef.current) { 
+        if (checkCollision(nextHitboxX, wall)) {
+            canMoveX = false; 
+            break; 
+        } 
+    }
 
-            if (canMoveX) { ePos.x = nextX; }
-            if (canMoveY) { ePos.y = nextY; }
+    // 4. Check collision along Y axis (using potentially updated X)
+    // Use the X position the enemy will actually have after resolving X collision
+    const actualNextX = canMoveX ? nextX : currentX; 
+    const nextHitboxY = { 
+        x: actualNextX - ENEMY_COLLISION_SIZE.width / 2, // Use actualNextX
+        y: nextY - ENEMY_COLLISION_SIZE.height / 2, 
+        width: ENEMY_COLLISION_SIZE.width, 
+        height: ENEMY_COLLISION_SIZE.height 
+    };
+    let canMoveY = true;
+    for (const wall of wallsRef.current) { 
+        if (checkCollision(nextHitboxY, wall)) {
+            canMoveY = false; 
+            break; 
+        } 
+    }
 
-            const eSizeHW = ENEMY_COLLISION_SIZE.width / 2;
-            const eSizeHH = ENEMY_COLLISION_SIZE.height / 2;
-            const minXb = -levelConfig.gameWorldWidth / 2 + eSizeHW;
-            const maxXb = levelConfig.gameWorldWidth / 2 - eSizeHW;
-            const minYwb = -levelConfig.WORLD_Y_OFFSET + eSizeHH;
-            const maxYwb = levelConfig.gameWorldHeight - levelConfig.WORLD_Y_OFFSET - eSizeHH;
-            ePos.x = clamp(ePos.x, minXb, maxXb);
-            ePos.y = clamp(ePos.y, minYwb, maxYwb);
+    // 5. Apply movement based on collision results
+    const finalX = canMoveX ? nextX : currentX;
+    const finalY = canMoveY ? nextY : currentY;
+    
+    // Check if position actually changed before assigning (optional micro-optimization)
+    if (ePos.x !== finalX) ePos.x = finalX;
+    if (ePos.y !== finalY) ePos.y = finalY;
 
-            return { collidedX: !canMoveX, collidedY: !canMoveY };
-        };
+
+    // 6. Clamp final position to world boundaries
+    const eSizeHW = ENEMY_COLLISION_SIZE.width / 2;
+    const eSizeHH = ENEMY_COLLISION_SIZE.height / 2;
+    const minXb = -levelConfig.gameWorldWidth / 2 + eSizeHW;
+    const maxXb = levelConfig.gameWorldWidth / 2 - eSizeHW;
+    const minYwb = -levelConfig.WORLD_Y_OFFSET + eSizeHH;
+    const maxYwb = levelConfig.gameWorldHeight - levelConfig.WORLD_Y_OFFSET - eSizeHH;
+    
+    const clampedX = clamp(ePos.x, minXb, maxXb);
+    const clampedY = clamp(ePos.y, minYwb, maxYwb);
+
+    if (ePos.x !== clampedX) ePos.x = clampedX;
+    if (ePos.y !== clampedY) ePos.y = clampedY;
+    
+    // console.log(`[Move Fn DEBUG] Final Pos: (${ePos.x.toFixed(1)}, ${ePos.y.toFixed(1)})`);
+
+    // 7. Return collision results
+    return { collidedX: !canMoveX, collidedY: !canMoveY };
+};
 
         // ЛОГИКА ИИ (по типам врагов) 
         let isAttacking = false; 
@@ -2067,8 +2410,6 @@ if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
 
             // === КАСТЕРЫ (Маги, Чародеи и т.д.) ===
             case 'caster':
-            case 'ghostly_enchanter':
-            case 'ogre_mage':
             {
                 const currentAtkRange = eStats.attackRange || 300;
                 const isPlayerInAttackRange = dist <= currentAtkRange;
@@ -2098,6 +2439,78 @@ if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
                     if (enemy.beamEffectMesh) removeBeamMesh(enemy); 
                 }
                 break;
+            }
+            
+            case 'ogre_mage': {
+                const eStats = enemy.stats;
+                const ePos = enemy.pivot.position;
+                const currentAtkRange = eStats.attackRange || 300; // Используем attackRange для дистанции атаки
+                const isPlayerInAttackRange = dist <= currentAtkRange; // dist рассчитано до switch
+            
+                if (isPlayerInAttackRange) {
+                    rotateEnemyTowards(playerPos); // Целимся в игрока
+            
+                    if (enemy.attackCooldown <= 0) { // Готовность атаки
+                        enemy.attackCooldown = 1 / (eStats.attackSpeed || 0.5); // Сброс кулдауна
+            
+                        // Запоминаем позицию игрока в МОМЕНТ выстрела
+                        const targetPoint = playerPos.clone();
+            
+                        console.log(`Ogre Mage ${enemy.id} запускает снаряд в точку (${targetPoint.x.toFixed(0)}, ${targetPoint.y.toFixed(0)})!`);
+            
+                        // Вызываем новую функцию для запуска снаряда
+                        createProjectileToPoint(
+                            enemy.id,                           // ID кастера
+                            ePos.clone(),                       // Позиция кастера
+                            targetPoint,                        // Точка цели (позиция игрока в момент каста)
+                            eStats.projectileSpeed || 350,      // Скорость снаряда
+                            eStats.directDamage || 0,           // Прямой урон (если есть)
+                            eStats.groundEffectDuration || 3.0, // Длительность огня на земле
+                            eStats.groundEffectRadius || 40,    // Радиус огня
+                            eStats.groundEffectDps || 5         // Урон огня в секунду
+                        );
+                         // TODO: Анимация каста Огра-мага
+                    } else {
+                         // TODO: Анимация ожидания или прицеливания
+                    }
+                } else {
+                    // Игрок вне радиуса
+                    // TODO: Анимация Idle / Патрулирование?
+                }
+                break; // Конец case 'ogre_mage'
+            }
+
+            case 'ghostly_enchanter': {
+                const eStats = enemy.stats;
+                const ePos = enemy.pivot.position;
+            
+                // Используем радиус ауры или старый радиус атаки как радиус "внимания"
+                const awarenessRange = eStats.auraRadius || eStats.attackRange || 150;
+                const isPlayerInAwarenessRange = dist <= awarenessRange; // dist - расстояние до игрока, рассчитанное ранее
+            
+                // --- Новое поведение ---
+                if (isPlayerInAwarenessRange) {
+                    // Если игрок близко, поворачиваемся к нему
+                    rotateEnemyTowards(playerPos);
+                    // TODO: Здесь можно включить анимацию типа "поддерживает ауру" или "насторожен"
+                } else {
+                    // Игрок далеко.
+                    // Можно добавить логику возврата к точке спавна или простое стояние/патрулирование.
+                    // Пока что он просто не будет поворачиваться к игроку.
+                    // TODO: Анимация Idle
+                }
+            
+                // --- Старая логика атаки полностью УДАЛЕНА ---
+                // Весь блок if (isPlayerInAttackRange) { if (enemy.attackCooldown <= 0) { applyPlayerDebuff(...) } } больше не нужен.
+            
+                // Также убедись, что визуальный меш ауры (enemy.auraMesh) всегда видим,
+                // если сам враг активен и не мертв (это управляется в useEnemyLoader и проверкой isActive в animate)
+                if (enemy.auraMesh) {
+                     enemy.auraMesh.visible = enemy.pivot.visible; // Синхронизируем видимость ауры с видимостью врага
+                }
+            
+            
+                break; // Конец case 'ghostly_enchanter'
             }
 
             // === УНИКАЛЬНЫЕ НОВЫЕ ТИПЫ (из code1, адаптировано) ===
@@ -2216,18 +2629,108 @@ if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
                 break; 
             } 
             case 'poison_cultist': {
-                rotateEnemyTowards(playerPos); 
+                // --- Общие данные (как у лучника и в нашей предыдущей версии) ---
+                const eStats = enemy.stats;
+                const ePos = enemy.pivot.position;
                 const currentAtkRange = eStats.attackRange || 200;
-                if (dist <= currentAtkRange && enemy.abilityCooldown <= 0) {
-                    console.log(`Cultist ${enemy.id} throws poison puddle!`);
-                    // createPoisonPuddle(enemy.id, playerPos.clone(), eStats.puddleDuration || 10.0, eStats.puddleRadius || 50, eStats.puddleDps || 3); 
-                    enemy.abilityCooldown = eStats.abilityCooldown || 8.0;
+                // Используем скорость патрулирования из статов
+                const currentMoveSpeed = (eStats.speed || 1.0) *30; // <<< УБЕРИ * 60
+                const playerDist = ePos.distanceTo(playerPos);
+                const isPlayerInAttackRange = playerDist <= currentAtkRange;
+            
+                // --- Инициализация переменных для патрулирования (как у лучника, но используем поля из enemyRefData) ---
+                if (typeof enemy.patrolWaitTimer === 'undefined') enemy.patrolWaitTimer = 0;
+                if (typeof enemy.currentPatrolIndex === 'undefined') enemy.currentPatrolIndex = 0;
+                // patrolPoints и spawnPosition должны быть инициализированы в useEnemyLoader
+            
+                // --- Переменные для действий (как у лучника) ---
+                let shouldRotate = false;
+                let rotateTargetPos = null;
+                let shouldMove = false;
+                let moveTargetPos = null;
+                let canAttack = false; // Заменил isAttackingNow на canAttack для ясности
+            
+                // --- Основная логика (как у лучника) ---
+                if (isPlayerInAttackRange) {
+                    // === Игрок в радиусе атаки ===
+                    shouldRotate = true;
+                    rotateTargetPos = playerPos.clone();
+                    // enemy.patrolTargetPosition = null; // У культиста нет patrolTargetPosition, он использует patrolPoints/index
+                    enemy.patrolWaitTimer = 0; // Сбрасываем таймер ожидания
+                    shouldMove = false; // Останавливаемся для атаки
+                    if (enemy.abilityCooldown <= 0) { // Проверяем кулдаун способности
+                        canAttack = true;
+                    }
+                    // TODO: Можно добавить анимацию прицеливания/каста здесь
+                } else {
+                    // === Игрок вне радиуса атаки - Патрулирование ===
+                    if (enemy.patrolWaitTimer > 0) {
+                        // Стоим на точке, ждем
+                        enemy.patrolWaitTimer -= dt;
+                        shouldMove = false;
+                        shouldRotate = false; // Не поворачиваемся во время ожидания
+                        // TODO: Анимация Idle
+                    } else if (enemy.patrolPoints && enemy.patrolPoints.length > 0) {
+                        // Есть точки патруля и время ожидания вышло, двигаемся к следующей
+                        // Определяем целевую точку
+                        const targetPatrolPoint = enemy.patrolPoints[enemy.currentPatrolIndex];
+                        moveTargetPos = targetPatrolPoint; // Двигаемся к ней
+            
+                        const distToPatrolTargetSq = ePos.distanceToSquared(targetPatrolPoint);
+            
+                        // Порог достижения точки патруля (квадрат расстояния < 15*15)
+                        if (distToPatrolTargetSq < 225) {
+                            // Достигли точки патруля
+                            // console.log(`Cultist ${enemy.id} reached patrol point ${enemy.currentPatrolIndex}`);
+                            enemy.patrolWaitTimer = 1.5 + Math.random() * 2; // Начинаем ждать
+                            // Выбираем ИНДЕКС следующей точки (но двигаться начнем после ожидания)
+                            enemy.currentPatrolIndex = (enemy.currentPatrolIndex + 1) % enemy.patrolPoints.length;
+                            shouldMove = false; // Стоим и ждем
+                            shouldRotate = false;
+                            // TODO: Анимация Idle
+                        } else {
+                            // Продолжаем движение к точке
+                            shouldMove = true;
+                            shouldRotate = true; // Поворачиваемся по направлению к точке патруля
+                            rotateTargetPos = targetPatrolPoint;
+                            // TODO: Анимация ходьбы
+                        }
+                    } else {
+                        // Точек патруля нет - просто стоим (можно вернуть к spawnPosition?)
+                        shouldMove = false;
+                        shouldRotate = false; // Можно повернуться в сторону спавна или не поворачиваться
+                        // TODO: Анимация Idle
+                    }
                 }
-                break;
+            
+                // --- Выполнение действий ---
+            
+                // Атака
+                if (canAttack) {
+                    console.log(`Cultist ${enemy.id} throws poison projectile!`);
+                    launchPoisonProjectile(
+                        enemy.id, ePos.clone(), playerPos.clone(),
+                        eStats.projectileSpeed || 250,
+                        eStats.puddleDuration || 10.0, eStats.puddleRadius || 50, eStats.puddleDps || 3
+                    );
+                    enemy.abilityCooldown = eStats.abilityCooldown || 8.0; // Сброс кулдауна
+                     // TODO: Анимация атаки
+                }
+            
+                // Движение
+                if (shouldMove && moveTargetPos) {
+                    const direction = new THREE.Vector3().subVectors(moveTargetPos, ePos);
+                    const moveStep = currentMoveSpeed * dt; // <<< Рассчитываем шаг здесь
+                    moveEnemyWithCollision(direction, moveStep); // <<< Передаем готовый шаг
+                }
+            
+                // Поворот
+                if (shouldRotate && rotateTargetPos) {
+                    rotateEnemyTowards(rotateTargetPos);
+                }
+            
+                break; // Конец case 'poison_cultist'
             }
-            default:
-                console.warn(`Неизвестный или необработанный тип врага в switch: ${enemy.type}`);
-                break;
         } // --- Конец switch(enemy.type) ---
     }); // --- Конец loadedEnemyRefsArray.forEach ---
 
@@ -2312,6 +2815,257 @@ if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
         activeCloudsRef.current = remainingClouds;
     }
 
+    // === Y. Обновление Ядовитых Луж ===
+    // ==================================
+    const remainingPuddles = []; // Массив для луж, которые еще активны
+    const nowMs = Date.now(); // Текущее время в миллисекундах
+
+    // Итерируемся по всем лужам, которые сейчас активны (используем реф)
+    for (const puddle of activePuddlesRef.current) {
+        // Проверяем, не истекло ли время жизни лужи
+        if (nowMs < puddle.endTime) {
+            // 1. Лужа еще активна - оставляем ее в списке
+            remainingPuddles.push(puddle);
+
+            // 2. Проверяем, находится ли игрок внутри лужи
+            if (playerObject?.position && playerHp > 0) { // Проверяем, что игрок жив и существует
+                // Рассчитываем квадрат расстояния от игрока до центра лужи
+                const distanceSq = playerObject.position.distanceToSquared(puddle.position);
+
+                // Сравниваем с квадратом радиуса лужи
+                if (distanceSq <= puddle.radiusSq) {
+                    // Игрок внутри! Наносим урон, пропорциональный времени кадра (dt)
+                    const damageThisFrame = puddle.dps * dt;
+
+                    // Вызываем функцию нанесения урона игроку (из useGameStore)
+                    if (typeof playerTakeDamage === 'function') {
+                        playerTakeDamage(damageThisFrame);
+                        // Можно добавить лог для отладки урона, если нужно
+                        // console.log(`Игрок получает ${damageThisFrame.toFixed(2)} урона от лужи ${puddle.id}`);
+                    } else {
+                        console.error("Функция playerTakeDamage не доступна!");
+                    }
+                }
+            }
+        } else {
+            // 3. Время жизни лужи истекло - удаляем ее
+            console.log(`Ядовитая лужа ${puddle.id} исчезла.`);
+            // Удаляем меш со сцены
+            if (sceneRef.current && puddle.mesh) {
+                sceneRef.current.remove(puddle.mesh);
+            }
+            // Освобождаем ресурсы геометрии и материала
+            puddle.mesh?.geometry?.dispose();
+            puddle.mesh?.material?.dispose();
+            // Эту лужу мы НЕ добавляем в remainingPuddles
+        }
+    }
+
+    // Обновляем реф `activePuddlesRef`, оставляя только те лужи, что еще активны
+    // Сравниваем длину массивов, чтобы избежать лишних присваиваний рефу
+    if (activePuddlesRef.current.length !== remainingPuddles.length) {
+        activePuddlesRef.current = remainingPuddles;
+        // Важно: Мы напрямую меняем activePuddlesRef.current, как и для облаков.
+        // Если бы мы хотели синхронизировать это с состоянием activePuddles,
+        // потребовался бы вызов setActivePuddles уже после цикла animate (например, через requestAnimationFrame).
+        // Но для производительности прямое обновление рефа внутри animate допустимо.
+    }
+    // === Конец обновления Ядовитых Луж ===
+
+// === Z. Обновление Снарядов-Эффектов ===
+// =========================================
+const remainingEffectProjectiles = [];
+for (const proj of activeEffectProjectilesRef.current) {
+    if (!proj?.mesh || !proj.velocity || !proj.targetPos) { continue; } // Проверка
+
+    const velocityThisFrame = proj.velocity.clone().multiplyScalar(dt);
+    const distanceThisFrame = velocityThisFrame.length();
+    proj.elapsedDistance += distanceThisFrame;
+
+    let reachedTarget = proj.elapsedDistance >= proj.distanceToTarget;
+    const projRadius = proj.mesh.geometry?.parameters?.radius || 8;
+    if (!reachedTarget && proj.mesh.position.distanceToSquared(proj.targetPos) < projRadius * projRadius) {
+        reachedTarget = true;
+    }
+
+    if (!reachedTarget) {
+        // === Снаряд еще летит ===
+        proj.mesh.position.add(velocityThisFrame);
+        remainingEffectProjectiles.push(proj);
+    } else {
+        // === Снаряд достиг цели ===
+        const impactPos = proj.targetPos; // Точка прибытия
+        console.log(`[EffectProj] Projectile ${proj.id} (type: ${proj.type}) reached target at (${impactPos.x.toFixed(0)}, ${impactPos.y.toFixed(0)}).`);
+
+        // --- >>> Шаг 1: Проверка прямого попадания в игрока <<< ---
+        if (proj.directDamage > 0 && playerObject?.position && playerHp > 0) {
+            const playerPos = playerObject.position;
+            // Задаем небольшой радиус вокруг точки попадания для регистрации прямого урона
+            // Можно использовать половину ширины хитбокса игрока или фиксированное значение
+            const hitRadius = PLAYER_HITBOX_SIZE.width / 2 || 15; // Радиус "взрыва" для прямого урона
+            const hitRadiusSq = hitRadius * hitRadius;
+
+            // Проверяем расстояние от ТЕКУЩЕЙ позиции игрока до ТОЧКИ ПРИБЫТИЯ снаряда
+            if (playerPos.distanceToSquared(impactPos) <= hitRadiusSq) {
+                // Попали! Наносим прямой урон.
+                console.log(`   -> Projectile ${proj.id} НАПРЯМУЮ ПОПАЛ в игрока! Урон: ${proj.directDamage}.`);
+                if (typeof playerTakeDamage === 'function') {
+                    playerTakeDamage(proj.directDamage);
+                } else {
+                    console.error("playerTakeDamage function is not available!");
+                }
+            } else {
+                 console.log(`   -> Снаряд ${proj.id} достиг цели, но игрок не был достаточно близко для прямого попадания.`);
+            }
+        }
+        // --- >>> Конец проверки прямого попадания <<< ---
+
+
+        // --- Шаг 2: Создаем эффект на земле (в любом случае, если он предусмотрен) ---
+        if (proj.createsGroundEffect && proj.groundEffectParams) {
+            if (typeof createGroundEffect === 'function') {
+                console.log(`   -> Создание эффекта на земле: ${proj.groundEffectParams.type}`);
+                createGroundEffect(impactPos, proj.groundEffectParams); // Используем точку прибытия
+            } else {
+                console.error(`[EffectProj] Функция createGroundEffect не определена!`);
+            }
+        }
+
+        // --- Шаг 3: Удаляем меш снаряда ---
+        if (sceneRef.current && proj.mesh) {
+            sceneRef.current.remove(proj.mesh);
+        }
+        proj.mesh?.geometry?.dispose();
+        proj.mesh?.material?.dispose();
+
+        // Снаряд обработан, в remainingEffectProjectiles не добавляем
+    }
+}
+// Обновляем реф
+if (activeEffectProjectilesRef.current.length !== remainingEffectProjectiles.length) {
+    activeEffectProjectilesRef.current = remainingEffectProjectiles;
+}
+// === Конец обновления Снарядов-Эффектов ===
+
+// === ZZ. Обновление Горящей Земли ===
+// =========================================
+const remainingBurningGrounds = []; // Для активных зон горения
+const nowMs_fire = Date.now(); // Или используй nowMs, если он еще доступен
+
+for (const zone of activeBurningGroundsRef.current) {
+    // Проверяем время жизни
+    if (nowMs_fire < zone.endTime) {
+        // Зона активна
+        remainingBurningGrounds.push(zone);
+
+        // Проверяем коллизию с игроком
+        if (playerObject?.position && playerHp > 0) {
+            const distanceSq = playerObject.position.distanceToSquared(zone.position);
+            if (distanceSq <= zone.radiusSq) {
+                // Игрок внутри горящей зоны
+                const damageThisFrame = zone.dps * dt; // Урон за кадр
+                if (typeof playerTakeDamage === 'function') {
+                    playerTakeDamage(damageThisFrame);
+                    // console.log(`Игрок получает ${damageThisFrame.toFixed(2)} урона от огня ${zone.id}`);
+                } else {
+                    console.error("playerTakeDamage function is not available!");
+                }
+            }
+        }
+    } else {
+        // Время жизни зоны истекло
+        // console.log(`Зона горения ${zone.id} истекла. Удаляем.`);
+        // Удаляем меш со сцены
+        if (sceneRef.current && zone.mesh) {
+            sceneRef.current.remove(zone.mesh);
+        }
+        // Освобождаем ресурсы
+        zone.mesh?.geometry?.dispose();
+        zone.mesh?.material?.dispose();
+    }
+}
+
+// Обновляем реф новым массивом активных зон
+if (activeBurningGroundsRef.current.length !== remainingBurningGrounds.length) {
+    activeBurningGroundsRef.current = remainingBurningGrounds;
+}
+// === Конец обновления Горящей Земли ===
+
+    // === X. Проверка Ауры Заклинателей ===
+    // =====================================
+    let isPlayerCurrentlyInAnyAura = false; // Флаг, находится ли игрок ХОТЯ БЫ В ОДНОЙ ауре в этом кадре
+
+    // Проверяем только если игрок существует
+    if (playerObject?.position) {
+        const playerPos = playerObject.position;
+
+        // Проходим по всем активным врагам
+        loadedEnemyRefsArray?.forEach(enemy => { // enemyRefs - массив из useEnemyLoader
+            // Проверяем, является ли враг активным заклинателем с аурой
+            if (enemy.type === 'ghostly_enchanter' && enemy.isActive && !enemy.isDead && enemy.stats.auraRadius > 0) {
+                const auraRadius = enemy.stats.auraRadius;
+                const distSq = playerPos.distanceToSquared(enemy.pivot.position); // Квадрат расстояния
+
+                // Если игрок внутри радиуса ауры этого заклинателя
+                if (distSq <= auraRadius * auraRadius) {
+                    isPlayerCurrentlyInAnyAura = true;
+                    // Можно было бы выйти из forEach, если бы это был обычный for,
+                    // но для forEach придется пройти до конца. Это не страшно.
+                }
+            }
+        });
+    }
+
+    // Получаем ТЕКУЩИЙ статус ауры из стора (чтобы не вызывать set лишний раз)
+    const currentAuraStatusInStore = useGameStore.getState().isAffectedByWeakeningAura;
+
+    // Если статус изменился (игрок вошел в ауру или вышел из всех аур)
+    if (isPlayerCurrentlyInAnyAura !== currentAuraStatusInStore) {
+        // Вызываем action для обновления флага в сторе
+        setWeakeningAuraStatus(isPlayerCurrentlyInAnyAura);
+    }
+    // === Конец проверки Ауры ===
+
+    
+    // === X. Обновление Анимаций Дверей ===
+    // =====================================
+    // Используем новый массив для хранения анимаций, которые еще не завершены
+    const remainingDoorAnimations = [];
+    // Итерируемся по текущему массиву анимируемых дверей
+    for (const anim of animatingDoorsRef.current) {
+        // Увеличиваем прошедшее время
+        anim.elapsedTime += dt;
+
+        // Рассчитываем прогресс анимации (значение от 0 до 1)
+        const t = Math.min(anim.elapsedTime / anim.duration, 1.0);
+
+        // Рассчитываем новую позицию Y с помощью линейной интерполяции (lerp)
+        // THREE.MathUtils.lerp(startValue, endValue, interpolationFactor)
+        anim.mesh.position.y = THREE.MathUtils.lerp(anim.startY, anim.targetY, t);
+
+        // Проверяем, завершена ли анимация
+        if (t < 1.0) {
+            // Если нет, добавляем ее в список для следующего кадра
+            remainingDoorAnimations.push(anim);
+        } else {
+            // Анимация завершена
+            console.log(`[DoorAnim] Анимация для двери ${anim.id} завершена.`);
+            // Делаем дверь невидимой или удаляем окончательно
+            anim.mesh.visible = false;
+            // Если нужно полностью удалить:
+            // if (sceneRef.current) sceneRef.current.remove(anim.mesh);
+            // anim.mesh.geometry?.dispose();
+            // anim.mesh.material?.dispose();
+        }
+    }
+
+    // Обновляем реф `animatingDoorsRef`, оставляя только незавершенные анимации
+    // Сравниваем длину, чтобы избежать лишних присваиваний, если ничего не изменилось
+    if (animatingDoorsRef.current.length !== remainingDoorAnimations.length) {
+         animatingDoorsRef.current = remainingDoorAnimations;
+    }
+    // === Конец обновления анимаций дверей ===
+
     // ==================================
     // === 6. Проверка Победы/Проигрыша =
     // ==================================
@@ -2376,7 +3130,7 @@ if (playerCurrentRoom && playerCurrentRoom !== currentActiveRoomId) {
              effectTimersRef.current.forEach(timerId => clearTimeout(timerId));
              effectTimersRef.current = [];
         };
-    }, [isLoading, levelStatus, playerObject, levelData]);
+    }, [isLoading, levelStatus, playerObject, levelData, playerStats]);
 
     if (!fogMaterialRef.current && sceneRef.current) { // Добавим проверку на sceneRef, чтобы убедиться, что Three.js готово
         console.log("[Level.jsx] Creating fog material");

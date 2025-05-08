@@ -22,7 +22,7 @@ import useGameStore from "./store/useGameStore";
 import './App.scss'; // Убедитесь, что здесь есть стили для .app-container, плавающих блоков и их содержимого
 
 // --- Константа времени восстановления (в миллисекундах) --- (Из Кода 1)
-const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000; // 30 минут
+const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1; // 30 минут
 
 const App = () => {
     // === Состояния === (Из Кода 2, они более полные)

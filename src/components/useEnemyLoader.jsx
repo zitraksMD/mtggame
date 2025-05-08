@@ -3,6 +3,7 @@
 // ИНТЕГРИРОВАНА ЛОГИКА ИЗ КОД1 ДЛЯ БАЗОВЫХ СТАТОВ ИЗ СПРАВОЧНИКА
 // ИЗМЕНЕНИЯ ИЗ КОД1 (переименование состояния, возвращаемые значения) ПРИМЕНЕНЫ
 // ДОБАВЛЕНА ЛОГИКА INITIALLY_ACTIVE И ROOM_ID
+// +++ ИНТЕГРИРОВАНА ЛОГИКА АУРЫ ИЗ КОД1 +++
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
@@ -134,12 +135,9 @@ const useEnemyLoader = (
             };
             delete scaledStats.hp_multiplier;
 
-            // +++ ИЗМЕНЕНИЯ ИЗ КОД1: Читаем флаг начальной активности +++
-            // Если initiallyActive не указан в JSON, по умолчанию считаем врага активным
             const initiallyActive = enemyDataFromLevel.initiallyActive !== undefined ? enemyDataFromLevel.initiallyActive : true;
-            const roomId = enemyDataFromLevel.roomId || null; // Получаем roomId
+            const roomId = enemyDataFromLevel.roomId || null;
 
-            // --- Создание Pivot ---
             const pivot = new THREE.Group();
             pivot.name = `pivot_${enemyDataFromLevel.id}`;
             const startX = convertTiledX(enemyDataFromLevel.x || 0, 0, gameWorldWidth);
@@ -166,7 +164,7 @@ const useEnemyLoader = (
             const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.6, metalness: 0.1 });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.name = enemyDataFromLevel.id + "_placeholder";
-            mesh.position.y = 15;
+            mesh.position.y = 15; // Предполагаем, что это высота центра меша над pivot
             mesh.castShadow = true;
             pivot.add(mesh);
 
@@ -174,7 +172,7 @@ const useEnemyLoader = (
             if (enemyDataFromLevel.type === 'revenant_knight') {
                 shieldMesh = new THREE.Mesh(shieldResources.geometry, shieldResources.material);
                 shieldMesh.name = `shield_${enemyDataFromLevel.id}`;
-                shieldMesh.position.y = 15;
+                shieldMesh.position.y = 15; // Такая же высота как у основного меша
                 shieldMesh.visible = (scaledStats.initialBlockCharges || 0) > 0;
                 pivot.add(shieldMesh);
             }
@@ -184,19 +182,65 @@ const useEnemyLoader = (
             const hpFillMesh = new THREE.Mesh(hpResources.geometryFill, hpResources.materialFill);
             hpFillMesh.position.z = 0.1;
             hpBarContainer.add(hpBgMesh); hpBarContainer.add(hpFillMesh);
-            hpBarContainer.position.set(0, HEALTH_BAR_OFFSET_Y + 15, 1);
+            // HEALTH_BAR_OFFSET_Y - это смещение от *центра* меша врага.
+            // Если mesh.position.y = 15, то центр меша на высоте 15.
+            // Хелсбар должен быть на mesh.position.y + HEALTH_BAR_OFFSET_Y
+            hpBarContainer.position.set(0, mesh.position.y + HEALTH_BAR_OFFSET_Y, 1);
             hpBgMesh.renderOrder = 998; hpFillMesh.renderOrder = 999;
             pivot.add(hpBarContainer);
 
-            // +++ ИЗМЕНЕНИЯ ИЗ КОД1: Добавление на сцену и управление начальной видимостью +++
+            // +++ ДОБАВЛЯЕМ АУРУ для Заклинателя (из код1) +++
+            let auraMesh = null;
+            if (enemyDataFromLevel.type === 'ghostly_enchanter') {
+                const auraRadius = baseStats.auraRadius; // Используем baseStats, т.к. auraRadius не должен скейлиться от уровня/сложности
+
+                if (typeof auraRadius === 'number' && auraRadius > 0) {
+                    const auraGeometry = new THREE.SphereGeometry(auraRadius, 32, 16);
+                    const auraMaterial = new THREE.MeshBasicMaterial({
+                        color: 0x9370DB, // MediumPurple
+                        transparent: true,
+                        opacity: 0.15,
+                        depthWrite: false,
+                        side: THREE.DoubleSide
+                    });
+                    auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
+                    auraMesh.name = `aura_${enemyDataFromLevel.id}`;
+                    // Центрируем ауру относительно центра основной модели врага (mesh)
+                    auraMesh.position.copy(mesh.position); // Копируем позицию заглушки-сферы врага
+                    pivot.add(auraMesh);
+                    console.log(`[useEnemyLoader] Создана аура для ${enemyDataFromLevel.id} с радиусом ${auraRadius}`);
+                    auraMesh.visible = initiallyActive; // Синхронизируем с видимостью врага
+                } else {
+                    console.warn(`[useEnemyLoader] У Заклинателя ${enemyDataFromLevel.id} не задан или некорректен auraRadius.`);
+                }
+            }
+            // +++++++++++++++++++++++++++++++++++++++
+
             if (initiallyActive) {
                 pivot.visible = true;
-                console.log(`[useEnemyLoader] Враг ${enemyDataFromLevel.id} создан АКТИВНЫМ и видимым.`); // Можно раскомментировать для детального лога
             } else {
-                pivot.visible = false; // Делаем невидимым, если неактивен
-                console.log(`[useEnemyLoader] Враг ${enemyDataFromLevel.id} создан НЕАКТИВНЫМ и скрыт.`); // Можно раскомментировать для детального лога
+                pivot.visible = false;
             }
-            scene.add(pivot); // Добавляем pivot на сцену в любом случае
+            scene.add(pivot);
+
+            let patrolPoints = null;
+            let initialPatrolWaitTimer = 0;
+            if (enemyDataFromLevel.type === 'poison_cultist') {
+                const patrolRadius = baseStats.patrolRadius;
+                if (typeof patrolRadius === 'number' && patrolRadius > 0) {
+                    const spawnPosVec = new THREE.Vector3(startX, startY, 0);
+                    console.log(`[useEnemyLoader] Calculating patrol points for Cultist ${enemyDataFromLevel.id} around (${startX.toFixed(0)}, ${startY.toFixed(0)}) with radius ${patrolRadius}`);
+                    patrolPoints = [
+                        spawnPosVec.clone().add(new THREE.Vector3( patrolRadius,  patrolRadius, 0)),
+                        spawnPosVec.clone().add(new THREE.Vector3(-patrolRadius,  patrolRadius, 0)),
+                        spawnPosVec.clone().add(new THREE.Vector3(-patrolRadius, -patrolRadius, 0)),
+                        spawnPosVec.clone().add(new THREE.Vector3( patrolRadius, -patrolRadius, 0))
+                    ];
+                    initialPatrolWaitTimer = 1.0 + Math.random() * 1.5;
+                } else {
+                    console.log(`[useEnemyLoader] Cultist ${enemyDataFromLevel.id} has no valid patrolRadius (value: ${patrolRadius}), patrol disabled.`);
+                }
+            }
 
             const enemyRefData = {
                 id: enemyDataFromLevel.id,
@@ -205,6 +249,7 @@ const useEnemyLoader = (
                 pivot: pivot,
                 mesh: mesh,
                 shieldMesh: shieldMesh,
+                auraMesh: auraMesh, // <<< Добавляем ссылку на меш ауры (или null)
                 mixer: null, actions: {}, idleActionName: null, currentAction: null,
                 attackCooldown: Math.random() * 0.5,
                 abilityCooldown: Math.random() * (scaledStats.summonCooldown || scaledStats.abilityCooldown || 5.0),
@@ -218,9 +263,11 @@ const useEnemyLoader = (
                 exploded: false,
                 beamEffectMesh: null,
                 beamEffectTimer: 0,
-                // +++ ИЗМЕНЕНИЯ ИЗ КОД1: Сохраняем состояние активности и roomId +++
                 isActive: initiallyActive,
-                roomId: roomId
+                roomId: roomId,
+                patrolPoints: patrolPoints,
+                currentPatrolIndex: 0,
+                patrolWaitTimer: initialPatrolWaitTimer
             };
             loadedEnemyData.push(enemyRefData);
 
@@ -228,9 +275,8 @@ const useEnemyLoader = (
                 id: enemyDataFromLevel.id,
                 maxHp: scaledStats.hp,
                 currentHp: scaledStats.hp,
-                isBoss: enemyDataFromLevel.type === 'boss', // или другая логика определения босса
+                isBoss: enemyDataFromLevel.type === 'boss',
                 initialBlockCharges: scaledStats.initialBlockCharges || 0,
-                // +++ ИЗМЕНЕНИЯ ИЗ КОД1: Также сохраняем в initialStates +++
                 isActive: initiallyActive,
                 roomId: roomId
             });
@@ -240,7 +286,6 @@ const useEnemyLoader = (
         setEnemyRefsArray(loadedEnemyData);
         setInitialEnemyStates(initialStatesData);
         setAreEnemiesLoaded(true);
-        // console.log(`✅ useEnemyLoader завершил создание ${loadedEnemyData.length} врагов-заглушек.`);
 
         return () => { cleanupEnemies(); };
     }, [enemiesData, scene, levelConfig, levelId, difficulty, cleanupEnemies, hpResources, shieldResources, BASE_ENEMY_STATS, setEnemyRefsArray]);
