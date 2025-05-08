@@ -29,13 +29,19 @@ const ENEMY_COLLISION_SIZE = { width: 30, height: 30 }; // Размер хитб
 // --- Компонент HealthBar ---
 const HealthBar = ({ currentHp, maxHp }) => {
     const healthPercent = maxHp > 0 ? Math.max(0, (currentHp / maxHp) * 100) : 0;
+  
+    // --- ОКРУГЛЕНИЕ ЗНАЧЕНИЙ ---
+    // Округляем текущее HP до ближайшего целого. Убедимся, что оно не меньше 0.
+    const displayCurrentHp = Math.max(0, Math.round(currentHp));
+    // Максимальное HP тоже округляем (на всякий случай)
+    const displayMaxHp = Math.round(maxHp);
+    // -------------------------
+  
     return (
-      // Контейнер остается
       <div className="health-bar-container">
-        {/* Полоска заполнения */}
         <div className="health-bar" style={{ width: `${healthPercent}%` }}></div>
-        {/* Текст поверх полоски */}
-        <span className="health-bar-text">{`${currentHp} / ${maxHp}`}</span>
+        {/* Используем округленные значения */}
+        <span className="health-bar-text">{`${displayCurrentHp} / ${displayMaxHp}`}</span>
       </div>
     );
   };
@@ -3500,7 +3506,7 @@ if (playerObject?.position && levelChestsRef.current?.length > 0) {
             {/* Передаем ref и награды в компонент */}
             <LevelLootPopup ref={levelLootPopupRef} rewards={lastOpenedLevelChestRewards} />
         </CSSTransition>
-        
+
             {/* Джойстик */}
             <div id="joystick-container" className="joystick-container" style={{ visibility: isLoading ? 'hidden' : 'visible' }}></div>
 
