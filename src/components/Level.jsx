@@ -13,6 +13,8 @@ import { clamp, checkCollision, convertTiledX, convertTiledY, DEFAULT_WORLD_WIDT
 import { BASE_ENEMY_STATS } from '../data/enemyBaseStats';
 import { getLevelChestTypeById } from '../data/levelChestData'; // Adjust path
 import { CSSTransition } from 'react-transition-group'; // Импортируем CSSTransition
+import LevelVictoryPopup from './LevelVictoryPopup';
+
 
 
 
@@ -198,7 +200,10 @@ const formatTime = (totalSeconds) => {
         incrementKills, // <<< ДОБАВЬ ЭТО
         openLevelChest, 
         lastOpenedLevelChestRewards, 
-        clearLastLevelChestRewards    } = useGameStore(state => ({
+        clearLastLevelChestRewards,
+        resetLevelRewards,
+        currentLevelRewards 
+                     } = useGameStore(state => ({
         playerHp: state.playerHp,
         displayMaxHp: state.computedStats().hp,
         playerStats: state.computedStats(),
@@ -209,10 +214,15 @@ const formatTime = (totalSeconds) => {
         incrementKills: state.incrementKills, // <<< И СВЯЗЫВАНИЕ ЗДЕСЬ
         openLevelChest: state.openLevelChest, // <<< ДОБАВЬ ЭТО
         lastOpenedLevelChestRewards: state.lastOpenedLevelChestRewards,
-        clearLastLevelChestRewards: state.clearLastLevelChestRewards    }));
+        clearLastLevelChestRewards: state.clearLastLevelChestRewards,
+        resetLevelRewards: state.resetLevelRewards,
+        currentLevelRewards: state.currentLevelRewards
+        }));
 
     const levelLootPopupRef = useRef(null);
+    const levelVictoryPopupRef = useRef(null);
 
+    
     // --- Инициализация HP при монтировании/смене уровня ---
     useEffect(() => {
         console.log(`[Level ${levelData.id}] Mount/Data Change: Вызов initializeLevelHp()`);
@@ -769,85 +779,106 @@ useEffect(() => {
     );
 
     // --- Управление общей загрузкой ---
-    useEffect(() => {
-        const allLoaded = !!levelConfig && isPlayerModelLoaded && areEnemiesLoaded && beamTexturesLoaded;
-        const currentlyLoading = !allLoaded;
-    
-        if (isLoading !== currentlyLoading) {
-            setIsLoading(currentlyLoading);
-    
-            if (!currentlyLoading) { // Загрузка ТОЛЬКО ЧТО завершилась
-                if (!readyCalledRef.current) { // И onReady еще не вызывался
-                    console.log("✨ Уровень ГОТОВ! Вызов onReady.");
-    
-                    // Инициализация HP и вызов onReady (как у тебя и было)
-                    if (typeof initializeLevelHp === 'function') {
-                        initializeLevelHp();
-                        console.log("HP игрока инициализировано после загрузки.");
-                    } else { /* ошибка */ }
-                    if (typeof onReady === 'function') {
-                        onReady();
-                    } else { /* предупреждение */ }
-                    readyCalledRef.current = true;
-    
-                    // --- >>> ЗАПУСК ОБЩЕГО ТАЙМЕРА ВРЕМЕНИ ИГРЫ <<< ---
-                    // Запоминаем время начала уровня ВСЕГДА, когда уровень готов
-                    levelStartTimeRef.current = Date.now();
-                    // Сбрасываем состояние с длительностью предыдущей игры
-                    setTimePlayedSeconds(0);
-                    console.log("[Timer] Уровень готов, общий таймер времени запущен.");
-                    // --- >>> КОНЕЦ ЗАПУСКА ТАЙМЕРА <<< ---
-    
-    
-                    // Установка стартовой комнаты (как у тебя и было)
-                    if (levelData?.rooms) {
-                        const startingRoom = levelData.rooms.find(room => room.isStartingRoom);
-                        if (startingRoom) {
-                            setCurrentActiveRoomId(startingRoom.id);
-                            console.log(`[Level.jsx] Starting room set to: ${startingRoom.id}`);
-                            // Опционально: убедиться, что туман для нее скрыт
-                            // if (fogOverlaysRef.current?.[startingRoom.id]) {
-                            //     fogOverlaysRef.current[startingRoom.id].visible = false;
-                            // }
-                        } else if (levelData.rooms.length > 0) {
-                             // Логика выбора первой комнаты по умолчанию
-                            const firstRoomAsStarting = levelData.rooms[0];
-                            setCurrentActiveRoomId(firstRoomAsStarting.id);
-                            console.log(`[Level.jsx] Defaulting to first room as starting room: ${firstRoomAsStarting.id}`);
-                            // Скрыть туман для первой комнаты
-                            if (fogOverlaysRef.current?.[firstRoomAsStarting.id]) {
-                                 fogOverlaysRef.current[firstRoomAsStarting.id].visible = false;
-                                 console.log(`[Level.jsx] Fog cleared for default starting room: ${firstRoomAsStarting.id}`);
-                            }
-                        } else { /* ошибка, если комнат нет */ }
-                    } else { /* предупреждение, если нет levelData.rooms */ }
-    
-    
-                    // Логика для ТАЙМЕРА ВЫЖИВАНИЯ (если он нужен)
-                    if (levelData?.winCondition?.type === 'survive_duration') {
-                        // levelStartTimeRef уже установлен выше
-                        setRemainingTime(levelData.winCondition.duration);
-                        console.log(`Survival Timer Started: ${levelData.winCondition.duration}s`);
-                    } else {
-                        // Для других типов уровней
-                        setRemainingTime(null);
-                    }
-    
-                } else {
-                    // Загрузка завершилась, но onReady уже был вызван
-                }
-            } else {
-                // Переход в состояние загрузки
-                console.log("[Level.jsx] Переход в состояние загрузки...");
-                // Сбрасываем таймер при начале загрузки (на всякий случай)
-                levelStartTimeRef.current = null;
-                setTimePlayedSeconds(0);
-            }
-        }
-    // }, [ /* Старые зависимости */ ]);
-    // Добавляем все функции установки состояния, используемые внутри
-    }, [levelConfig, isPlayerModelLoaded, areEnemiesLoaded, beamTexturesLoaded, isLoading, onReady, initializeLevelHp, levelData, setIsLoading, setRemainingTime, setCurrentActiveRoomId, setTimePlayedSeconds, readyCalledRef, levelStartTimeRef]); // Добавлены зависимости (рефы и set-функции)
+useEffect(() => {
+    const allLoaded = !!levelConfig && isPlayerModelLoaded && areEnemiesLoaded && beamTexturesLoaded;
+    const currentlyLoading = !allLoaded;
 
+    if (isLoading !== currentlyLoading) {
+        setIsLoading(currentlyLoading);
+
+        if (!currentlyLoading) { // Загрузка ТОЛЬКО ЧТО завершилась
+            if (!readyCalledRef.current) { // И onReady еще не вызывался
+                console.log("✨ Уровень ГОТОВ! Вызов onReady.");
+
+                // Инициализация HP и вызов onReady (как у тебя и было)
+                if (typeof initializeLevelHp === 'function') {
+                    initializeLevelHp();
+                    console.log("HP игрока инициализировано после загрузки.");
+                } else { /* ошибка */ console.error("Action initializeLevelHp не доступен!");} // Добавил console.error для соответствия
+                if (typeof onReady === 'function') {
+                    onReady();
+                } else { /* предупреждение */ console.warn("Callback onReady не предоставлен.");} // Добавил console.warn для соответствия
+
+                // --- >>> СБРОС СЧЕТЧИКОВ НАГРАД И ЗАПУСК ТАЙМЕРА (из код1) <<< ---
+                if (typeof resetLevelRewards === 'function') {
+                    resetLevelRewards(); // <<< ВЫЗЫВАЕМ СБРОС ЗДЕСЬ
+                } else {
+                    console.error("Action resetLevelRewards не доступен!");
+                }
+                levelStartTimeRef.current = Date.now(); // Запускаем таймер времени игры
+                setTimePlayedSeconds(0);                  // Сбрасываем счетчик времени игры
+                console.log("[Level Start] Счетчики наград сброшены. Таймер запущен.");
+                // --- >>> КОНЕЦ БЛОКА (из код1) <<< ---
+
+                readyCalledRef.current = true; // Перемещено после логики сброса и запуска таймера, как в код1
+
+
+                // Установка стартовой комнаты (как у тебя и было)
+                if (levelData?.rooms) {
+                    const startingRoom = levelData.rooms.find(room => room.isStartingRoom);
+                    if (startingRoom) {
+                        setCurrentActiveRoomId(startingRoom.id);
+                        console.log(`[Level.jsx] Starting room set to: ${startingRoom.id}`);
+                        // Опционально: убедиться, что туман для нее скрыт
+                        // if (fogOverlaysRef.current?.[startingRoom.id]) {
+                        //     fogOverlaysRef.current[startingRoom.id].visible = false;
+                        // }
+                    } else if (levelData.rooms.length > 0) {
+                        // Логика выбора первой комнаты по умолчанию
+                        const firstRoomAsStarting = levelData.rooms[0];
+                        setCurrentActiveRoomId(firstRoomAsStarting.id);
+                        console.log(`[Level.jsx] Defaulting to first room as starting room: ${firstRoomAsStarting.id}`);
+                        // Скрыть туман для первой комнаты
+                        if (fogOverlaysRef.current?.[firstRoomAsStarting.id]) {
+                            fogOverlaysRef.current[firstRoomAsStarting.id].visible = false;
+                            console.log(`[Level.jsx] Fog cleared for default starting room: ${firstRoomAsStarting.id}`);
+                        }
+                    } else { /* ошибка, если комнат нет */ console.error("[Level.jsx] Нет комнат для установки стартовой."); }
+                } else { /* предупреждение, если нет levelData.rooms */ console.warn("[Level.jsx] levelData.rooms не определены для установки стартовой комнаты.");}
+
+
+                // Логика для ТАЙМЕРА ВЫЖИВАНИЯ (если он нужен)
+                if (levelData?.winCondition?.type === 'survive_duration') {
+                    // levelStartTimeRef уже установлен выше
+                    setRemainingTime(levelData.winCondition.duration);
+                    console.log(`Survival Timer Started: ${levelData.winCondition.duration}s`);
+                } else {
+                    // Для других типов уровней
+                    setRemainingTime(null);
+                }
+
+            } // else { // Закомментировано, т.к. в код1 этого блока нет внутри !readyCalledRef.current
+                //     // Загрузка завершилась, но onReady уже был вызван
+                // }
+        } else {
+            // Переход в состояние загрузки
+            console.log("[Level.jsx] Переход в состояние загрузки...");
+            // Сбрасываем таймер при начале загрузки (на всякий случай)
+            levelStartTimeRef.current = null;
+            setTimePlayedSeconds(0);
+            // Можно и здесь сбрасывать награды, если нужно (как в комментарии код1)
+            // if(typeof resetLevelRewards === 'function') resetLevelRewards();
+        }
+    }
+// }, [ /* Старые зависимости */ ]);
+// Добавляем все функции установки состояния, используемые внутри, и resetLevelRewards
+}, [
+    levelConfig,
+    isPlayerModelLoaded,
+    areEnemiesLoaded,
+    beamTexturesLoaded,
+    isLoading,
+    onReady,
+    initializeLevelHp,
+    levelData,
+    setIsLoading,
+    setRemainingTime,
+    setCurrentActiveRoomId,
+    setTimePlayedSeconds,
+    resetLevelRewards, // <<< ДОБАВЛЕНА ЗАВИСИМОСТЬ из код1
+    readyCalledRef,
+    levelStartTimeRef
+]); // Добавлены зависимости (рефы и set-функции)
     // --- Инициализация состояния врагов ---
     useEffect(() => {
         if (areEnemiesLoaded && loadedInitialStates && loadedInitialStates.length > 0) {
@@ -3522,19 +3553,30 @@ if (playerObject?.position && levelChestsRef.current?.length > 0) {
     />
 )}
 
-            {/* Попап Победы */}
-            {levelStatus === 'won' && (
-                 <div className="level-complete-overlay">
-                     <h2>Победа!</h2>
-                     <p>Уровень {levelData.id} ({difficulty}) пройден!</p>
-                     <button onClick={() => {
-                         if (typeof onLevelComplete === 'function') onLevelComplete(levelData.id, 'won');
-                         else console.warn("onLevelComplete не передан");
-                     }}>
-                         В главное меню
-                     </button>
-                 </div>
-             )}
+{/* Попап Победы */}
+{levelStatus === 'won' && console.log("[VictoryPopup Render] Передаваемые награды:", currentLevelRewards)}
+
+<CSSTransition
+            in={levelStatus === 'won'} // Показываем при победе
+            timeout={300}
+            classNames="popup-fade" // Используем те же классы анимации
+            mountOnEnter
+            unmountOnExit
+            nodeRef={levelVictoryPopupRef}
+        >
+            <LevelVictoryPopup
+                ref={levelVictoryPopupRef}
+                levelId={levelData?.id || 'N/A'}
+                difficulty={difficulty}
+                rewards={currentLevelRewards} // Передаем награды уровня
+                onGoToMenu={() => { // Callback для кнопки
+                    if (typeof onLevelComplete === 'function') {
+                         onLevelComplete(levelData.id, 'won'); // Вызываем внешний обработчик
+                    } else { console.warn("onLevelComplete не передан"); }
+                }}
+            />
+        </CSSTransition>
+
 
              {/* Попап Ошибки */}
              {levelStatus === 'error' && (

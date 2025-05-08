@@ -394,6 +394,7 @@ const useGameStore = create((set, get) => ({
     lastEnergyRefillTimestamp: savedState.lastEnergyRefillTimestamp ?? Date.now(),
     lastOpenedLevelChestRewards: null, // <<< НОВОЕ: Массив с наградами [{ type, amount?, id?, name?, icon?, rarity? }] или null
     levelChestStates: {}, // <<< НОВОЕ (Опционально): для сохранения статуса открытых сундуков между сессиями { instanceId: true }
+    currentLevelRewards: { gold: 0, diamonds: 0, items: [] },
 
     // --- Игрок ---
     playerHp: savedState.playerHp ?? DEFAULT_BASE_STATS.hp,
@@ -2096,91 +2097,150 @@ openArtifactChestX10: (chestId) => {
         lastOpenedChestInfo: null
     }),
 
-    openLevelChest: (chestInstanceId, chestTypeId) => {
-        console.log(`[Store Action] Попытка открыть сундук уровня: ${chestInstanceId} (Тип: ${chestTypeId})`);
-        const chestTypeData = getLevelChestTypeById(chestTypeId); // Получаем данные типа сундука
-        if (!chestTypeData) {
-            console.error(`[openLevelChest] Не найдены данные для типа сундука: ${chestTypeId}`);
-            return;
+    resetLevelRewards: () => {
+        console.log("[Store Action] Сброс счетчиков наград текущего уровня.");
+        set({ currentLevelRewards: { gold: 0, diamonds: 0, items: [] } }); // <<< Очищаем и items
+    },
+
+    // <<< НОВОЕ ДЕЙСТВИЕ: Добавление к счетчикам наград уровня >>>
+    // Будет вызываться из openLevelChest и (в будущем) при подборе дропа с мобов
+    addLevelReward: (type, amountOrItem) => {
+        if (!type || amountOrItem === undefined || amountOrItem === null) return;
+
+        // Обработка валюты
+        if ((type === 'gold' || type === 'diamonds') && typeof amountOrItem === 'number' && amountOrItem > 0) {
+            set((state) => {
+                const currentAmount = state.currentLevelRewards[type] || 0;
+                const newAmount = currentAmount + amountOrItem;
+                console.log(`[Store Action] Добавлена награда уровня: +${amountOrItem} ${type}. Итого: ${newAmount}`);
+                return {
+                    currentLevelRewards: { ...state.currentLevelRewards, [type]: newAmount }
+                };
+            });
         }
-
-        // Опционально: Проверка, не был ли этот сундук уже открыт (если используем levelChestStates для сохранения)
-        // if (get().levelChestStates[chestInstanceId]) {
-        //     console.log(`Сундук ${chestInstanceId} уже был открыт ранее.`);
-        //     return;
-        // }
-
-        const lootTable = chestTypeData.lootTable; // Получаем таблицу лута
-        const generatedRewards = []; // Собираем сюда все сгенерированные награды для попапа
-
-        // 1. Гарантированная валюта
-        lootTable.guaranteed?.forEach(rewardEntry => {
-            if (rewardEntry.type === 'gold' || rewardEntry.type === 'diamonds') {
-                // Генерируем случайное количество в заданном диапазоне
-                const amount = Math.floor(Math.random() * (rewardEntry.max - rewardEntry.min + 1)) + rewardEntry.min;
-                if (amount > 0) {
-                    if (rewardEntry.type === 'gold') get().addGold(amount); // Добавляем золото
-                    if (rewardEntry.type === 'diamonds') get().addDiamonds(amount); // Добавляем алмазы
-                    // Добавляем информацию о награде для попапа
-                    generatedRewards.push({ type: rewardEntry.type, amount: amount });
-                    console.log(`  - [Loot] Добавлено ${amount} ${rewardEntry.type}`);
+        // Обработка предмета
+        else if (type === 'item' && typeof amountOrItem === 'object' && amountOrItem.id) {
+             // Сохраняем только нужную информацию о предмете для отображения
+             const itemInfo = {
+                 id: amountOrItem.id,
+                 name: amountOrItem.name || 'Предмет',
+                 rarity: amountOrItem.rarity || 'Common',
+                 icon: amountOrItem.image || '/assets/icons/item_default.png' // Берем image как иконку
+             };
+            console.log(`[Store Action] Добавлена награда уровня: Предмет ${itemInfo.name} (${itemInfo.rarity})`);
+            set((state) => ({
+                currentLevelRewards: {
+                    ...state.currentLevelRewards,
+                    // Добавляем объект предмета в массив items
+                    items: [...state.currentLevelRewards.items, itemInfo],
                 }
-            }
-        });
-
-        // 2. Выпадение предмета
-        if (lootTable.itemDrop && Math.random() < (lootTable.itemDrop.chance || 1.0)) {
-            const rarityChances = lootTable.itemDrop.rarityChances;
-            // Убедись, что хелперы _rollWeightedRarity_Gear и _selectRandomGearItemByRarity_Gear доступны
-            // Они у тебя были в коде стора ранее
-            try {
-                const chosenRarity = _rollWeightedRarity_Gear(rarityChances); // Определяем редкость
-                console.log(`  - [Loot] Ролл редкости предмета: ${chosenRarity}`);
-                const itemTemplate = _selectRandomGearItemByRarity_Gear(chosenRarity); // Выбираем предмет этой редкости
-
-                if (itemTemplate) {
-                    console.log(`  - [Loot] Выбран предмет: ${itemTemplate.name} (${itemTemplate.id})`);
-                    // Добавляем предмет в инвентарь (addItemToInventory сама создаст экземпляр)
-                    get().addItemToInventory(itemTemplate.id, 1);
-                    // Добавляем информацию о предмете для попапа
-                    generatedRewards.push({
-                        type: 'item',
-                        id: itemTemplate.id,
-                        name: itemTemplate.name,
-                        rarity: itemTemplate.rarity,
-                        icon: itemTemplate.image // Используем image как иконку
-                    });
-                } else {
-                    console.error(`  - [Loot] Не удалось выбрать предмет редкости ${chosenRarity}`);
-                }
-            } catch (e) {
-                 console.error("Ошибка при генерации предмета из сундука:", e);
-            }
-        }
-
-        // 3. Обновляем состояние: сохраняем награды для попапа и помечаем сундук открытым (опционально)
-        set({
-            lastOpenedLevelChestRewards: generatedRewards, // Сохраняем сгенерированные награды
-            levelChestStates: { ...get().levelChestStates, [chestInstanceId]: true } // Помечаем этот экземпляр сундука как открытый
-        });
-
-        // 4. Запускаем таймер для автоматического скрытия попапа с наградами
-        const popupDuration = 4000; // Показываем награду 4 секунды (мс)
-        console.log(`  - Запланирована очистка наград через ${popupDuration}ms`);
-        setTimeout(() => {
-            get().clearLastLevelChestRewards(); // Вызываем action очистки по таймеру
-        }, popupDuration);
-
-    }, // Конец openLevelChest
-
-    // --- >>> НОВЫЙ ACTION: Очистка информации о последнем луте <<< ---
-    clearLastLevelChestRewards: () => {
-        // Проверяем, есть ли что очищать, чтобы не вызывать лишний set
-        if (get().lastOpenedLevelChestRewards !== null) {
-            console.log("[Store Action] Очистка информации о последнем луте из сундука уровня.");
-            set({ lastOpenedLevelChestRewards: null });
+            }));
+        } else {
+             console.warn(`[addLevelReward] Неверный тип или значение: ${type}`, amountOrItem);
         }
     },
+    
+  // --- Измененный openLevelChest с учетом логики из код1 ---
+  openLevelChest: (chestInstanceId, chestTypeId) => {
+    console.log(`[Store Action] Попытка открыть сундук уровня: ${chestInstanceId} (Тип: ${chestTypeId})`);
+    const chestTypeData = getLevelChestTypeById(chestTypeId);
+    if (!chestTypeData) {
+        console.error(`[openLevelChest] Не найдены данные для типа сундука: ${chestTypeId}`);
+        return;
+    }
+
+    // Опционально: Проверка, не был ли этот сундук уже открыт
+    // if (get().levelChestStates[chestInstanceId]) {
+    //     console.log(`Сундук ${chestInstanceId} уже был открыт ранее.`);
+    //     return;
+    // }
+
+    const lootTable = chestTypeData.lootTable;
+    const generatedRewardsForPopup = []; // Используем имя из код1
+    let collectedGoldThisChest = 0;      // <<< ИЗМЕНЕНИЕ ИЗ КОД1 >>>
+    let collectedDiamondsThisChest = 0;  // <<< ИЗМЕНЕНИЕ ИЗ КОД1 >>>
+
+    // 1. Гарантированная валюта
+    lootTable.guaranteed?.forEach(rewardEntry => {
+        if (rewardEntry.type === 'gold' || rewardEntry.type === 'diamonds') {
+            const amount = Math.floor(Math.random() * (rewardEntry.max - rewardEntry.min + 1)) + rewardEntry.min;
+            if (amount > 0) {
+                if (rewardEntry.type === 'gold') {
+                    get().addGold(amount); // Добавляем к общему золоту
+                    collectedGoldThisChest += amount; // <<< ИЗМЕНЕНИЕ ИЗ КОД1 >>>
+                }
+                if (rewardEntry.type === 'diamonds') {
+                    get().addDiamonds(amount); // Добавляем к общим алмазам
+                    collectedDiamondsThisChest += amount; // <<< ИЗМЕНЕНИЕ ИЗ КОД1 >>>
+                }
+                
+                generatedRewardsForPopup.push({ type: rewardEntry.type, amount: amount });
+                console.log(`  - [Loot] Добавлено ${amount} ${rewardEntry.type} (из сундука ${chestInstanceId})`);
+            }
+        }
+    });
+
+    // <<< ВЫЗЫВАЕМ addLevelReward ЗДЕСЬ (ИЗ КОД1) >>>
+    if (collectedGoldThisChest > 0) {
+        get().addLevelReward('gold', collectedGoldThisChest);
+    }
+    if (collectedDiamondsThisChest > 0) {
+        get().addLevelReward('diamonds', collectedDiamondsThisChest);
+    }
+    // <<< КОНЕЦ ИЗМЕНЕНИЯ ИЗ КОД1 >>>
+
+    // 2. Выпадение предмета (логика из код2 остается)
+    if (lootTable.itemDrop && Math.random() < (lootTable.itemDrop.chance || 1.0)) {
+        const rarityChances = lootTable.itemDrop.rarityChances;
+        // Убедись, что хелперы _rollWeightedRarity_Gear и _selectRandomGearItemByRarity_Gear доступны
+        try {
+            const chosenRarity = _rollWeightedRarity_Gear(rarityChances);
+            console.log(`  - [Loot] Ролл редкости предмета: ${chosenRarity}`);
+            const itemTemplate = _selectRandomGearItemByRarity_Gear(chosenRarity);
+
+            if (itemTemplate) {
+                console.log(`  - [Loot] Выбран предмет: ${itemTemplate.name} (${itemTemplate.id})`);
+                get().addItemToInventory(itemTemplate.id, 1); // Предполагаем, что добавляется 1 предмет
+                generatedRewardsForPopup.push({
+                    type: 'item',
+                    id: itemTemplate.id,
+                    name: itemTemplate.name,
+                    rarity: itemTemplate.rarity,
+                    icon: itemTemplate.image // Используем image как иконку
+                });
+                // +++ >>> ВСТАВЬ НЕДОСТАЮЩУЮ СТРОКУ ЗДЕСЬ <<< +++
+                get().addLevelReward('item', itemTemplate); // Добавляем предмет в счетчик наград УРОВНЯ
+                // ++++++++++++++++++++++++++++++++++++++++++++++++
+            } else {
+                console.warn(`  - [Loot] Не удалось выбрать предмет редкости ${chosenRarity}`);
+            }
+        } catch (e) {
+            console.error("Ошибка при генерации предмета из сундука:", e);
+        }
+    }
+
+    // 3. Обновляем состояние для временного попапа и статуса сундука
+    set({
+        lastOpenedLevelChestRewards: generatedRewardsForPopup,
+        levelChestStates: { ...get().levelChestStates, [chestInstanceId]: true }
+    });
+
+    // 4. Запускаем таймер для скрытия временного попапа
+    const popupDuration = 4000;
+    console.log(`  - Запланирована очистка наград через ${popupDuration}ms`);
+    setTimeout(() => {
+        get().clearLastLevelChestRewards();
+    }, popupDuration);
+
+}, // Конец openLevelChest
+
+// Action для очистки временного попапа (из код2, также есть в код1)
+clearLastLevelChestRewards: () => {
+    if (get().lastOpenedLevelChestRewards !== null) {
+        console.log("[Store Action] Очистка информации о последнем луте из сундука уровня.");
+        set({ lastOpenedLevelChestRewards: null });
+    }
+},
     
     resetGame: () => {
         const defaultEquipped = getDefaultEquippedSet();

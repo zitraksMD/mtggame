@@ -227,8 +227,8 @@ const handleLevelComplete = useCallback((levelId, status) => { // <<< Добав
 
     if (status === 'won') {
         // --- Уровень УСПЕШНО пройден ---
-        console.log("Переход на экран наград...");
-        navigate("/rewards"); // Переходим на экран наград
+        console.log("Переход в главное меню...");
+        navigate("/main"); // Переходим на экран наград
 
     } else if (status === 'lost') {
         // --- Уровень ПРОВАЛЕН (игрок умер) ---

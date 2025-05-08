@@ -24,12 +24,9 @@
     }
   ],
 "enemies": [
-    { "id": "cultist_1", "type": "poison_cultist", "x": 600, "y": 850, "roomId": "room1_start", "initiallyActive": true },
     { "id": "enchanter_1", "type": "ghostly_enchanter", "x": 800, "y": 850, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "ogre_mage_1", "type": "ogre_mage", "x": 600, "y": 700, "roomId": "room1_start", "initiallyActive": true },
 
-    { "id": "cultist_2", "type": "poison_cultist", "x": 400, "y": 400, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "cultist_3", "type": "poison_cultist", "x": 800, "y": 200, "roomId": "room2_north", "initiallyActive": false }
+    { "id": "cultist_2", "type": "poison_cultist", "x": 400, "y": 400, "roomId": "room2_north", "initiallyActive": false }
   ],
 
     "chests": [

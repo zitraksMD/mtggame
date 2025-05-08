@@ -1,0 +1,241 @@
+/* src/components/LevelVictoryPopup.scss */
+
+// --- ПЕРЕМЕННЫЕ (из код1) ---
+$popup-border-radius: 10px;
+$header-banner-bg-opaque: #daa520;      // Золотой для баннера "Победа!"
+$header-banner-border-opaque: #b8860b;
+$header-banner-text-color: #4d3a00;
+$text-color-primary: #f0f4f8;
+$text-color-secondary: #a0b0c0;     // Для текста уровня/режима
+
+    // --- Определим цвета для режимов ---
+    $mode-normal-color: #2ECC71; // Зеленый
+    $mode-hard-color: #FF0000;   // Красный
+
+.level-victory-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.level-victory-content {
+  // --- Основные стили (объединены из код1 и код2) ---
+  color: white;
+  padding: 70px 30px 25px 30px; // Увеличен верхний padding для баннера и инфо
+  border-radius: $popup-border-radius;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  min-width: 300px; // Из код1
+  max-width: 450px; // Из код1
+  background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1); // Нейтральная рамка из код1
+  position: relative; // Обязательно для позиционирования дочерних absolute элементов
+
+  // Используем те же классы анимации, что и для лута? Или свои?
+  // animation: fadeInPopup 0.3s ease-out forwards; // Если без react-transition-group
+
+  // --- СТИЛИ ДЛЯ БАННЕРА "ПОБЕДА!" (из код1) ---
+  .popup-header-banner {
+    position: absolute;
+    top: -20px; // Выносим за верхнюю границу
+    left: 50%;
+    transform: translateX(-50%);
+    background: $header-banner-bg-opaque;
+    border: 1px solid $header-banner-border-opaque;
+    color: $header-banner-text-color;
+    padding: 10px 30px;
+    border-radius: 25px; // Скругление
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    z-index: 2; // Поверх основного контента
+
+    h3 {
+      margin: 0;
+      font-size: 1.5em; // Размер для "Победа!"
+      font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+    }
+  }
+
+  // --- СТИЛИ ДЛЯ ИНФО ОБ УРОВНЕ И РЕЖИМЕ (из код1) ---
+  .level-mode-info {
+    position: absolute;
+    top: 45px; // Подбираем отступ от верха (после баннера)
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 15px; // Небольшие боковые отступы
+    font-size: 1.0em;
+    color: $text-color-secondary;
+    z-index: 1;
+    line-height: 1.4;
+
+    .separator {
+      margin: 0 8px;
+      opacity: 0.6;
+    }
+    .level-text {
+      font-weight: 600;
+      color: $text-color-primary;
+    }
+    .mode-text {
+        font-weight: 600; // Сделаем режим чуть жирнее
+        transition: color 0.2s ease; // Плавный переход цвета
+  
+        // --- Цвета для режимов ---
+        &.mode-normal {
+          color: $mode-normal-color;
+        }
+        &.mode-hard {
+          color: $mode-hard-color;
+        }
+      }
+  }
+
+  // Элементы h2 и p из первоначального код2 удалены,
+  // так как их функциональность перенесена в .popup-header-banner и .level-mode-info
+
+  .victory-rewards { // Стили из код2 сохранены и расширены
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.2); // Фон для блока наград
+    border-radius: 6px;
+    // margin-top: 30px; // Из код1 (victory-content-area), может не понадобиться из-за padding-top у родителя
+
+    h4 { // "Награды за уровень:"
+      margin: 0 0 12px 0;
+      color: #ffd700;
+      font-size: 1em;
+      font-weight: normal;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+      padding-bottom: 8px;
+    }
+
+    .reward-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px; // Пространство между иконкой и количеством
+      margin-bottom: 8px;
+      font-size: 1.1em;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .reward-icon {
+      width: 24px; // Чуть больше иконки
+      height: 24px;
+      object-fit: contain;
+    }
+  } // end .victory-rewards
+
+  button { // Стили кнопки из код2
+    padding: 12px 30px;
+    font-size: 1.15em;
+    cursor: pointer;
+    background-color: #70c7ff; // Голубой цвет кнопки
+    border: none;
+    border-radius: 6px;
+    color: #1a1a1a; // Темный текст
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #5aaff8;
+    }
+  }
+
+  // Секция предмета (из код2, вероятно, вдохновлена код1)
+  .item-reward-section {
+    margin-top: 0px; // В код1 был комментарий про margin-top: 20px, здесь 0px. Можно настроить.
+                     // В оригинальном код1 .victory-content-area давал margin-top: 30px
+                     // для всего блока наград и кнопки, если info не absolute.
+                     // Сейчас инфо - absolute, а padding-top у .level-victory-content
+                     // должен отодвинуть .victory-rewards.
+                     // Если нужен доп. отступ перед этой секцией, можно добавить margin-top сюда.
+    padding-top: 8px;
+    border-top: 1px solid rgba(120, 120, 120, 0.3);
+  }
+
+  .item-received-text { // "Полученные предметы:"
+    font-size: 0.9em;
+    color: #dddddd;
+    text-align: center;
+    margin-bottom: 10px; // Отступ до сетки иконок
+  }
+
+  // Контейнер для сетки иконок предметов
+  .item-icons-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; // Добавлено для центрирования иконок, если их мало
+    gap: 10px;
+  }
+
+  .item-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid; // Цвет рамки будет унаследован или задан через JS/доп. классы редкости
+    border-radius: 8px;
+    box-sizing: border-box;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s ease;
+
+    .reward-icon.item-icon-clickable { // Иконка внутри обертки
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+      display: block;
+      border: none;
+      background-color: transparent;
+    }
+  }
+
+  // --- Временные стили для Инфо-Плашки (Тултипа) --- (из код1, уже были в код2)
+  .tooltip-item-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid; // Аналогично, цвет рамки извне
+    border-radius: 6px;
+    padding: 3px;
+    margin-right: 10px;
+    box-sizing: border-box;
+
+    .tooltip-item-icon {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border: none;
+      background-color: transparent;
+    }
+  }
+  // --------------------------------------------------
+
+} // Конец .level-victory-content
+
+// --- Классы анимации для react-transition-group ---
+// Можно использовать те же .popup-fade-* или создать свои .victory-popup-fade-*
+.popup-fade-enter { /* ... */ }
+.popup-fade-enter-active { /* ... */ }
+.popup-fade-enter-done { /* ... */ }
+.popup-fade-exit { /* ... */ }
+.popup-fade-exit-active { /* ... */ }
+.popup-fade-exit-done { /* ... */ }
+// -----------------------------------------------
