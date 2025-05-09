@@ -28,6 +28,7 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
 // Обертка (центрируется оверлеем)
 .level-details-popup-wrapper {
   position: relative; // Для баннера
+  margin-top: 60px; // Пример: 4% от высоты экрана. Можете использовать px (напр. 30px) или другое значение.
   width: 100%; // Занимает доступную ширину ВНУТРИ padding оверлея
   max-width: 420px; // Максимальная ширина
 }
@@ -59,7 +60,7 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 55px 25px 25px 25px; // Верхний отступ учитывает баннер, боковые и нижний для контента
+  padding: 55px 25px 10px 25px; // Нижний отступ теперь 15px (был 25px)
   position: relative;
   z-index: 1;
   box-sizing: border-box;
