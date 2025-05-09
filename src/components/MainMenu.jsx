@@ -9,6 +9,8 @@ import { pageVariants, pageTransition } from '../animations';
 // import RewardsPopupContent from './RewardsPopupContent'; // <<< УДАЛЕНО (компонент больше не используется здесь)
 // <<< ИМПОРТИРУЕМ ХУК ДЛЯ НАВИГАЦИИ >>>
 import { useNavigate } from 'react-router-dom';
+import LevelDetailsPopup from './LevelDetailsPopup'; // <<< Импортируем новый попап
+
 
 
 const INITIAL_CHAPTER_ID = 1;
@@ -356,18 +358,24 @@ const MainMenu = ({ onStart }) => {
             {/* --- КОНЕЦ ЭЛЕМЕНТОВ UI --- */}
 
             {/* Попап Выбора Уровня (остается без изменений из код1) */}
-            {showLevelPopup && selectedLevelId !== null && (
-                <div className="level-popup" onClick={handleCloseLevelPopup}>
-                    <div className="level-popup-box" onClick={(e) => e.stopPropagation()}>
-                        <h3>{chapterData.levels?.find(l => l.id === selectedLevelId)?.name || `Уровень ${selectedLevelId % 100}`}</h3>
-                        <p>Готов начать?</p>
-                        <div className="popup-buttons">
-                            <button onClick={handleStartLevel} disabled={isLoadingLevel}>В бой!</button>
-                            <button onClick={handleCloseLevelPopup} disabled={isLoadingLevel}>Отмена</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+ {/* Попап Выбора Уровня (ЗАМЕНЯЕМ НА НОВЫЙ) */}
+ {showLevelPopup && selectedLevelId !== null && chapterData && (
+        <LevelDetailsPopup
+            level={chapterData.levels?.find(l => l.id === selectedLevelId)} // Передаем весь объект уровня
+            chapterId={chapterData.id} // Передаем ID главы
+            onClose={handleCloseLevelPopup}
+            onStartLevel={(levelId, difficulty) => { // onStartLevel теперь принимает и сложность
+                // TODO: Передать difficulty в onStart, если это нужно для загрузки уровня
+                console.log(`Starting level ${levelId} on ${difficulty}`);
+                // Пока что onStart не принимает difficulty, но можно будет добавить
+                if (!hasStarted.current) {
+                    hasStarted.current = true;
+                    setIsLoadingLevel(true);
+                    onStart(chapterData.id, levelId, difficulty); // Передаем onStart из App.jsx
+                }
+            }}
+        />
+    )}
 
             {/* Оверлей Загрузки при ЗАПУСКЕ уровня (остается без изменений из код1) */}
             {isLoadingLevel && ( <div className="level-loading-overlay"><div className="loading-spinner"></div><div className="loading-text">Загрузка уровня...</div></div> )}

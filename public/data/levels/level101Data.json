@@ -1,6 +1,16 @@
 {
-  "id": 101,
-  "name": "Ур. 1-1: Тест Комнат", 
+  "id": 101, 
+  "name": "Заброшенный Склеп", 
+  "description": "Древние катакомбы под старым кладбищем. По слухам, здесь обитают беспокойные духи и их прислужники. Очистите склеп от нежити!", 
+  "requiredPowerLevel": 10, 
+  "imageBanner": "/assets/ui/banners/crypt_banner.png", 
+  
+
+  "x": 150, 
+  "y": 200,
+  "nodeSize": 45,
+
+
   "levelType": "standard",
   "width": 1200,
   "height": 1200,
@@ -11,49 +21,35 @@
     { "id": "wall_bottom", "x": 0, "y": 1150, "width": 1200, "height": 50 },
     { "id": "wall_left", "x": 0, "y": 50, "width": 50, "height": 1100 },
     { "id": "wall_right", "x": 1150, "y": 50, "width": 50, "height": 1100 },
-   
     {
       "id": "door_room1_to_room2",
-      "x": 50,                 
-      "y": 590,                
-      "width": 1100,           
-      "height": 20,           
-      "isDoor": true,           
-      "opensWhenRoomCleared": "room1_start", 
-      "targetRoomIdForDoor": "room2_north"  
+      "x": 50,
+      "y": 590,
+      "width": 1100,
+      "height": 20,
+      "isDoor": true,
+      "opensWhenRoomCleared": "room1_start",
+      "targetRoomIdForDoor": "room2_north"
     }
   ],
-  "enemies": [
-    { "id": "goblin_melee_1", "type": "melee", "x": 200, "y": 900, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "goblin_melee_2", "type": "melee", "x": 1000, "y": 900, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "goblin_ranged_1", "type": "ranged", "x": 1000, "y": 700, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "goblin_caster_fire", "type": "caster", "x": 200, "y": 700, "stats": { "beamType": "fire" }, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "skel_sword_1", "type": "skeleton_swordsman", "x": 300, "y": 800, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "skel_archer_1", "type": "skeleton_archer", "x": 900, "y": 800, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "necro_1", "type": "necromancer", "x": 600, "y": 650, "roomId": "room1_start", "initiallyActive": true }, 
-
-    { "id": "rotting_soldier_1", "type": "rotting_soldier", "x": 900, "y": 400, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "plague_totemist_1", "type": "plague_totemist", "x": 300, "y": 200, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "revenant_knight_1", "type": "revenant_knight", "x": 900, "y": 200, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "sand_reaper_1", "type": "sand_reaper", "x": 450, "y": 150, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "ghostly_enchanter_1", "type": "ghostly_enchanter", "x": 750, "y": 150, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "cursed_gladiator_1", "type": "cursed_gladiator", "x": 450, "y": 500, "roomId": "room2_north", "initiallyActive": false },
-    { "id": "poison_cultist_1", "type": "poison_cultist", "x": 750, "y": 500, "roomId": "room2_north", "initiallyActive": false }
+  "enemies": [ 
+    { "id": "skel_sword_1_lvl101", "type": "skeleton_swordsman", "x": 300, "y": 800, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "necro_1_lvl101", "type": "necromancer", "x": 600, "y": 650, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "rotting_soldier_1_lvl101", "type": "rotting_soldier", "x": 900, "y": 400, "roomId": "room2_north", "initiallyActive": false }
   ],
-  "winCondition": { 
-    "type": "clear_enemies" 
+  "winCondition": {
+    "type": "clear_enemies"
   },
-
   "rooms": [
-      {
-        "id": "room1_start",
-        "name": "Стартовая локация",
-        "area": { "x_min": 50, "y_min": 610, "x_max": 1150, "y_max": 1150 },
-        "isStartingRoom": true 
-      },
+    {
+      "id": "room1_start",
+      "name": "Преддверие Склепа", 
+      "area": { "x_min": 50, "y_min": 610, "x_max": 1150, "y_max": 1150 },
+      "isStartingRoom": true
+    },
     {
       "id": "room2_north",
-      "name": "Северный зал",
+      "name": "Северный Зал Костей",
       "area": { "x_min": 50, "y_min": 50, "x_max": 1150, "y_max": 590 }
     }
   ]

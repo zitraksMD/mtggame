@@ -1,0 +1,187 @@
+// src/components/LevelDetailsPopup.scss
+
+// --- ПЕРЕМЕННЫЕ ---
+$banner-background: #ffc107;
+$banner-text-color: #333;
+// $content-background: #2c303a; // Эта переменная больше не используется для фона .level-details-popup-content
+$text-primary: #e0e0e0;
+$text-secondary: #bec5d1;
+$border-color-light: #4a4f5a;
+$level-id-bg: rgba(0, 0, 0, 0.3);
+// --- ПЕРЕМЕННЫЕ ИЗ КОД1 ---
+$divider-color: rgba(255, 255, 255, 0.15); // Цвет разделителя (светло-серый, полупрозрачный)
+$section-spacing: 20px; // Общий вертикальный отступ между секциями
+// Переменная для градиента из код1
+$dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
+
+// Оверлей
+.level-details-popup-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1050; backdrop-filter: blur(3px);
+  padding: 20px; // Отступы вокруг попапа
+  box-sizing: border-box; // Учитывать padding в размерах
+  overflow-y: auto; // Скролл для всего оверлея, если попап высокий
+}
+
+// Обертка (центрируется оверлеем)
+.level-details-popup-wrapper {
+  position: relative; // Для баннера
+  width: 100%; // Занимает доступную ширину ВНУТРИ padding оверлея
+  max-width: 420px; // Максимальная ширина
+}
+
+// Нависающий баннер НАЗВАНИЯ УРОВНЯ
+.popup-title-banner {
+  position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
+  z-index: 2; background-color: $banner-background; color: $banner-text-color;
+  padding: 10px 25px;
+  border-radius: 25px; box-shadow: 0 5px 12px rgba(0, 0, 0, 0.35);
+  white-space: nowrap; text-align: center;
+
+  h3 {
+    margin: 0; font-size: 1.4em; font-weight: bold; line-height: 1.2;
+    display: inline-block; padding: 0;
+  }
+}
+
+// Основной контент (ПОД баннером)
+.level-details-popup-content {
+  // --- ИЗМЕНЕНИЯ ИЗ КОД1 ---
+  background: $dark-blue-gradient; // Применяем желаемый градиент
+  color: $text-primary; // Убедимся, что текст светлый (было $text-primary, что совпадает)
+  border: 1px solid rgba(255, 255, 255, 0.1); // Добавлена рамка из код1
+  // --- КОНЕЦ ИЗМЕНЕНИЙ ИЗ КОД1 ---
+
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 55px 25px 25px 25px; // Верхний отступ учитывает баннер, боковые и нижний для контента
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+// БЛОК для НОМЕРА УРОВНЯ ("Уровень X-Y")
+.level-id-display {
+  color: $text-secondary; font-size: 1.0em; font-weight: 500;
+  text-align: center;
+  display: inline-block; background-color: $level-id-bg;
+  padding: 6px 14px; border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: $section-spacing;
+}
+
+// Переключатель сложности
+.difficulty-switcher {
+  display: flex; justify-content: center;
+  flex-wrap: wrap; gap: 10px;
+  margin-bottom: $section-spacing;
+  padding-bottom: $section-spacing;
+  border-bottom: 1px solid $divider-color;
+
+  button {
+    background-color: #4a4f5a;
+    color: #b0b0b0;
+    border: 1px solid #555c66;
+    padding: 8px 20px;
+    margin: 0 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+
+    &.active {
+      background-color: #5a9cec;
+      color: white;
+      border-color: #5a9cec;
+    }
+    &:hover:not(.active) {
+      background-color: #5a5f6a;
+      border-color: #6c757d;
+    }
+  }
+}
+
+// Описание уровня
+.level-description {
+  margin-bottom: $section-spacing;
+  padding-top: 15px;
+  padding-right: 5px;
+  padding-left: 5px;
+  padding-bottom: $section-spacing;
+  border-bottom: 1px solid $divider-color;
+
+  font-size: 0.9em; line-height: 1.5; color: #c5c8d1;
+  text-align: center; max-height: none; overflow-y: visible;
+
+  p { margin: 0; }
+}
+
+// Требуемый PowerLevel
+.required-powerlevel {
+  margin-bottom: $section-spacing;
+  padding-top: 0;
+  padding-right: 0;
+  padding-bottom: $section-spacing;
+  padding-left: 0;
+  border-bottom: 1px solid $divider-color;
+
+  font-size: 0.9em;
+  text-align: center;
+  color: #b0b0b0;
+  min-height: 3em;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  .power-value {
+    font-weight: bold;
+    color: #ffffff;
+  }
+
+  .power-warning {
+    font-size: 0.9em;
+    margin-top: 4px;
+    display: block;
+    width: 100%;
+    color: #ff6b6b;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease, max-height 0.3s ease, margin-top 0.3s ease;
+  }
+
+  &.insufficient {
+    color: #ff6b6b;
+    .power-value {
+      color: #ff6b6b;
+    }
+    .power-warning {
+      opacity: 1;
+      max-height: 2em;
+    }
+  }
+}
+
+// Кнопки действий
+.popup-actions {
+  display: flex; justify-content: space-around; gap: 10px;
+  padding-top: 0;
+
+  button {
+    padding: 10px 0; font-size: 1em; border-radius: 6px; cursor: pointer;
+    font-weight: bold; border: none; flex-grow: 0; flex-basis: 45%;
+    max-width: 170px; transition: background-color 0.2s, opacity 0.2s;
+  }
+  .button-back { background-color: #6c757d; color: white; &:hover { background-color: #5a6268; } }
+  .button-start { background-color: #5cb85c; color: white; &:hover { background-color: #4cae4c; }
+    &.disabled, &:disabled { background-color: #d9534f; color: #f0f0f0; cursor: not-allowed; opacity: 0.6; }
+  }
+}
