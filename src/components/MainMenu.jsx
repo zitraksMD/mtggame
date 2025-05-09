@@ -1,25 +1,29 @@
 // src/components/MainMenu.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
-import useGameStore from "../store/useGameStore"; // Убедись, что импорт есть
-import WorldMap from "./WorldMap";
+import useGameStore from "../store/useGameStore";
+import WorldMap from "./WorldMap"; // Убедитесь, что импорт есть
 import Popup from './Popup';
 import "./MainMenu.scss";
 import { pageVariants, pageTransition } from '../animations';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } // <<< ДОБАВЛЕН useLocation
+from 'react-router-dom';
 import LevelDetailsPopup from './LevelDetailsPopup';
 
-const INITIAL_CHAPTER_ID = 1; // Это будет использоваться, если в сторе ничего нет
+const INITIAL_CHAPTER_ID = 1;
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
-const MainMenu = ({ onStart }) => {
+// const MainMenu = (props) => { // Стиль из код1
+//  const { onStart } = props;
+const MainMenu = ({ onStart }) => { // Стиль из код2 сохранен
     const navigate = useNavigate();
+    const location = useLocation(); // <<< ИСПОЛЬЗУЕМ useLocation
 
-    const [showMap, setShowMap] = useState(false);
+    // Инициализируем showMap на основе состояния из location или false по умолчанию
+    const [showMap, setShowMap] = useState(location.state?.showChaptersMapDirectly || false);
     const [selectedLevelId, setSelectedLevelId] = useState(null);
     const [showLevelPopup, setShowLevelPopup] = useState(false);
     const [isLoadingLevel, setIsLoadingLevel] = useState(false);
-    // const [currentChapterId, setCurrentChapterId] = useState(INITIAL_CHAPTER_ID); // Удалено, будет управляться через стор и синхронизированный локальный стейт
     const [chapterData, setChapterData] = useState(null);
     const [isLoadingChapter, setIsLoadingChapter] = useState(true);
     const [activePopup, setActivePopup] = useState(null);
@@ -32,16 +36,14 @@ const MainMenu = ({ onStart }) => {
     const hasStarted = useRef(false);
     const levelDetailsPopupRef = useRef(null);
 
-    // +++ ИЗМЕНЕНИЯ ИЗ КОД1: Получаем данные и селекторы из стора +++
     const {
-        currentChapterIdFromStore, // Переименовываем, чтобы не конфликтовать с useState
-        setCurrentChapterInStore,   // Action из стора
+        currentChapterIdFromStore,
+        setCurrentChapterInStore, // Используется вместо setCurrentChapterInStoreAction из код1
         isLevelUnlocked,
         getLevelCompletionStatus,
         isHardModeUnlocked,
         resetGame,
-        hasClaimableRewardsIndicator // <<< ПОЛУЧАЕМ ФЛАГ ИЗ СТОРА (добавлено из код1)
-        // levelsCompleted, // Раскомментируй, если нужно напрямую
+        hasClaimableRewardsIndicator
     } = useGameStore(state => ({
         currentChapterIdFromStore: state.currentChapterId,
         setCurrentChapterInStore: state.setCurrentChapter,
@@ -50,10 +52,9 @@ const MainMenu = ({ onStart }) => {
         getLevelCompletionStatus: state.getLevelCompletionStatus,
         isHardModeUnlocked: state.isHardModeUnlocked,
         resetGame: state.resetGame,
-        hasClaimableRewardsIndicator: state.hasClaimableRewardsIndicator // <<< Связываем (добавлено из код1)
+        hasClaimableRewardsIndicator: state.hasClaimableRewardsIndicator
     }));
 
-    // Используем локальный стейт, который инициализируется из стора или дефолтом
     const [currentChapterId, setCurrentChapterId] = useState(
         currentChapterIdFromStore || INITIAL_CHAPTER_ID
     );
@@ -62,40 +63,46 @@ const MainMenu = ({ onStart }) => {
         if (window.confirm('Вы уверены, что хотите сбросить ВЕСЬ прогресс игры? Это действие необратимо!')) {
             if (typeof resetGame === 'function') {
                 resetGame();
-                // После сброса может потребоваться перезагрузка страницы или переход на начальный экран,
-                // чтобы игра корректно инициализировалась с чистого состояния.
-                // resetGame в сторе уже делает localStorage.clear() и window.location.reload();
             } else {
                 console.error("Action resetGame не найден в useGameStore!");
             }
         }
     }, [resetGame]);
 
-    // Синхронизируем локальный стейт со стором и наоборот при необходимости
+    // Эффект для синхронизации currentChapterId со стором и для очистки состояния location
     useEffect(() => {
-        // Если в сторе значение изменилось (например, загрузилось из localStorage)
-        // и оно отличается от текущего локального значения
+        // Часть 1: Синхронизация currentChapterId со стором (объединенная логика)
         if (currentChapterIdFromStore && currentChapterIdFromStore !== currentChapterId) {
-            setCurrentChapterId(currentChapterIdFromStore);
-        } else if (!currentChapterIdFromStore && currentChapterId) {
-            // Если в сторе пусто, а у нас есть значение (например, INITIAL_CHAPTER_ID или измененное пользователем),
-            // запишем в стор. Это важно при первой загрузке, если стор пуст.
+            setCurrentChapterId(currentChapterIdFromStore); // Если стор изменился, обновляем локальный ID
+        } else if (currentChapterId && (!currentChapterIdFromStore || currentChapterId !== currentChapterIdFromStore)) {
+            // Если локальный currentChapterId изменился (например, через handleGoToChapter или инициализация)
+            // и отличается от стора (или стор пуст), обновим стор.
             setCurrentChapterInStore(currentChapterId);
         }
-        // Этот эффект должен реагировать на изменения из стора и на инициализацию
-    }, [currentChapterIdFromStore, currentChapterId, setCurrentChapterInStore]);
-    // +++ КОНЕЦ ИЗМЕНЕНИЙ ИЗ КОД1 для currentChapterId +++
 
+        // Часть 2: Обработка прямого перехода на карту глав из location.state
+        // Если мы пришли сюда с флагом showChaptersMapDirectly,
+        // и showMap еще не true, установим showMap и очистим состояние в location.
+        if (location.state?.showChaptersMapDirectly) {
+            if (!showMap) { // Дополнительная проверка, хотя useState выше должен справиться
+                setShowMap(true);
+            }
+            // Очищаем состояние из location, чтобы при обновлении страницы (F5)
+            // или возврате назад карта глав не открывалась автоматически снова.
+            navigate(location.pathname, { state: {}, replace: true });
+        }
+    }, [
+        location.state, navigate, showMap, /* setShowMap убран из зависимостей, как в код1, т.к. его изменение здесь же вызовет ре-рендер и эффект */
+        currentChapterIdFromStore, currentChapterId, setCurrentChapterInStore
+    ]);
+
+
+    // Загрузка данных главы при изменении currentChapterId
     useEffect(() => {
         let isMounted = true;
         const loadChapter = async (id) => {
-            if (!isMounted || !id) { // Добавлена проверка на id
+            if (!isMounted || !id) {
                 if (!id) console.warn("[MainMenu] Попытка загрузить главу с ID: null или undefined. Используем INITIAL_CHAPTER_ID.");
-                // Если id невалидный, но мы хотим попытаться загрузить дефолтную главу:
-                // if (!id && isMounted) {
-                //      setCurrentChapterId(INITIAL_CHAPTER_ID); // Это вызовет перезапуск useEffect
-                //      if (!currentChapterIdFromStore) setCurrentChapterInStore(INITIAL_CHAPTER_ID);
-                // }
                 return;
             }
             console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${id}...`);
@@ -114,33 +121,26 @@ const MainMenu = ({ onStart }) => {
                 if (isMounted) {
                     alert(`Ошибка загрузки данных Главы ${id}. Проверьте путь и файл. Загружаем Главу ${INITIAL_CHAPTER_ID}.`);
                     if (id !== INITIAL_CHAPTER_ID) {
-                        // Обновляем и локальный стейт и стор
-                        setCurrentChapterId(INITIAL_CHAPTER_ID);
-                        setCurrentChapterInStore(INITIAL_CHAPTER_ID);
+                        setCurrentChapterId(INITIAL_CHAPTER_ID); // Это вызовет обновление в сторе через другой useEffect
                     } else {
-                        // Если уже пытались загрузить INITIAL_CHAPTER_ID и не вышло
                         setIsLoadingChapter(false); setChapterData(null);
                     }
                 }
             } finally {
-                // Проверяем, что текущий загружаемый id все еще актуален
-                if (isMounted && currentChapterId === id) { setIsLoadingChapter(false); }
+                if (isMounted && currentChapterId === id) {
+                    setIsLoadingChapter(false);
+                }
             }
         };
 
-        if (currentChapterId) { // Убедимся, что currentChapterId определен перед загрузкой
-             loadChapter(currentChapterId);
+        if (currentChapterId) {
+            loadChapter(currentChapterId);
         } else if (!currentChapterIdFromStore) {
-            // Если currentChapterId еще не установлен (например, при первом рендере и пустом сторе)
-            // Устанавливаем INITIAL_CHAPTER_ID, что вызовет useEffect для currentChapterId и loadChapter
             console.log("[MainMenu] currentChapterId не определен, устанавливаем INITIAL_CHAPTER_ID");
             setCurrentChapterId(INITIAL_CHAPTER_ID);
-            setCurrentChapterInStore(INITIAL_CHAPTER_ID); // Также обновить стор
         }
-
-
         return () => { isMounted = false; };
-    }, [currentChapterId, setCurrentChapterInStore]); // Добавили setCurrentChapterInStore в зависимости, хотя он не должен меняться часто
+    }, [currentChapterId, setCurrentChapterInStore, currentChapterIdFromStore]);
 
     useEffect(() => {
         if (!chapterData || isLoadingChapter || !mapContainerRef.current) return;
@@ -206,20 +206,30 @@ const MainMenu = ({ onStart }) => {
         if (!hasStarted.current && chapterData) {
             hasStarted.current = true;
             setIsLoadingLevel(true);
-            setShowLevelPopup(false); // Закрываем попап перед стартом
+            setShowLevelPopup(false);
             onStart(chapterData.id, levelId, difficulty);
         }
     }, [chapterData, onStart]);
 
-    // +++ ОБНОВЛЕННЫЙ handleGoToChapter ИЗ КОД1 +++
+    // Вызывается из WorldMap для выбора главы
     const handleGoToChapter = useCallback((chapterStub) => {
-        console.log("[MainMenu] Switching to chapter ID from map:", chapterStub.id);
+        console.log("[MainMenu] Переключение на главу ID из WorldMap:", chapterStub.id);
         if (chapterStub.id !== currentChapterId) {
-            setCurrentChapterId(chapterStub.id); // Обновляем локальный стейт
-            setCurrentChapterInStore(chapterStub.id); // Обновляем стейт в сторе (он сохранится)
+            setCurrentChapterId(chapterStub.id); // Обновляем локальный стейт, useEffect обновит стор
         }
-        setShowMap(false);
-    }, [currentChapterId, setCurrentChapterInStore, setShowMap]); // Убрали setCurrentChapterId из зависимостей, так как он сам является useState setter
+        setShowMap(false); // Закрываем карту глав (WorldMap) и показываем детальную карту выбранной главы
+    }, [currentChapterId, /* setCurrentChapterInStore - управляется через useEffect */ setShowMap]);
+
+
+    // Вызывается из WorldMap для перехода на GlobalMap
+    const handleNavigateToGlobalMapView = useCallback(() => {
+        console.log("MainMenu: Переход на GlobalMap (/global-map)");
+        if (showMap) { // Если карта глав (WorldMap) сейчас открыта
+            setShowMap(false); // Скрываем ее
+        }
+        navigate('/global-map');
+    }, [navigate, showMap, setShowMap]); // Зависимости из код1 сохранены
+
 
     const handleBattlePassClick = useCallback(() => { console.log("Battle Pass clicked"); }, []);
     const handleMailClick = useCallback(() => setActivePopup('mail'), []);
@@ -227,7 +237,17 @@ const MainMenu = ({ onStart }) => {
     const handleDailyGrindClick = useCallback(() => setActivePopup('hunting'), []);
     const handleQuestsClick = useCallback(() => setActivePopup('tasks'), []);
     const handleExchangeClick = useCallback(() => setActivePopup('exchange'), []);
-    const handleWorldMapClick = useCallback(() => setShowMap(true), []);
+
+    // Кнопка в MainMenu, которая открывает WorldMap (карту глав)
+    const handleWorldMapClick = useCallback(() => {
+        // Перед открытием карты глав, убедимся, что currentChapterId в сторе актуален
+        if (currentChapterId !== currentChapterIdFromStore) {
+            setCurrentChapterInStore(currentChapterId);
+        }
+        setShowMap(true);
+    }, [setShowMap, currentChapterId, currentChapterIdFromStore, setCurrentChapterInStore]);
+
+
     const closePopup = useCallback(() => setActivePopup(null), []);
     const handleResetClick = useCallback(() => { if (window.confirm('Сбросить все данные?')) { useGameStore.persist.clearStorage(); window.location.reload(); } }, []);
 
@@ -251,8 +271,13 @@ const MainMenu = ({ onStart }) => {
         }
     };
 
-    if (showMap) {
-        return (<WorldMap goBack={() => setShowMap(false)} goToChapter={handleGoToChapter} currentChapterId={currentChapterId} />);
+    if (showMap) { // Это показывает WorldMap.jsx (карту глав/островов)
+        return (<WorldMap
+            goBack={() => setShowMap(false)} // Возврат к детальной карте текущей главы
+            goToChapter={handleGoToChapter}    // Выбор главы на карте островов
+            currentChapterId={currentChapterId} // Для подсветки текущего острова/главы
+            onGoToGlobalMap={handleNavigateToGlobalMapView} // Кнопка на WorldMap для перехода на супер-карту
+        />);
     }
 
     if (isLoadingChapter || !chapterData) {
@@ -268,21 +293,19 @@ const MainMenu = ({ onStart }) => {
 
     const selectedLevelData = chapterData.levels?.find(l => l.id === selectedLevelId);
 
-    // Функция getLevelDisplayStatus обновлена согласно логике из код1
     const getLevelDisplayStatus = (level) => {
-        // ... (получение unlocked, completionStatus) ...
-        const currentLevelsArray = chapterData?.levels || []; // Предполагаем, что это нужно для isLevelUnlocked
+        const currentLevelsArray = chapterData?.levels || [];
         const unlocked = isLevelUnlocked(currentChapterId, level.id, currentLevelsArray, null, null);
         const completionStatus = getLevelCompletionStatus(currentChapterId, level.id);
 
-        let levelStatusClass = 'locked'; // По умолчанию заблокирован
-        if (unlocked) { // Если уровень разблокирован
-            if (completionStatus?.hard) { // Проверяем, пройден ли на Hard
-                levelStatusClass = 'completed-hard'; // Пройден на Hard
-            } else if (completionStatus?.normal) { // Если не Hard, проверяем Normal
-                levelStatusClass = 'completed-normal'; // Пройден на Normal
+        let levelStatusClass = 'locked';
+        if (unlocked) {
+            if (completionStatus?.hard) {
+                levelStatusClass = 'completed-hard';
+            } else if (completionStatus?.normal) {
+                levelStatusClass = 'completed-normal';
             } else {
-                levelStatusClass = 'active'; // Разблокирован, но не пройден ни на одной сложности
+                levelStatusClass = 'active';
             }
         }
         return levelStatusClass;
@@ -323,20 +346,19 @@ const MainMenu = ({ onStart }) => {
                         })}
                     </svg>
                     {chapterData.levels?.map((level) => {
-                        const levelStatusClass = getLevelDisplayStatus(level); // Используем обновленную функцию
-                        const levelNumberInChapter = level.id % 100; // Предполагается, что ID уровня это chapterId * 100 + levelNumber
+                        const levelStatusClass = getLevelDisplayStatus(level);
+                        const levelNumberInChapter = level.id % 100;
 
                         return (
                             <div
                                 key={level.id}
-                                className={`level-node ${levelStatusClass}`} // className устанавливается здесь
+                                className={`level-node ${levelStatusClass}`}
                                 style={{
                                     position: 'absolute',
                                     left: `${level.x}px`,
                                     top: `${level.y}px`,
                                     width: `${level.nodeSize || 40}px`,
                                     height: `${level.nodeSize || 40}px`,
-                                    // backgroundImage: level.icon ? `url(${level.icon})` : undefined, // Если есть иконки
                                 }}
                                 onClick={(e) => {
                                     handleLevelNodeClick(level.id, e);
@@ -354,21 +376,18 @@ const MainMenu = ({ onStart }) => {
 
             <div className="main-menu-left-column">
                 <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
-                {/* ИЗМЕНЕНИЕ ИЗ КОД1: Добавляем класс has-indicator */}
                 <button
                     className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`}
                     onClick={handleRewardsChestClick}
                 >
                     <img src="/assets/icons/gift-icon.png" alt="Награды" />
-                    {/* Индикатор можно добавить и как отдельный элемент, если CSS псевдоэлемент не подходит */}
-                    {/* {hasClaimableRewardsIndicator && <div className="notification-dot"></div>} */}
                 </button>
-                 {/* КОНЕЦ ИЗМЕНЕНИЯ ИЗ КОД1 */}
                 <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick}><img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" /></button>
             </div>
 
             <div className="main-menu-right-column">
-                <button className="main-menu-button icon-button world-map-button" onClick={handleWorldMapClick}><img src="/assets/icons/map-icon.png" alt="Карта Мира" /></button>
+                 {/* Кнопка, которая открывает WorldMap.jsx (карту глав), использует обновленный handleWorldMapClick */}
+                <button className="main-menu-button icon-button world-map-button" onClick={handleWorldMapClick}><img src="/assets/icons/map-icon.png" alt="Карта Глав" /></button>
                 <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick}><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
                 <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick}><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
             </div>
@@ -383,7 +402,7 @@ const MainMenu = ({ onStart }) => {
                         completionStatus={getLevelCompletionStatus(chapterData.id, selectedLevelData.id)}
                         isHardUnlocked={isHardModeUnlocked(chapterData.id, selectedLevelData.id)}
                         onClose={handleCloseLevelPopup}
-                        onStartLevel={handleStartLevelFromDetails} // Используем существующий обработчик
+                        onStartLevel={handleStartLevelFromDetails}
                     />
                 )}
             </AnimatePresence>
@@ -397,7 +416,7 @@ const MainMenu = ({ onStart }) => {
                 </Popup>
             )}
             <button
-                className="main-menu-button reset-progress-button" // Новый класс для стилизации
+                className="main-menu-button reset-progress-button"
                 onClick={handleFullResetClick}
                 title="Сбросить весь игровой прогресс"
             >

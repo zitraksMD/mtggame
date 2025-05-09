@@ -37,7 +37,8 @@ const ISLAND_RENDERED_HEIGHT = 150;
 const MAP_BACKGROUND_WIDTH = 2000;
 const MAP_BACKGROUND_HEIGHT = 1000;
 
-const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
+// Изменения из код1: добавлен onGoToGlobalMap
+const WorldMap = ({ goBack, goToChapter, currentChapterId, onGoToGlobalMap /* <<< НОВЫЙ ПРОПС */ }) => {
   const containerRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -55,25 +56,24 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
     return { width: MAP_BACKGROUND_WIDTH, height: MAP_BACKGROUND_HEIGHT };
   }, []);
 
-  // Изменения из код1: Оберните в useCallback и добавьте console.log
   const calculateDragBoundaries = useCallback((contentScaledSize, containerSize) => {
-    console.log('[DragBoundsFn] Inputs:', { contentScaledSize, containerSize }); // <--- ОТЛАДКА из код1
+    console.log('[DragBoundsFn] Inputs:', { contentScaledSize, containerSize });
     if (contentScaledSize <= containerSize) {
       const centeredPosition = (containerSize - contentScaledSize) / 2;
       const bounds = { minPos: centeredPosition, maxPos: centeredPosition, allowDrag: false };
-      console.log('[DragBoundsFn] Result (no drag):', bounds); // <--- ОТЛАДКА из код1
+      console.log('[DragBoundsFn] Result (no drag):', bounds);
       return bounds;
     } else {
       const bounds = { minPos: containerSize - contentScaledSize, maxPos: 0, allowDrag: true };
-      console.log('[DragBoundsFn] Result (allow drag):', bounds); // <--- ОТЛАДКА из код1
+      console.log('[DragBoundsFn] Result (allow drag):', bounds);
       return bounds;
     }
-  }, []); // Зависимости пусты, так как функция не зависит от внешних переменных из области видимости компонента
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    console.log('[Effect] Container dimensions:', { width: container.offsetWidth, height: container.offsetHeight }); // <--- ОТЛАДКА из код1
+    console.log('[Effect] Container dimensions:', { width: container.offsetWidth, height: container.offsetHeight });
 
     const chapterToFocus = chaptersToDisplay.find(c => c.id === currentChapterId) || chaptersToDisplay[0];
     if (!chapterToFocus) {
@@ -94,13 +94,12 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
     const clampedTargetX = xBoundsTarget.allowDrag ? clamp(idealTargetX, xBoundsTarget.minPos, xBoundsTarget.maxPos) : xBoundsTarget.minPos;
     const clampedTargetY = yBoundsTarget.allowDrag ? clamp(idealTargetY, yBoundsTarget.minPos, yBoundsTarget.maxPos) : yBoundsTarget.minPos;
 
-    console.log('[Effect] Bounds Calc:', { // <--- ОТЛАДКА из код1
+    console.log('[Effect] Bounds Calc:', {
         scaledMapWidthTarget,
-        containerWidth: container.offsetWidth, // Добавлено container.offsetWidth для полноты картины как в код1
+        containerWidth: container.offsetWidth,
         xBoundsTarget,
-        idealTargetX, // Добавлено для полноты
-        clampedTargetX, // Добавлено для полноты
-        // Для Y (аналогично X, если нужно)
+        idealTargetX,
+        clampedTargetX,
         scaledMapHeightTarget,
         containerHeight: container.offsetHeight,
         yBoundsTarget,
@@ -115,7 +114,6 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
 
     setZoom(initialZoomForAnimation);
     setPosition({ x: initialPosX, y: initialPosY });
-    // console.log('[Effect] Initial position set for animation:', { x: initialPosX, y: initialPosY }); // Лог перед анимацией
 
     let startTimestamp = null;
     const duration = 1500;
@@ -133,12 +131,12 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
       } else {
         setZoom(finalZoom);
         setPosition({ x: clampedTargetX, y: clampedTargetY });
-        console.log('[Effect] Initial position set to (after animation):', { x: clampedTargetX, y: clampedTargetY }); // <--- ОТЛАДКА из код1 (после анимации)
+        console.log('[Effect] Initial position set to (after animation):', { x: clampedTargetX, y: clampedTargetY });
         setIsIntro(false);
       }
     };
     requestAnimationFrame(animate);
-  }, [currentChapterId, getMapActualDimensions, calculateDragBoundaries]); // Добавили calculateDragBoundaries в зависимости, т.к. он теперь useCallback
+  }, [currentChapterId, getMapActualDimensions, calculateDragBoundaries]);
 
   const updatePosition = (dx, dy) => {
     const scale = zoom;
@@ -148,14 +146,13 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
     const scaledMapWidth = mapActualWidth * scale;
     const scaledMapHeight = mapActualHeight * scale;
     const xBounds = calculateDragBoundaries(scaledMapWidth, container.offsetWidth);
-    const yBounds = calculateDragBoundaries(scaledMapHeight, container.offsetHeight); // В код2 Y-перемещение включено
+    const yBounds = calculateDragBoundaries(scaledMapHeight, container.offsetHeight);
     let targetX = mapStart.current.x + dx;
-    let targetY = mapStart.current.y + dy; // В код2 Y-перемещение включено
+    let targetY = mapStart.current.y + dy;
     const finalX = xBounds.allowDrag ? clamp(targetX, xBounds.minPos, xBounds.maxPos) : xBounds.minPos;
-    const finalY = yBounds.allowDrag ? clamp(targetY, yBounds.minPos, yBounds.maxPos) : yBounds.minPos; // В код2 Y-перемещение включено
+    const finalY = yBounds.allowDrag ? clamp(targetY, yBounds.minPos, yBounds.maxPos) : yBounds.minPos;
     
-    // Изменения из код1: Добавлен console.log
-    console.log('[UpdatePosition] Dragging:', { // Расширил лог для X и Y
+    console.log('[UpdatePosition] Dragging:', {
         currentMapX: mapStart.current.x,
         currentMapY: mapStart.current.y,
         dx,
@@ -168,7 +165,7 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
         finalY
     });
 
-    setPosition({ x: finalX, y: finalY }); // В код2 используется finalY
+    setPosition({ x: finalX, y: finalY });
   };
 
   const handleMouseDown = (e) => {
@@ -250,6 +247,17 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
     setSelectedChapter(null);
   };
 
+  // Изменения из код1: Новая функция handleLeaveContinentClick
+  const handleLeaveContinentClick = useCallback(() => {
+    console.log("Attempting to go to Global World Map...");
+    if (typeof onGoToGlobalMap === 'function') {
+        onGoToGlobalMap(); // Вызываем колбэк для перехода на глобальную карту
+    } else {
+        // Заглушка, если колбэк не передан
+        alert("Переход на глобальную карту мира еще не реализован.");
+    }
+  }, [onGoToGlobalMap]);
+
   const mapMovableContentStyle = {
     transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
     transformOrigin: 'top left',
@@ -259,10 +267,12 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
     position: 'absolute',
   };
 
+  // Используем className "world-map" из код2, вместо "world-map-screen" из код1
   return (
-    <div className="world-map" ref={containerRef}>
+    <div className="world-map" ref={containerRef}> 
       <h1 className="worldmap-title">Карта Мира</h1>
-      <button className="map-back-button" onClick={goBack} title="Назад">
+      {/* Изменения из код1: Изменен title кнопки */}
+      <button className="map-back-button" onClick={goBack} title="Назад в Меню Главы"> {/* Изменил title */}
         &#x21B5;
       </button>
 
@@ -325,6 +335,17 @@ const WorldMap = ({ goBack, goToChapter, currentChapterId }) => {
           })}
         </div>
       </div>
+
+      {/* +++ НОВАЯ КНОПКА ВНИЗУ +++ */}
+      <div className="global-map-controls">
+          <button 
+              className="map-action-button leave-continent-button"
+              onClick={handleLeaveContinentClick}
+          >
+              Общая Карта Мира {/* Или "Покинуть Континент" */}
+          </button>
+      </div>
+      {/* ++++++++++++++++++++++++++ */}
 
       {showPopup && selectedChapter && (
         <div className="map-popup-backdrop">

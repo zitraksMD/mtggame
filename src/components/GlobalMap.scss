@@ -1,0 +1,167 @@
+/* src/components/GlobalMap.scss */
+
+// Основной контейнер экрана глобальной карты
+.global-map-screen {
+    width: 100%;
+    height: 100vh; // Занимает весь экран
+    background: linear-gradient(160deg, #0f1a30 0%, #1a2a4a 100%); // Темно-синий космический градиент
+    // Или можно использовать фоновое изображение:
+    // background-image: url('/assets/global_map_background.jpg');
+    // background-size: cover;
+    // background-position: center;
+    color: white;
+    display: flex;
+    flex-direction: column; // Шапка сверху, карта снизу
+    position: relative; // Для абсолютного позиционирования кнопки "Назад"
+    overflow: hidden; // Чтобы карта не вылезала за пределы экрана
+    user-select: none;
+  }
+  
+  // Шапка экрана глобальной карты
+  .global-map-header {
+    display: flex;
+    justify-content: center; // Центрируем заголовок
+    align-items: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 15px) 15px 15px 15px; // Отступы с учетом safe area
+    width: 100%;
+    box-sizing: border-box;
+    position: relative; // Для кнопки "Назад"
+    z-index: 10; // Поверх фона карты
+    // background-color: rgba(0,0,0,0.3); // Небольшой фон для шапки (опционально)
+  
+    h1 {
+      margin: 0;
+      font-size: 1.6em;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    }
+  
+    // Кнопка "Назад" (если она в шапке)
+    .map-back-button { // Используем тот же класс, что и на карте глав
+      position: absolute;
+      // top: calc(env(safe-area-inset-top, 0px) + 15px); // Уже учтено в padding родителя
+      top: 15px; // Отступ от padding-top родителя
+      left: env(safe-area-inset-left, 15px);
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 20px; // Размер стрелки/текста
+      line-height: 1;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+  
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+  
+  // Контейнер для фона самой карты и континентов
+  // Этот div будет содержать изображение глобальной карты (если есть) и позиционировать континенты
+  .global-map-background {
+    flex-grow: 1; // Занимает все оставшееся место после шапки
+    width: 100%;
+    position: relative; // Для абсолютного позиционирования континентов
+    // Сюда можно поместить большое изображение "супер-карты" мира
+    // background-image: url('/assets/super_world_map_texture.jpg'); // из код1: url('/path/to/your/global_map_background.jpg');
+    background-size: cover; // Добавлено из код1
+    // background-position: center;
+    overflow: auto; // Если континентов много и они не влезают, появится скролл
+                    // Можно сделать перетаскивание, как на карте глав, если нужно
+    // height: 80vh; // Из код1, в код2 используется flex-grow для динамической высоты
+  }
+  
+  // Стиль для одного "континента" (или "острова" на глобальной карте)
+  .continent-node {
+    position: absolute; // Позиционируется по top/left из JS. В код1 не было position, но для `continent-lock-icon` было absolute
+    cursor: pointer;
+    display: flex;
+    flex-direction: column; // Иконка над текстом
+    align-items: center;
+    justify-content: center; // Добавлено из код1
+    text-align: center; // Из код2, не конфликтует
+    transition: transform 0.2s ease-out, filter 0.2s ease-out; // Из код2
+    padding: 10px; // Изменено с 5px на 10px (из код1)
+    border: 1px solid #555; // Добавлено из код1
+    background-color: rgba(0,0,0,0.3); // Добавлено из код1
+    width: 150px; // Добавлено из код1
+    height: auto;  // Добавлено из код1
+  
+    &:hover:not(.locked):not(.not-implemented) { // Дополнено условие :not(.not-implemented)
+      // Убрали transform: scale(1.05); по твоей просьбе
+      // Вместо этого можно добавить легкую подсветку
+      filter: brightness(1.1) drop-shadow(0 0 8px rgba(255, 255, 150, 0.7));
+    }
+  
+    .continent-image {
+      width: 80px;   // Изменено с 120px на 80px (из код1)
+      height: 80px;  // Изменено с 90px на 80px (из код1)
+      object-fit: contain; // Чтобы картинка вписалась, не обрезаясь
+      margin-bottom: 5px; // Отступ до названия
+      border-radius: 8px; // Небольшое скругление для картинки (из код2, сохранено)
+    }
+  
+    .continent-label {
+      color: white; // из код2
+      font-size: 0.9em; // из код2
+      font-weight: bold; // Есть в обоих
+      text-shadow: 1px 1px 2px black; // из код2
+      // background-color: rgba(0,0,0,0.5); // Небольшой фон под текстом (опционально)
+      // padding: 2px 5px;
+      // border-radius: 3px;
+    }
+  
+    // Стиль для заблокированного континента (реализованного, но заблокированного)
+    &.locked {
+      // filter: grayscale(0.7); // Из код1 (был закомментирован), код2 имеет более детальные стили ниже
+      cursor: not-allowed; // из код2
+      .continent-image {
+        filter: grayscale(90%) brightness(0.6); // Затемненная и обесцвеченная (из код2)
+      }
+      .continent-label {
+        color: #888; // Серый текст (из код2)
+      }
+      &:hover { // Убираем hover-эффекты для заблокированных (из код2)
+        filter: none;
+        transform: none;
+      }
+    }
+  
+    // Стиль для нереализованного континента (добавлено из код1)
+    &.not-implemented {
+      filter: grayscale(1);
+      cursor: default;
+      border-color: #333; // Переопределяет border-color из .continent-node
+  
+      .continent-image {
+        opacity: 0.5;
+      }
+      .continent-label, .continent-status-label { // .continent-status-label добавлен в селектор
+        color: #888;
+      }
+      // Убрать hover эффект для not-implemented
+      &:hover {
+          filter: grayscale(1); // Сохраняем фильтр
+          // Можно убрать и другие эффекты если они добавляются на :hover родителя
+      }
+    }
+  
+    // Иконка замка для заблокированных континентов
+    .continent-lock-icon {
+      position: absolute;
+      top: 5px;         // Изменено с 40% (из код1)
+      right: 5px;       // Добавлено (из код1), убраны left и transform
+      font-size: 1.5em; // Изменено с 2.5em (из код1)
+      color: yellow;    // Изменено с rgba(255, 255, 255, 0.7) (из код1)
+      text-shadow: 0 0 5px black; // из код2 (сохранено)
+      pointer-events: none; // Чтобы не мешал клику (из код2, сохранено)
+    }
+  
+    // Статус лейбл (например, "Скоро" или "% прохождения") (добавлено из код1)
+    .continent-status-label {
+      font-size: 0.9em;
+      margin-top: 3px;
+      // color: white; // По умолчанию, если не переопределено (например, в .not-implemented)
+    }
+  }

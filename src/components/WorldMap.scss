@@ -242,6 +242,35 @@
   }
 }
 
+.global-map-controls {
+  position: absolute;
+  bottom: 0; // Прижимаем к низу родителя (.world-map-screen)
+  left: 50%;
+  transform: translateX(-50%); // Центрируем по горизонтали
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); // Отступ от нижнего края + safe area
+  z-index: 10; // Поверх карты, но под попапами
+  display: flex;
+  justify-content: center;
+}
+
+// Стили для кнопки "Общая Карта Мира" / "Покинуть Континент"
+.map-action-button.leave-continent-button {
+  padding: 10px 20px;
+  font-size: 1em;
+  font-weight: bold;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.6); // Полупрозрачный темный
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: white;
+  }
+}
+
 /* animations (из код2) */
 @keyframes fadeIn {
   from { opacity: 0 }
