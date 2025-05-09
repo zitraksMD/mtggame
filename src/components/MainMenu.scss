@@ -157,9 +157,38 @@
     img {
       width: 40px; height: 40px; object-fit: contain; display: block;
     }
+
+    // <<< НАЧАЛО ИЗМЕНЕНИЙ ИЗ КОД1 >>>
+    &.rewards-chest-button {
+      position: relative; // Для позиционирования псевдоэлемента
+
+      // Класс, который добавляется, когда есть награды
+      &.has-indicator::after {
+        content: ''; // Обязательно для псевдоэлемента
+        position: absolute;
+        top: 2px;    // Положение точки (подбери)
+        right: 2px;   // Положение точки (подбери)
+        width: 8px;   // Размер точки
+        height: 8px;  // Размер точки
+        background-color: red; // Цвет индикатора
+        border-radius: 50%;    // Делаем круглым
+        border: 1px solid white; // Белая обводка для контраста (опционально)
+        box-shadow: 0 0 3px red;  // Легкое свечение (опционально)
+      }
+
+      // Если предпочитаешь отдельный div для точки (закомментировано как в код1):
+      // .notification-dot {
+      //   position: absolute;
+      //   top: 2px; right: 2px;
+      //   width: 8px; height: 8px;
+      //   background-color: red;
+      //   border-radius: 50%;
+      //   border: 1px solid white;
+      // }
+    }
+    // <<< КОНЕЦ ИЗМЕНЕНИЙ ИЗ КОД1 >>>
   }
 }
-
 
 
 // Battle Pass (Снова позиционируется абсолютно)
@@ -179,7 +208,7 @@
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
   top: 165px;                       // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
-  left: 10px;       // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
+  left: 10px;     // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
   display: flex;
   flex-direction: column;
   gap: 15px;        // Пространство между Почтой и Сундуком
@@ -187,28 +216,31 @@
   // УБРАЛИ: align-items: flex-start; - больше не нужно
 
   // Кнопки внутри колонки НЕ ДОЛЖНЫ быть absolute
-  .main-menu-button {
+  .main-menu-button { // Это общие стили для кнопок в колонке, они остаются
     position: relative; // Важно! Сбросить absolute
     top: auto;
     left: auto;
     transform: none;
-  }
-}
-  // Стили для иконочных кнопок (они уже должны быть настроены на меньший размер)
-  .main-menu-button.icon-button {
-    padding: 8px; // Меньшие падинги
-    border-radius: 12px;
-    width: 56px;  // Пример: Задать фиксированную ширину/высоту для квадратности
-    height: 56px; // width/height = (иконка 40px + padding 8px*2)
-    box-sizing: border-box; // Чтобы padding был включен в width/height
 
-    img {
-      width: 40px;
-      height: 40px;
-      object-fit: contain;
-      display: block;
+    // Стили для иконочных кнопок внутри колонки
+    // Убедимся, что этот блок не конфликтует с глобальным .icon-button
+    // и применяется именно к кнопкам ВНУТРИ .main-menu-left-column
+    &.icon-button {
+      padding: 8px; // Меньшие падинги
+      border-radius: 12px;
+      width: 56px;  // Пример: Задать фиксированную ширину/высоту для квадратности
+      height: 56px; // width/height = (иконка 40px + padding 8px*2)
+      box-sizing: border-box; // Чтобы padding был включен в width/height
+
+      img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        display: block;
+      }
     }
   }
+}
 
 // Правая колонка
 .main-menu-right-column {
@@ -219,7 +251,22 @@
   flex-direction: column;
   gap: 15px;
   z-index: 5; // Выше карты
-  .main-menu-button { position: relative; top: auto; right: auto; transform: none; } // Сброс absolute
+  .main-menu-button {
+    position: relative; top: auto; right: auto; transform: none; // Сброс absolute
+    // Если внутри правой колонки тоже есть icon-button,
+    // и они должны иметь те же размеры, что и в левой,
+    // можно либо скопировать стили .icon-button из .main-menu-left-column,
+    // либо вынести их в более общий класс, если структура позволяет.
+    // Например:
+    // &.icon-button {
+    //   padding: 8px;
+    //   border-radius: 12px;
+    //   width: 56px;
+    //   height: 56px;
+    //   box-sizing: border-box;
+    //   img { width: 40px; height: 40px; object-fit: contain; display: block; }
+    // }
+  }
 }
 
 // Название главы (Как было, но можно поднять z-index)
@@ -294,4 +341,30 @@
   border: none; padding: 4px 8px; border-radius: 4px; z-index: 99; // Ниже попапов
   cursor: pointer;
     &:hover { opacity: 1; background: rgba(255,0,0,0.8); }
+}
+
+.reset-progress-button {
+  position: absolute; // Позиционируем относительно .main-menu (если у него position: relative) или viewport
+  // Отступы от нижнего левого угла, УЧИТЫВАЯ безопасные зоны
+  left: calc(env(safe-area-inset-left, 0px) + 15px);   // 15px от левого края + safe area
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); // 15px от нижнего края + safe area
+  
+  // Если у тебя есть навбар внизу фиксированной высоты (например, 60px),
+  // то bottom нужно будет поднять еще выше:
+  // bottom: calc(env(safe-area-inset-bottom, 0px) + 60px + 15px); // 60px (навбар) + 15px (зазор)
+
+  background-color: #dc3545; // Красный цвет для опасной кнопки
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9em;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  z-index: 1100; // Поверх других элементов меню
+
+  &:hover {
+    background-color: #c82333; // Темнее при наведении
+  }
 }

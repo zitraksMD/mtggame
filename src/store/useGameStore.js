@@ -398,7 +398,7 @@ const useGameStore = create((set, get) => ({
     levelChestStates: {}, // <<< НОВОЕ (Опционально): для сохранения статуса открытых сундуков между сессиями { instanceId: true }
     currentLevelRewards: { gold: 0, diamonds: 0, items: [] },
     currentChapterId: null,
-
+    hasClaimableRewardsIndicator: false,
     // --- Игрок ---
     playerHp: savedState.playerHp ?? DEFAULT_BASE_STATS.hp,
     playerRace: savedState.playerRace || null,
@@ -2274,7 +2274,7 @@ clearLastLevelChestRewards: () => {
         const defaultEquipped = getDefaultEquippedSet();
         // console.log("Resetting game state with default gear...");
         set({
-            gold: 0, diamonds: 0, username: null, powerLevel: 0,
+            gold: 100000, diamonds: 10000, username: null, powerLevel: 0,
             playerBaseStats: { ...DEFAULT_BASE_STATS },
             playerHp: DEFAULT_BASE_STATS.hp,
             playerRace: null,
@@ -2464,6 +2464,13 @@ clearLastLevelChestRewards: () => {
     setCurrentChapter: (chapterId) => {
         set({ currentChapterId: chapterId });
         // Логика сохранения в localStorage уже есть в subscribe
+    },
+
+    setHasClaimableRewardsIndicator: (hasRewards) => {
+        // Обновляем, только если значение действительно изменилось
+        if (get().hasClaimableRewardsIndicator !== hasRewards) {
+            set({ hasClaimableRewardsIndicator: hasRewards });
+        }
     },
 
 })); // Конец create

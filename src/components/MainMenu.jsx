@@ -38,7 +38,9 @@ const MainMenu = ({ onStart }) => {
         setCurrentChapterInStore,   // Action из стора
         isLevelUnlocked,
         getLevelCompletionStatus,
-        isHardModeUnlocked
+        isHardModeUnlocked,
+        resetGame,
+        hasClaimableRewardsIndicator // <<< ПОЛУЧАЕМ ФЛАГ ИЗ СТОРА (добавлено из код1)
         // levelsCompleted, // Раскомментируй, если нужно напрямую
     } = useGameStore(state => ({
         currentChapterIdFromStore: state.currentChapterId,
@@ -46,13 +48,28 @@ const MainMenu = ({ onStart }) => {
         levelsCompleted: state.levelsCompleted,
         isLevelUnlocked: state.isLevelUnlocked,
         getLevelCompletionStatus: state.getLevelCompletionStatus,
-        isHardModeUnlocked: state.isHardModeUnlocked
+        isHardModeUnlocked: state.isHardModeUnlocked,
+        resetGame: state.resetGame,
+        hasClaimableRewardsIndicator: state.hasClaimableRewardsIndicator // <<< Связываем (добавлено из код1)
     }));
 
     // Используем локальный стейт, который инициализируется из стора или дефолтом
     const [currentChapterId, setCurrentChapterId] = useState(
         currentChapterIdFromStore || INITIAL_CHAPTER_ID
     );
+
+    const handleFullResetClick = useCallback(() => {
+        if (window.confirm('Вы уверены, что хотите сбросить ВЕСЬ прогресс игры? Это действие необратимо!')) {
+            if (typeof resetGame === 'function') {
+                resetGame();
+                // После сброса может потребоваться перезагрузка страницы или переход на начальный экран,
+                // чтобы игра корректно инициализировалась с чистого состояния.
+                // resetGame в сторе уже делает localStorage.clear() и window.location.reload();
+            } else {
+                console.error("Action resetGame не найден в useGameStore!");
+            }
+        }
+    }, [resetGame]);
 
     // Синхронизируем локальный стейт со стором и наоборот при необходимости
     useEffect(() => {
@@ -76,8 +93,8 @@ const MainMenu = ({ onStart }) => {
                 if (!id) console.warn("[MainMenu] Попытка загрузить главу с ID: null или undefined. Используем INITIAL_CHAPTER_ID.");
                 // Если id невалидный, но мы хотим попытаться загрузить дефолтную главу:
                 // if (!id && isMounted) {
-                //     setCurrentChapterId(INITIAL_CHAPTER_ID); // Это вызовет перезапуск useEffect
-                //     if (!currentChapterIdFromStore) setCurrentChapterInStore(INITIAL_CHAPTER_ID);
+                //      setCurrentChapterId(INITIAL_CHAPTER_ID); // Это вызовет перезапуск useEffect
+                //      if (!currentChapterIdFromStore) setCurrentChapterInStore(INITIAL_CHAPTER_ID);
                 // }
                 return;
             }
@@ -337,7 +354,16 @@ const MainMenu = ({ onStart }) => {
 
             <div className="main-menu-left-column">
                 <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
-                <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}><img src="/assets/icons/gift-icon.png" alt="Награды" /></button>
+                {/* ИЗМЕНЕНИЕ ИЗ КОД1: Добавляем класс has-indicator */}
+                <button
+                    className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`}
+                    onClick={handleRewardsChestClick}
+                >
+                    <img src="/assets/icons/gift-icon.png" alt="Награды" />
+                    {/* Индикатор можно добавить и как отдельный элемент, если CSS псевдоэлемент не подходит */}
+                    {/* {hasClaimableRewardsIndicator && <div className="notification-dot"></div>} */}
+                </button>
+                 {/* КОНЕЦ ИЗМЕНЕНИЯ ИЗ КОД1 */}
                 <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick}><img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" /></button>
             </div>
 
@@ -370,6 +396,13 @@ const MainMenu = ({ onStart }) => {
                     {getPopupContent(activePopup)}
                 </Popup>
             )}
+            <button
+                className="main-menu-button reset-progress-button" // Новый класс для стилизации
+                onClick={handleFullResetClick}
+                title="Сбросить весь игровой прогресс"
+            >
+                Сброс
+            </button>
         </motion.div>
     );
 };
