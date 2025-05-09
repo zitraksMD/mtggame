@@ -30,7 +30,8 @@ const popupContentVariants = {
 
 // ... хелперы formatStatValue, statNames, getRewardIcon, rarityColors (как упомянуто в код1, если они нужны) ...
 
-const LevelDetailsPopup = forwardRef(({ level, chapterId, onClose, onStartLevel }, ref) => {
+// Добавляем isHardUnlocked в пропсы
+const LevelDetailsPopup = forwardRef(({ level, chapterId, onClose, onStartLevel, isHardUnlocked }, ref) => {
   const playerPowerLevel = useGameStore(state => state.powerLevel);
   const [selectedDifficulty, setSelectedDifficulty] = useState('Normal');
 
@@ -94,10 +95,21 @@ const LevelDetailsPopup = forwardRef(({ level, chapterId, onClose, onStartLevel 
             {displayLevelInfo.number}
           </div>
 
-          {/* Переключатель сложности (из код2) */}
+          {/* Переключатель сложности (из код2, с изменениями из код1) */}
           <div className="difficulty-switcher">
-            <button className={selectedDifficulty === 'Normal' ? 'active' : ''} onClick={() => setSelectedDifficulty('Normal')}>Normal</button>
-            <button className={selectedDifficulty === 'Hard' ? 'active' : ''} onClick={() => setSelectedDifficulty('Hard')}>Hard</button>
+            <button
+              className={selectedDifficulty === 'Normal' ? 'active' : ''}
+              onClick={() => setSelectedDifficulty('Normal')}
+            >
+              Normal
+            </button>
+            <button
+              className={selectedDifficulty === 'Hard' ? 'active' : ''}
+              onClick={() => setSelectedDifficulty('Hard')}
+              disabled={!isHardUnlocked} // <<< Изменение из код1: Блокируем кнопку, если Hard не открыт
+            >
+              Hard
+            </button>
           </div>
 
           {/* Описание уровня (из код2) */}

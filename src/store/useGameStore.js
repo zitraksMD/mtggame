@@ -378,9 +378,11 @@ const _selectRandomGearItemByRarity_Gear = (targetRarity) => {
 
 const REFRESH_HOUR_UTC = 2;
 
+const INITIAL_CHAPTER_ID = 1;
 
 // --- Инициализация ---
 const savedState = loadFromLocalStorage();
+
 
 // --- Создание стора Zustand ---
 const useGameStore = create((set, get) => ({
@@ -395,6 +397,7 @@ const useGameStore = create((set, get) => ({
     lastOpenedLevelChestRewards: null, // <<< НОВОЕ: Массив с наградами [{ type, amount?, id?, name?, icon?, rarity? }] или null
     levelChestStates: {}, // <<< НОВОЕ (Опционально): для сохранения статуса открытых сундуков между сессиями { instanceId: true }
     currentLevelRewards: { gold: 0, diamonds: 0, items: [] },
+    currentChapterId: null,
 
     // --- Игрок ---
     playerHp: savedState.playerHp ?? DEFAULT_BASE_STATS.hp,
@@ -1168,11 +1171,36 @@ addEnergy: (amount) => {
             get().checkAllAchievements();
         }
     },
-    completeLevelAction: (chapterId, levelId) => {
+    completeLevelAction: (chapterId, levelId, difficultyPlayed) => { // Добавляем difficultyPlayed
         const levelKey = `c${chapterId}_l${levelId}`;
-        if (get().levelsCompleted[levelKey] !== true) {
-            set((state) => ({ levelsCompleted: { ...state.levelsCompleted, [levelKey]: true } }));
-            get().checkAllAchievements();
+        const currentCompletion = get().levelsCompleted[levelKey] || { normal: false, hard: false };
+        
+        let difficultyKey = 'normal'; // По умолчанию
+        if (difficultyPlayed?.toLowerCase() === 'hard') {
+            difficultyKey = 'hard';
+        }
+        // Если уровень пройден на Hard, он автоматически считается пройденным и на Normal
+        const newCompletionStatus = {
+            ...currentCompletion,
+            [difficultyKey]: true, // Отмечаем пройденную сложность
+        };
+        if (difficultyKey === 'hard') {
+            newCompletionStatus.normal = true; // Если пройден Hard, то Normal тоже считается пройденным
+        }
+
+        // Проверяем, изменился ли статус, чтобы не вызывать лишних обновлений
+        if (get().levelsCompleted[levelKey]?.[difficultyKey] !== true) {
+            console.log(`[Store Action] Уровень ${levelKey} пройден на сложности '${difficultyKey}'. Новый статус:`, newCompletionStatus);
+            set((state) => ({
+                levelsCompleted: {
+                    ...state.levelsCompleted,
+                    [levelKey]: newCompletionStatus
+                }
+            }));
+            get().checkAllAchievements(); // Проверяем ачивки
+            // TODO: Здесь можно добавить логику проверки, пройдена ли вся глава, и вызова completeChapterAction
+        } else {
+            console.log(`[Store Action] Уровень ${levelKey} уже был пройден на сложности '${difficultyKey}' или выше.`);
         }
     },
 
@@ -2350,6 +2378,92 @@ clearLastLevelChestRewards: () => {
         });
         // If debuffs were removed, stats might change implicitly on next computedStats call.
         // No need to call updatePowerLevel here unless debuffs directly contribute to it.
+    },
+
+    // ================== Селекторы (Getters) ==================
+
+    /**
+     * Возвращает статус прохождения уровня.
+     * @param {number} chapterId - ID главы
+     * @param {number} levelId - ID уровня
+     * @returns {{ normal: boolean, hard: boolean } | null} - Статус или null, если не пройден
+     */
+    getLevelCompletionStatus: (chapterId, levelId) => {
+        const levelKey = `c${chapterId}_l${levelId}`;
+        return get().levelsCompleted[levelKey] || null; // Возвращаем объект {normal, hard} или null
+    },
+
+    /**
+     * Проверяет, пройдена ли вся глава (все уровни на Normal).
+     * @param {number} chapterId - ID главы
+     * @param {Array<Object>} allLevelsInChapter - Массив всех объектов уровней этой главы (из chapterXData.js)
+     * @returns {boolean}
+     */
+    isChapterCompleted: (chapterId, allLevelsInChapter) => {
+        if (!allLevelsInChapter || allLevelsInChapter.length === 0) {
+            return false; // Нет уровней для проверки
+        }
+        // Глава считается пройденной, если ВСЕ уровни в ней пройдены хотя бы на Normal
+        for (const level of allLevelsInChapter) {
+            const levelKey = `c${chapterId}_l${level.id}`;
+            const status = get().levelsCompleted[levelKey];
+            if (!status || !status.normal) { // Если хоть один уровень не пройден на Normal
+                return false;
+            }
+        }
+        return true; // Все уровни пройдены на Normal
+    },
+
+    /**
+     * Определяет, разблокирован ли уровень для игры.
+     * @param {number} chapterId - ID текущей главы
+     * @param {number} levelId - ID текущего уровня
+     * @param {Array<Object>} allLevelsInChapter - Массив всех объектов уровней ТЕКУЩЕЙ главы
+     * @param {Array<Object>|null} allLevelsInPrevChapter - Массив уровней ПРЕДЫДУЩЕЙ главы (null для первой главы)
+     * @param {number|null} prevChapterId - ID предыдущей главы (null для первой главы)
+     * @returns {boolean}
+     */
+    isLevelUnlocked: (chapterId, levelId, allLevelsInChapter, allLevelsInPrevChapter = null, prevChapterId = null) => {
+        if (!allLevelsInChapter || allLevelsInChapter.length === 0) return false;
+
+        const levelIndex = allLevelsInChapter.findIndex(l => l.id === levelId);
+        if (levelIndex === -1) return false; // Уровень не найден в данных главы
+
+        // Первый уровень (индекс 0) текущей главы
+        if (levelIndex === 0) {
+            if (chapterId === INITIAL_CHAPTER_ID) { // INITIAL_CHAPTER_ID = 1 (или твое начальное значение)
+                return true; // Первый уровень первой главы всегда открыт
+            } else {
+                // Для первого уровня НЕ первой главы, проверяем, пройдена ли предыдущая глава
+                if (allLevelsInPrevChapter && prevChapterId !== null) {
+                    return get().isChapterCompleted(prevChapterId, allLevelsInPrevChapter);
+                }
+                return false; // Предыдущая глава не найдена/не указана
+            }
+        }
+
+        // Для остальных уровней (индекс > 0)
+        // Проверяем, пройден ли предыдущий уровень в ЭТОЙ ЖЕ главе на Normal
+        const prevLevelInChapter = allLevelsInChapter[levelIndex - 1];
+        if (prevLevelInChapter) {
+            const prevLevelKey = `c${chapterId}_l${prevLevelInChapter.id}`;
+            const prevLevelStatus = get().levelsCompleted[prevLevelKey];
+            return !!(prevLevelStatus && prevLevelStatus.normal); // Открыт, если предыдущий пройден на Normal
+        }
+
+        return false; // На всякий случай
+    },
+
+    // Селектор для определения, доступен ли Hard режим для уровня
+    isHardModeUnlocked: (chapterId, levelId) => {
+        const levelKey = `c${chapterId}_l${levelId}`;
+        const status = get().levelsCompleted[levelKey];
+        return !!(status && status.normal); // Hard открыт, если Normal пройден
+    },
+
+    setCurrentChapter: (chapterId) => {
+        set({ currentChapterId: chapterId });
+        // Логика сохранения в localStorage уже есть в subscribe
     },
 
 })); // Конец create

@@ -37,7 +37,7 @@
   }
 }
 
-// --- SVG и Узлы Уровней (Как было) ---
+// --- SVG и Узлы Уровней ---
 .chapter-level-svg-connections {
   position: absolute;
   top: 0;
@@ -46,54 +46,84 @@
   z-index: 1; // Под узлами, над картой
 }
 
+// Стили для соединительных линий (обновлено из код1)
 .level-connection-path {
-  stroke: rgba(255, 255, 255, 0.6); // Цвет связи
-  stroke-width: 5px;
+  stroke: rgba(255, 255, 255, 0.3); // Цвет неактивной связи
+  stroke-width: 3px;
   fill: none;
-  stroke-dasharray: 10, 5; // Пунктирная линия
-  // Анимация отрисовки (опционально)
-  // stroke-dashoffset: 1000;
-  // animation: drawPath 5s linear forwards;
-}
-// @keyframes drawPath { to { stroke-dashoffset: 0; } }
+  stroke-dasharray: 5, 5; // Пунктирная линия
+  transition: stroke 0.3s ease;
 
+  &.active { // Если связь активна (например, предыдущий уровень пройден)
+    stroke: #ffd700; // Золотой цвет активной связи
+    stroke-dasharray: none; // Сплошная линия
+  }
+}
+
+// Стили для узлов уровней (обновлено и дополнено из код1)
 .level-node {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  background: rgba(52, 152, 219, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  width: 40px;  // Можно оставить из код2 или взять из своего проекта
+  height: 40px; // Можно оставить из код2 или взять из своего проекта
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 16px; // Можно оставить из код2 или взять из своего проекта
   color: white;
+  border: 2px solid white; // Базовая рамка из код1
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); // Оставим тень из код2
   z-index: 2; // Над связями и картой
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; // Добавлен border-color из код1, box-shadow из код2
 
   &:hover {
-    background-color: rgba(41, 128, 185, 0.9); // Чуть темнее при наведении
     transform: scale(1.1);
+    // background-color из код2 убран, так как он будет переопределяться статусами
   }
 
-  &.completed {
-    background-color: rgba(46, 204, 113, 0.8); // Зеленый
-    border-color: rgba(255, 255, 255, 1);
-    &:hover { background-color: rgba(39, 174, 96, 0.9); }
+  // Статус по умолчанию (разблокирован, но не пройден) из код1
+  &.active {
+    background-color: #4a90e2; // Синий фон
+    border-color: #ffffff;    // Белая рамка
+    // box-shadow: 0 0 15px rgba(241, 196, 15, 0.8); // Свечение из код2 можно убрать или оставить, если нужно совместить
+    // Если это текущий активный для ИГРЫ уровень (не просто разблокированный), можно добавить дополнительный класс или пересмотреть логику
   }
-  &.active { // Если это текущий доступный уровень
-    border-color: #f1c40f; // Золотая рамка
-    box-shadow: 0 0 15px rgba(241, 196, 15, 0.8); // Свечение
+
+  // Уровень пройден на Normal из код1
+  &.completed-normal {
+    background-color: #5cb85c; // Зеленый фон
+    border-color: #a0e0a0;     // Светло-зеленая рамка
+    color: white;
+    &:hover {
+      background-color: #4cae4c; // Чуть темнее при наведении (пример)
+      // transform: scale(1.1); // Уже есть базовый hover
+    }
   }
-  &.locked { // Если не доступен (если будет такая логика)
-      background-color: rgba(128, 128, 128, 0.7);
-      border-color: rgba(180, 180, 180, 0.8);
-      cursor: not-allowed;
-      &:hover { transform: scale(1); background-color: rgba(128, 128, 128, 0.7); }
+
+  // Уровень пройден на Hard из код1
+  &.completed-hard {
+    background-color: #d9534f; // Красный фон
+    border-color: #ff8f8c;     // Светло-красная рамка
+    color: white;
+    &:hover {
+      background-color: #c9302c; // Чуть темнее при наведении (пример)
+      // transform: scale(1.1); // Уже есть базовый hover
+    }
+  }
+
+  // Уровень заблокирован из код1
+  &.locked {
+    background-color: #6c757d; // Серый фон
+    border-color: #495057;     // Темно-серая рамка
+    color: #adb5bd;            // Светло-серый текст
+    cursor: not-allowed;
+    &:hover {
+      transform: none; // Убрать эффект увеличения при наведении
+      background-color: #6c757d; // Фон не меняется
+      border-color: #495057;   // Рамка не меняется
+    }
   }
 }
 
@@ -117,8 +147,8 @@
   &:hover {
     background: rgba(0, 0, 0, 0.7);
   }
-   &:active {
-     transform: scale(0.97);
+    &:active {
+      transform: scale(0.97);
   }
 
   &.icon-button {
@@ -136,7 +166,7 @@
 .battle-pass-button {
   position: absolute; // Важно!
   top: 115px;
-  left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ слева
+  left: 10px;       // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ слева
   z-index: 5;
   padding: 10px 25px; // Горизонтальные падинги для ширины
   border-radius: 8px;
@@ -148,11 +178,11 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
-  top: 165px;                    // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
-  left: 10px;      // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
+  top: 165px;                       // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
+  left: 10px;       // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
   display: flex;
   flex-direction: column;
-  gap: 15px;       // Пространство между Почтой и Сундуком
+  gap: 15px;        // Пространство между Почтой и Сундуком
   z-index: 5;
   // УБРАЛИ: align-items: flex-start; - больше не нужно
 
@@ -164,8 +194,8 @@
     transform: none;
   }
 }
- // Стили для иконочных кнопок (они уже должны быть настроены на меньший размер)
- .main-menu-button.icon-button {
+  // Стили для иконочных кнопок (они уже должны быть настроены на меньший размер)
+  .main-menu-button.icon-button {
     padding: 8px; // Меньшие падинги
     border-radius: 12px;
     width: 56px;  // Пример: Задать фиксированную ширину/высоту для квадратности
@@ -178,7 +208,7 @@
       object-fit: contain;
       display: block;
     }
- }
+  }
 
 // Правая колонка
 .main-menu-right-column {
@@ -263,5 +293,5 @@
   font-size: 10px; opacity: 0.6; background: rgba(255,0,0,0.5); color: #fff;
   border: none; padding: 4px 8px; border-radius: 4px; z-index: 99; // Ниже попапов
   cursor: pointer;
-   &:hover { opacity: 1; background: rgba(255,0,0,0.8); }
+    &:hover { opacity: 1; background: rgba(255,0,0,0.8); }
 }

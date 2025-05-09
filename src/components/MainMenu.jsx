@@ -1,7 +1,7 @@
 // src/components/MainMenu.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from 'framer-motion'; // <<< ИМПОРТИРУЕМ AnimatePresence
-import useGameStore from "../store/useGameStore";
+import { motion, AnimatePresence } from 'framer-motion';
+import useGameStore from "../store/useGameStore"; // Убедись, что импорт есть
 import WorldMap from "./WorldMap";
 import Popup from './Popup';
 import "./MainMenu.scss";
@@ -9,7 +9,7 @@ import { pageVariants, pageTransition } from '../animations';
 import { useNavigate } from 'react-router-dom';
 import LevelDetailsPopup from './LevelDetailsPopup';
 
-const INITIAL_CHAPTER_ID = 1;
+const INITIAL_CHAPTER_ID = 1; // Это будет использоваться, если в сторе ничего нет
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
 const MainMenu = ({ onStart }) => {
@@ -17,9 +17,9 @@ const MainMenu = ({ onStart }) => {
 
     const [showMap, setShowMap] = useState(false);
     const [selectedLevelId, setSelectedLevelId] = useState(null);
-    const [showLevelPopup, setShowLevelPopup] = useState(false); // Используется для LevelDetailsPopup
+    const [showLevelPopup, setShowLevelPopup] = useState(false);
     const [isLoadingLevel, setIsLoadingLevel] = useState(false);
-    const [currentChapterId, setCurrentChapterId] = useState(INITIAL_CHAPTER_ID);
+    // const [currentChapterId, setCurrentChapterId] = useState(INITIAL_CHAPTER_ID); // Удалено, будет управляться через стор и синхронизированный локальный стейт
     const [chapterData, setChapterData] = useState(null);
     const [isLoadingChapter, setIsLoadingChapter] = useState(true);
     const [activePopup, setActivePopup] = useState(null);
@@ -30,14 +30,57 @@ const MainMenu = ({ onStart }) => {
     const dragStart = useRef({ x: 0, y: 0 });
     const mapStart = useRef({ x: 0, y: 0 });
     const hasStarted = useRef(false);
-
-    // <<< ДОБАВЛЯЕМ REF ДЛЯ LevelDetailsPopup из код1 >>>
     const levelDetailsPopupRef = useRef(null);
+
+    // +++ ИЗМЕНЕНИЯ ИЗ КОД1: Получаем данные и селекторы из стора +++
+    const {
+        currentChapterIdFromStore, // Переименовываем, чтобы не конфликтовать с useState
+        setCurrentChapterInStore,   // Action из стора
+        isLevelUnlocked,
+        getLevelCompletionStatus,
+        isHardModeUnlocked
+        // levelsCompleted, // Раскомментируй, если нужно напрямую
+    } = useGameStore(state => ({
+        currentChapterIdFromStore: state.currentChapterId,
+        setCurrentChapterInStore: state.setCurrentChapter,
+        levelsCompleted: state.levelsCompleted,
+        isLevelUnlocked: state.isLevelUnlocked,
+        getLevelCompletionStatus: state.getLevelCompletionStatus,
+        isHardModeUnlocked: state.isHardModeUnlocked
+    }));
+
+    // Используем локальный стейт, который инициализируется из стора или дефолтом
+    const [currentChapterId, setCurrentChapterId] = useState(
+        currentChapterIdFromStore || INITIAL_CHAPTER_ID
+    );
+
+    // Синхронизируем локальный стейт со стором и наоборот при необходимости
+    useEffect(() => {
+        // Если в сторе значение изменилось (например, загрузилось из localStorage)
+        // и оно отличается от текущего локального значения
+        if (currentChapterIdFromStore && currentChapterIdFromStore !== currentChapterId) {
+            setCurrentChapterId(currentChapterIdFromStore);
+        } else if (!currentChapterIdFromStore && currentChapterId) {
+            // Если в сторе пусто, а у нас есть значение (например, INITIAL_CHAPTER_ID или измененное пользователем),
+            // запишем в стор. Это важно при первой загрузке, если стор пуст.
+            setCurrentChapterInStore(currentChapterId);
+        }
+        // Этот эффект должен реагировать на изменения из стора и на инициализацию
+    }, [currentChapterIdFromStore, currentChapterId, setCurrentChapterInStore]);
+    // +++ КОНЕЦ ИЗМЕНЕНИЙ ИЗ КОД1 для currentChapterId +++
 
     useEffect(() => {
         let isMounted = true;
         const loadChapter = async (id) => {
-            if (!isMounted) return;
+            if (!isMounted || !id) { // Добавлена проверка на id
+                if (!id) console.warn("[MainMenu] Попытка загрузить главу с ID: null или undefined. Используем INITIAL_CHAPTER_ID.");
+                // Если id невалидный, но мы хотим попытаться загрузить дефолтную главу:
+                // if (!id && isMounted) {
+                //     setCurrentChapterId(INITIAL_CHAPTER_ID); // Это вызовет перезапуск useEffect
+                //     if (!currentChapterIdFromStore) setCurrentChapterInStore(INITIAL_CHAPTER_ID);
+                // }
+                return;
+            }
             console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${id}...`);
             setIsLoadingChapter(true); setChapterData(null); setPosition({ x: 0, y: 0 });
 
@@ -52,17 +95,35 @@ const MainMenu = ({ onStart }) => {
             } catch (error) {
                 console.error(`[MainMenu] Failed to load CHAPTER data for ID ${id}:`, error);
                 if (isMounted) {
-                    alert(`Ошибка загрузки данных Главы ${id}. Проверьте путь и файл. Загружаем Главу 1.`);
-                    if (id !== 1) { setCurrentChapterId(1); }
-                    else { setIsLoadingChapter(false); setChapterData(null); }
+                    alert(`Ошибка загрузки данных Главы ${id}. Проверьте путь и файл. Загружаем Главу ${INITIAL_CHAPTER_ID}.`);
+                    if (id !== INITIAL_CHAPTER_ID) {
+                        // Обновляем и локальный стейт и стор
+                        setCurrentChapterId(INITIAL_CHAPTER_ID);
+                        setCurrentChapterInStore(INITIAL_CHAPTER_ID);
+                    } else {
+                        // Если уже пытались загрузить INITIAL_CHAPTER_ID и не вышло
+                        setIsLoadingChapter(false); setChapterData(null);
+                    }
                 }
             } finally {
+                // Проверяем, что текущий загружаемый id все еще актуален
                 if (isMounted && currentChapterId === id) { setIsLoadingChapter(false); }
             }
         };
-        loadChapter(currentChapterId);
+
+        if (currentChapterId) { // Убедимся, что currentChapterId определен перед загрузкой
+             loadChapter(currentChapterId);
+        } else if (!currentChapterIdFromStore) {
+            // Если currentChapterId еще не установлен (например, при первом рендере и пустом сторе)
+            // Устанавливаем INITIAL_CHAPTER_ID, что вызовет useEffect для currentChapterId и loadChapter
+            console.log("[MainMenu] currentChapterId не определен, устанавливаем INITIAL_CHAPTER_ID");
+            setCurrentChapterId(INITIAL_CHAPTER_ID);
+            setCurrentChapterInStore(INITIAL_CHAPTER_ID); // Также обновить стор
+        }
+
+
         return () => { isMounted = false; };
-    }, [currentChapterId]);
+    }, [currentChapterId, setCurrentChapterInStore]); // Добавили setCurrentChapterInStore в зависимости, хотя он не должен меняться часто
 
     useEffect(() => {
         if (!chapterData || isLoadingChapter || !mapContainerRef.current) return;
@@ -100,92 +161,76 @@ const MainMenu = ({ onStart }) => {
     const handleTouchMove = useCallback((e) => { if (!dragging) return; updatePosition(e.touches[0].clientX - dragStart.current.x, e.touches[0].clientY - dragStart.current.y); }, [dragging, updatePosition]);
     const stopDrag = useCallback((e) => { if (dragging) { setDragging(false); if (e.currentTarget && e.type === 'mouseup') { e.currentTarget.style.cursor = 'grab'; } } }, [dragging]);
 
-    // <<< Функция открытия попапа деталей уровня (аналог handleOpenLevelDetails из код1) >>>
     const handleLevelNodeClick = useCallback((levelUniqueId, e) => {
         e.stopPropagation();
-        // TODO: Добавить проверку, доступен ли уровень
+        const currentLevelsArray = chapterData?.levels || [];
+        if (!isLevelUnlocked(currentChapterId, levelUniqueId, currentLevelsArray, null, null)) {
+            console.log(`[MainMenu] Уровень ${levelUniqueId} (глава ${currentChapterId}) заблокирован.`);
+            alert("Уровень пока заблокирован. Пройдите предыдущие!");
+            return;
+        }
         const levelData = chapterData?.levels?.find(l => l.id === levelUniqueId);
         if (levelData) {
-            setSelectedLevelId(levelUniqueId); // Или можно setSelectedLevelForDetails(levelData) если нужно хранить весь объект
+            setSelectedLevelId(levelUniqueId);
             setShowLevelPopup(true);
         } else {
-            console.warn(`Level data not found for ID: ${levelUniqueId}`);
+            console.warn(`[MainMenu] Данные уровня не найдены для ID: ${levelUniqueId} после проверки разблокировки.`);
         }
-    }, [chapterData]);
+    }, [chapterData, currentChapterId, isLevelUnlocked, setSelectedLevelId, setShowLevelPopup]);
 
-    // <<< Функция закрытия попапа деталей уровня (аналог handleCloseLevelDetails из код1) >>>
+
     const handleCloseLevelPopup = useCallback(() => {
         setShowLevelPopup(false);
-        // Поведение из код1: небольшая задержка перед сбросом selectedLevelForDetails
-        // Для AnimatePresence, обычно данные не нужно сбрасывать с задержкой,
-        // так как компонент будет анимированно исчезать с текущими props.
-        // Но если LevelDetailsPopup зависит от selectedLevelId для своей exit-анимации,
-        // и selectedLevelId сбрасывается мгновенно, это может вызвать проблемы.
-        // Если анимация выхода не зависит от `level` prop или корректно обрабатывает его изменение на null/undefined,
-        // то задержка не нужна.
-        // Оставляем мгновенный сброс, как в оригинальном код2.
-        // При необходимости можно добавить setTimeout:
-        // setTimeout(() => setSelectedLevelId(null), 300);
         setSelectedLevelId(null);
     }, []);
 
-    // <<< Функция старта уровня из попапа деталей (аналог handleStartLevelFromDetails из код1) >>>
     const handleStartLevelFromDetails = useCallback((levelId, difficulty) => {
         console.log(`[MainMenu] Starting level ${levelId} with difficulty ${difficulty} from details popup`);
         if (!hasStarted.current && chapterData) {
             hasStarted.current = true;
             setIsLoadingLevel(true);
-            // Закрываем попап перед стартом или после? Код1 закрывает после.
-            // Код2 (старая версия попапа) вызывал onStart и неявно попап исчезал.
-            // Логично закрыть попап.
-            setShowLevelPopup(false); // Закрываем попап
-            // setSelectedLevelId(null); // Опционально сбросить здесь или в handleCloseLevelPopup
-
-            onStart(chapterData.id, levelId, difficulty); // Передаем onStart из App.jsx
+            setShowLevelPopup(false); // Закрываем попап перед стартом
+            onStart(chapterData.id, levelId, difficulty);
         }
     }, [chapterData, onStart]);
 
-
+    // +++ ОБНОВЛЕННЫЙ handleGoToChapter ИЗ КОД1 +++
     const handleGoToChapter = useCallback((chapterStub) => {
-        console.log("[MainMenu] Switching to chapter ID:", chapterStub.id);
+        console.log("[MainMenu] Switching to chapter ID from map:", chapterStub.id);
         if (chapterStub.id !== currentChapterId) {
-            setCurrentChapterId(chapterStub.id);
+            setCurrentChapterId(chapterStub.id); // Обновляем локальный стейт
+            setCurrentChapterInStore(chapterStub.id); // Обновляем стейт в сторе (он сохранится)
         }
         setShowMap(false);
-    }, [currentChapterId]);
+    }, [currentChapterId, setCurrentChapterInStore, setShowMap]); // Убрали setCurrentChapterId из зависимостей, так как он сам является useState setter
 
-    const handleBattlePassClick = useCallback(() => {
-        console.log("Battle Pass clicked - likely navigates to a new screen, not a popup");
-    }, []);
+    const handleBattlePassClick = useCallback(() => { console.log("Battle Pass clicked"); }, []);
     const handleMailClick = useCallback(() => setActivePopup('mail'), []);
-    const handleRewardsChestClick = useCallback(() => {
-        console.log("Navigating to Rewards Screen...");
-        navigate('/rewards');
-    }, [navigate]);
+    const handleRewardsChestClick = useCallback(() => { navigate('/rewards'); }, [navigate]);
     const handleDailyGrindClick = useCallback(() => setActivePopup('hunting'), []);
     const handleQuestsClick = useCallback(() => setActivePopup('tasks'), []);
     const handleExchangeClick = useCallback(() => setActivePopup('exchange'), []);
     const handleWorldMapClick = useCallback(() => setShowMap(true), []);
     const closePopup = useCallback(() => setActivePopup(null), []);
-    const handleResetClick = useCallback(() => { if (window.confirm('Сбросить все данные?')) { localStorage.clear(); window.location.reload(); } }, []);
+    const handleResetClick = useCallback(() => { if (window.confirm('Сбросить все данные?')) { useGameStore.persist.clearStorage(); window.location.reload(); } }, []);
+
 
     const getPopupContent = (popupType) => {
         switch (popupType) {
-            case 'mail': return (<><p>Писем нет.</p><p>Здесь будут отображаться входящие сообщения и награды.</p></>);
-            case 'hunting': return (<><p>Энергия для охоты: 10/10</p><p>Выберите зону для охоты.</p></>);
-            case 'tasks': return (<><p>Ежедневные задачи:</p><ul><li>Пройти 3 уровня (0/3)</li><li>Потратить 50 энергии (15/50)</li></ul></>);
-            case 'exchange': return (<><p>Обмен осколков Toncoin:</p><p>Ваш баланс: 150 осколков</p><input type="number" placeholder="Количество" /><button style={{ marginLeft: '10px' }}>Обменять</button></>);
+            case 'mail': return <div>Содержимое почты...</div>;
+            case 'hunting': return <div>Содержимое охоты...</div>;
+            case 'tasks': return <div>Содержимое заданий...</div>;
+            case 'exchange': return <div>Содержимое обмена...</div>;
             default: return null;
         }
     };
-
     const getPopupTitle = (popupType) => {
         switch (popupType) {
-            case 'mail': return 'Почта';
-            case 'hunting': return 'Ежедневная Охота';
-            case 'tasks': return 'Задачи';
-            case 'exchange': return 'Обмен Валют';
-            default: return 'Окно';
+            case 'mail': return "Почта";
+            case 'hunting': return "Ежедневная охота";
+            case 'tasks': return "Задания";
+            case 'exchange': return "Обменник";
+            default: return "";
         }
     };
 
@@ -198,14 +243,34 @@ const MainMenu = ({ onStart }) => {
             <motion.div className="main-menu" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
                 <div className="level-loading-overlay">
                     <div className="loading-spinner"></div>
-                    <div className="loading-text">Загрузка главы {currentChapterId}...</div>
+                    <div className="loading-text">Загрузка главы {currentChapterId || INITIAL_CHAPTER_ID}...</div>
                 </div>
             </motion.div>
         );
     }
 
-    // <<< Получаем данные для LevelDetailsPopup >>>
     const selectedLevelData = chapterData.levels?.find(l => l.id === selectedLevelId);
+
+    // Функция getLevelDisplayStatus обновлена согласно логике из код1
+    const getLevelDisplayStatus = (level) => {
+        // ... (получение unlocked, completionStatus) ...
+        const currentLevelsArray = chapterData?.levels || []; // Предполагаем, что это нужно для isLevelUnlocked
+        const unlocked = isLevelUnlocked(currentChapterId, level.id, currentLevelsArray, null, null);
+        const completionStatus = getLevelCompletionStatus(currentChapterId, level.id);
+
+        let levelStatusClass = 'locked'; // По умолчанию заблокирован
+        if (unlocked) { // Если уровень разблокирован
+            if (completionStatus?.hard) { // Проверяем, пройден ли на Hard
+                levelStatusClass = 'completed-hard'; // Пройден на Hard
+            } else if (completionStatus?.normal) { // Если не Hard, проверяем Normal
+                levelStatusClass = 'completed-normal'; // Пройден на Normal
+            } else {
+                levelStatusClass = 'active'; // Разблокирован, но не пройден ни на одной сложности
+            }
+        }
+        return levelStatusClass;
+    };
+
 
     return (
         <motion.div className="main-menu" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
@@ -234,23 +299,31 @@ const MainMenu = ({ onStart }) => {
                             const angle = Math.atan2(dy, dx) - Math.PI / 2;
                             const controlX = midpointX + curveOffset * Math.cos(angle); const controlY = midpointY + curveOffset * Math.sin(angle);
                             const d = `M ${x1} ${y1} Q ${controlX} ${controlY}, ${x2} ${y2}`;
-                            return ( <path key={`path-${level.id}-to-${nextLevel.id}`} d={d} className="level-connection-path" /> );
+                            const currentLevelStatus = getLevelDisplayStatus(level);
+                            const nextLevelStatus = getLevelDisplayStatus(nextLevel);
+                            const isPathActive = currentLevelStatus === 'completed-normal' || currentLevelStatus === 'completed-hard' || (currentLevelStatus === 'active' && nextLevelStatus === 'active');
+                            return ( <path key={`path-${level.id}-to-${nextLevel.id}`} d={d} className={`level-connection-path ${isPathActive ? 'active' : ''}`} /> );
                         })}
                     </svg>
                     {chapterData.levels?.map((level) => {
-                        const isCompleted = false;
-                        const isActive = true;
-                        const levelStatusClass = isCompleted ? 'completed' : (isActive ? 'active' : 'locked');
-                        const levelNumberInChapter = level.id % 100;
+                        const levelStatusClass = getLevelDisplayStatus(level); // Используем обновленную функцию
+                        const levelNumberInChapter = level.id % 100; // Предполагается, что ID уровня это chapterId * 100 + levelNumber
+
                         return (
                             <div
                                 key={level.id}
-                                className={`level-node ${levelStatusClass}`}
+                                className={`level-node ${levelStatusClass}`} // className устанавливается здесь
                                 style={{
-                                    top: `${level.y}px`, left: `${level.x}px`,
-                                    width: `${level.nodeSize || 40}px`, height: `${level.nodeSize || 40}px`,
+                                    position: 'absolute',
+                                    left: `${level.x}px`,
+                                    top: `${level.y}px`,
+                                    width: `${level.nodeSize || 40}px`,
+                                    height: `${level.nodeSize || 40}px`,
+                                    // backgroundImage: level.icon ? `url(${level.icon})` : undefined, // Если есть иконки
                                 }}
-                                onClick={(e) => handleLevelNodeClick(level.id, e)}
+                                onClick={(e) => {
+                                    handleLevelNodeClick(level.id, e);
+                                }}
                             >
                                 {levelNumberInChapter}
                             </div>
@@ -274,16 +347,17 @@ const MainMenu = ({ onStart }) => {
                 <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick}><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
             </div>
 
-            {/* <<< ИСПОЛЬЗУЕМ AnimatePresence ДЛЯ LevelDetailsPopup КАК В код1 >>> */}
             <AnimatePresence>
-                {showLevelPopup && selectedLevelData && (
+                {showLevelPopup && selectedLevelData && chapterData && (
                     <LevelDetailsPopup
-                        key="levelDetailsPopup" // Ключ важен для AnimatePresence
-                        ref={levelDetailsPopupRef} // Передаем ref (Убедитесь, что LevelDetailsPopup использует forwardRef, если это необходимо)
+                        key="levelDetailsPopup"
+                        ref={levelDetailsPopupRef}
                         level={selectedLevelData}
                         chapterId={chapterData.id}
+                        completionStatus={getLevelCompletionStatus(chapterData.id, selectedLevelData.id)}
+                        isHardUnlocked={isHardModeUnlocked(chapterData.id, selectedLevelData.id)}
                         onClose={handleCloseLevelPopup}
-                        onStartLevel={handleStartLevelFromDetails} // Используем новый обработчик
+                        onStartLevel={handleStartLevelFromDetails} // Используем существующий обработчик
                     />
                 )}
             </AnimatePresence>

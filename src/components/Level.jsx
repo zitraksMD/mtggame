@@ -3545,7 +3545,7 @@ if (playerObject?.position && levelChestsRef.current?.length > 0) {
             {levelStatus === 'lost' && (
     <GameOverPopup
         onGoToMenu={() => {
-            if (typeof onLevelComplete === 'function') onLevelComplete(levelData.id, 'lost');
+            if (typeof onLevelComplete === 'function') onLevelComplete(levelData.id, 'lost', difficulty); // Передаем difficulty
             else console.warn("onLevelComplete не передан");
         }}
         // <<< ПЕРЕДАЕМ ВРЕМЯ КАК ПРОПС >>>
@@ -3570,9 +3570,8 @@ if (playerObject?.position && levelChestsRef.current?.length > 0) {
                 difficulty={difficulty}
                 rewards={currentLevelRewards} // Передаем награды уровня
                 onGoToMenu={() => { // Callback для кнопки
-                    if (typeof onLevelComplete === 'function') {
-                         onLevelComplete(levelData.id, 'won'); // Вызываем внешний обработчик
-                    } else { console.warn("onLevelComplete не передан"); }
+                    if (typeof onLevelComplete === 'function') onLevelComplete(levelData.id, 'won', difficulty); // Передаем difficulty
+                    // Вызываем внешний обработчик
                 }}
             />
         </CSSTransition>
