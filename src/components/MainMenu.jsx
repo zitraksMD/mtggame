@@ -1,41 +1,29 @@
 // src/components/MainMenu.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // <<< ИМПОРТИРУЕМ AnimatePresence
 import useGameStore from "../store/useGameStore";
 import WorldMap from "./WorldMap";
-import Popup from './Popup'; // <<< ОСТАВЛЯЕМ, используется для других попапов
+import Popup from './Popup';
 import "./MainMenu.scss";
 import { pageVariants, pageTransition } from '../animations';
-// import RewardsPopupContent from './RewardsPopupContent'; // <<< УДАЛЕНО (компонент больше не используется здесь)
-// <<< ИМПОРТИРУЕМ ХУК ДЛЯ НАВИГАЦИИ >>>
 import { useNavigate } from 'react-router-dom';
-import LevelDetailsPopup from './LevelDetailsPopup'; // <<< Импортируем новый попап
-
-
+import LevelDetailsPopup from './LevelDetailsPopup';
 
 const INITIAL_CHAPTER_ID = 1;
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
-// --- Основной компонент Главного Меню ---
-// <<< Убираем проп onShowRewards, если он был (его не было в код2) >>>
 const MainMenu = ({ onStart }) => {
-
-    // <<< ИСПОЛЬЗУЕМ ХУК НАВИГАЦИИ >>>
     const navigate = useNavigate();
 
-    // --- Состояния Компонента ---
     const [showMap, setShowMap] = useState(false);
     const [selectedLevelId, setSelectedLevelId] = useState(null);
-    const [showLevelPopup, setShowLevelPopup] = useState(false); // Оставляем для попапа уровня
+    const [showLevelPopup, setShowLevelPopup] = useState(false); // Используется для LevelDetailsPopup
     const [isLoadingLevel, setIsLoadingLevel] = useState(false);
     const [currentChapterId, setCurrentChapterId] = useState(INITIAL_CHAPTER_ID);
     const [chapterData, setChapterData] = useState(null);
     const [isLoadingChapter, setIsLoadingChapter] = useState(true);
+    const [activePopup, setActivePopup] = useState(null);
 
-    // !!! СОСТОЯНИЕ activePopup ОСТАЕТСЯ, но больше не будет содержать 'rewards' !!!
-    const [activePopup, setActivePopup] = useState(null); // null | 'mail' | 'hunting' | 'tasks' | 'exchange'
-
-    // Рефы и состояния для панорамирования карты главы ... (без изменений из код1)
     const mapContainerRef = useRef(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [dragging, setDragging] = useState(false);
@@ -43,13 +31,15 @@ const MainMenu = ({ onStart }) => {
     const mapStart = useRef({ x: 0, y: 0 });
     const hasStarted = useRef(false);
 
-    // --- Загрузка Данных Главы ... (без изменений из код1) ---
+    // <<< ДОБАВЛЯЕМ REF ДЛЯ LevelDetailsPopup из код1 >>>
+    const levelDetailsPopupRef = useRef(null);
+
     useEffect(() => {
         let isMounted = true;
         const loadChapter = async (id) => {
             if (!isMounted) return;
             console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${id}...`);
-            setIsLoadingChapter(true); setChapterData(null); setPosition({ x: 0, y: 0 }); // Сброс при смене главы
+            setIsLoadingChapter(true); setChapterData(null); setPosition({ x: 0, y: 0 });
 
             try {
                 const chapterModule = await import(`../data/chapters/chapter${id}/chapter${id}Data.js`);
@@ -62,43 +52,35 @@ const MainMenu = ({ onStart }) => {
             } catch (error) {
                 console.error(`[MainMenu] Failed to load CHAPTER data for ID ${id}:`, error);
                 if (isMounted) {
-                     alert(`Ошибка загрузки данных Главы ${id}. Проверьте путь и файл. Загружаем Главу 1.`);
-                     if (id !== 1) { setCurrentChapterId(1); /* Рекурсивный вызов сработает через useEffect */ }
-                     else { setIsLoadingChapter(false); setChapterData(null); /* Ошибка даже с главой 1 */ }
+                    alert(`Ошибка загрузки данных Главы ${id}. Проверьте путь и файл. Загружаем Главу 1.`);
+                    if (id !== 1) { setCurrentChapterId(1); }
+                    else { setIsLoadingChapter(false); setChapterData(null); }
                 }
             } finally {
-                 // Убедимся, что isLoadingChapter сбрасывается только для текущего запрошенного ID
-                 if (isMounted && currentChapterId === id) { setIsLoadingChapter(false); }
+                if (isMounted && currentChapterId === id) { setIsLoadingChapter(false); }
             }
         };
         loadChapter(currentChapterId);
         return () => { isMounted = false; };
     }, [currentChapterId]);
 
-    // --- Центрирование карты Главы ... (без изменений из код1) ---
     useEffect(() => {
         if (!chapterData || isLoadingChapter || !mapContainerRef.current) return;
         if (typeof chapterData.imageWidth !== 'number' || typeof chapterData.imageHeight !== 'number') {
-             console.warn("[MainMenu] Chapter data missing image dimensions.");
-             return;
+            console.warn("[MainMenu] Chapter data missing image dimensions.");
+            return;
         }
-
         const containerWidth = mapContainerRef.current.offsetWidth;
         const containerHeight = mapContainerRef.current.offsetHeight;
         const mapWidth = chapterData.imageWidth;
         const mapHeight = chapterData.imageHeight;
-
-        // Используем initialView из данных главы, если есть, иначе центрируем
         let initialX = chapterData.initialView?.x ?? clamp(containerWidth / 2 - mapWidth / 2, containerWidth - mapWidth, 0);
         let initialY = chapterData.initialView?.y ?? clamp(containerHeight / 2 - mapHeight / 2, containerHeight - mapHeight, 0);
-
         setPosition({ x: initialX, y: initialY });
-        hasStarted.current = false; // Сбрасываем флаг запуска уровня при смене/загрузке главы
-        setIsLoadingLevel(false); // Сбрасываем индикатор загрузки уровня
+        hasStarted.current = false;
+        setIsLoadingLevel(false);
+    }, [chapterData, isLoadingChapter]);
 
-       }, [chapterData, isLoadingChapter]);
-
-    // --- Логика Перетаскивания Карты Главы ... (без изменений из код1) ---
     const updatePosition = useCallback((dx, dy) => {
         if (!mapContainerRef.current || !chapterData?.imageWidth || !chapterData?.imageHeight) return;
         const containerWidth = mapContainerRef.current.offsetWidth;
@@ -118,133 +100,103 @@ const MainMenu = ({ onStart }) => {
     const handleTouchMove = useCallback((e) => { if (!dragging) return; updatePosition(e.touches[0].clientX - dragStart.current.x, e.touches[0].clientY - dragStart.current.y); }, [dragging, updatePosition]);
     const stopDrag = useCallback((e) => { if (dragging) { setDragging(false); if (e.currentTarget && e.type === 'mouseup') { e.currentTarget.style.cursor = 'grab'; } } }, [dragging]);
 
-    // --- Обработчики Уровней и Навигации (остаются без изменений из код1, кроме handleRewardsChestClick ниже) ---
-    const handleStartLevel = useCallback(() => {
-        if (!hasStarted.current && selectedLevelId && chapterData) {
-             console.log(`[MainMenu] Calling onStart for Chapter ${chapterData.id}, Level ${selectedLevelId}`);
-             hasStarted.current = true; setIsLoadingLevel(true);
-             onStart(chapterData.id, selectedLevelId); // Вызываем колбэк из App.jsx
-        }
-    }, [selectedLevelId, chapterData, onStart]);
-
-    const handleCloseLevelPopup = useCallback(() => { setShowLevelPopup(false); setSelectedLevelId(null); }, []);
-
+    // <<< Функция открытия попапа деталей уровня (аналог handleOpenLevelDetails из код1) >>>
     const handleLevelNodeClick = useCallback((levelUniqueId, e) => {
-        e.stopPropagation(); // Предотвратить срабатывание drag на клике по ноде
+        e.stopPropagation();
         // TODO: Добавить проверку, доступен ли уровень
-        setSelectedLevelId(levelUniqueId);
-        setShowLevelPopup(true);
+        const levelData = chapterData?.levels?.find(l => l.id === levelUniqueId);
+        if (levelData) {
+            setSelectedLevelId(levelUniqueId); // Или можно setSelectedLevelForDetails(levelData) если нужно хранить весь объект
+            setShowLevelPopup(true);
+        } else {
+            console.warn(`Level data not found for ID: ${levelUniqueId}`);
+        }
+    }, [chapterData]);
+
+    // <<< Функция закрытия попапа деталей уровня (аналог handleCloseLevelDetails из код1) >>>
+    const handleCloseLevelPopup = useCallback(() => {
+        setShowLevelPopup(false);
+        // Поведение из код1: небольшая задержка перед сбросом selectedLevelForDetails
+        // Для AnimatePresence, обычно данные не нужно сбрасывать с задержкой,
+        // так как компонент будет анимированно исчезать с текущими props.
+        // Но если LevelDetailsPopup зависит от selectedLevelId для своей exit-анимации,
+        // и selectedLevelId сбрасывается мгновенно, это может вызвать проблемы.
+        // Если анимация выхода не зависит от `level` prop или корректно обрабатывает его изменение на null/undefined,
+        // то задержка не нужна.
+        // Оставляем мгновенный сброс, как в оригинальном код2.
+        // При необходимости можно добавить setTimeout:
+        // setTimeout(() => setSelectedLevelId(null), 300);
+        setSelectedLevelId(null);
     }, []);
+
+    // <<< Функция старта уровня из попапа деталей (аналог handleStartLevelFromDetails из код1) >>>
+    const handleStartLevelFromDetails = useCallback((levelId, difficulty) => {
+        console.log(`[MainMenu] Starting level ${levelId} with difficulty ${difficulty} from details popup`);
+        if (!hasStarted.current && chapterData) {
+            hasStarted.current = true;
+            setIsLoadingLevel(true);
+            // Закрываем попап перед стартом или после? Код1 закрывает после.
+            // Код2 (старая версия попапа) вызывал onStart и неявно попап исчезал.
+            // Логично закрыть попап.
+            setShowLevelPopup(false); // Закрываем попап
+            // setSelectedLevelId(null); // Опционально сбросить здесь или в handleCloseLevelPopup
+
+            onStart(chapterData.id, levelId, difficulty); // Передаем onStart из App.jsx
+        }
+    }, [chapterData, onStart]);
+
 
     const handleGoToChapter = useCallback((chapterStub) => {
         console.log("[MainMenu] Switching to chapter ID:", chapterStub.id);
         if (chapterStub.id !== currentChapterId) {
-             setCurrentChapterId(chapterStub.id);
+            setCurrentChapterId(chapterStub.id);
         }
         setShowMap(false);
     }, [currentChapterId]);
 
-    // --- Обработчики боковых кнопок ---
     const handleBattlePassClick = useCallback(() => {
         console.log("Battle Pass clicked - likely navigates to a new screen, not a popup");
-        // setActivePopup('battlepass'); // Или может быть сложный поп-ап? Пока оставляем так.
     }, []);
-    const handleMailClick = useCallback(() => setActivePopup('mail'), []); // Оставляем для других попапов
-
-    // <<< ОБНОВЛЯЕМ ОБРАБОТЧИК КНОПКИ НАГРАД >>>
+    const handleMailClick = useCallback(() => setActivePopup('mail'), []);
     const handleRewardsChestClick = useCallback(() => {
         console.log("Navigating to Rewards Screen...");
-        navigate('/rewards'); // <<< Переходим на маршрут /rewards
-    }, [navigate]); // Добавляем navigate в зависимости
-
-    const handleDailyGrindClick = useCallback(() => setActivePopup('hunting'), []); // Оставляем для других попапов
-    const handleQuestsClick = useCallback(() => setActivePopup('tasks'), []);     // Оставляем для других попапов
-    const handleExchangeClick = useCallback(() => setActivePopup('exchange'), []);  // Оставляем для других попапов
+        navigate('/rewards');
+    }, [navigate]);
+    const handleDailyGrindClick = useCallback(() => setActivePopup('hunting'), []);
+    const handleQuestsClick = useCallback(() => setActivePopup('tasks'), []);
+    const handleExchangeClick = useCallback(() => setActivePopup('exchange'), []);
     const handleWorldMapClick = useCallback(() => setShowMap(true), []);
-
-    // <<< Функция closePopup остается, так как используется другими попапами >>>
     const closePopup = useCallback(() => setActivePopup(null), []);
-
     const handleResetClick = useCallback(() => { if (window.confirm('Сбросить все данные?')) { localStorage.clear(); window.location.reload(); } }, []);
 
-    // <<< УДАЛЯЕМ 'rewards' ИЗ getPopupContent (его там и не было, рендерился отдельно) >>>
-    // Содержимое для *других* поп-апов остается
     const getPopupContent = (popupType) => {
         switch (popupType) {
-            case 'mail':
-                return (
-                    <>
-                        {/* Здесь будет реальный компонент Почты */}
-                        <p>Писем нет.</p>
-                        <p>Здесь будут отображаться входящие сообщения и награды.</p>
-                    </>
-                );
-            case 'hunting': // Daily Grind
-                return (
-                    <>
-                        {/* Здесь будет реальный компонент Охоты/Daily Grind */}
-                        <p>Энергия для охоты: 10/10</p>
-                        <p>Выберите зону для охоты.</p>
-                    </>
-                );
-            case 'tasks':
-                return (
-                    <>
-                        {/* Здесь будет реальный компонент Задач */}
-                        <p>Ежедневные задачи:</p>
-                        <ul>
-                            <li>Пройти 3 уровня (0/3)</li>
-                            <li>Потратить 50 энергии (15/50)</li>
-                        </ul>
-                    </>
-                );
-            case 'exchange':
-                return (
-                    <>
-                        {/* Здесь будет реальный компонент Обмена */}
-                        <p>Обмен осколков Toncoin:</p>
-                        <p>Ваш баланс: 150 осколков</p>
-                        <input type="number" placeholder="Количество" />
-                        <button style={{ marginLeft: '10px' }}>Обменять</button>
-                    </>
-                );
-            // Добавить 'battlepass' если он тоже будет поп-апом
-            default:
-                return null;
+            case 'mail': return (<><p>Писем нет.</p><p>Здесь будут отображаться входящие сообщения и награды.</p></>);
+            case 'hunting': return (<><p>Энергия для охоты: 10/10</p><p>Выберите зону для охоты.</p></>);
+            case 'tasks': return (<><p>Ежедневные задачи:</p><ul><li>Пройти 3 уровня (0/3)</li><li>Потратить 50 энергии (15/50)</li></ul></>);
+            case 'exchange': return (<><p>Обмен осколков Toncoin:</p><p>Ваш баланс: 150 осколков</p><input type="number" placeholder="Количество" /><button style={{ marginLeft: '10px' }}>Обменять</button></>);
+            default: return null;
         }
     };
 
-    // <<< УДАЛЯЕМ КЕЙС 'rewards' ИЗ getPopupTitle >>>
     const getPopupTitle = (popupType) => {
-         switch (popupType) {
+        switch (popupType) {
             case 'mail': return 'Почта';
-            // case 'rewards': return 'Награды'; // <<< УДАЛЕНО >>>
-            case 'hunting': return 'Ежедневная Охота'; // Daily Grind
+            case 'hunting': return 'Ежедневная Охота';
             case 'tasks': return 'Задачи';
             case 'exchange': return 'Обмен Валют';
-            // case 'battlepass': return 'Боевой Пропуск';
             default: return 'Окно';
-         }
-     };
+        }
+    };
 
-    // --- Рендер Компонента ---
-
-    // 1. Показываем Карту Мира (без изменений из код1)
     if (showMap) {
-        return (
-            <WorldMap
-                goBack={() => setShowMap(false)}
-                goToChapter={handleGoToChapter}
-                currentChapterId={currentChapterId}
-            />
-        );
+        return (<WorldMap goBack={() => setShowMap(false)} goToChapter={handleGoToChapter} currentChapterId={currentChapterId} />);
     }
 
-    // 2. Показываем Загрузку данных ГЛАВЫ (без изменений из код1)
     if (isLoadingChapter || !chapterData) {
         return (
             <motion.div className="main-menu" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
-                <div className="level-loading-overlay"> {/* Используем тот же стиль для загрузки */}
+                <div className="level-loading-overlay">
                     <div className="loading-spinner"></div>
                     <div className="loading-text">Загрузка главы {currentChapterId}...</div>
                 </div>
@@ -252,14 +204,11 @@ const MainMenu = ({ onStart }) => {
         );
     }
 
-    // 3. Основной рендер: Карта Главы + UI + Поп-ап (если активен)
+    // <<< Получаем данные для LevelDetailsPopup >>>
+    const selectedLevelData = chapterData.levels?.find(l => l.id === selectedLevelId);
+
     return (
-        <motion.div
-            className="main-menu" // Основной контейнер с фоном
-            initial="initial" animate="in" exit="out"
-            variants={pageVariants} transition={pageTransition}
-        >
-            {/* Контейнер для просмотра и панорамирования карты главы (без изменений из код1) */}
+        <motion.div className="main-menu" initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}>
             <div className="chapter-view-container" ref={mapContainerRef}>
                 <div
                     className={`chapter-map-content ${dragging ? 'dragging' : ''}`}
@@ -274,32 +223,25 @@ const MainMenu = ({ onStart }) => {
                     onMouseLeave={stopDrag} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove}
                     onTouchEnd={stopDrag}
                 >
-                    {/* SVG со связями (без изменений из код1) */}
                     <svg className="chapter-level-svg-connections" width={chapterData.imageWidth} height={chapterData.imageHeight} xmlns="http://www.w3.org/2000/svg">
                         {chapterData.levels?.map((level, i, arr) => {
-                            // Логика отрисовки связей остается прежней
                             const nextLevel = arr[i + 1]; if (!nextLevel) return null;
                             const nodeSize = level.nodeSize || 40; const nextNodeSize = nextLevel.nodeSize || 40;
                             const x1 = level.x + nodeSize / 2; const y1 = level.y + nodeSize / 2;
                             const x2 = nextLevel.x + nextNodeSize / 2; const y2 = nextLevel.y + nextNodeSize / 2;
                             const dx = x2 - x1; const dy = y2 - y1; const midpointX = x1 + dx * 0.5; const midpointY = y1 + dy * 0.5;
-                            const curveOffset = Math.min(60, Math.sqrt(dx*dx + dy*dy) * 0.2); // Динамический изгиб
+                            const curveOffset = Math.min(60, Math.sqrt(dx*dx + dy*dy) * 0.2);
                             const angle = Math.atan2(dy, dx) - Math.PI / 2;
                             const controlX = midpointX + curveOffset * Math.cos(angle); const controlY = midpointY + curveOffset * Math.sin(angle);
                             const d = `M ${x1} ${y1} Q ${controlX} ${controlY}, ${x2} ${y2}`;
-                            // TODO: Добавить класс для активной/пройденной связи?
                             return ( <path key={`path-${level.id}-to-${nextLevel.id}`} d={d} className="level-connection-path" /> );
                         })}
                     </svg>
-
-                    {/* Узлы уровней (без изменений из код1) */}
                     {chapterData.levels?.map((level) => {
-                        // TODO: Получить статус уровня из useGameStore
-                        const isCompleted = false; // Заглушка
-                        const isActive = true;     // Заглушка - определить логику доступности
+                        const isCompleted = false;
+                        const isActive = true;
                         const levelStatusClass = isCompleted ? 'completed' : (isActive ? 'active' : 'locked');
-                        const levelNumberInChapter = level.id % 100; // Простой номер уровня в главе
-
+                        const levelNumberInChapter = level.id % 100;
                         return (
                             <div
                                 key={level.id}
@@ -314,91 +256,46 @@ const MainMenu = ({ onStart }) => {
                             </div>
                         );
                     })}
-                </div> {/* Конец .chapter-map-content */}
-            </div> {/* Конец .chapter-view-container */}
+                </div>
+            </div>
 
-            {/* --- ЭЛЕМЕНТЫ UI (Поверх карты) --- */}
-
-            {/* Название главы (без изменений из код1) */}
             <h2 className="chapter-name">{chapterData.name}</h2>
+            <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>BattlePass</button>
 
-            {/* Battle Pass (без изменений из код1) */}
-            <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick}>
-                BattlePass
-            </button>
-
-            {/* Левая колонка */}
             <div className="main-menu-left-column">
-                <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}>
-                    <img src="/assets/icons/mail-icon.png" alt="Почта" />
-                </button>
-                {/* <<< КНОПКА НАГРАД ТЕПЕРЬ ИСПОЛЬЗУЕТ ОБНОВЛЕННЫЙ ОБРАБОТЧИК >>> */}
-                <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}>
-                    <img src="/assets/icons/gift-icon.png" alt="Награды" />
-                </button>
-                <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick}>
-                    {/* ЗАМЕНИТЬ НА ПРАВИЛЬНЫЙ ПУТЬ К ИКОНКЕ */}
-                    <img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" />
-                </button>
+                <button className="main-menu-button icon-button mail-button" onClick={handleMailClick}><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
+                <button className="main-menu-button icon-button rewards-chest-button" onClick={handleRewardsChestClick}><img src="/assets/icons/gift-icon.png" alt="Награды" /></button>
+                <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick}><img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" /></button>
             </div>
 
-            {/* Правая колонка (без изменений из код1) */}
             <div className="main-menu-right-column">
-                <button className="main-menu-button icon-button world-map-button" onClick={handleWorldMapClick}>
-                    <img src="/assets/icons/map-icon.png" alt="Карта Мира" />
-                </button>
-                <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick}>
-                    <img src="/assets/icons/quests-icon.png" alt="Задания" />
-                </button>
-                <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick}>
-                    <img src="/assets/icons/exchange-icon.png" alt="Обмен" />
-                </button>
+                <button className="main-menu-button icon-button world-map-button" onClick={handleWorldMapClick}><img src="/assets/icons/map-icon.png" alt="Карта Мира" /></button>
+                <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick}><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
+                <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick}><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
             </div>
 
-            {/* --- КОНЕЦ ЭЛЕМЕНТОВ UI --- */}
+            {/* <<< ИСПОЛЬЗУЕМ AnimatePresence ДЛЯ LevelDetailsPopup КАК В код1 >>> */}
+            <AnimatePresence>
+                {showLevelPopup && selectedLevelData && (
+                    <LevelDetailsPopup
+                        key="levelDetailsPopup" // Ключ важен для AnimatePresence
+                        ref={levelDetailsPopupRef} // Передаем ref (Убедитесь, что LevelDetailsPopup использует forwardRef, если это необходимо)
+                        level={selectedLevelData}
+                        chapterId={chapterData.id}
+                        onClose={handleCloseLevelPopup}
+                        onStartLevel={handleStartLevelFromDetails} // Используем новый обработчик
+                    />
+                )}
+            </AnimatePresence>
 
-            {/* Попап Выбора Уровня (остается без изменений из код1) */}
- {/* Попап Выбора Уровня (ЗАМЕНЯЕМ НА НОВЫЙ) */}
- {showLevelPopup && selectedLevelId !== null && chapterData && (
-        <LevelDetailsPopup
-            level={chapterData.levels?.find(l => l.id === selectedLevelId)} // Передаем весь объект уровня
-            chapterId={chapterData.id} // Передаем ID главы
-            onClose={handleCloseLevelPopup}
-            onStartLevel={(levelId, difficulty) => { // onStartLevel теперь принимает и сложность
-                // TODO: Передать difficulty в onStart, если это нужно для загрузки уровня
-                console.log(`Starting level ${levelId} on ${difficulty}`);
-                // Пока что onStart не принимает difficulty, но можно будет добавить
-                if (!hasStarted.current) {
-                    hasStarted.current = true;
-                    setIsLoadingLevel(true);
-                    onStart(chapterData.id, levelId, difficulty); // Передаем onStart из App.jsx
-                }
-            }}
-        />
-    )}
-
-            {/* Оверлей Загрузки при ЗАПУСКЕ уровня (остается без изменений из код1) */}
             {isLoadingLevel && ( <div className="level-loading-overlay"><div className="loading-spinner"></div><div className="loading-text">Загрузка уровня...</div></div> )}
+            <button className="reset-button" onClick={handleResetClick}>reset</button>
 
-            {/* Кнопка сброса (остается без изменений из код1) */}
-            <button className="reset-button" onClick={handleResetClick}>
-                reset
-            </button>
-
-            {/* !!! УДАЛЕН БЛОК РЕНДЕРА ДЛЯ RewardsPopupContent !!! */}
-            {/* {activePopup === 'rewards' && (
-                <RewardsPopupContent onClose={closePopup} />
-             )} */}
-
-            {/* !!! УСЛОВНЫЙ РЕНДЕР ДРУГИХ ПОП-АПОВ (БЕЗ НАГРАД) !!! */}
-            {/* Добавлена проверка activePopup !== 'rewards', хотя она и не строго обязательна,
-                так как activePopup больше не устанавливается в 'rewards' */}
-            {activePopup && activePopup !== 'rewards' && ( // <<< Проверяем, что это НЕ награды
+            {activePopup && activePopup !== 'rewards' && (
                 <Popup title={getPopupTitle(activePopup)} onClose={closePopup}>
                     {getPopupContent(activePopup)}
                 </Popup>
             )}
-
         </motion.div>
     );
 };
