@@ -1,7 +1,7 @@
 // src/App.jsx
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useCallback, useEffect, useRef } from 'react'; // useMemo убран, так как не используется в итоговом коде
 import { motion, AnimatePresence } from 'framer-motion';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 // Импорты Компонентов
 import MainMenu from "./components/MainMenu";
@@ -15,14 +15,17 @@ import Achievements from "./components/Achievements";
 import RaceSelection from "./components/RaceSelection";
 import LoadingScreen from "./components/LoadingScreen";
 import RewardsScreen from "./components/RewardsScreen";
-import GlobalMap from "./components/GlobalMap";
+// import GlobalMap from "./components/GlobalMap"; // НЕ НУЖЕН КАК МАРШРТУТ В APP.JSX (согласно код1)
+// WorldMap также не импортируется здесь, предполагается, что MainMenu управляет им
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
 import './App.scss';
 
-// 30 минут в миллисекундах
 const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000;
+
+// const pageVariants = { ... }; // Можно оставить или убрать, если не используются глобально
+// const pageTransition = { ... };
 
 const App = () => {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -40,8 +43,9 @@ const App = () => {
     const {
         username, gold, diamonds, powerLevel, energyCurrent, energyMax,
         lastEnergyRefillTimestamp, refillEnergyOnLoad, consumeEnergy,
-        setCurrentChapterInStore,
-        currentChapterIdFromStore
+        // setCurrentChapterInStore, // Удалено, т.к. коллбэки карты переехали в MainMenu
+        // currentChapterIdFromStore, // Удалено, т.к. коллбэки карты переехали в MainMenu
+        isFullScreenMapActive // Это состояние используется для скрытия UI
     } = useGameStore(
         useCallback(state => ({
             username: state.username,
@@ -53,19 +57,20 @@ const App = () => {
             lastEnergyRefillTimestamp: state.lastEnergyRefillTimestamp,
             refillEnergyOnLoad: state.refillEnergyOnLoad,
             consumeEnergy: state.consumeEnergy,
-            setCurrentChapterInStore: state.setCurrentChapter,
-            currentChapterIdFromStore: state.currentChapterId,
+            // setCurrentChapterInStore: state.setCurrentChapter, // Логика карты в MainMenu
+            // currentChapterIdFromStore: state.currentChapterId, // Логика карты в MainMenu
+            isFullScreenMapActive: state.isFullScreenMapActive,
         }), [])
     );
 
     const setUsernameAction = useGameStore((s) => s.setUsername);
     const initializeCharacterStats = useGameStore((s) => s.initializeCharacterStats);
     const checkAndRefreshDailyDeals = useGameStore((s) => s.checkAndRefreshDailyDeals);
-    const completeLevelActionInStore = useGameStore((s) => s.completeLevelAction);
 
     const avatarUrl = "/assets/default-avatar.png";
-    const tonShards = 0;
+    const tonShards = 0; // Пример значения
 
+    // useEffect для таймера энергии (остается как в код2)
     useEffect(() => {
         let intervalId = null;
         const updateTimer = () => {
@@ -76,6 +81,7 @@ const App = () => {
                 let remainingMs = nextRefillTimestamp - now;
 
                 if (remainingMs <= 0) {
+                    console.log("Timer expired, triggering refill check via action...");
                     refillEnergyOnLoad();
                     if (intervalId) clearInterval(intervalId);
                 } else {
@@ -99,46 +105,35 @@ const App = () => {
         } else {
             setShouldShowRefillTimer(false);
         }
-
         return () => {
             if (intervalId) clearInterval(intervalId);
         };
     }, [energyCurrent, energyMax, lastEnergyRefillTimestamp, refillEnergyOnLoad]);
 
-    const path = location.pathname;
-    const showAnyFixedUI = !path.startsWith('/level/') &&
-        !isInitialLoading &&
-        !needsRaceSelection &&
-        path !== '/rewards' &&
-        path !== '/global-map';
-
-    const showPlayerInfo = showAnyFixedUI && (path === '/main' || path === '/inventory');
-    const showResources = showAnyFixedUI && (path === '/main' || path === '/inventory' || path === '/shop' || path === '/forge');
-    const showEnergyBar = showAnyFixedUI && (path === '/main');
-
+    // useEffect для начальной загрузки и проверки состояния (остается как в код2, но с учетом переменных из код1)
     useEffect(() => {
         console.log("App Mount: Проверка начального состояния...");
-        let initialUsernameStored = null;
-        let chosenRaceStored = null;
-        let raceIsChosenStored = false;
+        let initialUsername = null;
+        let chosenRace = null;
+        let raceIsChosen = false;
 
         try {
-            initialUsernameStored = localStorage.getItem('username');
-            chosenRaceStored = localStorage.getItem('chosenRace');
-            raceIsChosenStored = localStorage.getItem('raceChosen') === 'true';
+            initialUsername = localStorage.getItem('username');
+            chosenRace = localStorage.getItem('chosenRace');
+            raceIsChosen = localStorage.getItem('raceChosen') === 'true';
         } catch (e) { console.error("Ошибка чтения localStorage:", e); }
 
-        console.log(`Данные из localStorage: raceChosen=${raceIsChosenStored}, chosenRace=${chosenRaceStored}, username=${initialUsernameStored}`);
+        console.log(`Данные из localStorage: raceChosen=${raceIsChosen}, chosenRace=${chosenRace}, username=${initialUsername}`);
 
         let shouldGoToRaceSelection = false;
-        if (!raceIsChosenStored || !chosenRaceStored) {
+        if (!raceIsChosen || !chosenRace) {
             console.log("Нужен выбор расы.");
             shouldGoToRaceSelection = true;
             setNeedsRaceSelection(true);
         } else {
-            console.log(`Инициализация стора: Раса=${chosenRaceStored}, Имя=${initialUsernameStored || 'нет'}`);
-            if (initializeCharacterStats) initializeCharacterStats(chosenRaceStored);
-            if (initialUsernameStored && setUsernameAction) setUsernameAction(initialUsernameStored);
+            console.log(`Инициализация стора: Раса=${chosenRace}, Имя=${initialUsername || 'нет'}`);
+            if (initializeCharacterStats) initializeCharacterStats(chosenRace);
+            if (initialUsername && setUsernameAction) setUsernameAction(initialUsername);
             setNeedsRaceSelection(false);
         }
         if (checkAndRefreshDailyDeals) checkAndRefreshDailyDeals();
@@ -164,19 +159,31 @@ const App = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigate, initializeCharacterStats, setUsernameAction, checkAndRefreshDailyDeals]);
 
-    const getChapterIdFromLevelId = (levelId) => {
-        const numericLevelId = parseInt(levelId, 10);
-        if (typeof numericLevelId === 'number' && numericLevelId >= 100) {
-            return Math.floor(numericLevelId / 100);
-        }
-        console.warn("[getChapterIdFromLevelId] Не удалось определить ID главы для levelId:", levelId);
-        return null;
-    };
+    // Условия видимости UI теперь проще (isFullScreenMapActive будет управлять скрытием UI из MainMenu)
+    const path = location.pathname;
+    // const { isFullScreenMapActive } = useGameStore(state => ({ isFullScreenMapActive: state.isFullScreenMapActive })); // Уже получено выше
 
+    const showAnyFixedUI =
+        !path.startsWith('/level/') &&
+        !isInitialLoading &&
+        !needsRaceSelection &&
+        path !== '/rewards' && // Rewards может быть полноэкранным
+        !isFullScreenMapActive; // <<< ГЛАВНОЕ УСЛОВИЕ ОТ СТОРА (из код1)
+
+    const showPlayerInfo = showAnyFixedUI && (path === '/main' || path === '/inventory');
+    const showResources = showAnyFixedUI && (path === '/main' || path === '/inventory' || path === '/shop' || path === '/forge');
+    const showEnergyBar = showAnyFixedUI && (path === '/main');
+    const shouldShowBottomNav = showAnyFixedUI; // BottomNav также зависит от showAnyFixedUI (согласно код1)
+
+
+    // === ОБРАБОТЧИКИ ДЛЯ НАВИГАЦИИ (остаются как в код2) ===
     const handleStartGame = useCallback(async (chapterId, levelId) => {
         const ENERGY_COST = 10;
-        if (!consumeEnergy(ENERGY_COST)) {
-            alert("Недостаточно энергии!");
+        console.log(`Попытка старта уровня ${levelId}. Стоимость: ${ENERGY_COST} энергии.`);
+        const hasEnoughEnergy = consumeEnergy(ENERGY_COST);
+
+        if (!hasEnoughEnergy) {
+            alert("Недостаточно энергии для старта уровня!");
             console.log("Старт уровня отменен из-за нехватки энергии.");
             return;
         }
@@ -186,16 +193,19 @@ const App = () => {
         setActiveLevelData(null);
         setLoadingError(null);
         navigate(`/level/${levelId}/loading`);
-
         try {
-            const levelModule = await import(`./data/levels/level${levelId}Data.json`);
-            const loadedData = levelModule.default;
+            const dataPath = `/data/levels/level${levelId}Data.json`;
+            console.log(`Загрузка данных уровня: ${dataPath}`);
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const response = await fetch(dataPath);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${dataPath}`);
+            const loadedData = await response.json();
 
             if (!loadedData || typeof loadedData.id !== 'number' || loadedData.id !== parseInt(levelId, 10)) {
                 throw new Error(`Некорректные данные или ID (${loadedData?.id}) не совпадает с запрошенным (${levelId})`);
             }
             console.log(`✅ Данные для уровня ${levelId} загружены.`);
-            setActiveLevelData({ ...loadedData, chapterId: chapterId });
+            setActiveLevelData(loadedData);
             setIsLoadingLevel(false);
             navigate(`/level/${levelId}`, { replace: true });
         } catch (error) {
@@ -205,8 +215,15 @@ const App = () => {
             navigate("/main", { replace: true });
             setActiveLevelData(null);
         }
-    }, [navigate, consumeEnergy, setIsLoadingLevel, setActiveLevelData, setLoadingError]);
+    }, [navigate, consumeEnergy]);
 
+    const getChapterIdFromLevelId = (levelId) => {
+        if (typeof levelId === 'number' && levelId >= 100) {
+            return Math.floor(levelId / 100);
+        }
+        console.warn("[getChapterIdFromLevelId] Не удалось определить ID главы для levelId:", levelId);
+        return null;
+    };
 
     const handleLevelComplete = useCallback((levelId, status, difficultyPlayed) => {
         console.log(`🏁 Уровень ${levelId} (сложность: ${difficultyPlayed}) завершён со статусом: ${status}`);
@@ -214,19 +231,22 @@ const App = () => {
 
         if (status === 'won') {
             const chapterId = getChapterIdFromLevelId(levelId);
-            if (chapterId !== null && completeLevelActionInStore) {
-                completeLevelActionInStore(chapterId, parseInt(levelId, 10), difficultyPlayed);
+            if (chapterId !== null) {
+                useGameStore.getState().completeLevelAction(chapterId, levelId, difficultyPlayed);
                 console.log(`Прогресс для уровня ${levelId} (Глава ${chapterId}) на сложности '${difficultyPlayed}' сохранен.`);
             } else {
-                console.error("Не удалось определить ID главы или completeLevelActionInStore не доступен для сохранения прогресса уровня.");
+                console.error("Не удалось определить ID главы для сохранения прогресса уровня.");
             }
-            console.log("Переход на экран наград...");
-            navigate("/rewards");
-        } else {
             console.log("Переход в главное меню...");
             navigate("/main");
+        } else if (status === 'lost') {
+            console.log("Переход в главное меню...");
+            navigate("/main");
+        } else {
+            console.log("Ошибка уровня или неизвестный статус, переход в главное меню...");
+            navigate("/main");
         }
-    }, [navigate, setActiveLevelData, completeLevelActionInStore]);
+    }, [navigate]);
 
     const handleLevelReady = useCallback(() => {
         console.log("🎮 Компонент Уровня готов к игре!");
@@ -238,38 +258,22 @@ const App = () => {
         navigate('/main', { replace: true });
     }, [navigate]);
 
-    // --- ИЗМЕНЕННЫЕ КОЛЛБЭКИ ДЛЯ GlobalMap ИЗ КОДА 1 ---
-    const handleSelectContinentOnGlobalMap = useCallback((startChapterId) => {
-        console.log(`App: Выбран континент на GlobalMap, переход к главе ${startChapterId}, показываем карту глав.`); // Изменено сообщение
-        if (setCurrentChapterInStore) {
-            setCurrentChapterInStore(startChapterId);
-        } else {
-            console.warn("setCurrentChapterInStore is not available from useGameStore");
-        }
-        // Передаем состояние, чтобы MainMenu сразу показал WorldMap.jsx (карта глав)
-        navigate('/main', { state: { showChaptersMapDirectly: true } }); // Изменена навигация
-    }, [navigate, setCurrentChapterInStore]);
-
-    const handleGoBackToChapterMapFromGlobalMap = useCallback(() => {
-        console.log(`App: Возврат на карту глав с GlobalMap (последняя глава: ${currentChapterIdFromStore || 1})`); // Сообщение соответствует коду 1
-        if (!currentChapterIdFromStore && setCurrentChapterInStore) { // Изменена логика установки главы по умолчанию
-            setCurrentChapterInStore(1);
-        }
-        // Просто возвращаемся в MainMenu, он покажет детальную карту текущей главы
-        navigate('/main');
-    }, [navigate, currentChapterIdFromStore, setCurrentChapterInStore]);
-    // --- КОНЕЦ ИЗМЕНЕННЫХ КОЛЛБЭКОВ ---
+    // === КОЛЛБЭКИ ДЛЯ GLOBALMAP УДАЛЕНЫ ИЗ APP.JSX (согласно код1, логика переезжает в MainMenu.jsx) ===
+    // const handleSelectContinentOnGlobalMap = useCallback(...) // Удалено
+    // const handleGoBackToWorldMapFromGlobalMap = useCallback(...) // Удалено
 
 
     if (isInitialLoading) {
         return <LoadingScreen key="loading_initial" message="Загрузка игры..." />;
     }
+
     if (needsRaceSelection && location.pathname !== '/race-selection') {
         return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
     }
 
     return (
         <div className="app-container" ref={appContainerRef}>
+            {/* Плавающие UI элементы, условия обновлены согласно код1 */}
             {showPlayerInfo && (
                 <div className="player-info-float">
                     <img src={avatarUrl} alt="Аватар" className="player-avatar-small" />
@@ -298,7 +302,7 @@ const App = () => {
             {showEnergyBar && (
                 <div className="energy-bar-float">
                     <div className="energy-bar-content">
-                        <img src="/assets/energy-icon.png" alt="Энергия" className="resource-icon-small energy-icon" />
+                        <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
                         <div className="energy-track">
                             <div
                                 className="energy-fill"
@@ -307,19 +311,20 @@ const App = () => {
                         </div>
                         <span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
                     </div>
-                    {shouldShowRefillTimer && refillTimerDisplay && (
-                        <div className="energy-refill-timer">
-                            Восполнится через {refillTimerDisplay}
-                        </div>
+                    { shouldShowRefillTimer && refillTimerDisplay && (
+                       <div className="energy-refill-timer">
+                           Восполнится через {refillTimerDisplay}
+                       </div>
                     )}
                 </div>
             )}
-
-            {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && !location.pathname.startsWith('/rewards') && !location.pathname.startsWith('/global-map') && <UsernamePopup />}
+            {/* UsernamePopup с условием, зависящим от showAnyFixedUI */}
+            {showAnyFixedUI && <UsernamePopup />}
 
             <main className="content-area">
                 <AnimatePresence mode="wait" initial={false}>
                     <Routes location={location} key={location.pathname}>
+                        {/* Маршруты как в код2, но без /global-map */}
                         <Route path="/race-selection" element={<RaceSelection onComplete={handleRaceSelectionComplete} />} />
                         <Route path="/level/:levelId/loading" element={<LoadingScreen message="Загрузка уровня..." />} />
                         <Route path="/level/:levelId" element={
@@ -330,17 +335,17 @@ const App = () => {
                                     onReady={handleLevelReady}
                                     difficulty={activeLevelData.difficulty || 'normal'}
                                 />
-                            ) : isLoadingLevel ? (
-                                <LoadingScreen message="Загрузка данных уровня..." />
-                            ) : (
+                            )
+                            : isLoadingLevel ? ( <LoadingScreen message="Загрузка данных уровня..." /> )
+                            : (
                                 <motion.div
                                     key="error_level_data_not_found"
                                     className="loading-screen"
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 >
-                                    <h2>Ошибка: Данные уровня не найдены!</h2>
-                                    <p>Возможно, уровень не существует или произошла ошибка при загрузке.</p>
-                                    <button onClick={() => navigate('/main', { replace: true })}>В меню</button>
+                                   <h2>Ошибка: Данные уровня не найдены!</h2>
+                                   <p>Возможно, вы попали сюда по неверной ссылке или данные уровня не загрузились.</p>
+                                   <button onClick={() => navigate('/main', { replace: true })}>В меню</button>
                                 </motion.div>
                             )
                         }/>
@@ -350,26 +355,16 @@ const App = () => {
                         <Route path="/achievements" element={<Achievements />} />
                         <Route path="/rewards" element={<RewardsScreen />} />
 
-                        {/* Маршрут для Глобальной Карты (уже был, использует обновленные коллбэки) */}
-                        <Route
-                            path="/global-map"
-                            element={
-                                <GlobalMap
-                                    onSelectContinent={handleSelectContinentOnGlobalMap}
-                                    onGoBackToChapterMap={handleGoBackToChapterMapFromGlobalMap}
-                                />
-                            }
-                        />
-
+                        {/* НЕТ ОТДЕЛЬНОГО МАРШРУТА ДЛЯ /global-map (согласно код1) */}
+                        {/* MainMenu будет обрабатывать отображение WorldMap и GlobalMap */}
                         <Route path="/main" element={<MainMenu onStart={handleStartGame} />} />
-                        <Route path="*" element={<MainMenu onStart={handleStartGame} />} />
+                        <Route path="*" element={<MainMenu onStart={handleStartGame} />} /> {/* Фоллбэк на главный экран */}
                     </Routes>
                 </AnimatePresence>
             </main>
 
-            {!isInitialLoading && !needsRaceSelection && !location.pathname.startsWith('/level') && !location.pathname.startsWith('/rewards') && !location.pathname.startsWith('/global-map') && (
-                <BottomNav />
-            )}
+            {/* BottomNav с условием, зависящим от showAnyFixedUI */}
+            {shouldShowBottomNav && <BottomNav />}
 
             {loadingError && (
                 <div className="error-popup">

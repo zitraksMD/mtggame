@@ -1,11 +1,14 @@
 // src/components/GlobalMap.jsx
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Добавлены useState, useEffect, useCallback, useRef
+import { motion } from 'framer-motion'; // Для анимации основного контента
 import './GlobalMap.scss';
 import useGameStore from '../store/useGameStore';
+import TransitionOverlay from "./TransitionOverlay"; // <<< ИМПОРТ из код1
 import chapter1Data from '../data/chapters/chapter1/chapter1Data.js';
 import chapter2Data from '../data/chapters/chapter2/chapter2Data.js';
 // import chapter3Data from '../data/chapters/chapter3/chapter3Data.js';
 
+// Данные из код2
 const allChaptersLevelData = {
   1: chapter1Data?.levels || [],
   2: chapter2Data?.levels || [],
@@ -18,56 +21,131 @@ const continentsData = [
     name: 'Некромир',
     image: '/assets/continents/necroworld_map_icon.png',
     x: 200, y: 300,
-    chapters: [1], // Главы этого континента
-    startChapterId: 1, // Стартовая глава для фокуса
-    isImplemented: true, // <<< НОВЫЙ ФЛАГ: Контент готов
+    chapters: [1],
+    startChapterId: 1,
+    isImplemented: true,
   },
   {
     id: 'inferno_continent',
     name: 'Инферно',
     image: '/assets/continents/inferno_map_icon.png',
     x: 600, y: 400,
-    chapters: [2], // Предположим, глава 2 - это Инферно
+    chapters: [2],
     startChapterId: 2,
-    isImplemented: false, // <<< НОВЫЙ ФЛАГ: Контент НЕ готов
+    isImplemented: false,
   },
   // ... другие континенты ...
 ];
 
+// Анимационные варианты для GlobalMap (из код1)
+const globalMapContentVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } },
+  exit: { opacity: 0, transition: { duration: 0.15 } }
+};
+
 const GlobalMap = ({
-  onSelectContinent,
-  onGoBackToChapterMap,
+  onSelectContinent,    // от MainMenu (будет handleContinentSelectFromGlobalMap)
+  onGoBackToChapterMap, // от MainMenu (будет handleGoBackToWorldMapFromGlobal)
 }) => {
   const isChapterCompleted = useGameStore(state => state.isChapterCompleted);
 
-  const handleContinentClick = (continent) => {
-    // Сначала проверяем, реализован ли контент континента
+  // Состояния для управления TransitionOverlay (из код1)
+  const [isOverlayActive, setIsOverlayActive] = useState(true);
+  const [triggerOpenOverlay, setTriggerOpenOverlay] = useState(false);
+  const [triggerCloseOverlay, setTriggerCloseOverlay] = useState(false);
+
+  // Состояние для коллбэка навигации (из код1)
+  const pendingNavigationCallbackRef = useRef(null);
+
+  // При монтировании GlobalMap запускаем анимацию открытия шторок (из код1)
+  useEffect(() => {
+    console.log("GlobalMap: Mounted. Triggering OPEN overlay animation.");
+    setIsOverlayActive(true);
+    setTriggerCloseOverlay(false);
+    setTriggerOpenOverlay(true);
+  }, []);
+
+  const handleOverlayOpenComplete = useCallback(() => {
+    console.log("GlobalMap: Overlay OPEN complete. Hiding overlay component.");
+    setTriggerOpenOverlay(false);
+    setIsOverlayActive(false);
+  }, []);
+
+  const handleOverlayCloseComplete = useCallback(() => {
+    console.log("GlobalMap: Overlay CLOSE complete.");
+    if (pendingNavigationCallbackRef.current) {
+      console.log("GlobalMap: Executing pending navigation.");
+      pendingNavigationCallbackRef.current();
+      pendingNavigationCallbackRef.current = null;
+    }
+    setTriggerCloseOverlay(false);
+    // setIsOverlayActive(false); // Оверлей скроется при размонтировании из-за навигации
+  }, []);
+
+  // Оборачиваем вызовы навигации в анимацию закрытия шторок (из код1)
+  const navigateWithTransition = useCallback((navigationAction) => {
+    pendingNavigationCallbackRef.current = navigationAction;
+    setIsOverlayActive(true);
+    setTriggerOpenOverlay(false);
+    setTriggerCloseOverlay(true);
+  }, []);
+
+  const handleContinentClick = useCallback((continent) => {
+    // Логика проверки из код2
     if (!continent.isImplemented) {
       alert(`Контент для континента "${continent.name}" находится в разработке.`);
       return;
     }
-
-    // Затем проверяем, разблокирован ли он (isUnlockedCalculated добавляется при клике)
     if (!continent.isUnlockedCalculated) {
       alert(`Континент "${continent.name}" пока не доступен! Пройдите предыдущие главы.`);
       return;
     }
 
-    // Если все в порядке, вызываем onSelectContinent
+    // Навигация с переходом из код1
     if (typeof onSelectContinent === 'function') {
-      onSelectContinent(continent.startChapterId);
+      console.log("GlobalMap: Continent clicked, preparing transition...");
+      navigateWithTransition(() => onSelectContinent(continent.startChapterId));
     }
-  };
+  }, [onSelectContinent, navigateWithTransition]); // Добавлен navigateWithTransition в зависимости
+
+  const handleBackToWorldMapClick = useCallback(() => {
+    // Навигация с переходом из код1
+    if (typeof onGoBackToChapterMap === 'function') {
+      console.log("GlobalMap: Back button clicked, preparing transition...");
+      navigateWithTransition(onGoBackToChapterMap);
+    }
+  }, [onGoBackToChapterMap, navigateWithTransition]); // Добавлен navigateWithTransition в зависимости
 
   return (
-    <div className="global-map-screen">
+    <motion.div // Обертка из код1
+      className="global-map-screen"
+      key="globalmap-screen-content"
+      variants={globalMapContentVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+    >
+      {isOverlayActive && ( // Отображение TransitionOverlay из код1
+        <TransitionOverlay
+          playOpen={triggerOpenOverlay}
+          onOpenComplete={handleOverlayOpenComplete}
+          playClose={triggerCloseOverlay}
+          onCloseComplete={handleOverlayCloseComplete}
+        />
+      )}
+
       <div className="global-map-header">
         <h1>Карта Мира</h1>
-        <button onClick={onGoBackToChapterMap} className="map-back-button">&#x21A9; Назад к главе</button>
+        {/* Используем handleBackToWorldMapClick из код1 для кнопки назад */}
+        <button onClick={handleBackToWorldMapClick} className="map-back-button">
+          &#x21A9; Назад к Карте Глав
+        </button>
       </div>
 
-      <div className="global-map-background"> {/* Убедитесь, что фон стилизован для позиционирования */}
+      <div className="global-map-background">
         {continentsData.map((continent, continentIndex) => {
+          // Логика разблокировки континентов из код2
           let isCurrentContinentUnlocked = false;
           if (continentIndex === 0) {
             isCurrentContinentUnlocked = true;
@@ -75,7 +153,6 @@ const GlobalMap = ({
             const prevContinent = continentsData[continentIndex - 1];
             let prevContinentAllChaptersCompleted = true;
 
-            // Предыдущий континент должен быть реализован, чтобы его можно было пройти
             if (prevContinent && prevContinent.isImplemented && prevContinent.chapters && Array.isArray(prevContinent.chapters)) {
               for (const chapterId of prevContinent.chapters) {
                 const levelsOfThisChapter = allChaptersLevelData[chapterId];
@@ -85,12 +162,11 @@ const GlobalMap = ({
                 }
               }
             } else {
-              // Если предыдущий континент не реализован или не имеет глав, он не может быть "завершен"
               prevContinentAllChaptersCompleted = false;
               if (prevContinent && !prevContinent.isImplemented) {
-                  console.warn(`Предыдущий континент (id: ${prevContinent.id}) не реализован. Континент "${continent.name}" будет заблокирован.`);
+                console.warn(`Предыдущий континент (id: ${prevContinent.id}) не реализован. Континент "${continent.name}" будет заблокирован.`);
               } else if (prevContinent) {
-                  console.warn(`Предыдущий континент (id: ${prevContinent.id}) не имеет списка глав. Континент "${continent.name}" будет заблокирован.`);
+                console.warn(`Предыдущий континент (id: ${prevContinent.id}) не имеет списка глав. Континент "${continent.name}" будет заблокирован.`);
               }
             }
             isCurrentContinentUnlocked = prevContinentAllChaptersCompleted;
@@ -103,13 +179,11 @@ const GlobalMap = ({
               key={continent.id}
               className={continentClasses}
               style={{
-                position: 'absolute', // Убедитесь, что у родительского .global-map-background есть position: relative
+                position: 'absolute',
                 top: `${continent.y}px`,
                 left: `${continent.x}px`,
-                // Задайте размеры, если они не заданы в SCSS
-                // width: '150px',
-                // height: '120px',
               }}
+              // Передаем isUnlockedCalculated в handleContinentClick
               onClick={() => handleContinentClick({ ...continent, isUnlockedCalculated: isCurrentContinentUnlocked })}
               title={continent.name}
             >
@@ -121,7 +195,7 @@ const GlobalMap = ({
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

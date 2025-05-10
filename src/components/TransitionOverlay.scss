@@ -1,0 +1,22 @@
+// src/components/TransitionOverlay.scss
+.transition-overlay-container {
+    display: flex;
+    overflow: hidden; // Важно, чтобы шторки не создавали скролл
+  }
+  
+  .shoji-screen {
+    flex: 1; // Занимает половину экрана
+    height: 100%;
+    background-color: #1a1a2a; // Темный фон для затемнения (или изображение облаков)
+    // background-image: url('/assets/clouds_shoji.png'); // Пример
+    // background-size: cover;
+    // background-repeat: no-repeat;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5); // Небольшая тень для глубины
+  
+    &.left {
+      // background-position: right center; // Если облака должны сходиться
+    }
+    &.right {
+      // background-position: left center; // Если облака должны сходиться
+    }
+  }

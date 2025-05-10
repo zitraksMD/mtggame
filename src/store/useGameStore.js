@@ -435,6 +435,7 @@ const useGameStore = create((set, get) => ({
     lastChestRewards: null, // null | Array<{type: string, icon?: string, name?: string, amount?: number, rarity?: string, isNew?: boolean}>
     dailyDeals: savedState.dailyDeals ?? [], // Массив текущих сделок
     dailyDealsLastGenerated: savedState.dailyDealsLastGenerated ?? null, // Timestamp
+    isFullScreenMapActive: false, // <<< НОВОЕ СОСТОЯНИЕ (по умолчанию false)
     activeDebuffs: savedState.activeDebuffs || [], // NEW STATE: Array to hold { id, type, strength, endTime }
 
 
@@ -2460,7 +2461,11 @@ clearLastLevelChestRewards: () => {
         const status = get().levelsCompleted[levelKey];
         return !!(status && status.normal); // Hard открыт, если Normal пройден
     },
-
+    setIsFullScreenMapActive: (isActive) => { // <<< НОВЫЙ ACTION
+        // console.log(`[Store Action] Установка isFullScreenMapActive: ${isActive}`);
+        set({ isFullScreenMapActive: isActive });
+    },
+    
     setCurrentChapter: (chapterId) => {
         set({ currentChapterId: chapterId });
         // Логика сохранения в localStorage уже есть в subscribe
