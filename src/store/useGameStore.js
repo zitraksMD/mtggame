@@ -437,6 +437,10 @@ const useGameStore = create((set, get) => ({
     dailyDealsLastGenerated: savedState.dailyDealsLastGenerated ?? null, // Timestamp
     isFullScreenMapActive: false, // <<< НОВОЕ СОСТОЯНИЕ (по умолчанию false)
     activeDebuffs: savedState.activeDebuffs || [], // NEW STATE: Array to hold { id, type, strength, endTime }
+    isScreenTransitioning: false,  // true, когда TransitionOverlay из App.jsx активен
+    transitionAction: null,      // 'closing' или 'opening'
+    onTransitionCloseCompleteCallback: null, // Callback, который вызовется после закрытия шторок (для navigate)
+    onTransitionOpenCompleteCallback: null,
 
 
     // ---------------------------------
@@ -2466,6 +2470,81 @@ clearLastLevelChestRewards: () => {
         set({ isFullScreenMapActive: isActive });
     },
     
+    startScreenTransition: (navigationOrContentChangeCallback, postOpenCallback = null) => {
+        // console.log("[Store] startScreenTransition: Initiating (CLOSE -> NAV/SWAP -> OPEN).");
+        if (get().isScreenTransitioning && get().transitionAction === 'closing') {
+            // console.warn("[Store] Transition already in closing phase. Ignoring new request.");
+            return;
+        }
+
+        set({
+            isScreenTransitioning: true,
+            transitionAction: 'closing',
+            onTransitionOpenCompleteCallback: null, // Сбрасываем коллбэк открытия на всякий случай
+            onTransitionCloseCompleteCallback: () => { // Этот callback вызовет TransitionOverlay из App.jsx
+                // console.log("[Store] CLOSE complete. Executing navigation/content change.");
+                if (navigationOrContentChangeCallback) {
+                    navigationOrContentChangeCallback(); // Выполняем навигацию или смену showMap
+                }
+
+                // Теперь, ПОСЛЕ выполнения основного действия, мы хотим,
+                // чтобы шторки начали открываться для нового экрана/вида.
+                // Добавляем небольшую задержку, чтобы React успел отрендерить новый контент
+                // перед тем, как анимация открытия шторок начнется.
+                setTimeout(() => {
+                    // console.log("[Store] Initiating OPEN phase after short delay.");
+                    set({
+                        // isScreenTransitioning: true, // Остается true
+                        transitionAction: 'opening',
+                        onTransitionCloseCompleteCallback: null, // Очищаем, так как закрытие завершено
+                        onTransitionOpenCompleteCallback: () => { // Этот callback вызовет TransitionOverlay из App.jsx
+                            // console.log("[Store] OPEN complete. Finalizing transition.");
+                            if (postOpenCallback) {
+                                postOpenCallback();
+                            }
+                            set({
+                                isScreenTransitioning: false,
+                                transitionAction: null,
+                                onTransitionOpenCompleteCallback: null
+                            });
+                        }
+                    });
+                }, 1000); // 50мс задержка. Можно настроить (0-100мс).
+            }
+        });
+    },
+
+    // Если нужно просто "открыть" экран (например, при первой загрузке маршрута, если шторки не были закрыты предыдущим)
+    // В большинстве случаев startScreenTransition() с пустым первым коллбэком будет делать то же самое,
+    // но этот action более явный.
+    ensureScreenIsOpening: (postOpenCallback = null) => {
+        const state = get();
+        // Запускаем открытие, только если не идет уже какой-то другой переход
+        if (!state.isScreenTransitioning) {
+            // console.log("[Store] ensureScreenIsOpening: Initiating OPEN directly.");
+            set({
+                isScreenTransitioning: true,
+                transitionAction: 'opening',
+                onTransitionCloseCompleteCallback: null,
+                onTransitionOpenCompleteCallback: () => {
+                    // console.log("[Store] ensureScreenIsOpening: OPEN complete.");
+                    if (postOpenCallback) postOpenCallback();
+                    set({
+                        isScreenTransitioning: false,
+                        transitionAction: null,
+                        onTransitionOpenCompleteCallback: null
+                    });
+                }
+            });
+        } else if (state.isScreenTransitioning && state.transitionAction === 'closing') {
+            // Если мы пришли на экран, а шторки еще закрываются от предыдущего,
+            // то onTransitionCloseCompleteCallback уже настроен на запуск открытия.
+            // console.log("[Store] ensureScreenIsOpening: Transition is already in 'closing' phase. Opening will follow.");
+        } else {
+            // console.log("[Store] ensureScreenIsOpening: Transition already in progress or just finished opening.");
+        }
+    },
+
     setCurrentChapter: (chapterId) => {
         set({ currentChapterId: chapterId });
         // Логика сохранения в localStorage уже есть в subscribe

@@ -243,7 +243,7 @@ body, html, #root /* или твой корневой элемент */ {
 .game-wrapper {
   height: 100%;
   width: 100%;
-  position: relative;
+  position: absolute;
   display: flex;
   justify-content: center;
   align-items: center;

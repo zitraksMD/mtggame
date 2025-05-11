@@ -1,8 +1,15 @@
 // src/components/TransitionOverlay.scss
 .transition-overlay-container {
-    display: flex;
-    overflow: hidden; // Важно, чтобы шторки не создавали скролл
-  }
+  position: fixed; // или absolute, если App.jsx это позволяет
+  top: 0;
+  left: 0;
+  width: 100vw; // или 100%
+  height: 100vh; // или 100%
+  z-index: 9999; // Очень высокий
+  display: flex;
+  overflow: hidden;
+  pointer-events: auto; // Блокирует взаимодействие с контентом под ним во время анимации
+}
   
   .shoji-screen {
     flex: 1; // Занимает половину экрана

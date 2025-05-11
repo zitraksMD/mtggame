@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // Импортируем AnimatePresence для анимации карусели
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/useGameStore';
-import { pageVariants, pageTransition } from '../animations';
 
 // Данные сундуков
 import { ARTIFACT_CHESTS, getArtifactChestById } from '../data/artifactChestData.js';
@@ -376,8 +375,6 @@ const Shop = () => {
         <> {/* Обертка для попапов */}
             <motion.div
                 className="shop-screen"
-                initial="initial" animate="in" exit="out"
-                variants={pageVariants} transition={pageTransition}
                 style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}
             >
                 {/* Шапка может быть добавлена здесь, если нужна */}

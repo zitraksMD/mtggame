@@ -1,14 +1,14 @@
 // src/components/GlobalMap.jsx
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // Добавлены useState, useEffect, useCallback, useRef
-import { motion } from 'framer-motion'; // Для анимации основного контента
-import './GlobalMap.scss';
+import React, { useEffect, useCallback } from 'react'; // useState и useRef удалены, так как overlay и его состояние больше не управляются здесь
+import { motion } from 'framer-motion';
+import './GlobalMap.scss'; // Предполагаем, что стили все еще нужны
 import useGameStore from '../store/useGameStore';
-import TransitionOverlay from "./TransitionOverlay"; // <<< ИМПОРТ из код1
+// НЕТ TransitionOverlay здесь и его импорта
+// useLocation и useNavigate удалены, так как навигация инициируется через пропсы и управляется выше
 import chapter1Data from '../data/chapters/chapter1/chapter1Data.js';
 import chapter2Data from '../data/chapters/chapter2/chapter2Data.js';
 // import chapter3Data from '../data/chapters/chapter3/chapter3Data.js';
 
-// Данные из код2
 const allChaptersLevelData = {
   1: chapter1Data?.levels || [],
   2: chapter2Data?.levels || [],
@@ -37,62 +37,39 @@ const continentsData = [
   // ... другие континенты ...
 ];
 
-// Анимационные варианты для GlobalMap (из код1)
-const globalMapContentVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } },
-  exit: { opacity: 0, transition: { duration: 0.15 } }
-};
+// globalMapContentVariants удалены, так как анимация контента экрана теперь управляется "шторками" извне
+// const globalMapContentVariants = {
+//   hidden: { opacity: 0 },
+//   visible: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } },
+//   exit: { opacity: 0, transition: { duration: 0.15 } }
+// };
 
 const GlobalMap = ({
-  onSelectContinent,    // от MainMenu (будет handleContinentSelectFromGlobalMap)
-  onGoBackToChapterMap, // от MainMenu (будет handleGoBackToWorldMapFromGlobal)
+  onSelectContinent,
+  onGoBackToChapterMap,
 }) => {
   const isChapterCompleted = useGameStore(state => state.isChapterCompleted);
+  // location и navigate удалены
 
-  // Состояния для управления TransitionOverlay (из код1)
-  const [isOverlayActive, setIsOverlayActive] = useState(true);
-  const [triggerOpenOverlay, setTriggerOpenOverlay] = useState(false);
-  const [triggerCloseOverlay, setTriggerCloseOverlay] = useState(false);
+  // Логика Overlay (isOverlayActive, triggerOpenOverlay, triggerCloseOverlay, pendingNavigationCallbackRef) удалена
 
-  // Состояние для коллбэка навигации (из код1)
-  const pendingNavigationCallbackRef = useRef(null);
-
-  // При монтировании GlobalMap запускаем анимацию открытия шторок (из код1)
+  // useEffect из код1: При монтировании, если нужно, запускаем анимацию открытия шторок через стор
   useEffect(() => {
-    console.log("GlobalMap: Mounted. Triggering OPEN overlay animation.");
-    setIsOverlayActive(true);
-    setTriggerCloseOverlay(false);
-    setTriggerOpenOverlay(true);
-  }, []);
-
-  const handleOverlayOpenComplete = useCallback(() => {
-    console.log("GlobalMap: Overlay OPEN complete. Hiding overlay component.");
-    setTriggerOpenOverlay(false);
-    setIsOverlayActive(false);
-  }, []);
-
-  const handleOverlayCloseComplete = useCallback(() => {
-    console.log("GlobalMap: Overlay CLOSE complete.");
-    if (pendingNavigationCallbackRef.current) {
-      console.log("GlobalMap: Executing pending navigation.");
-      pendingNavigationCallbackRef.current();
-      pendingNavigationCallbackRef.current = null;
+    const store = useGameStore.getState();
+    // Если мы пришли на этот экран и шторки не открываются уже
+    if (!store.isScreenTransitioning || store.transitionAction !== 'opening') {
+      // console.log("GlobalMap: Mounted, ensuring screen is opening.");
+      store.ensureScreenIsOpening();
     }
-    setTriggerCloseOverlay(false);
-    // setIsOverlayActive(false); // Оверлей скроется при размонтировании из-за навигации
-  }, []);
+  }, []); // Пустой массив зависимостей, выполняется один раз при монтировании
 
-  // Оборачиваем вызовы навигации в анимацию закрытия шторок (из код1)
-  const navigateWithTransition = useCallback((navigationAction) => {
-    pendingNavigationCallbackRef.current = navigationAction;
-    setIsOverlayActive(true);
-    setTriggerOpenOverlay(false);
-    setTriggerCloseOverlay(true);
-  }, []);
+  // handleOverlayOpenComplete и handleOverlayCloseComplete удалены
 
+  // navigateWithTransition удален
+
+  // handleContinentClick из код1:
   const handleContinentClick = useCallback((continent) => {
-    // Логика проверки из код2
+    // Проверки isImplemented и isUnlockedCalculated остаются из код2
     if (!continent.isImplemented) {
       alert(`Контент для континента "${continent.name}" находится в разработке.`);
       return;
@@ -102,42 +79,29 @@ const GlobalMap = ({
       return;
     }
 
-    // Навигация с переходом из код1
     if (typeof onSelectContinent === 'function') {
-      console.log("GlobalMap: Continent clicked, preparing transition...");
-      navigateWithTransition(() => onSelectContinent(continent.startChapterId));
+      // onSelectContinent в App.jsx УЖЕ ВЫЗОВЕТ startScreenTransition (или аналогичную функцию из store)
+      onSelectContinent(continent.startChapterId);
     }
-  }, [onSelectContinent, navigateWithTransition]); // Добавлен navigateWithTransition в зависимости
+  }, [onSelectContinent]); // Зависимость navigateWithTransition удалена
 
+  // handleBackToWorldMapClick из код1:
   const handleBackToWorldMapClick = useCallback(() => {
-    // Навигация с переходом из код1
     if (typeof onGoBackToChapterMap === 'function') {
-      console.log("GlobalMap: Back button clicked, preparing transition...");
-      navigateWithTransition(onGoBackToChapterMap);
+      // onGoBackToChapterMap в App.jsx УЖЕ ВЫЗОВЕТ startScreenTransition (или аналогичную функцию из store)
+      onGoBackToChapterMap();
     }
-  }, [onGoBackToChapterMap, navigateWithTransition]); // Добавлен navigateWithTransition в зависимости
+  }, [onGoBackToChapterMap]); // Зависимость navigateWithTransition удалена
 
   return (
-    <motion.div // Обертка из код1
-      className="global-map-screen"
-      key="globalmap-screen-content"
-      variants={globalMapContentVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-    >
-      {isOverlayActive && ( // Отображение TransitionOverlay из код1
-        <TransitionOverlay
-          playOpen={triggerOpenOverlay}
-          onOpenComplete={handleOverlayOpenComplete}
-          playClose={triggerCloseOverlay}
-          onCloseComplete={handleOverlayCloseComplete}
-        />
-      )}
+    // Атрибуты variants, initial, animate, exit для самого экрана удалены,
+    // так как анимацией управляют "шторки" из App.jsx или глобального состояния.
+    // Контент должен быть видим сразу.
+    <motion.div className="global-map-screen">
+      {/* НЕТ TransitionOverlay ЗДЕСЬ */}
 
       <div className="global-map-header">
         <h1>Карта Мира</h1>
-        {/* Используем handleBackToWorldMapClick из код1 для кнопки назад */}
         <button onClick={handleBackToWorldMapClick} className="map-back-button">
           &#x21A9; Назад к Карте Глав
         </button>
@@ -145,7 +109,6 @@ const GlobalMap = ({
 
       <div className="global-map-background">
         {continentsData.map((continent, continentIndex) => {
-          // Логика разблокировки континентов из код2
           let isCurrentContinentUnlocked = false;
           if (continentIndex === 0) {
             isCurrentContinentUnlocked = true;
@@ -183,7 +146,7 @@ const GlobalMap = ({
                 top: `${continent.y}px`,
                 left: `${continent.x}px`,
               }}
-              // Передаем isUnlockedCalculated в handleContinentClick
+              // Передаем isUnlockedCalculated в объект континента при клике
               onClick={() => handleContinentClick({ ...continent, isUnlockedCalculated: isCurrentContinentUnlocked })}
               title={continent.name}
             >

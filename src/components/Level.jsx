@@ -60,6 +60,8 @@ const getWorldDimensions = (levelData) => {
 
 // === Основной компонент Уровня ===
 const Level = ({ levelData, onLevelComplete, onReady, difficulty = 'normal' }) => {
+    console.log("[Level.jsx] Difficulty prop:", difficulty); // <--- ДОБАВЬТЕ ЭТОТ ЛОГ
+
 
     // --- Проверка levelData в самом начале ---
     if (!levelData || typeof levelData.id === 'undefined') {

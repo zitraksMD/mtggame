@@ -198,6 +198,7 @@ html, body, #root {
   position: relative; /* Для дочерних position:absolute, если будут */
   overflow-y: auto; /* Включаем скролл для контента */
   overflow-x: hidden;
+  width: 100%; // Добавили для уверенности, хотя не должно быть проблемой
   box-sizing: border-box;
 
   /* --- Корректировка отступа основного контента --- */

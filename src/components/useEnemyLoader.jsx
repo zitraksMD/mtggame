@@ -4,6 +4,7 @@
 // ИЗМЕНЕНИЯ ИЗ КОД1 (переименование состояния, возвращаемые значения) ПРИМЕНЕНЫ
 // ДОБАВЛЕНА ЛОГИКА INITIALLY_ACTIVE И ROOM_ID
 // +++ ИНТЕГРИРОВАНА ЛОГИКА АУРЫ ИЗ КОД1 +++
+// +++ ВНЕСЕНЫ ИЗМЕНЕНИЯ ИЗ КОД1 ОТНОСИТЕЛЬНО СТАТОВ И МНОЖИТЕЛЕЙ СЛОЖНОСТИ (ДОПОЛНЕНО) +++
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
@@ -68,13 +69,17 @@ const useEnemyLoader = (
                     if (object.geometry &&
                         object.geometry !== hpResources.geometryBg &&
                         object.geometry !== hpResources.geometryFill &&
-                        object.geometry !== shieldResources.geometry) {
+                        object.geometry !== shieldResources.geometry &&
+                        (!enemyRef.auraMesh || object.geometry !== enemyRef.auraMesh.geometry)
+                    ) {
                         object.geometry.dispose();
                     }
                     if (object.material &&
                         object.material !== hpResources.materialBg &&
                         object.material !== hpResources.materialFill &&
-                        object.material !== shieldResources.material) {
+                        object.material !== shieldResources.material &&
+                        (!enemyRef.auraMesh || object.material !== enemyRef.auraMesh.material)
+                    ) {
                         if (Array.isArray(object.material)) { object.material.forEach(material => material.dispose()); }
                         else { object.material.dispose(); }
                     }
@@ -84,11 +89,16 @@ const useEnemyLoader = (
         internalRefs.current = [];
         setEnemyRefsArray([]);
         setInitialEnemyStates([]);
-    }, [scene, hpResources, shieldResources, setEnemyRefsArray]); // setEnemyRefsArray добавлена, как и было
+    }, [scene, hpResources, shieldResources, setEnemyRefsArray]); // setEnemyRefsArray добавлена в зависимости, т.к. используется
 
     useEffect(() => {
         if (!scene || !enemiesData || !levelConfig || !levelId || !BASE_ENEMY_STATS) {
-            if (internalRefs.current.length > 0) cleanupEnemies();
+            if (internalRefs.current.length > 0) {
+                cleanupEnemies();
+            } else {
+                setEnemyRefsArray([]);
+                setInitialEnemyStates([]);
+            }
             setAreEnemiesLoaded(true);
             if (!BASE_ENEMY_STATS) console.warn("[useEnemyLoader] Справочник BASE_ENEMY_STATS не передан или не импортирован!");
             return;
@@ -101,7 +111,12 @@ const useEnemyLoader = (
         const { gameWorldWidth, gameWorldHeight, WORLD_Y_OFFSET } = levelConfig;
 
         const levelNumber = levelId % 100 || 1;
-        const difficultyMultiplier = difficulty === 'hard' ? 2.0 : 1.0;
+
+        // --- ИЗМЕНЕНИЕ ИЗ КОД1: Определение множителя сложности ---
+        const isHardMode = difficulty && difficulty.toLowerCase() === 'hard';
+        const difficultyStatMultiplier = isHardMode ? 10.0 : 1.0;
+        // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
         const levelHpMultiplier = 1 + 0.15 * (levelNumber - 1);
         const levelDamageMultiplier = 1 + 0.10 * (levelNumber - 1);
 
@@ -117,23 +132,45 @@ const useEnemyLoader = (
                 return;
             }
 
+            // --- ИЗМЕНЕНИЕ ИЗ КОД1: Объединение базовых статов и статов уровня ---
             const baseStats = {
                 ...baseStatsFromDirectory,
                 ...(enemyDataFromLevel.stats || {})
             };
+            // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
-            const scaledStats = {
+            const finalStats = {
                 ...baseStats,
-                hp: Math.max(1, Math.round((baseStats.hp || 10) * levelHpMultiplier * difficultyMultiplier)),
-                damage: Math.max(1, Math.round((baseStats.damage || 1) * levelDamageMultiplier * difficultyMultiplier)),
-                ...(baseStats.beamDamage !== undefined && { beamDamage: Math.max(1, Math.round(baseStats.beamDamage * levelDamageMultiplier * difficultyMultiplier)) }),
-                ...(baseStats.dotDamage !== undefined && { dotDamage: Math.max(1, Math.round(baseStats.dotDamage * levelDamageMultiplier * difficultyMultiplier)) }),
-                ...(baseStats.puddleDps !== undefined && { puddleDps: Math.max(1, Math.round(baseStats.puddleDps * levelDamageMultiplier * difficultyMultiplier)) }),
-                ...(baseStats.explosionDamage !== undefined && { explosionDamage: Math.max(1, Math.round(baseStats.explosionDamage * levelDamageMultiplier * difficultyMultiplier)) }),
-                ...(baseStats.spikeDamage !== undefined && { spikeDamage: Math.max(1, Math.round(baseStats.spikeDamage * levelDamageMultiplier * difficultyMultiplier)) }),
-                initialBlockCharges: baseStats.initialBlockCharges || 0,
+                hp: Math.max(1, Math.round(
+                    (baseStats.hp || 10) * levelHpMultiplier * difficultyStatMultiplier
+                )),
+                maxHp: Math.max(1, Math.round(
+                    (baseStats.hp || 10) * levelHpMultiplier * difficultyStatMultiplier
+                )),
+                damage: Math.max(1, Math.round(
+                    (baseStats.damage || 1) * levelDamageMultiplier * difficultyStatMultiplier
+                )),
             };
-            delete scaledStats.hp_multiplier;
+
+            if (baseStats.beamDamage !== undefined) {
+                finalStats.beamDamage = Math.max(1, Math.round(baseStats.beamDamage * levelDamageMultiplier * difficultyStatMultiplier));
+            }
+            if (baseStats.dotDamage !== undefined) {
+                finalStats.dotDamage = Math.max(1, Math.round(baseStats.dotDamage * levelDamageMultiplier * difficultyStatMultiplier));
+            }
+            if (baseStats.puddleDps !== undefined) {
+                finalStats.puddleDps = Math.max(1, Math.round(baseStats.puddleDps * levelDamageMultiplier * difficultyStatMultiplier));
+            }
+            if (baseStats.explosionDamage !== undefined) {
+                finalStats.explosionDamage = Math.max(1, Math.round(baseStats.explosionDamage * levelDamageMultiplier * difficultyStatMultiplier));
+            }
+            if (baseStats.spikeDamage !== undefined) {
+                finalStats.spikeDamage = Math.max(1, Math.round(baseStats.spikeDamage * levelDamageMultiplier * difficultyStatMultiplier));
+            }
+            
+            finalStats.initialBlockCharges = baseStats.initialBlockCharges || 0;
+            delete finalStats.hp_multiplier;
+
 
             const initiallyActive = enemyDataFromLevel.initiallyActive !== undefined ? enemyDataFromLevel.initiallyActive : true;
             const roomId = enemyDataFromLevel.roomId || null;
@@ -144,7 +181,7 @@ const useEnemyLoader = (
             const startY = convertTiledY(enemyDataFromLevel.y || 0, 0, gameWorldHeight, WORLD_Y_OFFSET);
             pivot.position.set(startX, startY, 0);
 
-            console.log(`[useEnemyLoader] Creating placeholder for ${enemyDataFromLevel.id} (${enemyDataFromLevel.type}) at x:${startX.toFixed(1)}, y:${startY.toFixed(1)} with HP ${scaledStats.hp}, Damage: ${scaledStats.damage || 'N/A'}, InitiallyActive: ${initiallyActive}, RoomID: ${roomId}`);
+            console.log(`[useEnemyLoader] Creating placeholder for ${enemyDataFromLevel.id} (${enemyDataFromLevel.type}) at x:${startX.toFixed(1)}, y:${startY.toFixed(1)} with HP ${finalStats.hp}, Damage: ${finalStats.damage || 'N/A'}, InitiallyActive: ${initiallyActive}, RoomID: ${roomId}`);
 
             const geometry = new THREE.SphereGeometry(15, 12, 8);
             let color = 0xaaaaaa;
@@ -164,7 +201,7 @@ const useEnemyLoader = (
             const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.6, metalness: 0.1 });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.name = enemyDataFromLevel.id + "_placeholder";
-            mesh.position.y = 15; // Предполагаем, что это высота центра меша над pivot
+            mesh.position.y = 15;
             mesh.castShadow = true;
             pivot.add(mesh);
 
@@ -172,8 +209,8 @@ const useEnemyLoader = (
             if (enemyDataFromLevel.type === 'revenant_knight') {
                 shieldMesh = new THREE.Mesh(shieldResources.geometry, shieldResources.material);
                 shieldMesh.name = `shield_${enemyDataFromLevel.id}`;
-                shieldMesh.position.y = 15; // Такая же высота как у основного меша
-                shieldMesh.visible = (scaledStats.initialBlockCharges || 0) > 0;
+                shieldMesh.position.y = 15;
+                shieldMesh.visible = (finalStats.initialBlockCharges || 0) > 0;
                 pivot.add(shieldMesh);
             }
 
@@ -182,22 +219,17 @@ const useEnemyLoader = (
             const hpFillMesh = new THREE.Mesh(hpResources.geometryFill, hpResources.materialFill);
             hpFillMesh.position.z = 0.1;
             hpBarContainer.add(hpBgMesh); hpBarContainer.add(hpFillMesh);
-            // HEALTH_BAR_OFFSET_Y - это смещение от *центра* меша врага.
-            // Если mesh.position.y = 15, то центр меша на высоте 15.
-            // Хелсбар должен быть на mesh.position.y + HEALTH_BAR_OFFSET_Y
             hpBarContainer.position.set(0, mesh.position.y + HEALTH_BAR_OFFSET_Y, 1);
             hpBgMesh.renderOrder = 998; hpFillMesh.renderOrder = 999;
             pivot.add(hpBarContainer);
 
-            // +++ ДОБАВЛЯЕМ АУРУ для Заклинателя (из код1) +++
             let auraMesh = null;
             if (enemyDataFromLevel.type === 'ghostly_enchanter') {
-                const auraRadius = baseStats.auraRadius; // Используем baseStats, т.к. auraRadius не должен скейлиться от уровня/сложности
-
+                const auraRadius = baseStats.auraRadius; 
                 if (typeof auraRadius === 'number' && auraRadius > 0) {
                     const auraGeometry = new THREE.SphereGeometry(auraRadius, 32, 16);
                     const auraMaterial = new THREE.MeshBasicMaterial({
-                        color: 0x9370DB, // MediumPurple
+                        color: 0x9370DB, 
                         transparent: true,
                         opacity: 0.15,
                         depthWrite: false,
@@ -205,31 +237,24 @@ const useEnemyLoader = (
                     });
                     auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
                     auraMesh.name = `aura_${enemyDataFromLevel.id}`;
-                    // Центрируем ауру относительно центра основной модели врага (mesh)
-                    auraMesh.position.copy(mesh.position); // Копируем позицию заглушки-сферы врага
+                    auraMesh.position.copy(mesh.position);
                     pivot.add(auraMesh);
                     console.log(`[useEnemyLoader] Создана аура для ${enemyDataFromLevel.id} с радиусом ${auraRadius}`);
-                    auraMesh.visible = initiallyActive; // Синхронизируем с видимостью врага
+                    auraMesh.visible = initiallyActive;
                 } else {
                     console.warn(`[useEnemyLoader] У Заклинателя ${enemyDataFromLevel.id} не задан или некорректен auraRadius.`);
                 }
             }
-            // +++++++++++++++++++++++++++++++++++++++
-
-            if (initiallyActive) {
-                pivot.visible = true;
-            } else {
-                pivot.visible = false;
-            }
+            
+            pivot.visible = initiallyActive;
             scene.add(pivot);
-
+            
             let patrolPoints = null;
             let initialPatrolWaitTimer = 0;
             if (enemyDataFromLevel.type === 'poison_cultist') {
                 const patrolRadius = baseStats.patrolRadius;
                 if (typeof patrolRadius === 'number' && patrolRadius > 0) {
                     const spawnPosVec = new THREE.Vector3(startX, startY, 0);
-                    console.log(`[useEnemyLoader] Calculating patrol points for Cultist ${enemyDataFromLevel.id} around (${startX.toFixed(0)}, ${startY.toFixed(0)}) with radius ${patrolRadius}`);
                     patrolPoints = [
                         spawnPosVec.clone().add(new THREE.Vector3( patrolRadius,  patrolRadius, 0)),
                         spawnPosVec.clone().add(new THREE.Vector3(-patrolRadius,  patrolRadius, 0)),
@@ -237,28 +262,26 @@ const useEnemyLoader = (
                         spawnPosVec.clone().add(new THREE.Vector3( patrolRadius, -patrolRadius, 0))
                     ];
                     initialPatrolWaitTimer = 1.0 + Math.random() * 1.5;
-                } else {
-                    console.log(`[useEnemyLoader] Cultist ${enemyDataFromLevel.id} has no valid patrolRadius (value: ${patrolRadius}), patrol disabled.`);
                 }
             }
 
             const enemyRefData = {
                 id: enemyDataFromLevel.id,
                 type: enemyDataFromLevel.type,
-                stats: scaledStats,
+                stats: finalStats,
                 pivot: pivot,
                 mesh: mesh,
                 shieldMesh: shieldMesh,
-                auraMesh: auraMesh, // <<< Добавляем ссылку на меш ауры (или null)
+                auraMesh: auraMesh,
                 mixer: null, actions: {}, idleActionName: null, currentAction: null,
                 attackCooldown: Math.random() * 0.5,
-                abilityCooldown: Math.random() * (scaledStats.summonCooldown || scaledStats.abilityCooldown || 5.0),
+                abilityCooldown: Math.random() * (finalStats.summonCooldown || finalStats.abilityCooldown || 5.0),
                 isDead: false,
                 hpBar: { container: hpBarContainer, bg: hpBgMesh, fill: hpFillMesh },
                 aiState: 'IDLE',
                 spawnPosition: pivot.position.clone(),
                 chaseEndTime: null,
-                blockCharges: scaledStats.initialBlockCharges,
+                blockCharges: finalStats.initialBlockCharges,
                 damageStacks: 0,
                 exploded: false,
                 beamEffectMesh: null,
@@ -273,21 +296,29 @@ const useEnemyLoader = (
 
             initialStatesData.push({
                 id: enemyDataFromLevel.id,
-                maxHp: scaledStats.hp,
-                currentHp: scaledStats.hp,
-                isBoss: enemyDataFromLevel.type === 'boss',
-                initialBlockCharges: scaledStats.initialBlockCharges || 0,
+                // --- ИЗМЕНЕНИЕ ИЗ КОД1: Используем finalStats.maxHp ---
+                maxHp: finalStats.maxHp,
+                // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+                currentHp: finalStats.hp,
+                isBoss: baseStats.isBoss || enemyDataFromLevel.type === 'boss',
+                initialBlockCharges: finalStats.initialBlockCharges || 0,
                 isActive: initiallyActive,
                 roomId: roomId
             });
-        }); // Конец forEach
+        });
 
         internalRefs.current = [...loadedEnemyData];
         setEnemyRefsArray(loadedEnemyData);
         setInitialEnemyStates(initialStatesData);
         setAreEnemiesLoaded(true);
+        console.log(`[useEnemyLoader] ${loadedEnemyData.length} врагов обработано для уровня ${levelId} (Сложность: ${difficulty}).`);
 
-        return () => { cleanupEnemies(); };
+        return () => {
+            cleanupEnemies();
+        };
+    // Добавил setEnemyRefsArray в cleanupEnemies, так что здесь она уже не нужна явно,
+    // но оставлю для ясности, что useEffect зависит от этой функции из useState.
+    // BASE_ENEMY_STATS также важна, так как при её изменении (теоретически) нужно перезагружать врагов.
     }, [enemiesData, scene, levelConfig, levelId, difficulty, cleanupEnemies, hpResources, shieldResources, BASE_ENEMY_STATS, setEnemyRefsArray]);
 
 

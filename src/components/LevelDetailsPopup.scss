@@ -8,11 +8,18 @@ $text-primary: #e0e0e0;
 $text-secondary: #bec5d1;
 $border-color-light: #4a4f5a;
 $level-id-bg: rgba(0, 0, 0, 0.3);
-// --- ПЕРЕМЕННЫЕ ИЗ КОД1 ---
 $divider-color: rgba(255, 255, 255, 0.15); // Цвет разделителя (светло-серый, полупрозрачный)
 $section-spacing: 20px; // Общий вертикальный отступ между секциями
 // Переменная для градиента из код1
 $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
+
+// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ КНОПОК СЛОЖНОСТИ ИЗ КОД1 ---
+$normal-button-bg: #5cb85c; // Зеленый для Normal
+$normal-button-text: white;
+$hard-button-bg: #d9534f;   // Красный для Hard
+$hard-button-text: white;
+$button-locked-bg: #6c757d; // Серый для заблокированной
+$button-locked-text: #b0b0b0;
 
 // Оверлей
 .level-details-popup-overlay {
@@ -49,18 +56,16 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
 
 // Основной контент (ПОД баннером)
 .level-details-popup-content {
-  // --- ИЗМЕНЕНИЯ ИЗ КОД1 ---
   background: $dark-blue-gradient; // Применяем желаемый градиент
-  color: $text-primary; // Убедимся, что текст светлый (было $text-primary, что совпадает)
+  color: $text-primary; // Убедимся, что текст светлый
   border: 1px solid rgba(255, 255, 255, 0.1); // Добавлена рамка из код1
-  // --- КОНЕЦ ИЗМЕНЕНИЙ ИЗ КОД1 ---
 
   border-radius: 12px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 55px 25px 5px 25px; // Нижний отступ теперь 15px (был 25px)
+  padding: 55px 25px 5px 25px; // Нижний отступ теперь 5px (был 25px), будет управляться отступом последней секции
   position: relative;
   z-index: 1;
   box-sizing: border-box;
@@ -73,49 +78,95 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
   display: inline-block; background-color: $level-id-bg;
   padding: 6px 14px; border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: $section-spacing;
+  margin-bottom: $section-spacing; // Отступ снизу до следующей секции
+  align-self: center; // Центрируем сам блок если он inline-block
 }
 
-// Переключатель сложности
-.difficulty-switcher {
-  display: flex; justify-content: center;
-  flex-wrap: wrap; gap: 10px;
-  margin-bottom: $section-spacing;
-  padding-bottom: $section-spacing;
-  border-bottom: 1px solid $divider-color;
+// === НОВЫЕ СТИЛИ ДЛЯ БЛОКА ВЫБОРА СЛОЖНОСТИ (ИЗ КОД1) ===
+.mode-selection-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: $section-spacing; // Отступ как у других секций
+  padding-bottom: $section-spacing; // Отступ снизу до разделителя
+  border-bottom: 1px solid $divider-color; // Разделитель
 
-  button {
-    background-color: #4a4f5a;
-    color: #b0b0b0;
-    border: 1px solid #555c66;
-    padding: 8px 20px;
-    margin: 0 6px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.9em;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  .mode-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: $text-secondary; // или $text-primary
+    margin-top: 0; // Убираем верхний отступ у заголовка секции
+    margin-bottom: 12px; // Отступ от заголовка до кнопок
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
 
-    &.active {
-      background-color: #5a9cec;
-      color: white;
-      border-color: #5a9cec;
+  .difficulty-buttons-container {
+    display: flex;
+    justify-content: center;
+    width: 100%; // Чтобы кнопки могли растянуться или быть по центру
+    gap: 10px;
     }
-    &:hover:not(.active) {
-      background-color: #5a5f6a;
-      border-color: #6c757d;
+
+    .difficulty-button {
+      padding: 10px 25px;
+      border: none;
+      font-weight: bold;
+      font-size: 0.95em;
+      cursor: pointer;
+      transition: transform 0.2s ease-out, background-color 0.2s ease;
+      outline: none;
+      border-radius: 8px; // <<< ОБЩЕЕ СКРУГЛЕНИЕ ДЛЯ ВСЕХ УГЛОВ КНОПКИ
+
+    &.normal {
+      background-color: $normal-button-bg;
+      color: $normal-button-text;
+      border-top-left-radius: 8px;    // Скругление левых углов
+      border-bottom-left-radius: 8px;
+      border-right: 1px solid rgba(0,0,0,0.2); // Тонкий разделитель
+      &:hover {
+        background-color: darken($normal-button-bg, 8%);
+      }
+    }
+
+    &.hard {
+      background-color: $hard-button-bg;
+      color: $hard-button-text;
+      border-top-right-radius: 8px;   // Скругление правых углов
+      border-bottom-right-radius: 8px;
+      position: relative; // Для позиционирования иконки замка
+
+      &:hover:not(:disabled) {
+        background-color: darken($hard-button-bg, 8%);
+      }
+
+      &.locked, &:disabled { // Стили для заблокированной кнопки Hard
+        background-color: $button-locked-bg;
+        color: $button-locked-text;
+        cursor: not-allowed;
+        // &:hover { background-color: $button-locked-bg; } // Не менять цвет при наведении, если заблокирована
+      }
+
+      .lock-icon {
+        margin-left: 8px; // Отступ для иконки замка
+        font-size: 0.9em;
+      }
     }
   }
 }
+// === КОНЕЦ НОВЫХ СТИЛЕЙ ===
+
+// Старый .difficulty-switcher удален, так как заменен на .mode-selection-section
 
 // Описание уровня
 .level-description {
+  margin-top: 0; // Убираем верхний margin, т.к. теперь есть разделитель от mode-selection-section
   margin-bottom: $section-spacing;
-  padding-top: 15px;
+  // padding-top: 15px; // Это значение можно удалить или оставить, если нужен доп. отступ ВНУТРИ блока
   padding-right: 5px;
   padding-left: 5px;
-  padding-bottom: $section-spacing;
-  border-bottom: 1px solid $divider-color;
+  padding-bottom: $section-spacing; // Отступ снизу до разделителя
+  border-bottom: 1px solid $divider-color; // Разделитель
 
   font-size: 0.9em; line-height: 1.5; color: #c5c8d1;
   text-align: center; max-height: none; overflow-y: visible;
@@ -125,12 +176,13 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
 
 // Требуемый PowerLevel
 .required-powerlevel {
+  margin-top: 0; // Убираем верхний margin
   margin-bottom: $section-spacing;
-  padding-top: 0;
+  // padding-top: 0; // Убираем или настраиваем padding-top, если он был для отделения
   padding-right: 0;
-  padding-bottom: $section-spacing;
+  padding-bottom: $section-spacing; // Отступ снизу до разделителя
   padding-left: 0;
-  border-bottom: 1px solid $divider-color;
+  border-bottom: 1px solid $divider-color; // Разделитель
 
   font-size: 0.9em;
   text-align: center;
@@ -166,7 +218,7 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
     }
     .power-warning {
       opacity: 1;
-      max-height: 2em;
+      max-height: 2em; /* Должно быть достаточно для отображения текста предупреждения */
     }
   }
 }
@@ -174,13 +226,13 @@ $dark-blue-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
 // Кнопки действий
 .popup-actions {
   display: flex; justify-content: space-around; gap: 10px;
-  padding-top: 0;
+  padding-top: $section-spacing; // Добавляем отступ сверху, так как убрали его у .required-powerlevel и нет border-bottom
 
   button {
     padding: 10px 0; font-size: 1em; border-radius: 6px; cursor: pointer;
     font-weight: bold; border: none; flex-grow: 0; flex-basis: 45%;
     max-width: 170px; transition: background-color 0.2s, opacity 0.2s;
-    margin-top: 15px;
+    // margin-top: 15px; // Этот margin-top может быть не нужен, если padding-top у .popup-actions
   }
   .button-back { background-color: #6c757d; color: white; &:hover { background-color: #5a6268; } }
   .button-start { background-color: #5cb85c; color: white; &:hover { background-color: #4cae4c; }

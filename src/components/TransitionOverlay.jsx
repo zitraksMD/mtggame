@@ -1,20 +1,53 @@
 // src/components/TransitionOverlay.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react'; // Добавлен useRef из код1
 import { motion, useAnimation } from 'framer-motion';
 import './TransitionOverlay.scss'; // Убедитесь, что этот файл стилей существует или создайте его
 
-const TransitionOverlay = ({ playOpen, onOpenComplete, playClose, onCloseComplete }) => {
+const TransitionOverlay = ({
+  playOpen,
+  onOpenComplete,
+  playClose,
+  onCloseComplete,
+  initialState = 'open' // 'open' или 'closed' - добавлено из код1
+}) => {
   const leftControls = useAnimation();
   const rightControls = useAnimation();
+  const hasPlayedInitialAnimation = useRef(false); // Добавлено из код1
 
-  // Анимация "закрытия" (шторки сходятся) - из код1
+  // Устанавливаем начальное неанимированное состояние (из код1)
+  useEffect(() => {
+    if (!hasPlayedInitialAnimation.current) {
+      if (initialState === 'closed') {
+        // console.log("TransitionOverlay: Initial state is CLOSED");
+        leftControls.set({ x: '0%', opacity: 1 });
+        rightControls.set({ x: '0%', opacity: 1 });
+      } else { // 'open' or default
+        // console.log("TransitionOverlay: Initial state is OPEN (off-screen)");
+        // Это состояние также устанавливается через `initial` пропсы на motion.div ниже.
+        // .set() здесь гарантирует это состояние, если initial пропсы будут изменены.
+        leftControls.set({ x: '-100%', opacity: 1 });
+        rightControls.set({ x: '100%', opacity: 1 });
+      }
+    }
+  }, [initialState, leftControls, rightControls]); // hasPlayedInitialAnimation.current не включаем в зависимости,
+                                                 // т.к. этот эффект должен реагировать на initialState ДО первой анимации
+
+
+  // Анимация "закрытия" (шторки сходятся) - обновлено с учетом логики код1
   useEffect(() => {
     if (playClose) {
+      hasPlayedInitialAnimation.current = true; // Добавлено из код1
       // console.log("TransitionOverlay: Playing CLOSE animation");
       const sequence = async () => {
+        // Сначала убедимся, что они видимы, если вдруг были opacity:0 (из код1)
         await Promise.all([
-          leftControls.start({ x: '0%', opacity: 1, transition: { duration: 0.6, ease: [0.6, 0.01, -0.05, 0.9] } }),
-          rightControls.start({ x: '0%', opacity: 1, transition: { duration: 0.6, ease: [0.6, 0.01, -0.05, 0.9] } })
+            leftControls.start({ opacity: 1, transition: { duration: 0.01 } }),
+            rightControls.start({ opacity: 1, transition: { duration: 0.01 } })
+        ]);
+        // Затем анимация закрытия
+        await Promise.all([
+          leftControls.start({ x: '0%', /* opacity: 1 уже установлено или анимируется */ transition: { duration: 0.6, ease: [0.6, 0.01, -0.05, 0.9] } }),
+          rightControls.start({ x: '0%', /* opacity: 1 уже установлено или анимируется */ transition: { duration: 0.6, ease: [0.6, 0.01, -0.05, 0.9] } })
         ]);
         if (onCloseComplete) onCloseComplete();
       };
@@ -22,22 +55,15 @@ const TransitionOverlay = ({ playOpen, onOpenComplete, playClose, onCloseComplet
     }
   }, [playClose, leftControls, rightControls, onCloseComplete]);
 
-  // Анимация "открытия" (шторки расходятся) - из код1, адаптировано для структуры код2
+  // Анимация "открытия" (шторки расходятся) - обновлено с учетом логики код1
   useEffect(() => {
     if (playOpen) {
+      hasPlayedInitialAnimation.current = true; // Добавлено из код1
       // console.log("TransitionOverlay: Playing OPEN animation");
       const sequence = async () => {
-        // Убедимся, что шторки в закрытом состоянии перед началом анимации открытия
-        // (если они не были закрыты через playClose или это первый рендер с playOpen=true)
-        // Используем set для мгновенного применения, если они не в целевом состоянии для начала открытия.
-        // Или можно анимировать к закрытому состоянию очень быстро, как в код1.
-        // Для большей согласованности с код1, используем start с короткой длительностью.
-        // Это также полезно, если playOpen=true при первоначальной загрузке,
-        // а initial={{ x: '-100%' }} установлен, то они сначала "прыгнут" в центр, потом разойдутся.
-        // Если initial={{ x: '0%' }} (как было в код2), то этот шаг не так критичен для первоначального открытия.
-        // Однако, для консистентности с логикой "закрытие перед открытием" из код1, оставим.
+        // Убедимся, что шторки в закрытом состоянии перед началом анимации открытия (из код1, также присутствовало в код2)
         await Promise.all([
-            leftControls.start({ x: '0%', opacity: 1, transition: { duration: 0.01 } }), // Мгновенно закрыть, если не закрыты
+            leftControls.start({ x: '0%', opacity: 1, transition: { duration: 0.01 } }),
             rightControls.start({ x: '0%', opacity: 1, transition: { duration: 0.01 } })
         ]);
 
@@ -45,12 +71,12 @@ const TransitionOverlay = ({ playOpen, onOpenComplete, playClose, onCloseComplet
         await Promise.all([
           leftControls.start({
             x: '-100%',
-            opacity: 1,
+            opacity: 1, // opacity: 1 также было в код2
             transition: { duration: 0.7, ease: [0.6, 0.01, -0.05, 0.9] }
           }),
           rightControls.start({
             x: '100%',
-            opacity: 1,
+            opacity: 1, // opacity: 1 также было в код2
             transition: { duration: 0.7, ease: [0.6, 0.01, -0.05, 0.9] }
           })
         ]);
@@ -60,35 +86,25 @@ const TransitionOverlay = ({ playOpen, onOpenComplete, playClose, onCloseComplet
       };
       sequence();
     }
-    // Если playOpen=false и playClose не активен, шторки должны оставаться в своем последнем состоянии
-    // или вернуться в "открытое" начальное состояние (за экраном),
-    // если не предполагается, что они будут закрываться без playClose.
-    // Код1 не имел явного 'else' здесь, он полагался на initial state и playClose.
-    // Код2 устанавливал их в '0%' (закрыто), если playOpen=false.
-    // Для сохранения функциональности обеих анимаций, мы не будем добавлять 'else' здесь,
-    // состояние контролируется playOpen и playClose.
-    // Начальное состояние определяется `initial` у `motion.div`.
-
   }, [playOpen, leftControls, rightControls, onOpenComplete]);
 
   return (
     <motion.div
       className="transition-overlay-container"
-      style={{
+      style={{ // Стили из код2
         position: 'fixed',
         top: 0,
         left: 0,
         width: '100%',
         height: '100%',
         zIndex: 9999,
-        // pointerEvents из код1, чтобы блокировать взаимодействие во время перехода
-        pointerEvents: playOpen || playClose ? 'auto' : 'none',
+        pointerEvents: playOpen || playClose ? 'auto' : 'none', // Логика pointerEvents из код2
       }}
     >
       <motion.div
         className="shoji-screen left"
-        // Начальное состояние из код1 - за экраном.
-        // Анимации playOpen/playClose приведут их в нужное положение.
+        // Начальное состояние из код2, соответствует 'open' из код1.
+        // Будет переопределено useEffect для initialState, если initialState === 'closed'.
         initial={{ x: '-100%', opacity: 1 }}
         animate={leftControls}
         // стили для .shoji-screen.left должны быть определены в TransitionOverlay.scss
@@ -96,7 +112,7 @@ const TransitionOverlay = ({ playOpen, onOpenComplete, playClose, onCloseComplet
       />
       <motion.div
         className="shoji-screen right"
-        // Начальное состояние из код1 - за экраном.
+        // Начальное состояние из код2, соответствует 'open' из код1.
         initial={{ x: '100%', opacity: 1 }}
         animate={rightControls}
         // стили для .shoji-screen.right должны быть определены в TransitionOverlay.scss

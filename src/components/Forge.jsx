@@ -17,7 +17,6 @@ import itemsDatabase, { getItemById } from '../data/itemsDatabase';
 import forgeRecipes from '../data/forgeDatabase';
 import CompactRecipeCard from './CompactRecipeCard';
 import './Forge.scss';
-import { pageVariants, pageTransition } from '../animations'; // Убедитесь, что путь верный
 
 // --- >>> Путь к видео (из код 1) <<< ---
 const FORGE_VIDEO_PATH = '/assets/videos/forge_animation.mp4'; // <-- УКАЖИ ПРАВИЛЬНЫЙ ПУТЬ К ВИДЕО!
@@ -319,11 +318,6 @@ const Forge = () => {
     return (
         <motion.div
             className="forge-screen"
-            initial="initial"
-            animate="in"
-            exit="out"
-            variants={pageVariants}
-            transition={pageTransition}
         >
             {/* --- >>> Видео Оверлей (из код 1) <<< --- */}
             {isCrafting && (
