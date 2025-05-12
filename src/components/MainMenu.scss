@@ -195,7 +195,7 @@
 // Battle Pass (Снова позиционируется абсолютно)
 .battle-pass-button {
   position: absolute;
-  top: max(calc(env(safe-area-inset-top, 0px) + 40px), 170px); /* Используем max для определения верхнего отступа */
+  top: max(calc(env(safe-area-inset-top, 0px) + 70px), 210px); /* Используем max для определения верхнего отступа */
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   z-index: 5;
   padding: 10px 25px;
