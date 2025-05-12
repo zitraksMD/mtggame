@@ -195,7 +195,7 @@
 // Battle Pass (Снова позиционируется абсолютно)
 .battle-pass-button {
   position: absolute;
-  top: max(110px, calc(40px + env(safe-area-inset-top, 0px)));
+  top: max(85px, calc(40px + env(safe-area-inset-top, 0px)));
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   z-index: 5;
   padding: 10px 25px;
@@ -208,15 +208,13 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
-  top: max(calc(env(safe-area-inset-top, 0px) + 40px), 220px); /* Используем max для определения верхнего отступа */
+  top: max(140px, calc(40px + env(safe-area-inset-top, 0px)));
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
   flex-direction: column;
-  gap: 15px;        // Пространство между Почтой и Сундуком
+  gap: 10px;        // Пространство между Почтой и Сундуком
   z-index: 5;
-  // УБРАЛИ: align-items: flex-start; - больше не нужно
 
-  // Кнопки внутри колонки НЕ ДОЛЖНЫ быть absolute
   .main-menu-button { // Это общие стили для кнопок в колонке, они остаются
     position: relative; // Важно! Сбросить absolute
     top: auto;
