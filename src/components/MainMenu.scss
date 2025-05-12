@@ -195,7 +195,7 @@
 // Battle Pass (Снова позиционируется абсолютно)
 .battle-pass-button {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 40px); /* Смещаем ниже от верхнего края (под аватар/энергию) */
+  top: max(calc(env(safe-area-inset-top, 0px) + 40px), 170px); /* Используем max для определения верхнего отступа */
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   z-index: 5;
   padding: 10px 25px;
@@ -205,11 +205,10 @@
   align-items: center;
   transform: translateX(0); /* Убираем центрирование */
 }
-
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
-  top: calc(env(safe-area-inset-top, 0px) + 60px); /* Смещаем ниже от верхнего края (под аватар/энергию) */
+  top: max(calc(env(safe-area-inset-top, 0px) + 40px), 220px); /* Используем max для определения верхнего отступа */
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
   flex-direction: column;
@@ -247,29 +246,38 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: 165px; // Примерный отступ справа сверху (ниже, как просили)
-  right: 10px;
+  top: max(calc(env(safe-area-inset-top, 0px) + 40px), 220px); /* Используем max для определения верхнего отступа */
+  right: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
   flex-direction: column;
   gap: 15px;
   z-index: 5; // Выше карты
 
   
-  .main-menu-button {
-    position: relative; top: auto; right: auto; transform: none; // Сброс absolute
-    // Если внутри правой колонки тоже есть icon-button,
-    // и они должны иметь те же размеры, что и в левой,
-    // можно либо скопировать стили .icon-button из .main-menu-left-column,
-    // либо вынести их в более общий класс, если структура позволяет.
-    // Например:
-    // &.icon-button {
-    //   padding: 8px;
-    //   border-radius: 12px;
-    //   width: 56px;
-    //   height: 56px;
-    //   box-sizing: border-box;
-    //   img { width: 40px; height: 40px; object-fit: contain; display: block; }
-    // }
+  // Кнопки внутри колонки НЕ ДОЛЖНЫ быть absolute
+  .main-menu-button { // Это общие стили для кнопок в колонке, они остаются
+    position: relative; // Важно! Сбросить absolute
+    top: auto;
+    left: auto;
+    transform: none;
+
+    // Стили для иконочных кнопок внутри колонки
+    // Убедимся, что этот блок не конфликтует с глобальным .icon-button
+    // и применяется именно к кнопкам ВНУТРИ .main-menu-left-column
+    &.icon-button {
+      padding: 8px; // Меньшие падинги
+      border-radius: 12px;
+      width: 44px;  // Пример: Задать фиксированную ширину/высоту для квадратности
+      height: 44px; // width/height = (иконка 40px + padding 8px*2)
+      box-sizing: border-box; // Чтобы padding был включен в width/height
+
+      img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        display: block;
+      }
+    }
   }
 }
 

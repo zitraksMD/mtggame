@@ -630,7 +630,7 @@ const MainMenu = ({ onStart }) => {
     {chapterData.name}
 </h2>
                                 <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick} >BattlePass</button>
-                                <div className="main-menu-left-column" style={{position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 5}}>
+                                <div className="main-menu-left-column">
                                     {/* ИЗМЕНЕНО: Убран process.env.PUBLIC_URL. Используется прямой абсолютный путь от /public */}
                                     <button className="main-menu-button icon-button mail-button" onClick={handleMailClick} title="Почта"><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
                                     <button className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`} onClick={handleRewardsChestClick} title="Награды" >
@@ -638,7 +638,7 @@ const MainMenu = ({ onStart }) => {
                                     </button>
                                     <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick} title="Ежедневная охота"><img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" /></button>
                                 </div>
-                                <div className="main-menu-right-column" style={{position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 5}}>
+                                <div className="main-menu-right-column">
                                     <button className="main-menu-button icon-button world-map-button" onClick={handleOpenMapSystemClick} title="Карта Мира">
                                         <img src="/assets/icons/map-icon.png" alt="Карта Мира" />
                                     </button>
