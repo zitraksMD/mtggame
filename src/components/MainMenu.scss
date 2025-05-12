@@ -193,15 +193,16 @@
 
 // Battle Pass (Снова позиционируется абсолютно)
 .battle-pass-button {
-  position: absolute; // Важно!
-  top: 115px;
-  left: 10px;       // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Отступ слева
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 15px); /* Отступ от верхнего края с учетом безопасной зоны */
+  left: 50%;
+  transform: translateX(-50%); /* Центрирование по горизонтали */
   z-index: 5;
-  padding: 10px 25px; // Горизонтальные падинги для ширины
+  padding: 10px 25px;
   border-radius: 8px;
   font-size: 16px;
   font-weight: bold;
-  // УБРАТЬ: transform: translateX(-50%) если был
+  align-items: center;
 }
 
 // Левая колонка (Почта и Сундук)
@@ -333,17 +334,8 @@
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 // --- Кнопка Reset (Как было) ---
-.reset-button {
-  position: fixed; // Или absolute
-  bottom: 20px; // Ниже
-  left: 15px;
-  font-size: 10px; opacity: 0.6; background: rgba(255,0,0,0.5); color: #fff;
-  border: none; padding: 4px 8px; border-radius: 4px; z-index: 99; // Ниже попапов
-  cursor: pointer;
-    &:hover { opacity: 1; background: rgba(255,0,0,0.8); }
-}
 
-.reset-progress-button {
+.reset-button {
   position: absolute; // Позиционируем относительно .main-menu (если у него position: relative) или viewport
   // Отступы от нижнего левого угла, УЧИТЫВАЯ безопасные зоны
   left: calc(env(safe-area-inset-left, 0px) + 15px);   // 15px от левого края + safe area

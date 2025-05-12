@@ -7,7 +7,6 @@ import GlobalMap from "./GlobalMap";
 import TransitionOverlay from "./TransitionOverlay"; // <<< ИЗ КОД1
 import Popup from './Popup';
 import "./MainMenu.scss";
-import { pageVariants as mainMenuScreenVariants, pageTransition as mainMenuScreenTransition } from '../animations';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LevelDetailsPopup from './LevelDetailsPopup';
 
@@ -514,9 +513,6 @@ const MainMenu = ({ onStart }) => {
     return (
         <motion.div className="main-menu"
             key="mainmenu-screen-container"
-            initial="initial" animate="in" exit="out"
-            variants={mainMenuScreenVariants}
-            transition={mainMenuScreenTransition}
             style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, overflow: 'hidden' }}
         >
             {isOverlayActive && (
@@ -633,7 +629,7 @@ const MainMenu = ({ onStart }) => {
                                 <h2 className="chapter-name">
     {chapterData.name}
 </h2>
-                                <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick} style={{position: 'absolute', top: '20px', right: '20px', zIndex: 5}}>BattlePass</button>
+                                <button className="main-menu-button battle-pass-button" onClick={handleBattlePassClick} >BattlePass</button>
                                 <div className="main-menu-left-column" style={{position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 5}}>
                                     {/* ИЗМЕНЕНО: Убран process.env.PUBLIC_URL. Используется прямой абсолютный путь от /public */}
                                     <button className="main-menu-button icon-button mail-button" onClick={handleMailClick} title="Почта"><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
@@ -671,8 +667,8 @@ const MainMenu = ({ onStart }) => {
                 </Popup>
             )}
             {!isOverlayActive && (
-                <button className="reset-button" style={{position: 'fixed', bottom: '10px', right: '10px', zIndex: 100, background:'rgba(255,0,0,0.7)', color:'white', border:'1px solid darkred', padding:'5px 10px', borderRadius:'5px', cursor:'pointer'}} onClick={handleFullResetClick} title="Сбросить весь игровой прогресс" >
-                    Полный Сброс
+                <button className="reset-button" onClick={handleFullResetClick} title="Сбросить весь игровой прогресс" >
+                     Сброс
                 </button>
             )}
         </motion.div>

@@ -186,7 +186,7 @@ const App = () => {
     // handleStartGame ИЗ КОД 1 (с адаптациями для fetch и зависимостей Код 2)
     const handleStartGame = useCallback(async (chapterId, levelId, difficultyToPlay) => {
         console.log(`[App.jsx handleStartGame] Запрос: Глава ${chapterId}, Уровень ${levelId}, Сложность: ${difficultyToPlay}`);
-        const ENERGY_COST = 10; // Пример
+        const ENERGY_COST = 6; // Пример
         if (!consumeEnergy(ENERGY_COST)) {
             // Используем кастомный alert или модальное окно, если есть
             alert("Недостаточно энергии!");
@@ -333,34 +333,56 @@ const App = () => {
        return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
     }
 
+    const getEnergyFillColor = (current, max) => {
+        if (max === 0) return '#808080'; // Серый, если макс. энергия не определена
+    
+        const ratio = current / max;
+    
+        if (ratio > 0.6) {
+            return '#4ade80'; // Зеленый (высокий уровень)
+        } else if (ratio > 0.3) {
+            return '#facc15'; // Желтый (средний уровень)
+        } else {
+            return '#ef4444'; // Красный (низкий уровень)
+        }
+    };
+
     return (
         <div className="app-container" ref={appContainerRef}>
-            {showPlayerInfo && (
-                <div className="player-info-float">
-                    <img src={avatarUrl} alt="Аватар" className="player-avatar-small" />
-                    <div className="player-details">
-                        <span className="player-name">{username || "Гость"}</span>
-                        <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
-                        <div className="energy-bar-float">
-                    <div className="energy-bar-content">
-                        <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
-                        <div className="energy-track">
-                            <div
-                                className="energy-fill"
-                                style={{ width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%` }}
-                            ></div>
-                        </div>
-                        <span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
+{showPlayerInfo && (
+    <div className="player-info-float">
+        <div className="player-info-top"> {/* Новый контейнер для аватара и деталей */}
+            <img src={avatarUrl} alt="Аватар" className="player-avatar-small" />
+            <div className="player-details">
+                <span className="player-name">{username || "Гость"}</span>
+                <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
+            </div>
+        </div>
+        {showEnergyBar && (
+            <div className="energy-bar-float-moved">
+                <div className="energy-bar-content">
+                    <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
+                    <div className="energy-track">
+                    <div
+    className="energy-fill"
+    style={{
+        width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%`,
+        '--energy-fill-color': getEnergyFillColor(energyCurrent, energyMax),
+        backgroundColor: `var(--energy-fill-color, #4ade80)`, // Применяем цвет фона
+    }}
+></div>
+<span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
                     </div>
-                    { shouldShowRefillTimer && refillTimerDisplay && (
-                       <div className="energy-refill-timer">
-                           Восполнится через {refillTimerDisplay}
-                       </div>
-                    )}
                 </div>
+                { shouldShowRefillTimer && refillTimerDisplay && (
+                    <div className="energy-refill-timer">
+                        Восполнится через {refillTimerDisplay}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
+        )}
+    </div>
+)}
             {showResources && (
                 <div className="resources-float">
                     <div className="resource-item-float">
@@ -375,25 +397,6 @@ const App = () => {
                         <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon-small" />
                         <span>{tonShards?.toLocaleString() ?? '0'}</span>
                     </div>
-                </div>
-            )}
-            {showEnergyBar && (
-                <div className="energy-bar-float">
-                    <div className="energy-bar-content">
-                        <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
-                        <div className="energy-track">
-                            <div
-                                className="energy-fill"
-                                style={{ width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%` }}
-                            ></div>
-                        </div>
-                        <span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
-                    </div>
-                    { shouldShowRefillTimer && refillTimerDisplay && (
-                       <div className="energy-refill-timer">
-                           Восполнится через {refillTimerDisplay}
-                       </div>
-                    )}
                 </div>
             )}
             {showAnyFixedUI && <UsernamePopup />}
