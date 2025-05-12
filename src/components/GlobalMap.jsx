@@ -1,165 +1,169 @@
 // src/components/GlobalMap.jsx
-import React, { useEffect, useCallback } from 'react'; // useState и useRef удалены, так как overlay и его состояние больше не управляются здесь
-import { motion } from 'framer-motion';
-import './GlobalMap.scss'; // Предполагаем, что стили все еще нужны
-import useGameStore from '../store/useGameStore';
-// НЕТ TransitionOverlay здесь и его импорта
-// useLocation и useNavigate удалены, так как навигация инициируется через пропсы и управляется выше
-import chapter1Data from '../data/chapters/chapter1/chapter1Data.js';
-import chapter2Data from '../data/chapters/chapter2/chapter2Data.js';
-// import chapter3Data from '../data/chapters/chapter3/chapter3Data.js';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, useMotionValue, animate } from 'framer-motion'; // animate из framer-motion, useTransform удален, если не используется где-то еще
+import './GlobalMap.scss';
+import { ALL_ZONES_CONFIG as allZones } from '../data/worldMapData'; // Используем данные зон напрямую как в код1
 
-const allChaptersLevelData = {
-  1: chapter1Data?.levels || [],
-  2: chapter2Data?.levels || [],
-  // 3: chapter3Data?.levels || [],
-};
-
-const continentsData = [
-  {
-    id: 'necroworld_continent',
-    name: 'Некромир',
-    image: '/assets/continents/necroworld_map_icon.png',
-    x: 200, y: 300,
-    chapters: [1],
-    startChapterId: 1,
-    isImplemented: true,
-  },
-  {
-    id: 'inferno_continent',
-    name: 'Инферно',
-    image: '/assets/continents/inferno_map_icon.png',
-    x: 600, y: 400,
-    chapters: [2],
-    startChapterId: 2,
-    isImplemented: false,
-  },
-  // ... другие континенты ...
-];
-
-// globalMapContentVariants удалены, так как анимация контента экрана теперь управляется "шторками" извне
-// const globalMapContentVariants = {
-//   hidden: { opacity: 0 },
-//   visible: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } },
-//   exit: { opacity: 0, transition: { duration: 0.15 } }
-// };
+// Размеры всей "подложки" карты (из код1)
+const GLOBAL_MAP_CONTENT_WIDTH = 1200;
+const GLOBAL_MAP_CONTENT_HEIGHT = 800;
 
 const GlobalMap = ({
-  onSelectContinent,
-  onGoBackToChapterMap,
+    initialFocusZoneId,   // ID зоны для начального фокуса
+    onSelectZone,         // (zoneId, startChapterId) => void
+    onGoBack,             // () => void, для кнопки "назад"
+    // allZonesData больше не нужен в props, так как импортируется напрямую
 }) => {
-  const isChapterCompleted = useGameStore(state => state.isChapterCompleted);
-  // location и navigate удалены
+    // const isChapterCompleted = useGameStore(state => state.isChapterCompleted); // Оставляем на случай, если понадобится для логики разблокировки
 
-  // Логика Overlay (isOverlayActive, triggerOpenOverlay, triggerCloseOverlay, pendingNavigationCallbackRef) удалена
+    const viewportRef = useRef(null); // Используем viewportRef как в код1
+    const [isAnimatingToFocus, setIsAnimatingToFocus] = useState(false);
 
-  // useEffect из код1: При монтировании, если нужно, запускаем анимацию открытия шторок через стор
-  useEffect(() => {
-    const store = useGameStore.getState();
-    // Если мы пришли на этот экран и шторки не открываются уже
-    if (!store.isScreenTransitioning || store.transitionAction !== 'opening') {
-      // console.log("GlobalMap: Mounted, ensuring screen is opening.");
-      store.ensureScreenIsOpening();
-    }
-  }, []); // Пустой массив зависимостей, выполняется один раз при монтировании
+    const mapX = useMotionValue(0);
+    const mapY = useMotionValue(0);
+    const mapScale = useMotionValue(0.8); // Начальный зум
 
-  // handleOverlayOpenComplete и handleOverlayCloseComplete удалены
+    useEffect(() => {
+        if (!viewportRef.current) return;
 
-  // navigateWithTransition удален
+        setIsAnimatingToFocus(true);
+        const viewportWidth = viewportRef.current.offsetWidth;
+        const viewportHeight = viewportRef.current.offsetHeight;
 
-  // handleContinentClick из код1:
-  const handleContinentClick = useCallback((continent) => {
-    // Проверки isImplemented и isUnlockedCalculated остаются из код2
-    if (!continent.isImplemented) {
-      alert(`Контент для континента "${continent.name}" находится в разработке.`);
-      return;
-    }
-    if (!continent.isUnlockedCalculated) {
-      alert(`Континент "${continent.name}" пока не доступен! Пройдите предыдущие главы.`);
-      return;
-    }
+        let targetX = (viewportWidth - GLOBAL_MAP_CONTENT_WIDTH * 0.8) / 2; // Центрирование по умолчанию
+        let targetY = (viewportHeight - GLOBAL_MAP_CONTENT_HEIGHT * 0.8) / 2;
+        let targetZoom = 0.8;
 
-    if (typeof onSelectContinent === 'function') {
-      // onSelectContinent в App.jsx УЖЕ ВЫЗОВЕТ startScreenTransition (или аналогичную функцию из store)
-      onSelectContinent(continent.startChapterId);
-    }
-  }, [onSelectContinent]); // Зависимость navigateWithTransition удалена
-
-  // handleBackToWorldMapClick из код1:
-  const handleBackToWorldMapClick = useCallback(() => {
-    if (typeof onGoBackToChapterMap === 'function') {
-      // onGoBackToChapterMap в App.jsx УЖЕ ВЫЗОВЕТ startScreenTransition (или аналогичную функцию из store)
-      onGoBackToChapterMap();
-    }
-  }, [onGoBackToChapterMap]); // Зависимость navigateWithTransition удалена
-
-  return (
-    // Атрибуты variants, initial, animate, exit для самого экрана удалены,
-    // так как анимацией управляют "шторки" из App.jsx или глобального состояния.
-    // Контент должен быть видим сразу.
-    <motion.div className="global-map-screen">
-      {/* НЕТ TransitionOverlay ЗДЕСЬ */}
-
-      <div className="global-map-header">
-        <h1>Карта Мира</h1>
-        <button onClick={handleBackToWorldMapClick} className="map-back-button">
-          &#x21A9; Назад к Карте Глав
-        </button>
-      </div>
-
-      <div className="global-map-background">
-        {continentsData.map((continent, continentIndex) => {
-          let isCurrentContinentUnlocked = false;
-          if (continentIndex === 0) {
-            isCurrentContinentUnlocked = true;
-          } else {
-            const prevContinent = continentsData[continentIndex - 1];
-            let prevContinentAllChaptersCompleted = true;
-
-            if (prevContinent && prevContinent.isImplemented && prevContinent.chapters && Array.isArray(prevContinent.chapters)) {
-              for (const chapterId of prevContinent.chapters) {
-                const levelsOfThisChapter = allChaptersLevelData[chapterId];
-                if (typeof isChapterCompleted !== 'function' || !levelsOfThisChapter || !isChapterCompleted(chapterId, levelsOfThisChapter)) {
-                  prevContinentAllChaptersCompleted = false;
-                  break;
-                }
-              }
+        if (initialFocusZoneId && allZones) { // Используем allZones (импортированные)
+            const targetZone = allZones.find(z => z.id === initialFocusZoneId);
+            if (targetZone?.globalCoordinates) {
+                targetZoom = 1.2; // Зум на зону
+                const zoneIconWidth = targetZone.iconWidth || 100;
+                const zoneIconHeight = targetZone.iconHeight || 80;
+                // Центрируем выбранную зону в viewport'е
+                targetX = viewportWidth / 2 - (targetZone.globalCoordinates.x + zoneIconWidth / 2) * targetZoom;
+                targetY = viewportHeight / 2 - (targetZone.globalCoordinates.y + zoneIconHeight / 2) * targetZoom;
+            } else if (targetZone) { // Добавлено из код2, если зона есть, но нет координат
+                console.warn(`GlobalMap: Zone with id "${initialFocusZoneId}" has no globalCoordinates.`);
             } else {
-              prevContinentAllChaptersCompleted = false;
-              if (prevContinent && !prevContinent.isImplemented) {
-                console.warn(`Предыдущий континент (id: ${prevContinent.id}) не реализован. Континент "${continent.name}" будет заблокирован.`);
-              } else if (prevContinent) {
-                console.warn(`Предыдущий континент (id: ${prevContinent.id}) не имеет списка глав. Континент "${continent.name}" будет заблокирован.`);
-              }
+                console.warn(`GlobalMap: Zone with id "${initialFocusZoneId}" not found.`);
             }
-            isCurrentContinentUnlocked = prevContinentAllChaptersCompleted;
-          }
+        }
+        
+        // Параметры и логика анимации из код1
+        const animOptions = { type: 'spring', stiffness: 120, damping: 20 };
+        const animX = animate(mapX, targetX, animOptions);
+        const animY = animate(mapY, targetY, animOptions);
+        const animScale = animate(mapScale, targetZoom, { 
+            ...animOptions, 
+            onComplete: () => {
+                setIsAnimatingToFocus(false);
+                console.log("GlobalMap: Animation to zone complete."); // Добавлено для ясности
+            }
+        });
 
-          const continentClasses = `continent-node ${isCurrentContinentUnlocked ? 'unlocked' : 'locked'} ${!continent.isImplemented ? 'not-implemented' : ''}`;
+        return () => { 
+            animX.stop(); 
+            animY.stop(); 
+            animScale.stop(); 
+            // clearTimeout(timer) больше не нужен, так как onComplete используется
+        };
+    }, [initialFocusZoneId, /* allZones - удалено из зависимостей, если он не меняется */ mapX, mapY, mapScale]); // allZones можно добавить, если он может меняться динамически
 
-          return (
-            <div
-              key={continent.id}
-              className={continentClasses}
-              style={{
-                position: 'absolute',
-                top: `${continent.y}px`,
-                left: `${continent.x}px`,
-              }}
-              // Передаем isUnlockedCalculated в объект континента при клике
-              onClick={() => handleContinentClick({ ...continent, isUnlockedCalculated: isCurrentContinentUnlocked })}
-              title={continent.name}
-            >
-              <img src={continent.image} alt={continent.name} className="continent-image" />
-              <span className="continent-label">{continent.name}</span>
-              {!isCurrentContinentUnlocked && continent.isImplemented && <div className="continent-lock-icon">🔒</div>}
-              {!continent.isImplemented && <div className="continent-status-label">В разработке</div>}
+    const handleZoneClick = useCallback((zone) => {
+        // Логика из код1
+        if (isAnimatingToFocus || typeof onSelectZone !== 'function') return;
+
+        // TODO: Проверки isImplemented и unlockCondition для зоны, если они есть в zone объекте
+        // Это место для вашей логики проверки доступности зоны, как в комментариях из обоих кодов
+        // if (!zone.isImplemented) { alert("Эта зона еще не реализована."); return; }
+        // let isUnlocked = !zone.unlockCondition; // Пример
+        // if (zone.unlockCondition?.type === 'zone_completed') {
+        //     // isUnlocked = useGameStore.getState().isZoneCompleted(zone.unlockCondition.requiredZoneId);
+        // }
+        // if (!isUnlocked) { alert("Эта зона пока заблокирована."); return; }
+
+        onSelectZone(zone.id, zone.startChapterId);
+    }, [onSelectZone, isAnimatingToFocus]);
+
+    const handleBackClick = useCallback(() => {
+        // Логика из код1
+        if (isAnimatingToFocus || typeof onGoBack !== 'function') return;
+        onGoBack();
+    }, [onGoBack, isAnimatingToFocus]);
+    
+    // dragConstraintsRef больше не нужен отдельно, viewportRef используется напрямую
+
+    return (
+        <motion.div className="global-map-screen"> {/* Корневой элемент экрана */}
+            <div className="global-map-header">
+                <h1>Карта Мира</h1>
+                {onGoBack && (
+                    <button onClick={handleBackClick} className="map-back-button">
+                        &#x21A9; Назад
+                    </button>
+                )}
             </div>
-          );
-        })}
-      </div>
-    </motion.div>
-  );
+
+            {/* Viewport: область, в которой видна карта. Имеет overflow: hidden */}
+            <div className="global-map-viewport" ref={viewportRef}>
+                <motion.div
+                    className="global-map-pannable-content" // Имя класса из код1
+                    style={{
+                        width: `${GLOBAL_MAP_CONTENT_WIDTH}px`, // Константы из код1
+                        height: `${GLOBAL_MAP_CONTENT_HEIGHT}px`,
+                        x: mapX,
+                        y: mapY,
+                        scale: mapScale,
+                        // backgroundImage: `url('/assets/maps/earth_texture.jpg')`, // Пример фона
+                        // backgroundSize: '100% 100%', 
+                    }}
+                    drag
+                    dragConstraints={viewportRef} // Ограничиваем перетаскивание границами viewportRef (из код1)
+                    // onDragStart={() => console.log("Drag Start")}
+                    // onDragEnd={() => console.log("Drag End")}
+                >
+                    {(allZones || []).map((zone) => {
+                        // Логика классов для зоны из код1 (с небольшим уточнением для isUnlocked)
+                        // TODO: Реализуйте вашу функцию isZoneLocked(zone) или аналогичную логику
+                        const isZoneLocked = (z) => {
+                            // Примерная логика, адаптируйте под ваши нужды:
+                            // if (z.unlockCondition?.type === 'zone_completed') {
+                            // return !useGameStore.getState().isZoneCompleted(z.unlockCondition.requiredZoneId);
+                            // }
+                            // return !!z.unlockCondition; // Если просто есть условие, то залочено пока
+                            return false; // Пока заглушка как в код1
+                        };
+                        const zoneClasses = `zone-node ${!zone.isImplemented ? 'not-implemented' : (isZoneLocked(zone) ? 'locked' : 'unlocked')}`;
+                        
+                        return (
+                            <motion.div
+                                key={zone.id}
+                                className={zoneClasses}
+                                style={{
+                                    position: 'absolute',
+                                    top: `${zone.globalCoordinates?.y || 0}px`,
+                                    left: `${zone.globalCoordinates?.x || 0}px`,
+                                    width: `${zone.iconWidth || 100}px`, // Размеры из данных (как в код1)
+                                    height: `${zone.iconHeight || 80}px`,
+                                }}
+                                onClick={() => handleZoneClick(zone)}
+                                title={zone.name}
+                                whileHover={{ scale: 1.1, zIndex: 10 }} // zIndex из код1
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <img src={zone.globalImage || '/assets/icons/default_zone_icon.png'} alt={zone.name} className="zone-image" />
+                                <span className="zone-label">{zone.name}</span>
+                                {/* Иконки замка и статуса, если нужны, можно добавить здесь */}
+                                {/* {!zone.isImplemented && <div className="zone-status-label">В разработке</div>} */}
+                                {/* {isZoneLocked(zone) && zone.isImplemented && <div className="zone-lock-icon">🔒</div>} */}
+                            </motion.div>
+                        );
+                    })}
+                </motion.div>
+            </div>
+        </motion.div>
+    );
 };
 
 export default GlobalMap;

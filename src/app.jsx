@@ -284,9 +284,6 @@ const App = () => {
 
         // Навигация после завершения уровня
         useGameStore.getState().startScreenTransition(() => {
-            // В Код 1 было: navigate(status === 'won' ? "/rewards" : "/main");
-            // В Код 2 всегда на "/main".
-            // Давайте сделаем переход на экран наград при победе, это логично.
             if (status === 'won') {
                 // Можно передать ID уровня и сложность в RewardsScreen через location.state, если необходимо
                 navigate("/main", { state: { completedLevelId: levelId, difficulty: difficultyPlayed } });
@@ -344,6 +341,23 @@ const App = () => {
                     <div className="player-details">
                         <span className="player-name">{username || "Гость"}</span>
                         <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
+                        <div className="energy-bar-float">
+                    <div className="energy-bar-content">
+                        <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
+                        <div className="energy-track">
+                            <div
+                                className="energy-fill"
+                                style={{ width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%` }}
+                            ></div>
+                        </div>
+                        <span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
+                    </div>
+                    { shouldShowRefillTimer && refillTimerDisplay && (
+                       <div className="energy-refill-timer">
+                           Восполнится через {refillTimerDisplay}
+                       </div>
+                    )}
+                </div>
                     </div>
                 </div>
             )}

@@ -1,0 +1,318 @@
+// src/components/ZoneMap.scss
+
+// Главный контейнер для экрана карты зоны
+.zone-map-screen {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  // Используем градиентный фон из код2, если он предпочтительнее, или фон из код1
+  // background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%); // из код2
+  background-color: #1c1c2e; // из код1 (пример фона для карты зоны)
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none; // Запретить выделение текста при перетаскивании (из код2 .world-map)
+}
+
+// Шапка карты зоны
+.zone-map-header {
+  padding: 10px;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.2); // из код1
+  position: relative; // Используем relative из код1, если title не позиционируется абсолютно внутри него
+  z-index: 10; // из код1
+
+  h1 {
+    margin: 0;
+    font-size: 1.5em; // Размер из код2 .worldmap-title
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5); // Тень из код2 .worldmap-title
+    // Для абсолютного позиционирования заголовка, как в код2 .worldmap-title:
+    // position: absolute;
+    // top: calc(env(safe-area-inset-top, 0px) + 15px);
+    // left: 50%;
+    // transform: translateX(-50%);
+  }
+
+  // Кнопка "Назад"
+  .map-back-button {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 10px); // Отступы с учетом safe-area (из код2)
+    right: calc(env(safe-area-inset-right, 0px) + 15px); // Позиционирование справа (из код2)
+    left: auto;
+    z-index: 100; // Выше чем zone-map-header, но ниже попапов (z-index из код2 был 1000)
+
+    background-color: rgba(0, 0, 0, 0.6); // Стили из код2
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 20px; // Чуть меньше, чем в код2
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+      border-color: white;
+    }
+
+    &:active {
+      background-color: rgba(0, 0, 0, 0.9);
+    }
+  }
+}
+
+// Область просмотра карты, где происходит перетаскивание
+.zone-map-viewport {
+  flex-grow: 1;
+  width: 100%;
+  overflow: hidden;
+  position: relative; // Для абсолютно позиционированного .zone-map-background
+  cursor: grab;
+  background: transparent; // Явно прозрачный фон (из код2 .map-drag-container)
+
+  &.dragging, // Если JS добавляет класс .dragging
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Сам фон карты, который перемещается и масштабируется
+.zone-map-background {
+  // width и height задаются в style из JS
+  // background-image: url(...); // Если есть общий фон для всех зон, задается в JS или здесь
+  background-size: cover;
+  background-position: center;
+  transform-origin: 0 0; // Для корректного масштабирования и панорамирования (из код1)
+  position: absolute; // Чтобы можно было двигать и масштабировать (из код1)
+  // background: transparent !important; // Если фон карты должен быть всегда прозрачным (из код2 .map-background-content)
+}
+
+// Стили для "островов" глав (интегрированы из код1)
+.chapter-island {
+  position: absolute; // width и height задаются инлайн-стилями из JS
+  // backgroundImage, backgroundSize, backgroundPosition, backgroundRepeat задаются инлайн-стилями из JS
+  
+  border: 2px solid rgba(150, 160, 200, 0.6); // из код1 (Немного ослабим рамку по умолчанию)
+  border-radius: 10px; // из код1
+  display: flex; // из код1
+  flex-direction: column; // из код1
+  align-items: center; // из код1
+  justify-content: flex-end; // из код1 (Текст будет внизу острова)
+  padding: 8px; // из код1 (Отступы для текста)
+  box-sizing: border-box; // из код1
+  cursor: pointer; // из код1
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out; // из код1
+  overflow: hidden; // из код1 (Обрезаем фон, если он 'cover' и выходит за рамки)
+
+  // .island-image используется в код2, если картинка вставляется через <img>
+  // Если фон задается через backgroundImage на .chapter-island, то .island-image может не использоваться
+  .island-image { 
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+    // border-radius: 8px; 
+    // filter: drop-shadow(...);
+    // transition: filter 0.2s ease-out; 
+  }
+
+  &:hover:not(.locked) { // Hover только для разблокированных (из код1)
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(200, 220, 255, 0.8);
+    border-color: rgba(200, 220, 255, 1);
+  }
+
+  &.locked {
+    filter: grayscale(80%) brightness(0.7); // из код1
+    border-color: #444; // из код1
+    cursor: not-allowed; // из код1
+    &:hover { transform: none; box-shadow: none; } // из код1
+
+    .island-label { // Специфичный стиль для текста заблокированного острова из предыдущей версии код2
+      color: #888; 
+    }
+  }
+
+  &.completed {
+    border-color: #ffd700; // Золотая рамка для пройденных (из код1)
+    // Можно добавить какой-то оверлей/галочку для пройденных (комментарий из код1)
+    // Ховер-эффект для .island-image из предыдущей версии код2, если .island-image используется
+    // &:hover .island-image {
+    //   filter: drop-shadow(0px 0px 10px rgba(255, 223, 0, 0.9)) drop-shadow(0px 0px 4px rgba(255, 223, 0, 0.7));
+    // }
+  }
+
+  &.unlocked {
+    border-color: rgba(150, 160, 200, 0.8); // Стандартная рамка для доступных (из код1)
+    // Общий ховер &:hover:not(.locked) покрывает этот случай.
+    // Если нужен был отдельный ховер для unlocked, отличный от общего, его можно вернуть.
+    // В код2 был:
+    // &:hover:not(.current-chapter-on-zone) { 
+    //   border-color: rgba(180, 200, 255, 1);
+    //   box-shadow: 0 0 10px rgba(180, 200, 255, 0.5);
+    // }
+  }
+
+  &.current-chapter-on-zone {
+    border-color: #00ff00; // Ярко-зеленая рамка для текущей (из код1)
+    box-shadow: 0 0 20px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); // Внешнее и внутреннее свечение (из код1)
+    // Фильтр для .island-image из предыдущей версии код2
+    // .island-image {
+    //   filter: drop-shadow(0px 0px 12px gold) drop-shadow(0px 0px 5px gold) saturate(1.2);
+    // }
+  }
+
+  .island-label { // Стили для метки из код1
+    color: white;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600; // Сделаем пожирнее (из код1)
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9); // Более сильная тень для читаемости (из код1)
+    background-color: rgba(0, 0, 0, 0.5); // Полупрозрачный фон для текста (из код1)
+    padding: 3px 7px; // из код1
+    border-radius: 4px; // из код1
+    margin-top: auto; // Если justify-content: flex-end, это прижмет метку к низу (из код1)
+    width: calc(100% + 16px); // Чтобы фон был на всю ширину padding'а родителя (-8px * 2) (из код1, с учетом padding: 8px у родителя)
+    margin-left: -8px; // Компенсация padding родителя (из код1)
+    margin-right: -8px; // Компенсация padding родителя (из код1)
+    margin-bottom: -8px; // Компенсация padding родителя, чтобы прижать к низу (из код1)
+    box-sizing: border-box; // из код1
+    // Старые стили позиционирования метки из код2 (если метка должна быть под островом):
+    // position: absolute;
+    // bottom: -22px; 
+    // left: 50%;
+    // transform: translateX(-50%);
+    // white-space: nowrap;
+    // pointer-events: none; 
+  }
+
+  .island-lock-icon { // Стили для иконки замка из код1
+    position: absolute; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5em; // Крупный замок (из код1)
+    color: rgba(255, 255, 255, 0.7); // из код1
+    text-shadow: 0 0 8px black; // из код1
+    pointer-events: none; // из код1
+  }
+}
+
+// Контролы внизу карты (кнопка "Карта Земли")
+.zone-map-controls {
+  position: absolute;
+  bottom: 0; // Прижимаем к низу
+  left: 50%;
+  transform: translateX(-50%);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 15px); // Отступ от нижнего края + safe area (из код2)
+  z-index: 10;
+
+  .go-to-global-map-button { // Кнопка "Карта Земли" (или "Покинуть Континент")
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.65); // Полупрозрачный темный (из код2)
+    border: 1px solid rgba(255, 255, 255, 0.5); // (из код2)
+    border-radius: 8px; // (из код2)
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      border-color: white;
+    }
+  }
+}
+
+// Стили для попапов (если они будут использоваться в ZoneMap)
+// Взяты из код2 .map-popup-backdrop, .map-popup и т.д.
+.zone-map-popup-backdrop { // Переименовано для консистентности
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7); // Чуть темнее фон
+  z-index: 9998; // Высокий z-index
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: zoneMapFadeIn 0.3s ease; // Переименованная анимация
+}
+
+.zone-map-popup { // Переименовано для консистентности
+  background: #2c2c3e; // Фон в стиле .zone-map-screen
+  color: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  z-index: 9999;
+  max-width: calc(100% - 40px); // Макс. ширина с отступами
+  width: auto;
+  min-width: 280px; // Минимальная ширина
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  animation: zoneMapPopupZoomIn 0.25s ease; // Переименованная анимация
+
+  .popup-title {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .popup-message {
+    font-size: 1em;
+    margin-bottom: 20px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .popup-buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 12px; // Немного больше расстояние
+    justify-content: center; // Центрируем кнопки
+
+    button {
+      background: rgba(70, 80, 120, 0.7); // В стиле островов
+      border: 1px solid rgba(150, 160, 200, 0.8);
+      padding: 10px 20px;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95em;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+
+      &:hover {
+        background: rgba(80, 90, 130, 0.9);
+        border-color: rgba(180, 200, 255, 1);
+      }
+
+      &.confirm-button { // Пример для кнопки подтверждения
+        background: rgba(60, 120, 80, 0.7);
+        border-color: rgba(100, 180, 120, 0.8);
+          &:hover {
+            background: rgba(70, 140, 90, 0.9);
+            border-color: rgba(120, 200, 140, 1);
+          }
+      }
+    }
+  }
+}
+
+// Анимации (переименованы для избежания конфликтов, если есть глобальные)
+@keyframes zoneMapFadeIn {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+@keyframes zoneMapPopupZoomIn {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
