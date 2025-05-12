@@ -63,8 +63,8 @@ $artifact-item-border: rgba(120, 130, 150, 0.3); // Цвет рамки обер
 .set-items {
     display: flex;
     justify-content: center; // Или flex-start, если нужно выравнивание по левому краю
-    gap: 20px;               // Отступ между иконками
-    flex-wrap: wrap;         // Перенос на новую строку, если не влезают
+    gap: 5px;               // Отступ между иконками
+    flex-wrap: nowrap;         // Перенос на новую строку, если не влезают
     margin-bottom: 20px;     // Отступ перед бонусами сета
 }
 
@@ -79,7 +79,7 @@ $artifact-item-border: rgba(120, 130, 150, 0.3); // Цвет рамки обер
     transition: transform 0.2s ease; // Плавный переход для hover-эффекта
 
     .artifact-icon-wrapper {
-        width: 64px; height: 64px; // Размер обертки иконки
+        width: 38px; height: 38px; // Размер обертки иконки
         padding: 4px;              // Отступ от рамки до иконки
         border: 2px solid $artifact-item-border; // Рамка по умолчанию
         border-radius: 8px;

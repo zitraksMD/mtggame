@@ -14,7 +14,7 @@ const chapterData = {
             name: "Ворота Забвения",
             x: 120, y: 780, nodeSize: 40,
             description: "Массивные ворота, ведущие в глубины некрополя. Говорят, прошедшие через них уже не помнят солнечного света.",
-            requiredPowerLevel: 5000,
+            requiredPowerLevel: 4200,
             imageBanner: "/assets/ui/banners/level_banner_oblivion_gates.png"
         },
         {
@@ -22,7 +22,7 @@ const chapterData = {
             name: "Аллея Скорбящих Статуй",
             x: 250, y: 700, nodeSize: 40,
             description: "Каменные изваяния, застывшие в вечной скорби. Кажется, их глаза следят за каждым твоим шагом.",
-            requiredPowerLevel: 5400,
+            requiredPowerLevel: 4700,
             imageBanner: "/assets/ui/banners/level_banner_mourning_statues_alley.png"
         },
         {
@@ -30,7 +30,7 @@ const chapterData = {
             name: "Мавзолей Проклятых Родов",
             x: 400, y: 760, nodeSize: 40,
             description: "Здесь покоятся останки целых династий, навлекших на себя древние проклятия. Их духи не знают покоя.",
-            requiredPowerLevel: 5850,
+            requiredPowerLevel: 5300,
             imageBanner: "/assets/ui/banners/level_banner_cursed_kin_mausoleum.png"
         },
         {
@@ -38,7 +38,7 @@ const chapterData = {
             name: "Колодец Потерянных Душ",
             x: 320, y: 580, nodeSize: 40,
             description: "Бездонный колодец, куда, по преданиям, сбрасывали неугодных. Из его глубин доносятся стоны и шепот.",
-            requiredPowerLevel: 6300,
+            requiredPowerLevel: 5900,
             imageBanner: "/assets/ui/banners/level_banner_well_of_lost_souls.png"
         },
         {
@@ -46,7 +46,7 @@ const chapterData = {
             name: "Покои Вечного Сна",
             x: 500, y: 500, nodeSize: 40,
             description: "Роскошные, но мрачные усыпальницы, где знатные мертвецы спят вечным сном, охраняемые призрачной стражей.",
-            requiredPowerLevel: 6800,
+            requiredPowerLevel: 6500,
             imageBanner: "/assets/ui/banners/level_banner_eternal_slumber_chambers.png"
         },
         {
@@ -54,7 +54,7 @@ const chapterData = {
             name: "Хрустальные Гробницы",
             x: 680, y: 620, nodeSize: 40,
             description: "Тела, заключенные в хрустальные саркофаги, выглядят так, словно уснули лишь мгновение назад. Но не дайте себя обмануть их безмятежностью.",
-            requiredPowerLevel: 7350,
+            requiredPowerLevel: 7150,
             imageBanner: "/assets/ui/banners/level_banner_crystal_tombs.png"
         },
         {
@@ -62,7 +62,7 @@ const chapterData = {
             name: "Лаборатория Безумного Алхимика",
             x: 820, y: 530, nodeSize: 40,
             description: "Место, где проводились чудовищные эксперименты по созданию гомункулов и оживлению мертвых. Остатки опытов все еще опасны.",
-            requiredPowerLevel: 7900,
+            requiredPowerLevel: 7800,
             imageBanner: "/assets/ui/banners/level_banner_mad_alchemist_lab.png"
         },
         {
@@ -78,7 +78,7 @@ const chapterData = {
             name: "Святилище Тихого Ужаса",
             x: 750, y: 280, nodeSize: 40,
             description: "Место, где тишина давит сильнее любого крика. Здесь обитает нечто, питающееся страхом.",
-            requiredPowerLevel: 9100,
+            requiredPowerLevel: 9250,
             imageBanner: "/assets/ui/banners/level_banner_silent_horror_shrine.png"
         },
         {
@@ -86,7 +86,7 @@ const chapterData = {
             name: "Тронный Зал Королевы Личей",
             x: 900, y: 180, nodeSize: 50, // Босс главы
             description: "Сердце некрополя, где правит могущественная Королева Личей, повелительница бесчисленных армий нежити.",
-            requiredPowerLevel: 9800,
+            requiredPowerLevel: 10000,
             imageBanner: "/assets/ui/banners/level_banner_lich_queen_throne.png"
         },
     ]

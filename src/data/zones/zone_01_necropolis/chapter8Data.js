@@ -12,7 +12,7 @@ const chapterData = {
             name: "Печать Мрака",
             x: 150, y: 720, nodeSize: 40,
             description: "Древняя печать, сдерживающая силы, заключенные в гробнице. Она слабеет с каждым днем.",
-            requiredPowerLevel: 17000,
+            requiredPowerLevel: 86500,
             imageBanner: "/assets/ui/banners/level_banner_seal_of_darkness.png"
         },
         {
@@ -20,7 +20,7 @@ const chapterData = {
             name: "Преддверие Вечной Ночи",
             x: 300, y: 650, nodeSize: 40,
             description: "Здесь свет не проникает, а тьма кажется осязаемой. Лишь самые отважные решатся идти дальше.",
-            requiredPowerLevel: 17800,
+            requiredPowerLevel: 87500,
             imageBanner: "/assets/ui/banners/level_banner_eternal_night_antechamber.png"
         },
         {
@@ -28,7 +28,7 @@ const chapterData = {
             name: "Залы Спящих Ужасов",
             x: 200, y: 530, nodeSize: 45,
             description: "В этих залах дремлют кошмары, которые лучше не будить. Каждый шорох может стать последним.",
-            requiredPowerLevel: 18800,
+            requiredPowerLevel: 88700,
             imageBanner: "/assets/ui/banners/level_banner_halls_of_sleeping_horrors.png"
         },
         {
@@ -36,7 +36,7 @@ const chapterData = {
             name: "Хрустальные Пещеры Теней",
             x: 420, y: 580, nodeSize: 40,
             description: "Кристаллы здесь поглощают свет, создавая причудливые игры теней, которые могут свести с ума.",
-            requiredPowerLevel: 19900,
+            requiredPowerLevel: 90000,
             imageBanner: "/assets/ui/banners/level_banner_crystal_shadow_caves.png"
         },
         {
@@ -44,7 +44,7 @@ const chapterData = {
             name: "Святилище Лунного Затмения",
             x: 580, y: 700, nodeSize: 40,
             description: "Место, где вечно царит лунное затмение, наделяя его обитателей особой силой.",
-            requiredPowerLevel: 21000,
+            requiredPowerLevel: 91400,
             imageBanner: "/assets/ui/banners/level_banner_lunar_eclipse_shrine.png"
         },
         {
@@ -52,7 +52,7 @@ const chapterData = {
             name: "Усыпальница Звездного Странника",
             x: 700, y: 500, nodeSize: 45,
             description: "Гробница сущности, пришедшей из далеких звезд и нашедшей свой конец в этой вечной ночи.",
-            requiredPowerLevel: 22500,
+            requiredPowerLevel: 92900,
             imageBanner: "/assets/ui/banners/level_banner_star_wanderer_tomb.png"
         },
         {
@@ -60,7 +60,7 @@ const chapterData = {
             name: "Покои Повелителя Снов",
             x: 850, y: 620, nodeSize: 40,
             description: "Здесь реальность переплетается со сном, и не всегда можно понять, где заканчивается одно и начинается другое.",
-            requiredPowerLevel: 24000,
+            requiredPowerLevel: 94500,
             imageBanner: "/assets/ui/banners/level_banner_dream_lord_chambers.png"
         },
         {
@@ -68,7 +68,7 @@ const chapterData = {
             name: "Обсидиановый Трон",
             x: 600, y: 380, nodeSize: 40,
             description: "Трон, высеченный из чистого обсидиана, источает ауру древней и могущественной тьмы.",
-            requiredPowerLevel: 25800,
+            requiredPowerLevel: 96200,
             imageBanner: "/assets/ui/banners/level_banner_obsidian_throne.png"
         },
         {
@@ -76,7 +76,7 @@ const chapterData = {
             name: "Внутренний Круг Тьмы",
             x: 780, y: 280, nodeSize: 40,
             description: "Самая глубокая часть гробницы, где концентрация темной энергии достигает своего пика.",
-            requiredPowerLevel: 27500,
+            requiredPowerLevel: 98000,
             imageBanner: "/assets/ui/banners/level_banner_inner_circle_of_darkness.png"
         },
         {
@@ -84,7 +84,7 @@ const chapterData = {
             name: "Хранитель Вечной Ночи",
             x: 900, y: 150, nodeSize: 50, // Босс главы
             description: "Древнее существо, обреченное вечно сторожить эту гробницу и поглощать любой свет.",
-            requiredPowerLevel: 30000,
+            requiredPowerLevel: 99900,
             imageBanner: "/assets/ui/banners/level_banner_eternal_night_keeper.png"
         },
     ]

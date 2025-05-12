@@ -12,7 +12,7 @@ const chapterData = {
             name: "Королевский Тракт",
             x: 100, y: 700, nodeSize: 40,
             description: "Некогда величественная дорога, ведущая к гробницам монархов, ныне поросшая терновником и страхом.",
-            requiredPowerLevel: 1600,
+            requiredPowerLevel: 19500,
             imageBanner: "/assets/ui/banners/level_banner_royal_road.png"
         },
         {
@@ -20,7 +20,7 @@ const chapterData = {
             name: "Склеп Безымянного Регента",
             x: 220, y: 630, nodeSize: 40,
             description: "Скромная усыпальница того, кто правил недолго, но оставил после себя тревожную ауру.",
-            requiredPowerLevel: 1750,
+            requiredPowerLevel: 20500,
             imageBanner: "/assets/ui/banners/level_banner_regent_crypt.png"
         },
         {
@@ -28,7 +28,7 @@ const chapterData = {
             name: "Мавзолей Плачущей Королевы",
             x: 350, y: 720, nodeSize: 45,
             description: "Говорят, призрак королевы до сих пор оплакивает свою судьбу в стенах этого мрачного мавзолея.",
-            requiredPowerLevel: 1950,
+            requiredPowerLevel: 21800,
             imageBanner: "/assets/ui/banners/level_banner_queen_mausoleum.png"
         },
         {
@@ -36,7 +36,7 @@ const chapterData = {
             name: "Залы Вечной Стражи",
             x: 480, y: 600, nodeSize: 40,
             description: "Окаменевшие воины стоят на страже покоя королей. Не каждый осмелится пройти мимо них.",
-            requiredPowerLevel: 2200,
+            requiredPowerLevel: 23300,
             imageBanner: "/assets/ui/banners/level_banner_eternal_guard_halls.png"
         },
         {
@@ -44,7 +44,7 @@ const chapterData = {
             name: "Сокровищница Проклятого Князя",
             x: 300, y: 500, nodeSize: 40,
             description: "Богатства, собранные жестоким правителем, теперь охраняются его неупокоенным духом.",
-            requiredPowerLevel: 2500,
+            requiredPowerLevel: 25000,
             imageBanner: "/assets/ui/banners/level_banner_cursed_prince_treasury.png"
         },
         {
@@ -52,7 +52,7 @@ const chapterData = {
             name: "Тайный Проход Советника",
             x: 600, y: 520, nodeSize: 40,
             description: "Скрытый ход, которым пользовался коварный советник. Кто знает, какие тайны он хранит?",
-            requiredPowerLevel: 2800,
+            requiredPowerLevel: 26800,
             imageBanner: "/assets/ui/banners/level_banner_advisor_passage.png"
         },
         {
@@ -60,7 +60,7 @@ const chapterData = {
             name: "Погребальные Камеры Династии",
             x: 750, y: 650, nodeSize: 40,
             description: "Здесь покоятся целые поколения королевской крови. Их коллективная воля ощущается в каждом камне.",
-            requiredPowerLevel: 3100,
+            requiredPowerLevel: 28800,
             imageBanner: "/assets/ui/banners/level_banner_dynasty_chambers.png"
         },
         {
@@ -68,7 +68,7 @@ const chapterData = {
             name: "Дворцовые Руины",
             x: 880, y: 450, nodeSize: 45,
             description: "Остатки некогда величественного дворца, ставшие частью некрополя. Призраки прошлого танцуют в лунном свете.",
-            requiredPowerLevel: 3500,
+            requiredPowerLevel: 31000,
             imageBanner: "/assets/ui/banners/level_banner_palace_ruins.png"
         },
         {
@@ -76,7 +76,7 @@ const chapterData = {
             name: "Святилище Основателя",
             x: 650, y: 350, nodeSize: 40,
             description: "Место упокоения первого короля, основавшего династию. Его дух – ключ к древней силе.",
-            requiredPowerLevel: 3900,
+            requiredPowerLevel: 33500,
             imageBanner: "/assets/ui/banners/level_banner_founder_shrine.png"
         },
         {
@@ -84,7 +84,7 @@ const chapterData = {
             name: "Тронный Зал Последнего Короля",
             x: 800, y: 220, nodeSize: 50, // Босс главы
             description: "Здесь восседает призрак последнего монарха, не желающий расставаться со своей властью даже после смерти.",
-            requiredPowerLevel: 4400,
+            requiredPowerLevel: 36000,
             imageBanner: "/assets/ui/banners/level_banner_last_king_throne_room.png"
         },
     ]
