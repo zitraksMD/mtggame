@@ -209,8 +209,8 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute; // Колонка тоже позиционируется абсолютно
-  top: 165px;                       // (Пример: 140px (top BP) + ~40px (height BP) + 20px (gap) = 200px)
-  left: 10px;     // !!! ПОДБЕРИ ЗНАЧЕНИЕ: Тот же отступ слева, что и у BattlePass
+  top: calc(env(safe-area-inset-top, 0px) + 60px); /* Смещаем ниже от верхнего края (под аватар/энергию) */
+  left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
   flex-direction: column;
   gap: 15px;        // Пространство между Почтой и Сундуком
@@ -254,19 +254,7 @@
   gap: 15px;
   z-index: 5; // Выше карты
 
-  &.icon-button {
-    padding: 8px; // Меньшие падинги
-    border-radius: 12px;
-    width: 36px;  // Пример: Задать фиксированную ширину/высоту для квадратности
-    height: 36px; // width/height = (иконка 40px + padding 8px*2)
-    box-sizing: border-box; // Чтобы padding был включен в width/height
-
-    img {
-      width: 36px;
-      height: 36px;
-      object-fit: contain;
-      display: block;
-    }
+  
   .main-menu-button {
     position: relative; top: auto; right: auto; transform: none; // Сброс absolute
     // Если внутри правой колонки тоже есть icon-button,
@@ -283,7 +271,6 @@
     //   img { width: 40px; height: 40px; object-fit: contain; display: block; }
     // }
   }
-}
 }
 
 // Название главы (Как было, но можно поднять z-index)
