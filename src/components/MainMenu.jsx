@@ -79,6 +79,8 @@ const MainMenu = ({ onStart }) => {
     const mapStart = useRef({ x: 0, y: 0 });
     const hasStarted = useRef(false);
     const levelDetailsPopupRef = useRef(null);
+    const [resetTrigger, setResetTrigger] = useState(0);
+
 
     const performViewChange = useCallback((targetView, focusData = null) => {
         if (activeView === targetView && !isOverlayActive && !focusData) {
@@ -258,7 +260,7 @@ const MainMenu = ({ onStart }) => {
         return () => {
             isMounted = false;
         };
-    }, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, performViewChange, findZoneIdForChapter]);
+    }, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, performViewChange, findZoneIdForChapter, resetTrigger, useGameStore]);
 
     useEffect(() => {
         let isMounted = true;
@@ -370,6 +372,36 @@ const MainMenu = ({ onStart }) => {
         setTriggerOpenOverlay(true); 
     }, [currentChapterId, currentZoneId, setActiveView, setCurrentChapterId, setCurrentZoneId, currentChapterIdFromStore, setCurrentChapterInStore /* getBaseChaptersForZoneConfig - если используется */]);
 
+
+    const RaceDisplay = () => {
+        const playerRace = useGameStore((state) => state.playerRace);
+        const [localRace, setLocalRace] = useState(playerRace);
+        const resetTrigger = useGameStore((state) => state.resetTrigger); // Предполагаем, что вы добавите resetTrigger в Zustand
+    
+        useEffect(() => {
+            setLocalRace(playerRace);
+            console.log("RaceDisplay обновлен, раса:", playerRace);
+        }, [playerRace, resetTrigger]);
+    
+        return <div>Раса: {localRace || 'Не выбрано'}</div>;
+    };
+    
+    const EnergyDisplay = () => {
+        const energyCurrent = useGameStore((state) => state.energyCurrent);
+        const energyMax = useGameStore((state) => state.energyMax);
+        const [localEnergyCurrent, setLocalEnergyCurrent] = useState(energyCurrent);
+        const [localEnergyMax, setLocalEnergyMax] = useState(energyMax);
+        const resetTrigger = useGameStore((state) => state.resetTrigger); // Предполагаем, что вы добавите resetTrigger в Zustand
+    
+        useEffect(() => {
+            setLocalEnergyCurrent(energyCurrent);
+            setLocalEnergyMax(energyMax);
+            console.log("EnergyDisplay обновлен, энергия:", energyCurrent, "/", energyMax);
+        }, [energyCurrent, energyMax, resetTrigger]);
+    
+        return <div>Энергия: {localEnergyCurrent}/{localEnergyMax}</div>;
+    };
+    
     const handleOverlayOpenComplete = useCallback(() => {
         console.log("MainMenu: OverlayOpenComplete. Transition finished.");
         setTriggerOpenOverlay(false);
@@ -461,14 +493,14 @@ const MainMenu = ({ onStart }) => {
     const handleFullResetClick = useCallback(() => {
         if (window.confirm('Вы уверены, что хотите сбросить ВЕСЬ прогресс игры? Это действие необратимо!')) {
             resetGame();
+            console.log("После сброса:", useGameStore.getState().playerRace, useGameStore.getState().equipped);
+            setResetTrigger(prev => prev + 1); // Триггерим обновление
             const targetChapterId = INITIAL_CHAPTER_ID;
-            // Используем findZoneIdForChapter, который возвращает ID или null
             const targetZoneId = findZoneIdForChapter(targetChapterId);
-            
-            setCurrentChapterInStore(targetChapterId); 
-
+    
+            setCurrentChapterInStore(targetChapterId);
             performViewChange('detailed', { chapterId: targetChapterId, zoneId: targetZoneId });
-            
+    
             setShowLevelPopup(false);
             setSelectedLevelId(null);
             setActivePopup(null);

@@ -269,6 +269,20 @@ const App = () => {
         return null;
     };
 
+    const RaceDisplay = () => {
+        const playerRace = useGameStore((state) => state.playerRace);
+        console.log("RaceDisplay отрисован, раса:", playerRace);
+        return <div>Раса: {playerRace || 'Не выбрано'}</div>;
+    };
+    
+    const EnergyDisplay = () => {
+        const energyCurrent = useGameStore((state) => state.energyCurrent);
+        const energyMax = useGameStore((state) => state.energyMax);
+        console.log("EnergyDisplay отрисован, энергия:", energyCurrent, "/", energyMax);
+        return <div>Энергия: {energyCurrent}/{energyMax}</div>;
+    };
+    
+
     const handleLevelComplete = useCallback((levelId, status, difficultyPlayed) => {
         setActiveLevelData(null); // Сбрасываем данные уровня после завершения
         setIsLoadingLevel(false); // Убедимся, что лоадер уровня выключен

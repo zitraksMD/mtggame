@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid'; // <<<--- ДОБАВЬ ИМПОРТ uuid
 
 const STORAGE_KEY = "gameState";
 const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1; // 30 минут (исправлено с 1 на 1000)
-const DEFAULT_MAX_ENERGY = 1000000; // Максимум энергии по умолчанию
+const DEFAULT_MAX_ENERGY = 30; // Максимум энергии по умолчанию
 
 // --- Конфигурация уровней достижений (без изменений) ---
 const ACHIEVEMENT_LEVEL_XP_THRESHOLDS = { /* ... */ };
