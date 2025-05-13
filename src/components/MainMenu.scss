@@ -248,9 +248,8 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: calc(200px + env(safe-area-inset-top, 0px));
+  top: calc(210px + env(safe-area-inset-top, 0px));
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
-  top: max(50px, top);
   right: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
   flex-direction: column;
