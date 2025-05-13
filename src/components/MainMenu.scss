@@ -197,7 +197,7 @@
   position: fixed;
   top: calc(140px + env(safe-area-inset-top, 0px));
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
-  top: max(40px, top);
+  top: max(50px, top);
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */  left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   z-index: 5;
   padding: 10px 25px;
