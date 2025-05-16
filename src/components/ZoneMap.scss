@@ -18,7 +18,7 @@
 // Новый стиль для плашки с названием зоны
 .zone-name-plate {
   position: absolute; // Позиционируем абсолютно относительно .zone-map-screen
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  top: max(70px, calc(40px + env(safe-area-inset-top, 0px)));
   left: 50%;
   transform: translateX(-50%); // Центрирование
   background-color: rgba(0, 0, 0, 0.65); // Полупрозрачный фон
@@ -40,7 +40,7 @@
 // Кнопка "Назад" (которая ведет на GlobalMap)
 .zone-map-back-button { // Используем этот класс для единственной кнопки "назад"
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  top: max(70px, calc(40px + env(safe-area-inset-top, 0px)));
   right: calc(env(safe-area-inset-left, 0px) + 10px); // Позиционирование слева вверху
   z-index: 100;
   background-color: rgba(40, 40, 60, 0.7);
