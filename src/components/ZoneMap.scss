@@ -8,61 +8,63 @@
   // Используем градиентный фон из код2, если он предпочтительнее, или фон из код1
   // background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%); // из код2
   background-color: #1c1c2e; // из код1 (пример фона для карты зоны)
-  overflow: hidden;
+  overflow: hidden; // Для .zone-map-screen это обычно нужно
   display: flex;
   flex-direction: column;
   user-select: none; // Запретить выделение текста при перетаскивании (из код2 .world-map)
 }
 
 // Шапка карты зоны
-.zone-map-header {
-  padding: 10px;
-  text-align: center;
-  background-color: rgba(0, 0, 0, 0.2); // из код1
-  position: relative; // Используем relative из код1, если title не позиционируется абсолютно внутри него
-  z-index: 10; // из код1
+// Новый стиль для плашки с названием зоны
+.zone-name-plate {
+  position: absolute; // Позиционируем абсолютно относительно .zone-map-screen
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50%;
+  transform: translateX(-50%); // Центрирование
+  background-color: rgba(0, 0, 0, 0.65); // Полупрозрачный фон
+  color: white;
+  padding: 8px 20px; // Внутренние отступы
+  border-radius: 20px; // Скругленные углы
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 10; // Поверх карты, но ниже кнопок управления, если они есть
+  pointer-events: none; // Чтобы не мешала кликам по карте, если она большая
 
   h1 {
     margin: 0;
-    font-size: 1.5em; // Размер из код2 .worldmap-title
-    color: white;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5); // Тень из код2 .worldmap-title
-    // Для абсолютного позиционирования заголовка, как в код2 .worldmap-title:
-    // position: absolute;
-    // top: calc(env(safe-area-inset-top, 0px) + 15px);
-    // left: 50%;
-    // transform: translateX(-50%);
+    font-size: 1.2em; // Можно подобрать размер
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    white-space: nowrap; // Чтобы текст не переносился, если название длинное
+  }
+}
+
+// Кнопка "Назад" (которая ведет на GlobalMap)
+.zone-map-back-button { // Используем этот класс для единственной кнопки "назад"
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: calc(env(safe-area-inset-left, 0px) + 10px); // Позиционирование слева вверху
+  z-index: 100;
+  background-color: rgba(40, 40, 60, 0.7);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%; // Круглая
+  width: 40px;
+  height: 40px;
+  font-size: 22px; // Размер для стрелки ←
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; // Убираем лишние паддинги для иконки
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+
+  &:hover {
+    background-color: rgba(60, 60, 90, 0.8);
+    transform: scale(1.1);
   }
 
-  // Кнопка "Назад"
-  .map-back-button {
-    position: absolute;
-    top: calc(env(safe-area-inset-top, 0px) + 10px); // Отступы с учетом safe-area (из код2)
-    right: calc(env(safe-area-inset-right, 0px) + 15px); // Позиционирование справа (из код2)
-    left: auto;
-    z-index: 100; // Выше чем zone-map-header, но ниже попапов (z-index из код2 был 1000)
-
-    background-color: rgba(0, 0, 0, 0.6); // Стили из код2
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 20px; // Чуть меньше, чем в код2
-    line-height: 1;
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.8);
-      border-color: white;
-    }
-
-    &:active {
-      background-color: rgba(0, 0, 0, 0.9);
-    }
+  &:active {
+    transform: scale(0.95);
   }
 }
 
@@ -70,7 +72,7 @@
 .zone-map-viewport {
   flex-grow: 1;
   width: 100%;
-  overflow: hidden;
+  overflow: hidden; // Для viewport это обычно нужно
   position: relative; // Для абсолютно позиционированного .zone-map-background
   cursor: grab;
   background: transparent; // Явно прозрачный фон (из код2 .map-drag-container)
@@ -92,113 +94,149 @@
   // background: transparent !important; // Если фон карты должен быть всегда прозрачным (из код2 .map-background-content)
 }
 
-// Стили для "островов" глав (интегрированы из код1)
+// Стили для "островов" глав (интегрированы из код1 с изменениями)
 .chapter-island {
-  position: absolute; // width и height задаются инлайн-стилями из JS
-  // backgroundImage, backgroundSize, backgroundPosition, backgroundRepeat задаются инлайн-стилями из JS
-  
-  border: 2px solid rgba(150, 160, 200, 0.6); // из код1 (Немного ослабим рамку по умолчанию)
-  border-radius: 10px; // из код1
-  display: flex; // из код1
-  flex-direction: column; // из код1
-  align-items: center; // из код1
-  justify-content: flex-end; // из код1 (Текст будет внизу острова)
-  padding: 8px; // из код1 (Отступы для текста)
-  box-sizing: border-box; // из код1
-  cursor: pointer; // из код1
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out; // из код1
-  overflow: hidden; // из код1 (Обрезаем фон, если он 'cover' и выходит за рамки)
+  position: absolute;
+  // width и height задаются инлайн-стилями из JS
+  // backgroundImage, backgroundSize, backgroundPosition, backgroundRepeat задаются инлайн-стилями из JS (если не используется .island-image)
 
-  // .island-image используется в код2, если картинка вставляется через <img>
-  // Если фон задается через backgroundImage на .chapter-island, то .island-image может не использоваться
-  .island-image { 
+  // Убираем видимую рамку по умолчанию, но оставляем место для нее, если понадобится (из код1)
+  border: 2px solid transparent;
+  border-radius: 10px; // Скругление углов контейнера (из код1)
+
+  display: flex; // Из код1
+  flex-direction: column; // Из код1
+  align-items: center; // Из код1
+  justify-content: flex-end; // Из код1. Метка будет внизу благодаря этому и padding.
+  padding: 8px; // Из код1. Если метка позиционируется внутри этого паддинга.
+  box-sizing: border-box; // Из код1
+  cursor: pointer; // Из код1
+
+  // Плавность для transform, filter (из код1), box-shadow, border (из код2)
+  transition: transform 0.2s ease-out, filter 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out, border-width 0.2s ease-out;
+
+  // По умолчанию нет фильтров (свечения) (из код1)
+  filter: none;
+
+  // overflow: hidden; // ВНИМАНИЕ: из код2. В код1 было рекомендовано закомментировать или удалить,
+                     // чтобы filter: drop-shadow не обрезался.
+                     // Если основное свечение делается через filter: drop-shadow, эту строку нужно закомментировать.
+                     // Если свечение через box-shadow, то можно оставить.
+                     // Оставляем ЗАКОММЕНТИРОВАННЫМ, чтобы эффекты filter из код1 работали корректно.
+
+  // .island-image используется, если изображение острова - это <img> тег внутри .chapter-island (подход из код2)
+  // Если фон задается через backgroundImage на самом .chapter-island (подход из код1), то .island-image не нужен.
+  .island-image {
     width: 100%;
     height: 100%;
-    object-fit: contain; 
-    // border-radius: 8px; 
-    // filter: drop-shadow(...);
-    // transition: filter 0.2s ease-out; 
+    object-fit: contain; // Похоже на background-size: contain из код1, но для тега <img>
+    // Если используется backgroundImage на .chapter-island, убедитесь, что для него задан background-size: contain (или cover/др.)
   }
 
-  &:hover:not(.locked) { // Hover только для разблокированных (из код1)
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(200, 220, 255, 0.8);
-    border-color: rgba(200, 220, 255, 1);
+  // При наведении на не заблокированный остров:
+  &:hover:not(.locked) {
+    transform: scale(1.05); // Увеличиваем сам остров (и его фоновое изображение) (из код1)
+
+    // НЕ добавляем здесь border или box-shadow по умолчанию, чтобы не было "квадрата" (из код1)
+    // Вместо этого используем filter для свечения, если это не текущая глава,
+    // чтобы свечение было по контуру изображения, а не по рамке контейнера.
+    &:not(.current-chapter-on-zone) { // Чтобы не конфликтовать с подсветкой текущей главы
+      // Если нужно легкое свечение объекта и при обычном наведении (не только для current): (из код1)
+      filter: drop-shadow(0px 0px 5px rgba(255, 215, 0, 0.7)); // Очень легкое золотое свечение (из код1)
+    }
+    // Если все же нужен box-shadow или border при ховере (как в первоначальном код2):
+    // box-shadow: 0 0 15px rgba(200, 220, 255, 0.8);
+    // border-color: gold; // или цвет из .current-chapter-on-zone
+    // border-width: 3px;
+  }
+
+  // Стиль для ТЕКУЩЕЙ АКТИВНОЙ ГЛАВЫ (если она не заблокирована)
+  &.current-chapter-on-zone:not(.locked) {
+    // Применяем золотое свечение вокруг контуров PNG изображения (из код1)
+    filter: drop-shadow(0px 0px 10px gold) drop-shadow(0px 0px 5px gold) brightness(1.05);
+    // `brightness(1.05)` немного увеличит яркость самого изображения (из код1)
+    // transform: scale(1.05) будет применен от общего правила &:hover:not(.locked), если навести курсор
+
+    // Убедимся, что border или box-shadow от других правил не мешают.
+    // Важно, если .unlocked или другие общие стили добавляют border/box-shadow.
+    border-color: transparent !important; // Чтобы не было рамки из других правил
+    box-shadow: none !important; // Чтобы не было тени из других правил
   }
 
   &.locked {
-    filter: grayscale(80%) brightness(0.7); // из код1
-    border-color: #444; // из код1
-    cursor: not-allowed; // из код1
-    &:hover { transform: none; box-shadow: none; } // из код1
+    filter: grayscale(80%) brightness(0.7); // Из код1 и код2
+    cursor: not-allowed; // Из код1 и код2
+    // border-color: #444; // Рамка для заблокированных из код2, если нужна.
+                         // Может конфликтовать с идеей "не квадратного" свечения от filter.
+                         // Если используется, убедитесь, что filter: grayscale() не делает её невидимой.
 
-    .island-label { // Специфичный стиль для текста заблокированного острова из предыдущей версии код2
-      color: #888; 
+    &:hover {
+      transform: none; // Не увеличивать при наведении (из код1 и код2)
+      filter: grayscale(80%) brightness(0.7); // Фильтр остается (из код1)
+      // box-shadow: none; // из код2
+      // border-color: #444; // из код2
+      // border-width: 2px; // из код2
+    }
+    .island-label { // Стиль для метки заблокированного острова (из код2)
+      color: #888;
+      // background-color: rgba(50, 50, 50, 0.5); // Можно сделать фон метки темнее для заблокированных
     }
   }
 
-  &.completed {
-    border-color: #ffd700; // Золотая рамка для пройденных (из код1)
-    // Можно добавить какой-то оверлей/галочку для пройденных (комментарий из код1)
-    // Ховер-эффект для .island-image из предыдущей версии код2, если .island-image используется
-    // &:hover .island-image {
-    //   filter: drop-shadow(0px 0px 10px rgba(255, 223, 0, 0.9)) drop-shadow(0px 0px 4px rgba(255, 223, 0, 0.7));
-    // }
+  // Если нужно особое выделение для пройденных глав (completed)
+  // Применяется, если глава пройдена, не заблокирована и НЕ является текущей (чтобы не перезаписывать стиль current-chapter-on-zone)
+  &.completed:not(.locked):not(.current-chapter-on-zone) {
+    // Легкое голубое свечение (из код1), можно настроить цвет и интенсивность
+    filter: drop-shadow(0px 0px 5px rgba(173, 216, 230, 0.7)) brightness(1.02); // Легкое голубое свечение
+    // Альтернативно или дополнительно можно использовать border:
+    // border: 2px solid rgba(173, 216, 230, 0.5);
+    // box-shadow: none !important; // Убедиться, что нет других теней
   }
 
-  &.unlocked {
-    border-color: rgba(150, 160, 200, 0.8); // Стандартная рамка для доступных (из код1)
-    // Общий ховер &:hover:not(.locked) покрывает этот случай.
-    // Если нужен был отдельный ховер для unlocked, отличный от общего, его можно вернуть.
-    // В код2 был:
-    // &:hover:not(.current-chapter-on-zone) { 
-    //   border-color: rgba(180, 200, 255, 1);
-    //   box-shadow: 0 0 10px rgba(180, 200, 255, 0.5);
-    // }
-  }
+  // Стиль .unlocked из первоначального код2 не требуется, так как базовые стили .chapter-island
+  // и отсутствие классов .locked, .completed, .current-chapter-on-zone уже определяют вид "разблокированного" острова.
+  // Ховер-эффект для разблокированных островов (не текущих) уже задан в &:hover:not(.locked):not(.current-chapter-on-zone)
 
-  &.current-chapter-on-zone {
-    border-color: #00ff00; // Ярко-зеленая рамка для текущей (из код1)
-    box-shadow: 0 0 20px #00ff00, inset 0 0 10px rgba(0, 255, 0, 0.3); // Внешнее и внутреннее свечение (из код1)
-    // Фильтр для .island-image из предыдущей версии код2
-    // .island-image {
-    //   filter: drop-shadow(0px 0px 12px gold) drop-shadow(0px 0px 5px gold) saturate(1.2);
-    // }
-  }
-
-  .island-label { // Стили для метки из код1
+  .island-label {
+    // Стили для метки в основном из код2, с учетом комментариев из код1
     color: white;
     text-align: center;
     font-size: 13px;
-    font-weight: 600; // Сделаем пожирнее (из код1)
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9); // Более сильная тень для читаемости (из код1)
-    background-color: rgba(0, 0, 0, 0.5); // Полупрозрачный фон для текста (из код1)
-    padding: 3px 7px; // из код1
-    border-radius: 4px; // из код1
-    margin-top: auto; // Если justify-content: flex-end, это прижмет метку к низу (из код1)
-    width: calc(100% + 16px); // Чтобы фон был на всю ширину padding'а родителя (-8px * 2) (из код1, с учетом padding: 8px у родителя)
-    margin-left: -8px; // Компенсация padding родителя (из код1)
-    margin-right: -8px; // Компенсация padding родителя (из код1)
-    margin-bottom: -8px; // Компенсация padding родителя, чтобы прижать к низу (из код1)
-    box-sizing: border-box; // из код1
-    // Старые стили позиционирования метки из код2 (если метка должна быть под островом):
-    // position: absolute;
-    // bottom: -22px; 
-    // left: 50%;
-    // transform: translateX(-50%);
-    // white-space: nowrap;
-    // pointer-events: none; 
+    font-weight: 600;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 3px 7px;
+    border-radius: 4px;
+    box-sizing: border-box; // Важно для calc(100% + ...)
+
+    // Позиционирование метки:
+    // width: 100%; // Из код1, если фон метки не должен выходить за пределы padding родителя.
+                    // В данном случае, используются отрицательные margin'ы для расширения.
+    // position: relative; // Из код1. Может быть полезно для z-index или если внутри метки есть position:absolute элементы.
+    // margin-top: 5px;  // Из код1, если нужен дополнительный отступ сверху от изображения.
+                        // Текущая комбинация justify-content: flex-end и padding у родителя уже позиционирует метку внизу.
+
+    // Стили из код2 для расширения фона метки на всю ширину контейнера chapter-island,
+    // "поверх" padding'а родителя. Это делается за счет отрицательных margin'ов.
+    // Родитель .chapter-island имеет padding: 8px;
+    width: calc(100% + 16px); // + (padding-left + padding-right) родителя, т.е. 8px * 2 = 16px
+    margin-left: -8px;  // -(padding-left) родителя
+    margin-right: -8px; // -(padding-right) родителя
+    margin-bottom: -8px; // -(padding-bottom) родителя, чтобы фон метки прижался к самому краю контейнера
+    // margin-top: auto; // Из код2. В сочетании с justify-content: flex-end у родителя, этот стиль обычно не нужен
+                       // для вертикального позиционирования вниз, так как flex-end уже это делает.
+                       // Если бы у родителя не было justify-content: flex-end, то margin-top: auto прижало бы метку вниз.
   }
 
-  .island-lock-icon { // Стили для иконки замка из код1
-    position: absolute; 
-    top: 50%;
+  .island-lock-icon { // Стили из код2
+    position: absolute;
+    top: 50%; // По центру острова
     left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 2.5em; // Крупный замок (из код1)
-    color: rgba(255, 255, 255, 0.7); // из код1
-    text-shadow: 0 0 8px black; // из код1
-    pointer-events: none; // из код1
+    transform: translate(-50%, -50%); // Точное центрирование
+    font-size: 2.5em; // Размер иконки замка
+    color: rgba(255, 255, 255, 0.7); // Цвет иконки
+    text-shadow: 0 0 8px black; // Тень для лучшей читаемости
+    pointer-events: none; // Иконка не должна перехватывать клики
   }
 }
 

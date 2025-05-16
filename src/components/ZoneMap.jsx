@@ -6,10 +6,12 @@ import './ZoneMap.scss';
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-const ZONE_MAP_BACKGROUND_WIDTH = 1800;
-const ZONE_MAP_BACKGROUND_HEIGHT = 1000;
-const CHAPTER_ISLAND_WIDTH = 180; // Ширина контейнера острова из Код1
-const CHAPTER_ISLAND_HEIGHT = 130; // Высота контейнера острова из Код1
+const ZONE_MAP_BACKGROUND_WIDTH = 1620; // Точно по твоим координатам
+const ZONE_MAP_BACKGROUND_HEIGHT = 850;  // Точно по твоим координатам
+
+// Увеличим размер островов глав, например:
+const CHAPTER_ISLAND_WIDTH = 220;  // Было 180
+const CHAPTER_ISLAND_HEIGHT = 160; // Было 130
 
 const DEFAULT_MAP_ZOOM = 0.7;
 const FOCUS_CHAPTER_ZOOM = 1.2;
@@ -21,8 +23,10 @@ const ZoneMap = ({
     chaptersInZoneProp,  // Массив глав, передаваемый из MainMenu (из Код1)
     goToChapter,
     onGoToGlobalMap,
-    goBack
+    goBack,
+    
 }) => {
+    console.log('ZoneMap received onGoToGlobalMap type:', typeof onGoToGlobalMap, onGoToGlobalMap);
     const mapContainerRef = useRef(null);
     const [mapPosition, setMapPosition] = useState({ x: 0, y: 0 });
     const [mapZoom, setMapZoom] = useState(DEFAULT_MAP_ZOOM);
@@ -39,6 +43,9 @@ const ZoneMap = ({
         isChapterCompleted: state.isChapterCompleted,
     }));
 
+    useEffect(() => {
+        console.log(`ZoneMap - Current received currentChapterId prop: ${currentChapterId}`);
+    }, [currentChapterId]);
     // Логика загрузки глав: приоритет chaptersInZoneProp, затем fallback на динамический импорт
     useEffect(() => {
         let chaptersSource = [];
@@ -236,12 +243,10 @@ const ZoneMap = ({
     }, [dragging, isAnimatingFocus, updatePositionAfterDrag]);
 
     const stopDrag = useCallback(() => {
-        // setTimeout из Код2 для разделения drag и click
-        setTimeout(() => {
-            if (dragging) { 
-                setDragging(false);
-            }
-        }, 0);
+        if (dragging) { // Проверяем, чтобы не вызывать setDragging без надобности
+            // console.log("ZoneMap: stopDrag called. Setting dragging to false IMMEDIATELY.");
+            setDragging(false);
+        }
     }, [dragging]);
 
 
@@ -273,42 +278,51 @@ const ZoneMap = ({
 
     // handleChapterClick из Код1, адаптированный под chaptersToDisplay
     const handleChapterClick = useCallback((chapter) => {
+        console.log(`--- handleChapterClick CALLED for chapter ID: ${chapter?.chapterId} ---`);
+    console.log(`isAnimatingFocus: ${isAnimatingFocus}, dragging: ${dragging}, chapter valid: ${!!(chapter && chapter.data)}, chaptersToDisplay length: ${chaptersToDisplay.length}`);
         // console.log(`ZoneMap Chapter Click: dragging: ${dragging}, isAnimatingFocus: ${isAnimatingFocus}, chapter:`, chapter);
-        if (isAnimatingFocus || dragging || !chapter || !chapter.data || chaptersToDisplay.length === 0) return;
-
+        if (isAnimatingFocus || dragging || !chapter || !chapter.data || chaptersToDisplay.length === 0) {
+            // console.log("ZoneMap Click: Aborted due to animation, drag, or invalid chapter data.");
+            return;
+        }
+    
         const chapterIndex = chaptersToDisplay.findIndex(c => c.chapterId === chapter.chapterId);
-        let isActuallyUnlocked = false;
+        let isActuallyUnlocked = false; // 1. Флаг, можно ли кликнуть и перейти
         let reasonForLock = "Глава не найдена в списке отображаемых глав.";
-
+    
         if (chapterIndex === -1) {
-             console.warn(`ZoneMap: Clicked chapter ${chapter.chapterId} not found in chaptersToDisplay.`);
+            console.warn(`ZoneMap Click: Clicked chapter ${chapter.chapterId} not found in chaptersToDisplay.`);
         } else if (chapterIndex === 0) {
+            // 2. Если это первая глава, она всегда должна быть доступна для клика
             isActuallyUnlocked = true;
             reasonForLock = "Первая глава зоны, всегда доступна.";
         } else if (chapterIndex > 0) {
+            // Для последующих глав
             const prevChapter = chaptersToDisplay[chapterIndex - 1];
             if (prevChapter && prevChapter.data && Array.isArray(prevChapter.data.levels)) {
+                // 3. Доступна для клика, если предыдущая глава пройдена
                 isActuallyUnlocked = isChapterCompleted(prevChapter.chapterId, prevChapter.data.levels);
                 reasonForLock = isActuallyUnlocked ? "Предыдущая глава пройдена." : `Предыдущая глава "${prevChapter.nameOnMap || prevChapter.chapterId}" не пройдена.`;
             } else {
-                 reasonForLock = `Нет данных или уровней по предыдущей главе "${prevChapter?.nameOnMap || prevChapter?.chapterId}".`;
+                reasonForLock = `Нет данных или уровней по предыдущей главе "${prevChapter?.nameOnMap || prevChapter?.chapterId}".`;
+                // isActuallyUnlocked останется false
             }
         }
         
-        // console.log(`ZoneMap: Глава ${chapter.chapterId} - isActuallyUnlocked: ${isActuallyUnlocked}. Причина: ${reasonForLock}`);
-    
+        // 4. Проверка флага перед выполнением действия
         if (!isActuallyUnlocked) {
             alert(`Глава "${chapter.nameOnMap || chapter.chapterId}" пока заблокирована. \nПричина: ${reasonForLock}`);
             return;
         }
     
+        // 5. Если дошли сюда, значит, глава разблокирована для клика
         if (typeof goToChapter === 'function') {
-            // console.log(`ZoneMap: Вызов goToChapter с ID ${chapter.chapterId}`);
-            goToChapter(chapter.chapterId);
+            // console.log(`ZoneMap Click: Calling goToChapter with ID ${chapter.chapterId}`);
+            goToChapter(chapter.chapterId); // Передаем chapterId, как ожидает MainMenu.jsx
         } else {
             console.error("ZoneMap: goToChapter prop is not a function!");
         }
-    }, [isAnimatingFocus, dragging, chaptersToDisplay, goToChapter, isChapterCompleted]);
+    }, [isAnimatingFocus, dragging, chaptersToDisplay, goToChapter, isChapterCompleted]); // isChapterCompleted из useGameStore
     
     // handleAnimationComplete из Код1 (идентично Код2)
     const handleAnimationComplete = () => {
@@ -329,15 +343,22 @@ const ZoneMap = ({
 
     return (
         <div className="zone-map-screen">
-            <div className="zone-map-header"> {/* Заголовок из Код2 */}
-                <h1>{`Карта Зоны ${zoneId || ''}`}</h1>
-                {typeof goBack === 'function' && (
-                    <button onClick={goBack} className="map-back-button" title="К Главе">
-                        &#x21A9; {/* Назад */}
-                    </button>
-                )}
-            </div>
+        {/* Блок для названия зоны */}
+        <div className="zone-name-plate">
+            <h1>{`Карта Зоны: ${zoneId || 'Неизвестно'}`}</h1>
+        </div>
 
+        {/* ЕДИНСТВЕННАЯ КНОПКА "НАЗАД" (на GlobalMap) */}
+        {typeof onGoToGlobalMap === 'function' && ( // <--- ВОТ ЭТА ПРОВЕРКА
+            <button
+                onClick={onGoToGlobalMap}
+                className="zone-map-back-button" 
+                title="К Карте Мира"
+            >
+                &larr; {/* Стрелка влево */}
+            </button>
+        )}
+            
             <div
                 className="zone-map-viewport"
                 ref={mapContainerRef}
@@ -428,11 +449,18 @@ const ZoneMap = ({
             Final statusClass: "${statusClass}"`
         );
         // Дополнительные отладочные логи, если первая глава не разблокируется:
-        if (chapterIndex === 0 && !isUnlockedForDisplayLogic) {
-            console.error(`ERROR ZoneMap: First chapter (ID: ${chapter.chapterId}) has index 0 BUT isUnlockedForDisplayLogic is FALSE!`);
-        }
-        if (chapterIndex === 0 && statusClass.includes('locked')) {
-             console.error(`ERROR ZoneMap: First chapter (ID: ${chapter.chapterId}) has index 0 BUT statusClass is "${statusClass}" (includes 'locked')!`);
+        if (chapterIndex === 0) { // Фокусируемся на первой главе
+            const currentStatusClassValue = statusClass; // Сохраняем текущее значение
+            const stringToSearch = 'locked';
+            const includesResult = currentStatusClassValue.includes(stringToSearch);
+
+            console.log(
+                `DEBUG FOR FIRST CHAPTER (ID: ${chapter.chapterId}):
+                Current statusClass value: "${currentStatusClassValue}"
+                String we are searching for: "${stringToSearch}"
+                Result of "${currentStatusClassValue}".includes("${stringToSearch}"): ${includesResult}`
+            );
+            
         }
         // ++++++++++++++++++++++++ КОНЕЦ БЛОКА ЛОГИРОВАНИЯ ++++++++++++++++++++++++
 
@@ -448,23 +476,33 @@ const ZoneMap = ({
                                     left: `${chapter.displayCoordinates.x}px`,
                                     width: `${CHAPTER_ISLAND_WIDTH}px`,
                                     height: `${CHAPTER_ISLAND_HEIGHT}px`,
-                                    backgroundImage: imagePath ? `url(${imagePath})` : `url(/assets/default_island_placeholder.png)`, // Фон из Код1
-                                    backgroundSize: 'cover', 
+                                    backgroundImage: imagePath ? `url(${imagePath})` : `url(/assets/default_island_placeholder.png)`,
+                                    
+                                    // --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
+                                    backgroundSize: 'contain', // УБЕДИСЬ, ЧТО ЗДЕСЬ 'contain', А НЕ 'cover'
                                     backgroundPosition: 'center',
                                     backgroundRepeat: 'no-repeat',
-                                    // Стили для отображения текста и общего вида из Код1
+                                    // overflow: 'hidden', // --- УДАЛИ ИЛИ ЗАКОММЕНТИРУЙ ЭТУ СТРОКУ ---
+                                    // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
-                                    justifyContent: 'flex-end', // Текст внизу
-                                    padding: '5px',
+                                    justifyContent: 'flex-end',
+                                    padding: '5px', // Оставь, если метка главы внутри этого padding
                                     boxSizing: 'border-box',
-                                    borderRadius: '8px',
-                                    overflow: 'hidden',
-                                }}
+                                    borderRadius: '8px', // Можно оставить, это невидимые границы контейнера
+                                    border: '2px solid transparent', // Делаем границу прозрачной по умолчанию
+                                }}  
                                 // Проверка !dragging перед кликом из Код1
-                                onClick={(e) => { if (!dragging) handleChapterClick(chapter);}}
-                                title={chapter.nameOnMap || `Глава ${chapter.chapterId}`}
+                                onClick={(e) => {
+                                    console.log(`Island Click Attempt: chapterId=<span class="math-inline">\{chapter\.chapterId\}, dragging\=</span>{dragging}, isAnimatingFocus=${isAnimatingFocus}`);
+                                    if (!dragging && !isAnimatingFocus) { // Добавим и isAnimatingFocus сюда для полноты
+                                        handleChapterClick(chapter);
+                                    } else {
+                                        console.log(`Island Click Prevented: dragging=<span class="math-inline">\{dragging\}, isAnimatingFocus\=</span>{isAnimatingFocus}`);
+                                    }
+                                }}                                title={chapter.nameOnMap || `Глава ${chapter.chapterId}`}
                             >
                                 <span className="island-label">{chapter.nameOnMap || `Глава ${chapter.chapterId}`}</span>
                                 {statusClass === 'locked' && <div className="island-lock-icon">🔒</div>}
@@ -472,17 +510,6 @@ const ZoneMap = ({
                         );
                     })}
                 </motion.div>
-            </div>
-
-            <div className="zone-map-controls"> {/* Контролы из Код2 */}
-                {onGoToGlobalMap && (
-                    <button
-                        className="map-action-button go-to-global-map-button"
-                        onClick={onGoToGlobalMap}
-                    >
-                        Карта Земли
-                    </button>
-                )}
             </div>
         </div>
     );

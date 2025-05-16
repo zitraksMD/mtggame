@@ -413,7 +413,7 @@ const MainMenu = ({ onStart }) => {
     }, [location.pathname, navigate, location.state]);
 
     const openGlobalMapView = useCallback(() => {
-        console.log(`MainMenu: openGlobalMapView. Current chapter ${currentChapterId}, current zone ${currentZoneId}.`);
+        // console.log(`MainMenu: openGlobalMapView. Current chapter ${currentChapterId}, current zone ${currentZoneId}.`);
         performViewChange('global', { zoneIdForFocus: currentZoneId, chapterForZoneContext: currentChapterId });
     }, [currentChapterId, currentZoneId, performViewChange]);
 
@@ -575,16 +575,17 @@ const MainMenu = ({ onStart }) => {
                             </motion.div>
                         ) : (
                             <ZoneMap
-                                zoneId={currentZoneId}
-                                chaptersInZone={chaptersForCurrentZone} 
-                                chapterToFocus={currentChapterId} 
-                                onSelectChapter={handleChapterSelectedOnZoneMap}
-                                onGoToGlobalMapView={openGlobalMapView} 
-                                onGoBack={handleGoBackToDetailedViewFromZone} 
-                                isLevelUnlocked={isLevelUnlocked} 
-                                getLevelCompletionStatus={getLevelCompletionStatus} 
-                                currentChapterIdFromStore={currentChapterIdFromStore} 
-                            />
+    zoneId={currentZoneId}
+    chaptersInZone={chaptersForCurrentZone}
+    chapterToFocus={currentChapterId} // Убедись, что chapterToFocus (если он есть в MainMenu) используется правильно
+    // onSelectChapter={handleChapterSelectedOnZoneMap} // СТАРОЕ ИМЯ
+    goToChapter={handleChapterSelectedOnZoneMap}     // НОВОЕ ИМЯ, СОВПАДАЕТ С ОЖИДАНИЯМИ ZoneMap
+    onGoToGlobalMap={openGlobalMapView} // <--- ПРОВЕРЬ ЭТУ СТРОКУ!
+    onGoBack={handleGoBackToDetailedViewFromZone} // Этот goBack для возврата с ZoneMap на детальный вид главы
+    isLevelUnlocked={isLevelUnlocked}
+    getLevelCompletionStatus={getLevelCompletionStatus}
+    currentChapterId={currentChapterId} // <-- Значение локального состояния MainMenu
+/>
                         )}
                     </motion.div>
                 )}
