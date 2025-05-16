@@ -20,13 +20,12 @@ html, body, #root {
   height: 100vh; /* <<< ПОПРОБУЙ ЭТО ЗНАЧЕНИЕ */
   width: 100%;
   background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
-  display: flex;
+  display: flex;  
   flex-direction: column;
   overflow: hidden; /* Оставляем, чтобы предотвратить случайный скролл всего контейнера */
   background-color: #000;
   position: relative; /* Нужно для z-index и потенциально для absolute дочерних (хотя у нас fixed) */
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top); /* <<< ВОЗВРАЩАЕМ для фона вверху */
   /* padding-bottom НЕ нужен здесь, если BottomNav обрабатывает свою safe-area */
 }
 
@@ -226,8 +225,8 @@ html, body, #root {
   position: relative; /* Для дочерних position:absolute, если будут */
   overflow-y: auto; /* Включаем скролл для контента */
   overflow-x: hidden;
-  width: 100%; // Добавили для уверенности, хотя не должно быть проблемой
-  box-sizing: border-box;
+  width: 100%;
+  height: 100%; // Заставляем занимать всю высоту flex-item  box-sizing: border-box;
 
   /* --- Корректировка отступа основного контента --- */
   /* Отступ сверху должен быть БОЛЬШЕ чем `top` плавающих блоков + их высота */
