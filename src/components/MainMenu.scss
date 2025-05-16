@@ -10,7 +10,6 @@
   padding: 0;
   margin: 0;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top); /* <<< ВОЗВРАЩАЕМ для фона вверху */
 }
 
 // --- Контейнер для просмотра карты главы (Как было) ---
