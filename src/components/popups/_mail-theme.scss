@@ -1,0 +1,42 @@
+// src/components/popups/_mail-theme.scss
+
+// --- Общие переменные для всего почтового интерфейса ---
+$mail-banner-bg: #ffcc00; // Яркий золотисто-желтый для баннера (как "Успех!")
+$mail-banner-text-color: #4a3b31; // Темно-коричневый текст на баннере
+$mail-banner-border-color: darken($mail-banner-bg, 15%);
+// Новые значения для твоего градиента:
+$mail-popup-bg-start: #1a2a4a; // Начальный цвет твоего градиента
+$mail-popup-bg-end: #0f1a30;   // Конечный цвет твоего градиента
+$mail-popup-border-color: lighten($mail-popup-bg-start, 10%); // Можно оставить или подобрать новый цвет обводки
+$mail-gold-accent: #c89b3c; // Насыщенный золотой для баннера и акцентов в списке
+
+// --- Основные текстовые цвета ---
+$mail-text-main: #4a3b31; // <<--- ДОБАВЛЕНО ОПРЕДЕЛЕНИЕ (основной темный текст)
+$mail-text-on-dark-bg: #ecf0f1; // Светлый текст (почти белый) на темном фоне
+$mail-text-secondary-on-dark-bg: #bdc3c7; // Менее яркий светлый текст
+
+$mail-list-item-bg: rgba(255, 255, 255, 0.05); // Очень слабозаметный фон для элементов списка
+$mail-list-item-hover-bg: rgba(255, 255, 255, 0.1);
+$mail-list-item-border: rgba(255, 255, 255, 0.15);
+$mail-list-item-unread-indicator: $mail-banner-bg; // Индикатор непрочитанных - золотой
+
+$mail-footer-bg: rgba(0, 0, 0, 0.2); // Полупрозрачный темный футер
+$mail-footer-button-bg: $mail-banner-bg;
+$mail-footer-button-text: $mail-banner-text-color; // Текст для основной кнопки футера
+$mail-footer-button-secondary-bg: lighten($mail-text-secondary-on-dark-bg, 10%); // Фон для вторичной кнопки (будет светлым)
+$mail-footer-button-secondary-text: $mail-text-main; // Текст для вторичной кнопки (теперь $mail-text-main определена)
+
+$mail-overlay-bg-main: rgba(10, 20, 30, 0.6); // Оверлей для основного окна почты
+
+// --- Переменные для детального поп-апа письма (MailDetailPopup) ---
+$detail-popup-bg-start: #1a2a4a; // Начальный цвет твоего градиента
+$detail-popup-bg-end: #0f1a30;   // Конечный цвет твоего градиента
+$detail-popup-border-color: lighten(#1a2a4a, 10%); // Можно оставить или подобрать новый цвет обводки
+$detail-text-color: $mail-text-on-dark-bg; // Текст на темном фоне детального окна
+$detail-title-color: $mail-banner-bg; // Заголовок письма - золотой
+$detail-meta-text-color: $mail-text-secondary-on-dark-bg; // Мета-информация (дата, отправитель)
+$detail-button-claim-bg: $mail-banner-bg; // Кнопка "Забрать"
+$detail-button-claim-text: $mail-banner-text-color; // Текст на кнопке "Забрать"
+$detail-button-delete-bg: $mail-text-secondary-on-dark-bg; // Кнопка "Удалить"
+$detail-button-delete-text: $mail-text-main; // Текст на кнопке "Удалить" (теперь $mail-text-main определена)
+$detail-overlay-bg: rgba(10, 20, 30, 0.8); // Более плотный оверлей для модального окна

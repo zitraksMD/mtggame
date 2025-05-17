@@ -1,4 +1,6 @@
 // MainMenu.scss
+@use './popups/mail-theme' as mail; // Укажи правильный путь к _mail-theme.scss
+
 
 // --- Корневой элемент (.main-menu) ---
 .main-menu {
@@ -371,5 +373,128 @@
 
   &:hover {
     background-color: #c82333; // Темнее при наведении
+  }
+}
+
+.popup-overlay-for-mail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: mail.$mail-overlay-bg-main;
+  display: flex;
+  align-items: center; // Центрируем поп-ап по вертикали
+  justify-content: center; // Центрируем поп-ап по горизонтали
+  z-index: 1000;
+  padding: 20px; // Отступы, чтобы поп-ап не прилегал к краям экрана
+}
+
+.popup-overlay-for-mail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: mail.$mail-overlay-bg-main;
+  display: flex;
+  align-items: center; // Центрируем поп-ап по вертикали
+  justify-content: center; // Центрируем поп-ап по горизонтали
+  z-index: 1000;
+  padding: 20px; // Отступы, чтобы поп-ап не прилегал к краям экрана
+}
+
+
+// Новый внешний контейнер, который позволит баннеру "выступать"
+.mail-popup-outer-frame {
+position: relative; // Для позиционирования баннера и кнопки закрытия
+width: 100%;
+max-width: 420px; // Ширина как у синего блока
+// Высота будет определяться .mail-popup-content-wrapper + выступающий баннер
+// padding-top здесь не нужен, так как баннер будет абсолютно позиционирован или с отрицательным margin
+animation: mailPopupAppear 0.3s ease-out;
+}
+
+.mail-title-banner {
+background-color: mail.$mail-banner-bg;
+color: mail.$mail-banner-text-color;
+font-size: 1.1em;
+font-weight: bold;
+text-align: center;
+padding: 8px 20px; // Паддинги для текста внутри баннера
+border: 2px solid mail.$mail-banner-border-color; // Обводка баннера
+border-bottom: none; // Нижнюю обводку убираем, если он "сидит" на синем блоке
+top: 20px; // <<< ДОБАВЛЕНО: Сдвигаем баннер вниз на 10px (подбери значение)
+
+// --- Позиционирование для "нависания" ---
+position: relative; // Можно оставить relative и играть с margin-bottom для .mail-popup-content-wrapper
+                    // Либо absolute для более точного контроля над .mail-popup-outer-frame
+z-index: 2; // Выше основного контента поп-апа
+width: 30%; // Ширина самого желтого элемента
+min-width: 120px;
+margin: 0 auto; // Центрируем баннер
+border-radius: 10px 10px 10px 10px; // Скругление только верхних углов
+
+// Чтобы он "сел" на синий блок, синий блок должен начаться чуть ниже
+// Это будет достигнуто тем, что баннер идет первым в потоке .mail-popup-outer-frame
+}
+
+// Основной синий блок с контентом
+.mail-main-content-body {
+  position: relative; // Для позиционирования кнопки закрытия внутри него
+  background: linear-gradient(160deg, mail.$mail-popup-bg-start 0%, mail.$mail-popup-bg-end 100%);
+  border-radius: 12px;
+  border: 1px solid mail.$mail-popup-border-color;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  
+  padding-top: 15px; // Отступ сверху, чтобы контент не заезжал под кнопку X или баннер (если он частично внутри)
+  // Если баннер полностью снаружи, этот padding-top может быть меньше или равен отступу кнопки X.
+  
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  
+  // Задаем высоту здесь, чтобы контролировать количество видимых писем
+  // max-height был у .mail-popup-content-wrapper, теперь это .mail-main-content-body
+  height: auto; 
+  max-height: 400px; // Например, для 3-4 писем + шапка/футер списка
+}
+
+
+// Кнопка закрытия (X) для всего интерфейса почты
+.mail-interface-close-button {
+position: absolute;
+top: 8px; // Отступ от верха .mail-popup-content-wrapper (синего блока)
+right: 8px;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: mail.$mail-text-on-dark-bg;
+width: 28px;
+height: 28px;
+border-radius: 50%;
+font-size: 1.1em;
+line-height: 26px;
+text-align: center;
+cursor: pointer;
+z-index: 10; // Выше контента списка
+transition: background-color 0.2s, transform 0.1s;
+
+&:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+ &:active {
+  transform: scale(0.95);
+ }
+}
+
+@keyframes mailPopupAppear {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
   }
 }

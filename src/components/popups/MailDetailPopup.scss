@@ -1,0 +1,82 @@
+/* src/components/popups/MailDetailPopup.scss */
+@use 'mail-theme' as mail;
+
+.mail-detail-popup-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: mail.$detail-overlay-bg; // Используем более плотный оверлей
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1050; // Выше основного интерфейса почты
+  padding: 15px;
+}
+
+.mail-detail-popup-content {
+    background: linear-gradient(160deg, mail.$detail-popup-bg-start 0%, mail.$detail-popup-bg-end 100%);
+    border: 1px solid mail.$detail-popup-border-color;
+  border-radius: 10px;
+  padding: 18px;
+  width: 100%;
+  max-width: 400px; // Компактный размер для детального просмотра
+  max-height: 70vh; // Ограничение высоты
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column;
+  color: mail.$detail-text-color;
+  font-family: 'Georgia', Times, serif; // "Книжный" стиль для письма
+}
+
+.mail-detail-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px dashed mail.$detail-popup-border-color; // Используем $detail-popup-border-color
+  flex-shrink: 0;
+
+  .mail-detail-title-text {
+    margin: 0; font-size: 1.15em; color: mail.$detail-title-color; font-weight: bold;
+  }
+  .mail-detail-close-btn {
+    background: none; border: none; font-size: 1.6em; color: mail.$detail-text-color;
+    cursor: pointer; padding: 0 5px; line-height: 1; opacity: 0.7;
+    border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
+    &:hover { opacity: 1; }
+  }
+}
+
+.mail-detail-meta {
+  display: flex; justify-content: space-between; font-size: 0.8em;
+  color: mail.$detail-meta-text-color; margin-bottom: 12px; flex-shrink: 0;
+}
+
+.mail-detail-body {
+  flex-grow: 1; overflow-y: auto; font-size: 0.95em; line-height: 1.65;
+  margin-bottom: 15px; padding-right: 5px; // Для скроллбара
+  color: mail.$detail-text-color;
+
+  p { margin-top: 0; margin-bottom: 1em; }
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 2px; }
+  &::-webkit-scrollbar-thumb { background-color: mail.$detail-title-color; border-radius: 2px; }
+}
+
+.mail-detail-actions {
+  display: flex; flex-direction: column; gap: 8px; margin-top: auto;
+  padding-top: 12px; border-top: 1px solid mail.$detail-popup-border-color; flex-shrink: 0;
+
+  .mail-action-button-detail {
+    padding: 10px 15px; border-radius: 5px; border: none; cursor: pointer;
+    font-size: 0.9em; font-weight: 600; text-align: center;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+
+    &:hover { filter: brightness(1.1); }
+    &:active { transform: scale(0.98); }
+
+    &.claim-one {
+      background-color: mail.$detail-button-claim-bg;
+      color: mail.$detail-button-claim-text;
+    }
+    &.delete-one {
+      background-color: mail.$detail-button-delete-bg;
+      color: mail.$detail-button-delete-text;
+    }
+  }
+}
