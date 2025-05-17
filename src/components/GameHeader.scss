@@ -1,0 +1,201 @@
+// src/components/GameHeader.scss
+
+// --- ПЕРЕМЕННЫЕ ДЛЯ НАСТРОЙКИ ---
+$safe-area-inset-top: env(safe-area-inset-top, 0px);
+$tma-system-header-approx-height: 44px; // УТОЧНИТЕ! // из код1 (УТОЧНИТЕ! осталось)
+$energy-bar-area-height: 35px;
+$wing-content-additional-pushdown: -30px;
+
+// Отступ сверху до НАЧАЛА КОНТЕНТА в крыльях (после всех системных отступов) // Комментарий из код2 сохранен
+$wing-content-start-y-coord: calc(#{$safe-area-inset-top} + #{$tma-system-header-approx-height} + #{$energy-bar-area-height} + #{$wing-content-additional-pushdown});
+
+// Позиция НАЧАЛА (верхнего края) названия главы. Сделаем ее чуть ниже, чем раньше, чтобы был зазор от энергии // Комментарий из код1
+$chapter-name-start-y-coord: calc(#{$safe-area-inset-top} + #{$tma-system-header-approx-height} + #{$energy-bar-area-height} + 5px); // +5px от низа энергии. // из код1
+
+// Высота видимой части контента в крыльях (например, аватар+ник+БП) // Комментарий из код2 сохранен
+$wing-content-visual-height: 70px;
+
+// Общая высота всего элемента .game-header-body (от самого верха экрана) // Комментарий из код2 сохранен (значение обновлено)
+$game-header-body-total-height: calc(#{$wing-content-start-y-coord} + #{$wing-content-visual-height} + 25px); // Увеличил запас снизу до 25px // из код1
+
+// Y-координата ПЛОСКОГО "ДНА" центрального изгиба от ВЕРХА .game-header-body.
+// Чтобы "дно" было НИЖЕ (подъем меньше), это значение должно быть БОЛЬШЕ.
+// Пусть дно будет на 15px выше нижнего края крыльев, чтобы название главы точно поместилось. // Комментарий из код1
+$center-cutout-flat-bottom-y: calc(#{$game-header-body-total-height} - 15px); // из код1
+// Убедитесь, что $center-cutout-flat-bottom-y > ($chapter-name-start-y-coord + ВЫСОТА_ТЕКСТА_ГЛАВЫ + некоторый_отступ) // Комментарий из код1
+
+$center-cutout-flat-width: 160px; // Ширина для названия главы, можно увеличить // из код1
+$shoulder-horizontal-width: 40px; // Ширина "плеча" изгиба // из код1
+
+
+.game-header-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: $game-header-body-total-height; // Использует обновленную переменную
+  z-index: 1000;
+  pointer-events: none;
+  // background-color: rgba(100,0,0,0.1); // Отладка контейнера (из код2)
+
+  & > * {
+    pointer-events: auto;
+  }
+}
+
+.game-header-energy-bar-placement {
+  position: absolute;
+  top: $safe-area-inset-top; // Сразу под "челкой" или от верха, если ее нет
+  padding-top: 6px;          // Небольшой зазор от самого верха
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto; // По содержимому
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2; // Над телом шапки
+  height: $energy-bar-area-height;
+  box-sizing: border-box;
+  // background-color: rgba(0,100,0,0.1); // Отладка (из код2)
+}
+
+.game-header-energy-bar { // Стили из код2, т.к. в код1 "как было"
+  display: flex; align-items: center; gap: 5px; background-color: rgba(10, 10, 20, 0.9);
+  padding: 4px 7px; border-radius: 12px; backdrop-filter: blur(6px);
+  min-width: 150px; max-width: 240px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  .energy-icon { width: 14px; height: 14px; flex-shrink: 0; }
+  .energy-track { flex-grow: 1; height: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; position: relative; display:flex; align-items:center; justify-content:center; }
+  .energy-fill { position: absolute; left: 0; top: 0; bottom: 0; height: 100%; border-radius: 4px; transition: width 0.3s ease, background-color 0.3s ease; }
+  .energy-text { font-size: 0.6em; font-weight: 700; color: white; white-space: nowrap; position: relative; text-shadow: 0 0 2px rgba(0,0,0,0.6); }
+}
+.energy-refill-timer-header { // Стили из код2, т.к. в код1 "как было"
+  font-size: 0.55em; color: #b0b0c0; text-align: center; margin-top: 2px; padding: 1px 4px; background-color: rgba(0,0,0,0.35); border-radius: 3px; line-height: 1.1;
+}
+
+
+.game-header-body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%; // Из код1 (Занимает всю высоту родителя .game-header-container)
+  background-color: rgba(20, 10, 40, 0.93);
+  backdrop-filter: blur(10px);
+  display: flex; // Оставляем flex для общего расположения крыльев и центра
+  // justify-content: space-between; // УБИРАЕМ space-between для лучшего контроля центра (из код1)
+  align-items: stretch; // Крылья и центр растягиваются по высоте body
+  // Боковые отступы теперь будут на крыльях, а не на body, для точного clip-path (из код1)
+  // padding-left: env(safe-area-inset-left, 8px); // из код1 (закомментировано)
+  // padding-right: env(safe-area-inset-right, 8px); // из код1 (закомментировано)
+  box-sizing: border-box;
+  z-index: 1;
+  border-radius: 0 0 18px 18px; // Увеличил радиус для нижних углов крыльев (из код1)
+
+  clip-path: polygon(
+    0% 0%,      // Верхний левый
+    100% 0%,     // Верхний правый
+    // Нижний контур (Y=100% это самый низ элемента .game-header-body) (из код1)
+    100% 100%,   // Нижний правый "крыла"
+    calc(50% + (#{$center-cutout-flat-width} / 2) + #{$shoulder-horizontal-width}) 100%, // Внешняя точка правого плеча
+    calc(50% + (#{$center-cutout-flat-width} / 2)) #{$center-cutout-flat-bottom-y},       // Правый край плоского "дна"
+    calc(50% - (#{$center-cutout-flat-width} / 2)) #{$center-cutout-flat-bottom-y},       // Левый край плоского "дна"
+    calc(50% - (#{$center-cutout-flat-width} / 2) - #{$shoulder-horizontal-width}) 100%, // Внешняя точка левого плеча
+    0% 100%      // Нижний левый "крыла"
+  );
+}
+
+// Общий блок для крыльев из код1
+.header-left-wing,
+.header-right-wing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; // Для левого крыла (будет переопределено для правого)
+  padding-top: $wing-content-start-y-coord;
+  box-sizing: border-box;
+  height: 100%; // Растягиваются, но контент внутри них позиционируется от padding-top
+  // background-color: rgba(0,255,0,0.05); // Отладка (из код1 - можно оставить для отладки)
+}
+
+.header-left-wing {
+  // display: flex; // Уже в общем блоке
+  // flex-direction: column; // Уже в общем блоке
+  // align-items: flex-start; // Уже в общем блоке
+  gap: 8px;
+  width: 40%; // из код1
+  min-width: 180px; // Увеличил для контента (из код1)
+  // padding-top: $wing-content-start-y-coord; // Уже в общем блоке
+  padding-left: calc(env(safe-area-inset-left, 0px) + 10px); // Отступ слева с учетом safe-area (из код1)
+  // box-sizing: border-box; // Уже в общем блоке
+  // height: 100%; // Уже в общем блоке
+
+  // Стили для содержимого левого крыла (аватар, ник, БП) остаются как в код2 / код1 ("как были")
+  .player-identification-block { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
+  .header-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); flex-shrink:0; }
+  .header-player-details {
+    display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; min-width: 0;
+    .header-player-name { font-size: 0.9em; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+    .header-player-power { font-size: 0.8em; color: #c8d0e0; .power-icon { margin-right: 3px; } }
+  }
+  .header-battle-pass-button {
+    background: linear-gradient(to bottom, #f9a825, #f57f17); color: white; border: none;
+    padding: 6px 12px; border-radius: 6px; font-size: 0.75em; font-weight: bold;
+    cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.3); text-align: center;
+    width: auto; min-width: 90px; align-self: flex-start;
+    transition: transform 0.1s ease, filter 0.1s ease;
+    &:hover { filter: brightness(1.15); }
+    &:active { transform: scale(0.96); }
+  }
+}
+
+.header-center-dip-visual {
+  position: absolute; // <--- НОВОЕ: Абсолютное позиционирование для точного центрирования (из код1)
+  left: 50%;
+  transform: translateX(-50%);
+  width: $center-cutout-flat-width; // Фиксированная ширина для центра (использует обновленную переменную из код1)
+  height: 100%; // Занимает всю высоту .game-header-body (обрежется clip-path) (из код1)
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; // Текст будет начинаться сверху после padding-top (из код1)
+  padding-top: $chapter-name-start-y-coord; // Отступ для названия главы (использует обновленную переменную из код1)
+  box-sizing: border-box;
+  // background-color: rgba(0,0,255,0.05); // Отладка (из код1)
+
+  .header-chapter-name {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #f5f5fa;
+    margin: 0;
+    padding: 2px 4px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); // из код1
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%; // Ограничен шириной родителя .header-center-dip-visual
+    line-height: 1.1;
+  }
+}
+
+.header-right-wing {
+  position: absolute; // <--- НОВОЕ (из код1)
+  right: 0;
+  top: 0; // Начинается от верха .game-header-body (из код1)
+  // height: 100%; // Уже в общем блоке
+  // display: flex; // Уже в общем блоке
+  // flex-direction: column; // Уже в общем блоке
+  align-items: flex-end; // Переопределяем из общего блока (из код1)
+  gap: 4px;
+  width: 35%; // Задаем явную ширину или flex-basis (из код1)
+  min-width: 100px; // Увеличил (из код1)
+  // padding-top: $wing-content-start-y-coord; // Уже в общем блоке
+  padding-right: calc(env(safe-area-inset-right, 0px) + 10px); // Отступ справа с учетом safe-area (из код1)
+  // box-sizing: border-box; // Уже в общем блоке
+  // background-color: rgba(255,0,0,0.05); // Отладка (из код1)
+
+  // Стили для ресурсов остаются как в код2 / код1 ("как были")
+  .header-resource-item {
+    display: flex; align-items: center; gap: 5px; font-size: 0.9em; background-color: rgba(0,0,0,0.4);
+    padding: 3px 7px; border-radius: 7px; color: #fff; min-width: 80px; justify-content: flex-end;
+    .header-resource-icon { width: 17px; height: 17px; }
+    span { font-weight: 600; }
+  }
+}

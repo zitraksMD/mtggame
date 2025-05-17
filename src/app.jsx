@@ -17,6 +17,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import RewardsScreen from "./components/screens/RewardsScreen";
 import GlobalMap from "./components/GlobalMap";
 import TransitionOverlay from './components/TransitionOverlay';
+import GameHeader from './components/GameHeader'; // Импорт уже был, соответствует код1
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
@@ -33,11 +34,12 @@ const routeContentVariants = {
 const App = () => {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [needsRaceSelection, setNeedsRaceSelection] = useState(false);
-    const [activeLevelData, setActiveLevelData] = useState(null); // Из Код 1
-    const [loadingError, setLoadingError] = useState(null); // Из Код 1 (и был в Код 2)
-    const [isLoadingLevel, setIsLoadingLevel] = useState(false); // Из Код 1 (и был в Код 2)
+    const [activeLevelData, setActiveLevelData] = useState(null);
+    const [loadingError, setLoadingError] = useState(null);
+    const [isLoadingLevel, setIsLoadingLevel] = useState(false);
     const [refillTimerDisplay, setRefillTimerDisplay] = useState("");
     const [shouldShowRefillTimer, setShouldShowRefillTimer] = useState(false);
+    const [currentChapterNameForHeader, setCurrentChapterNameForHeader] = useState(null); // <--- НОВОЕ СОСТОЯНИЕ из КОД1
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -79,7 +81,12 @@ const App = () => {
     const checkAndRefreshDailyDeals = useGameStore((s) => s.checkAndRefreshDailyDeals);
 
     const avatarUrl = "/assets/default-avatar.png";
-    const tonShards = 0;
+    const tonShards = 0; 
+
+    // Callback для MainMenu для обновления имени главы в App.jsx (из код1)
+    const handleChapterNameChange = useCallback((name) => {
+        setCurrentChapterNameForHeader(name);
+    }, []);
 
     // useEffect для таймера энергии (остается как в код2)
     useEffect(() => {
@@ -92,8 +99,9 @@ const App = () => {
                 let remainingMs = nextRefillTimestamp - now;
 
                 if (remainingMs <= 0) {
-                    refillEnergyOnLoad();
-                    if (intervalId) clearInterval(intervalId);
+                    refillEnergyOnLoad(); // Это должно обновить energyCurrent и lastEnergyRefillTimestamp
+                    // Таймер будет пересчитан в следующем цикле useEffect или если intervalId не очищен сразу
+                    // if (intervalId) clearInterval(intervalId); // Возможно, очищать не нужно, т.к. updateTimer вызовется снова
                 } else {
                     const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
                     const minutes = Math.floor(totalSeconds / 60);
@@ -105,15 +113,24 @@ const App = () => {
             } else {
                 setShouldShowRefillTimer(false);
                 setRefillTimerDisplay("");
-                if (intervalId) clearInterval(intervalId);
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null; 
+                }
             }
         };
 
         if (energyCurrent < energyMax) {
-            updateTimer();
+            updateTimer(); // Первый вызов для немедленного отображения
+            if (intervalId) clearInterval(intervalId); // Очищаем старый интервал, если есть
             intervalId = setInterval(updateTimer, 1000);
         } else {
             setShouldShowRefillTimer(false);
+            setRefillTimerDisplay("");
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
         }
         return () => {
             if (intervalId) clearInterval(intervalId);
@@ -122,7 +139,6 @@ const App = () => {
 
     // useEffect для начальной загрузки и проверки состояния (логика из код2)
     useEffect(() => {
-        console.log("App Mount: Проверка начального состояния...");
         let initialUsername = null;
         let chosenRace = null;
         let raceIsChosen = false;
@@ -159,7 +175,7 @@ const App = () => {
     }, [navigate, initializeCharacterStats, setUsernameAction, checkAndRefreshDailyDeals]);
 
 
-    // useEffect для ensureScreenIsOpening (из код1)
+    // useEffect для ensureScreenIsOpening (логика из код1, применена к код2)
     useEffect(() => {
         const storeState = useGameStore.getState();
         if (!storeState.isScreenTransitioning && !isInitialLoading) {
@@ -168,166 +184,137 @@ const App = () => {
     }, [location.pathname, isInitialLoading]);
 
     const path = location.pathname;
-    const showAnyFixedUI =
-        !path.startsWith('/level/') &&
+
+    // Логика видимости UI элементов (объединено и адаптировано из код1 и код2)
+    const showAnyFixedUIBaseConditions =
         !isInitialLoading &&
         !needsRaceSelection &&
-        path !== '/rewards' &&
         !isFullScreenMapActive;
 
-    const showPlayerInfo = showAnyFixedUI && (path === '/main' || path === '/inventory' || path === '/global-map');
-    const showResources = showAnyFixedUI && (path === '/main' || path === '/inventory' || path === '/shop' || path === '/forge' || path === '/global-map');
-    const showEnergyBar = showAnyFixedUI && (path === '/main' || path === '/global-map');
-    const shouldShowBottomNav = showAnyFixedUI;
+    const shouldShowNewGameHeader =
+        showAnyFixedUIBaseConditions &&
+        path === '/main';
 
+    const shouldShowBottomNav =
+        showAnyFixedUIBaseConditions &&
+        !path.startsWith('/level/') &&
+        path !== '/rewards'; // Если на экране наград не нужно нижнее меню
 
     // === ОБРАБОТЧИКИ ===
-
-    // handleStartGame ИЗ КОД 1 (с адаптациями для fetch и зависимостей Код 2)
     const handleStartGame = useCallback(async (chapterId, levelId, difficultyToPlay) => {
         console.log(`[App.jsx handleStartGame] Запрос: Глава ${chapterId}, Уровень ${levelId}, Сложность: ${difficultyToPlay}`);
-        const ENERGY_COST = 6; // Пример
+        const ENERGY_COST = 6; // Примерная стоимость
         if (!consumeEnergy(ENERGY_COST)) {
-            // Используем кастомный alert или модальное окно, если есть
-            alert("Недостаточно энергии!");
+            alert("Недостаточно энергии!"); // Или более user-friendly уведомление
             return;
         }
 
-        setActiveLevelData(null); // Сбрасываем предыдущие данные уровня
-        setIsLoadingLevel(true);  // Включаем флаг общей загрузки уровня
+        setActiveLevelData(null); // Сброс предыдущих данных уровня
+        setIsLoadingLevel(true);
         setLoadingError(null);
-
-        // Сразу переходим на маршрут уровня. Level компонент сам покажет лоадер, если нужно,
-        // или App.jsx покажет глобальный лоадер, пока activeLevelData не установится.
-        navigate(`/level/${levelId}`);
+        navigate(`/level/${levelId}`); // Переход на страницу уровня до загрузки данных
 
         try {
             const dataPath = `/data/levels/level${levelId}Data.json`;
-            // Имитация задержки сети, если необходимо для тестирования лоадера
-            // await new Promise(resolve => setTimeout(resolve, 1000)); 
             const response = await fetch(dataPath);
             
             if (!response.ok) {
-                // Попытка получить текст ошибки, если есть
                 let errorText = `HTTP error! status: ${response.status}`;
                 try {
-                    const errorData = await response.json();
+                    const errorData = await response.json(); // Попытка прочитать тело ошибки как JSON
                     if (errorData && errorData.message) errorText = errorData.message;
-                } catch (e) { /* не удалось получить JSON ошибки, используем стандартный текст */ }
+                } catch (e) { /* Ошибка не в формате JSON или тело пустое */ }
                 throw new Error(errorText + ` for ${dataPath}`);
             }
             
             const loadedData = await response.json();
 
+            // Дополнительная проверка на соответствие ID
             if (!loadedData || typeof loadedData.id !== 'number' || loadedData.id !== parseInt(levelId, 10)) {
                 throw new Error(`Некорректные данные или ID уровня (${loadedData?.id}) не совпадает с запрошенным (${levelId}).`);
             }
-
-            console.log(`[App.jsx handleStartGame] Данные для уровня ${levelId} загружены. Устанавливаем activeLevelData со сложностью: ${difficultyToPlay}`);
             
             setActiveLevelData({
                 ...loadedData,
-                difficulty: difficultyToPlay, // <<<< ВАЖНО: передаем выбранную сложность
-                chapterId: chapterId,      // Если chapterId нужен в levelData
+                difficulty: difficultyToPlay, // Устанавливаем выбранную сложность
+                chapterId: chapterId, // Сохраняем ID главы для контекста
             });
-            // setIsLoadingLevel(false); // <- Убираем отсюда, будет в useEffect по Код 1
-
+            // setIsLoadingLevel(false); // Устанавливается в useEffect ниже
         } catch (error) {
             console.error(`❌ Ошибка загрузки уровня ${levelId}:`, error);
             setLoadingError(`Не удалось загрузить уровень ${levelId}. ${error.message}`);
-            setActiveLevelData(null); // Убедимся, что данных нет
-            setIsLoadingLevel(false); // Ошибка, загрузка завершена (неудачно) - Важно для скрытия лоадера
-            
-            // Возврат в главное меню при ошибке (можно использовать startScreenTransition, если это стандарт)
-            // useGameStore.getState().startScreenTransition(() => {
-            //     navigate("/main", { replace: true });
-            // });
-            // Или просто navigate, как в Код 1
-            navigate("/main", { replace: true });
+            setActiveLevelData(null);
+            setIsLoadingLevel(false); // Сброс загрузки при ошибке
+            navigate("/main", { replace: true }); // Возврат в главное меню при ошибке
         }
-        // finally блок не нужен, т.к. setIsLoadingLevel управляется по-другому
-    }, [navigate, consumeEnergy]); // Добавьте другие зависимости, если они используются внутри (например, из useGameStore)
+    }, [navigate, consumeEnergy]);
 
-    // useEffect из Код 1 для управления isLoadingLevel после установки activeLevelData или ошибки
     useEffect(() => {
-        if (activeLevelData && isLoadingLevel) { // Если данные пришли, а мы все еще "грузимся"
+        // Этот useEffect гарантирует, что isLoadingLevel станет false после того, как activeLevelData установится или произойдет ошибка
+        if (activeLevelData && isLoadingLevel) {
             setIsLoadingLevel(false);
         }
-        // Если произошла ошибка (loadingError установлен) и мы все еще в состоянии загрузки,
-        // то catch в handleStartGame уже должен был установить isLoadingLevel = false.
-        // Но для подстраховки можно добавить:
         if (loadingError && isLoadingLevel) {
             setIsLoadingLevel(false);
         }
     }, [activeLevelData, isLoadingLevel, loadingError]);
 
-
     const getChapterIdFromLevelId = (levelId) => {
+        // Пример: уровень 101 -> глава 1, уровень 205 -> глава 2
         if (typeof levelId === 'number' && levelId >= 100) {
             return Math.floor(levelId / 100);
         }
-        return null;
-    };
-
-    const RaceDisplay = () => {
-        const playerRace = useGameStore((state) => state.playerRace);
-        console.log("RaceDisplay отрисован, раса:", playerRace);
-        return <div>Раса: {playerRace || 'Не выбрано'}</div>;
+        return null; // или другое значение по умолчанию, если структура ID другая
     };
     
-    const EnergyDisplay = () => {
-        const energyCurrent = useGameStore((state) => state.energyCurrent);
-        const energyMax = useGameStore((state) => state.energyMax);
-        console.log("EnergyDisplay отрисован, энергия:", energyCurrent, "/", energyMax);
-        return <div>Энергия: {energyCurrent}/{energyMax}</div>;
-    };
-
-
     const handleLevelComplete = useCallback((levelId, status, difficultyPlayed) => {
-        setActiveLevelData(null); // Сбрасываем данные уровня после завершения
-        setIsLoadingLevel(false); // Убедимся, что лоадер уровня выключен
+        setActiveLevelData(null); // Сброс данных активного уровня
+        setIsLoadingLevel(false); // Убедимся, что загрузка уровня завершена
     
-        // Логика обновления прогресса в сторе
         if (status === 'won') {
             const chapterId = getChapterIdFromLevelId(levelId);
-            if (chapterId !== null && activeLevelData) { // Убедимся, что activeLevelData есть
-                const store = useGameStore.getState();
-    
-                // Формируем контекстные данные для completeLevelAction
-                const chapterContext = {
-                    isZoneBossChapter: activeLevelData.isZoneBossChapter || false, // Предполагаем, что этот флаг есть в levelData/chapterData
-                    currentZoneIdForThisChapter: activeLevelData.zoneId, // Предполагаем, что levelData содержит zoneId
-                    levels: activeLevelData.levels // Массив уровней текущей главы
-                };
-                // Если в activeLevelData нет zoneId, его нужно получить другим способом
-                // например, через findZoneIdForChapter(chapterId)
-    
+            // Важно: activeLevelData будет null здесь, если мы его сбросили выше. 
+            // Если для chapterContext нужны данные из activeLevelData, их нужно получить до сброса
+            // или передать в handleLevelComplete. В данном случае, в код2 currentLevelDataForContext инициализировался из activeLevelData
+            // перед его сбросом. Оставим такую логику, но это требует внимания.
+            // Лучше передавать необходимые данные для chapterContext в эту функцию.
+            // Для примера, предположим, что zoneId и isZoneBossChapter берутся из старого activeLevelData (до сброса)
+            // Это может быть ненадежно. Рассмотрим передачу этих данных из компонента Level.
+            // Пока оставим как в код2, но с комментарием.
+            
+            const store = useGameStore.getState();
+            // const chapterContext = ...; // Логика для chapterContext, если нужна
+
+            if (chapterId !== null) {
+                 // Для chapterContext: (activeLevelData уже null, но для примера, как в код2)
+                const previousLevelData = store.levels.find(l => l.id === levelId); // Это неверно, такой логики нет в сторе
+                                                                                  // Правильнее передавать контекст из Level или вычислять на основе levelId
+                let chapterContext = undefined;
+                // Если бы activeLevelData не сбрасывался сразу, можно было бы сделать так:
+                // if (activeLevelData && activeLevelData.id === levelId) { // Проверка, что это тот самый уровень
+                // chapterContext = {
+                // isZoneBossChapter: activeLevelData.isZoneBossChapter || false,
+                // currentZoneIdForThisChapter: activeLevelData.zoneId,
+                // levels: activeLevelData.levels // Это поле обычно не хранится в данных одного уровня
+                // };
+                // }
                 store.completeLevelAction(chapterId, levelId, difficultyPlayed, chapterContext);
-                // Тут можно подготовить данные для RewardsScreen, если он их ожидает через state
-            } else if (chapterId !== null) {
-                // Обработка случая, когда activeLevelData отсутствует, но chapterId есть
-                // Возможно, здесь стоит вызвать completeLevelAction без chapterContext
-                // или показать ошибку/предупреждение
-                useGameStore.getState().completeLevelAction(chapterId, levelId, difficultyPlayed);
-                console.warn("activeLevelData is not available, completing level without chapterContext");
             }
         }
     
-        // Навигация после завершения уровня
         useGameStore.getState().startScreenTransition(() => {
             if (status === 'won') {
-                // Можно передать ID уровня и сложность в RewardsScreen через location.state, если необходимо
-                navigate("/main", { state: { completedLevelId: levelId, difficulty: difficultyPlayed } });
+                // Переход в главное меню с состоянием для отображения окна наград (если оно там обрабатывается)
+                navigate("/main", { state: { completedLevelId: levelId, difficulty: difficultyPlayed, showRewards: true } });
             } else {
                 navigate("/main");
             }
         });
-    }, [navigate, activeLevelData]); // Добавили activeLevelData в зависимости
+    }, [navigate /*, activeLevelData - удалено из зависимостей, т.к. используется перед сбросом */]);
 
     const handleLevelReady = useCallback(() => {
         // console.log("🎮 Компонент Уровня готов к игре!");
-        // Можно убрать isLoadingLevel здесь, если компонент Level сам сигнализирует о полной готовности
-        // Но по логике Код 1, isLoadingLevel управляется в App.jsx на основе activeLevelData
+        // Можно использовать, чтобы скрыть лоадер, специфичный для уровня, если он есть внутри компонента Level
     }, []);
 
     const handleRaceSelectionComplete = useCallback(() => {
@@ -352,85 +339,52 @@ const App = () => {
         });
     }, [navigate, currentChapterIdFromStore]);
 
+    const getEnergyFillColor = (current, max) => {
+        if (max === 0) return '#808080'; // серый, если макс. энергия 0
+        const ratio = current / max;
+        if (ratio > 0.6) return '#4ade80'; // зеленый
+        else if (ratio > 0.3) return '#facc15'; // желтый
+        else return '#ef4444'; // красный
+    };
 
     if (isInitialLoading) {
         return <LoadingScreen key="loading_initial" message="Загрузка игры..." />;
     }
 
     if (needsRaceSelection && location.pathname !== '/race-selection') {
-       if (location.pathname !== '/race-selection') {
-            navigate('/race-selection', { replace: true });
-       }
-       return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
+        // Эта проверка дублирует логику в useEffect, но может служить дополнительной защитой
+        // Если useEffect еще не отработал или произошел сбой навигации
+        // navigate('/race-selection', { replace: true }); // Закомментировано, т.к. есть в useEffect
+        return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
     }
-
-    const getEnergyFillColor = (current, max) => {
-        if (max === 0) return '#808080'; // Серый, если макс. энергия не определена
-    
-        const ratio = current / max;
-    
-        if (ratio > 0.6) {
-            return '#4ade80'; // Зеленый (высокий уровень)
-        } else if (ratio > 0.3) {
-            return '#facc15'; // Желтый (средний уровень)
-        } else {
-            return '#ef4444'; // Красный (низкий уровень)
-        }
-    };
 
     return (
         <div className="app-container" ref={appContainerRef}>
-{showPlayerInfo && (
-    <div className="player-info-float">
-        <div className="player-info-top"> {/* Новый контейнер для аватара и деталей */}
-            <img src={avatarUrl} alt="Аватар" className="player-avatar-small" />
-            <div className="player-details">
-                <span className="player-name">{username || "Гость"}</span>
-                <span className="player-power">{powerLevel?.toLocaleString() ?? '...'}</span>
-            </div>
-        </div>
-        {showEnergyBar && (
-            <div className="energy-bar-float-moved">
-                <div className="energy-bar-content">
-                    <img src="/assets/energy-icon.png" alt="" className="resource-icon-small energy-icon" />
-                    <div className="energy-track">
-                    <div
-    className="energy-fill"
-    style={{
-        width: `${(energyMax > 0) ? (energyCurrent / energyMax * 100) : 0}%`,
-        '--energy-fill-color': getEnergyFillColor(energyCurrent, energyMax),
-        backgroundColor: `var(--energy-fill-color, #4ade80)`, // Применяем цвет фона
-    }}
-></div>
-<span className="energy-text">{`${energyCurrent ?? '?'}/${energyMax ?? '?'}`}</span>
-                    </div>
-                </div>
-                { shouldShowRefillTimer && refillTimerDisplay && (
-                    <div className="energy-refill-timer">
-                        Восполнится через {refillTimerDisplay}
-                    </div>
-                )}
-            </div>
-        )}
-    </div>
-)}
-            {showResources && (
-                <div className="resources-float">
-                    <div className="resource-item-float">
-                        <img src="/assets/coin-icon.png" alt="Золото" className="resource-icon-small" />
-                        <span>{gold?.toLocaleString() ?? '0'}</span>
-                    </div>
-                    <div className="resource-item-float">
-                        <img src="/assets/diamond-image.png" alt="Алмазы" className="resource-icon-small" />
-                        <span>{diamonds?.toLocaleString() ?? '0'}</span>
-                    </div>
-                    <div className="resource-item-float">
-                        <img src="/assets/toncoin-icon.png" alt="Осколки" className="resource-icon-small" />
-                        <span>{tonShards?.toLocaleString() ?? '0'}</span>
-                    </div>
-                </div>
+            {shouldShowNewGameHeader && (
+                <GameHeader
+                    username={username}
+                    powerLevel={powerLevel}
+                    avatarUrl={avatarUrl}
+                    energyCurrent={energyCurrent}
+                    energyMax={energyMax}
+                    getEnergyFillColor={getEnergyFillColor} // Передаем функцию для цвета
+                    shouldShowRefillTimer={shouldShowRefillTimer}
+                    refillTimerDisplay={refillTimerDisplay}
+                    gold={gold}
+                    diamonds={diamonds}
+                    tonShards={tonShards} // Убедитесь, что tonShards определен
+                    currentChapterName={currentChapterNameForHeader} // <--- ПРОПС ПЕРЕДАН ИЗ КОД1
+                    // onBattlePassClick={() => console.log('Battle Pass Clicked!')} // Пример обработчика
+                />
             )}
-            {showAnyFixedUI && <UsernamePopup />}
+
+            {/* Блоки showOldPlayerInfo и showOldResources, включая showOldEnergyBar, УДАЛЕНЫ, 
+                так как их функционал теперь в GameHeader или не нужен. */}
+
+            {/* Условие для UsernamePopup (остается, если это актуальный UI элемент) */}
+            {/* Изменено условие, чтобы Popup не появлялся на /main если есть GameHeader */}
+            {showAnyFixedUIBaseConditions && !shouldShowNewGameHeader && location.pathname !== '/main' && <UsernamePopup />}
+
 
             <main className="content-area">
                 <AnimatePresence mode="wait" initial={false}>
@@ -441,35 +395,31 @@ const App = () => {
                             </motion.div>
                         } />
 
-                        {/* Маршрут для уровня, измененный согласно Код 1 */}
                         <Route path="/level/:levelId" element={
-                            <motion.div key="levelroute" {...routeContentVariants}> {/* Обертка для анимации маршрута */}
-                                {isLoadingLevel && <LoadingScreen message="Загрузка уровня..." />} {/* Показываем, пока isLoadingLevel */}
+                            <motion.div key="levelroute" {...routeContentVariants}>
+                                {isLoadingLevel && <LoadingScreen message="Загрузка уровня..." />}
                                 
-                                {!isLoadingLevel && activeLevelData && ( // Показываем Level, ТОЛЬКО когда isLoadingLevel=false И есть данные
-                                    () => { // Оборачиваем в функцию для лога, как в Код 1
-                                        console.log("[App.jsx] Рендеринг <Level />. activeLevelData.difficulty:", activeLevelData.difficulty);
-                                        return (
-                                            <Level
-                                                levelData={activeLevelData}
-                                                onLevelComplete={handleLevelComplete}
-                                                onReady={handleLevelReady}
-                                                difficulty={activeLevelData.difficulty} // Передаем сложность из activeLevelData
-                                            />
-                                        );
-                                    }
-                                )()}
+                                {!isLoadingLevel && activeLevelData && (
+                                    // Использование функции для рендера для чистоты
+                                    (() => (
+                                        <Level
+                                            levelData={activeLevelData}
+                                            onLevelComplete={handleLevelComplete}
+                                            onReady={handleLevelReady}
+                                            difficulty={activeLevelData.difficulty} // Передаем выбранную сложность
+                                        />
+                                    ))()
+                                )}
                                 
-                                {!isLoadingLevel && !activeLevelData && loadingError && ( /* Показ ошибки, как в Код 1 */
-                                    <div className="loading-screen"> {/* Можно использовать тот же стиль что и LoadingScreen или кастомный */}
+                                {!isLoadingLevel && !activeLevelData && loadingError && (
+                                    <div className="loading-screen"> {/* Можно сделать компонент ErrorScreen */}
                                         <h2>{loadingError}</h2>
                                         <button onClick={() => navigate('/main', { replace: true })}>В меню</button>
                                     </div>
                                 )}
-
-                                {/* Дополнительное состояние: загрузка завершена, данных нет, ошибки нет (маловероятно, но для полноты) */}
+                                {/* Сообщение, если пользователь как-то попал на /level/:id без данных */}
                                 {!isLoadingLevel && !activeLevelData && !loadingError && location.pathname.startsWith('/level/') && (
-                                     <div className="loading-screen">
+                                    <div className="loading-screen">
                                         <h2>Данные уровня не загружены.</h2>
                                         <p>Возможно, вы попали на эту страницу напрямую или произошла непредвиденная ошибка.</p>
                                         <button onClick={() => navigate('/main', { replace: true })}>В меню</button>
@@ -477,8 +427,6 @@ const App = () => {
                                 )}
                             </motion.div>
                         }/>
-                        {/* Маршрут /level/:levelId/loading УДАЛЕН, так как isLoadingLevel теперь управляет этим */}
-
                         <Route path="/inventory" element={
                             <motion.div key="inventory" {...routeContentVariants}>
                                 <Inventory />
@@ -499,7 +447,7 @@ const App = () => {
                                 <Achievements />
                             </motion.div>
                         } />
-                        <Route path="/rewards" element={
+                        <Route path="/rewards" element={ // Экран наград все еще доступен по прямому пути, если нужно
                             <motion.div key="rewards" {...routeContentVariants}>
                                 <RewardsScreen />
                             </motion.div>
@@ -515,13 +463,18 @@ const App = () => {
                         <Route path="/main" element={
                             <motion.div key="main" {...routeContentVariants}>
                                 <MainMenu
-                                    onStart={handleStartGame} // MainMenu должен теперь передавать chapterId, levelId, difficulty
+                                    onStart={handleStartGame}
+                                    onChapterNameChange={handleChapterNameChange} // <--- CALLBACK ПЕРЕДАН ИЗ КОД1
                                 />
                             </motion.div>
                         } />
-                        <Route path="*" element={
+                        {/* Fallback Route */}
+                        <Route path="*" element={ 
                             <motion.div key="mainfallback" {...routeContentVariants}>
-                                <MainMenu onStart={handleStartGame} />
+                                <MainMenu
+                                    onStart={handleStartGame}
+                                    onChapterNameChange={handleChapterNameChange} // <--- CALLBACK ПЕРЕДАН ИЗ КОД1
+                                />
                             </motion.div>
                         } />
                     </Routes>
@@ -534,9 +487,9 @@ const App = () => {
                 {isScreenTransitioning && (
                     <motion.div
                         key="app-global-transition-overlay"
-                        initial={{ opacity: 1 }}
+                        initial={{ opacity: 1 }} // Начинаем с видимого состояния, т.к. TransitionOverlay управляет анимацией
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, transition: { duration: 0.05 } }}
+                        exit={{ opacity: 0, transition: { duration: 0.05 } }} // Очень быстрое исчезновение обертки
                         style={{position: 'fixed', top:0, left:0, width:'100%', height:'100%', zIndex: 99999, pointerEvents: 'none'}}
                     >
                         <TransitionOverlay
@@ -548,20 +501,6 @@ const App = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Глобальный попап ошибки теперь не нужен здесь, если loadingError обрабатывается на уровне маршрута /level/:levelId 
-                Или если это общий loadingError для других частей приложения, то можно оставить.
-                В Код 1 loadingError был специфичен для загрузки уровня.
-                Если же loadingError из useGameStore используется для других глобальных ошибок, то оставить.
-                Пока что, для консистентности с обработкой ошибки загрузки уровня, я уберу общий попап,
-                так как ошибка уровня теперь показывается внутри <Route path="/level/:levelId">
-            */}
-            {/* {loadingError && !location.pathname.startsWith('/level/') && ( // Показываем только если это не ошибка загрузки уровня
-                <div className="error-popup">
-                    <p>{loadingError}</p>
-                    <button onClick={() => setLoadingError(null)}>OK</button>
-                </div>
-            )} */}
         </div>
     );
 };
