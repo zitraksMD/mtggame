@@ -14,13 +14,13 @@ const GameHeader = ({
     gold,
     diamonds,
     tonShards,
-    currentChapterName, // <--- ДОБАВЛЯЕМ ЭТОТ ПРОПС
+    currentChapterName,
     // onBattlePassClick, // Оставим для будущей кнопки Battle Pass
 }) => {
     return (
         <div className="game-header-container">
+            {/* Полоса энергии остается наверху (код из код2 сохранен) */}
             <div className="game-header-energy-bar-placement">
-                {/* ... (код полосы энергии остается без изменений) ... */}
                 <div className="game-header-energy-bar">
                     <img src="/assets/energy-icon.png" alt="" className="energy-icon" />
                     <div className="energy-track">
@@ -41,8 +41,10 @@ const GameHeader = ({
                 )}
             </div>
 
+            {/* Основное тело шапки (структура из код1) */}
             <div className="game-header-body">
                 <div className="header-left-wing">
+                    {/* Аватар, Ник/Уровень, Battle Pass (код из код2 сохранен) */}
                     <div className="player-identification-block">
                         <img src={avatarUrl} alt="Аватар" className="header-avatar" />
                         <div className="header-player-details">
@@ -56,16 +58,12 @@ const GameHeader = ({
                         BATTLE PASS
                     </button>
                 </div>
-
-                {/* Центральная часть теперь отображает название главы */}
-                <div className="header-center-dip-visual">
-                    {currentChapterName && (
-                        <h2 className="header-chapter-name">{currentChapterName}</h2>
-                    )}
-                </div>
-
+                
+                {/* Центральная часть .game-header-body теперь для фона/формы или пустая (из код1) */}
+                <div className="header-center-spacer"></div>
+                
                 <div className="header-right-wing">
-                    {/* ... (код ресурсов остается без изменений) ... */}
+                    {/* Ресурсы (код из код2 сохранен) */}
                     <div className="header-resource-item">
                         <img src="/assets/coin-icon.png" alt="Золото" className="header-resource-icon" />
                         <span>{gold?.toLocaleString() ?? '0'}</span>
@@ -80,6 +78,13 @@ const GameHeader = ({
                     </div>
                 </div>
             </div>
+
+            {/* Нависающий баннер с названием главы (из код1) */}
+            {currentChapterName && (
+                <div className="chapter-name-banner">
+                    <h2 className="header-chapter-name">{currentChapterName}</h2>
+                </div>
+            )}
         </div>
     );
 };
