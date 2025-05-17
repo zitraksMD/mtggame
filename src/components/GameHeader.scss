@@ -1,58 +1,74 @@
 // src/components/GameHeader.scss
 
 // --- ПЕРЕМЕННЫЕ ДЛЯ НАСТРОЙКИ ---
-$safe-area-inset-top: env(safe-area-inset-top, 0px);
-$tma-system-header-approx-height: 44px; // УТОЧНИТЕ! // из код1 (УТОЧНИТЕ! осталось)
-$energy-bar-area-height: 35px;
-$wing-content-additional-pushdown: -30px; // Отступ для контента крыльев от шапки ТМА/энергии // ИЗ КОД1
 
-// Отступ сверху до НАЧАЛА КОНТЕНТА в крыльях
-$wing-content-start-y-coord: calc(#{$safe-area-inset-top} + #{$tma-system-header-approx-height} + #{$energy-bar-area-height} + #{$wing-content-additional-pushdown});
+// --- Переменные из код 1 для расчета эффективного верхнего отступа КРЫЛЬЕВ ---
+// 1. Базовый минимальный отступ сверху для Android (если нет "челки" или safe-area)
+$min-top-offset-for-android: 50px; // ПРИМЕРНОЕ значение. УТОЧНИТЕ для Android!
+
+// 2. Дополнительный отступ, который мы хотим ПОД "челкой" на iOS, если она есть.
+$ios-offset-below-notch: 10px; // Например, 10px под "челкой" до начала контента крыльев.
+
+// --- Переменные из код 2 (и некоторые из код 1, как отмечено) ---
+$safe-area-inset-top: env(safe-area-inset-top, 0px); // Используется для энергии и для расчета отступа крыльев
+// $tma-system-header-approx-height: 44px; // Эта переменная не используется в текущей логике отступов, можно удалить или оставить для других нужд.
+$energy-bar-area-height: 35px;
+// $wing-content-additional-pushdown: -30px; // Эта переменная больше не нужна, так как отступ крыльев определяется новой max() логикой
 
 $wing-content-visual-height: 78px; // Высота содержимого крыльев // ИЗ КОД1
-
-// Высота основного тела шапки (.game-header-body) - теперь это только крылья
-// Она определяется высотой контента крыльев + их отступом сверху от начала .game-header-body
 $game-header-body-content-height: $wing-content-visual-height; // ИЗ КОД1
-$game-header-body-top-padding: $wing-content-start-y-coord; // Отступ контента внутри .game-header-body от его верха // ИЗ КОД1
+
+// --- РАСЧЕТ ЭФФЕКТИВНОГО ВЕРХНЕГО ОТСТУПА (PADDING-TOP) ДЛЯ КРЫЛЬЕВ ---
+// Используем логику, ранее предназначенную для $effective-game-header-container-top, но теперь для padding-top крыльев
+$wing_effective_padding_top: max(
+  #{$min-top-offset-for-android},
+  calc(#{$ios-offset-below-notch} + #{$safe-area-inset-top}) // Используем уже определенный $safe-area-inset-top
+);
+
+// Этот $game-header-body-top-padding теперь будет равен отступу крыльев
+$game-header-body-top-padding: $wing_effective_padding_top;
+
 $game-header-body-bottom-padding: 10px; // Небольшой отступ снизу для красоты // ИЗ КОД1
 
-$game-header-body-total-height: calc(#{$game-header-body-top-padding} + #{$game-header-body-content-height} + #{$game-header-body-bottom-padding}); // ИЗ КОД1
+// Общая высота тела шапки, зависит от нового padding-top крыльев
+$game-header-body-total-height: calc(#{$game-header-body-top-padding} + #{$game-header-body-content-height} + #{$game-header-body-bottom-padding});
 
 // Для баннера с названием главы
 $chapter-banner-height: 30px; // Примерная высота баннера // ИЗ КОД1
-$chapter-banner-offset-from-header: -20px; // Насколько баннер "заезжает" на шапку или отступает от нее (отрицательное - заезжает) // ИЗ КОД1
+// $chapter-banner-offset-from-header: -20px; // Эта переменная может остаться, если позиционирование баннера зависит от общей высоты шапки
 
+
+// --- СТИЛИ ---
 .game-header-container {
   position: fixed;
+  // === Контейнер теперь всегда сверху, "заходит на системную область" ===
   top: 0;
   left: 0;
   width: 100%;
-  // Высота контейнера теперь будет достаточной для .game-header-body и потенциально для .chapter-name-banner, если он не абсолютный
-  // Но лучше .chapter-name-banner позиционировать абсолютно относительно контейнера или body
-  height: $game-header-body-total-height; // Пока так, баннер будет под ним // ИЗ КОД1
+  // Высота контейнера подстраивается под содержимое
+  height: $game-header-body-total-height;
   z-index: 1000;
   pointer-events: none;
   & > * { pointer-events: auto; }
 }
 
-.game-header-energy-bar-placement { // Стили из код2, т.к. в код1 "как было"
+.game-header-energy-bar-placement {
   position: absolute;
+  // === Энергетическая полоса позиционируется относительно верха экрана с учетом safe-area ===
   top: $safe-area-inset-top; // Сразу под "челкой" или от верха, если ее нет
-  padding-top: 6px;          // Небольшой зазор от самого верха
+  padding-top: 6px;           // Небольшой зазор от самого верха (от safe-area-inset-top)
   left: 50%;
   transform: translateX(-50%);
-  width: auto; // По содержимому
+  width: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 2; // Над телом шапки
   height: $energy-bar-area-height;
   box-sizing: border-box;
-  // background-color: rgba(0,100,0,0.1); // Отладка (из код2) - удалено
 }
 
-.game-header-energy-bar { // Стили из код2, т.к. в код1 "как было"
+.game-header-energy-bar { /* Стили из код2 */
   display: flex; align-items: center; gap: 5px; background-color: rgba(10, 10, 20, 0.9);
   padding: 4px 7px; border-radius: 12px; backdrop-filter: blur(6px);
   min-width: 150px; max-width: 240px;  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -61,55 +77,46 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
   .energy-fill { position: absolute; left: 0; top: 0; bottom: 0; height: 100%; border-radius: 4px; transition: width 0.3s ease, background-color 0.3s ease; }
   .energy-text { font-size: 0.8em; font-weight: 700; color: white; white-space: nowrap; position: relative; text-shadow: 0 0 2px rgba(0,0,0,0.6); }
 }
-.energy-refill-timer-header { // Стили из код2, т.к. в код1 "как было"
+.energy-refill-timer-header { /* Стили из код2 */
   font-size: 0.6em; color: #b0b0c0; text-align: center; margin-top: 2px; padding: 1px 4px; background-color: rgba(0,0,0,0.35); border-radius: 3px; line-height: 1.1;
 }
 
 .game-header-body {
-  position: absolute; // Или relative, если .game-header-container имеет высоту // ИЗ КОД1
-  top: 0; // Начинается от верха .game-header-container // ИЗ КОД1
+  position: absolute;
+  top: 0; // Начинается от верха .game-header-container (т.е. от top: 0 экрана)
   left: 0;
   width: 100%;
-  height: $game-header-body-total-height; // Занимает всю высоту, которую мы для него определили // ИЗ КОД1
+  height: $game-header-body-total-height; // Занимает всю высоту, определенную для него
   background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);  backdrop-filter: blur(10px);
   display: flex;
-  justify-content: space-between; // Чтобы крылья были по бокам // ИЗ КОД1
-  align-items: flex-start; // Контент крыльев начнется после их padding-top // ИЗ КОД1
-  padding-left: env(safe-area-inset-left, 8px); // ИЗ КОД1
-  padding-right: env(safe-area-inset-right, 8px); // ИЗ КОД1
+  justify-content: space-between;
+  align-items: flex-start; // Контент крыльев начнется после их padding-top
+  padding-left: env(safe-area-inset-left, 8px);
+  padding-right: env(safe-area-inset-right, 8px);
   box-sizing: border-box;
   z-index: 1;
-  // Теперь нижний край может быть проще. Например, просто закруглен.
-  // Или легкий изгиб вверх по центру, если все еще хотите.
-  border-radius: 0 0 12px 12px; // Закругляем нижние углы всей шапки // ИЗ КОД1
-  // Если нужен простой изгиб снизу (не такой сложный, как раньше):
-  // clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 70% 100%, 50% 85%, 30% 100%, 0% 100%); // ИЗ КОД1
-  // Этот clip-path сделает нижний край немного вогнутым по центру (дно на 85% высоты).
-  // Если clip-path не нужен, просто удалите его.
-  // clip-path из код2 удален
+  border-radius: 0 0 12px 12px;
 }
 
-// Общий блок для крыльев из код1
 .header-left-wing,
 .header-right-wing {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  // Высота контента крыльев будет определяться их содержимым + padding-top
-  padding-top: $game-header-body-top-padding; // Отступ сверху для содержимого крыльев // ИЗ КОД1
-  height: 100%; // Заполняют высоту .game-header-body, но контент начинается ниже // ИЗ КОД1
-  // background-color: rgba(0,255,0,0.05); // Отладка (из код1 - можно оставить для отладки) - удалено
+  // === Применяем рассчитанный эффективный padding-top для крыльев ===
+  padding-top: $wing_effective_padding_top;
+  height: 100%; // Заполняют высоту .game-header-body, но контент начинается ниже из-за padding-top
 }
 
     .header-left-wing {
-    align-items: flex-start; // Уже было в код2, соответствует код1
+    align-items: flex-start;
     gap: 8px;
-    width: 45%; // Дадим больше места, если название главы ушло // ИЗ КОД1
-    margin-left: calc(env(safe-area-inset-left, 0px) + 10px);
-    min-width: 180px; // ИЗ КОД1 (было 180px в код2 с комментарием "Увеличил для контента (из код1)")
-    // padding-left из код2 удален, т.к. теперь он на .game-header-body
+    width: 45%; // Можно настроить
+    // margin-left из код2 может остаться или быть частью общего padding-left на .game-header-body
+    // top: max(70px, calc(40px + env(safe-area-inset-top, 0px))); // Эту строку можно удалить, если $wing_effective_padding_top теперь основной механизм отступа. Если нужна *дополнительная* max() логика поверх padding-top, можно оставить, но это усложнит понимание. По умолчанию, для чистоты, предполагаем, что $wing_effective_padding_top достаточен.
+    min-width: 180px;
 
-    // Стили для .player-identification-block, .header-avatar и т.д. остаются как были (из код2)
+    // Остальные стили для содержимого крыла .player-identification-block и т.д. остаются как были в код2
     .player-identification-block { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
     .header-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); flex-shrink:0; }
     .header-player-details {
@@ -128,23 +135,19 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
     }
     }
 
-    .header-center-spacer { // ИЗ КОД1
-    flex-grow: 1; // Занимает центральное пространство в .game-header-body
-    // Этот блок теперь может быть пустым, так как название главы вынесено
+    .header-center-spacer {
+    flex-grow: 1;
     }
 
-    // .header-center-dip-visual из код2 удален
-
     .header-right-wing {
-    // position: absolute; right: 0; top: 0; - удалено, т.к. код1 использует flexbox для позиционирования
-    align-items: flex-end; // Переопределяем из общего блока (из код1)
+    align-items: flex-end;
     gap: 4px;
-    width: 40%; // Дадим больше места // ИЗ КОД1
-    margin-right: calc(env(safe-area-inset-right, 0px) + 10px);
-    min-width: 100px; // ИЗ КОД1 (было 100px в код2 с комментарием "Увеличил (из код1)")
-    // padding-right из код2 удален, т.к. теперь он на .game-header-body
+    width: 40%; // Можно настроить
+    // margin-right из код2 может остаться или быть частью общего padding-right на .game-header-body
+    // top: max(70px, calc(40px + env(safe-area-inset-top, 0px))); // Аналогично левому крылу, можно удалить.
+    min-width: 100px; // В код2 было 100px, в код1 - 180px. Оставляю 100px из последнего предоставленного код2.
 
-    // Стили для .header-resource-item остаются как были (из код2)
+    // Остальные стили для содержимого крыла .header-resource-item остаются как были в код2
     .header-resource-item {
         display: flex; align-items: center; gap: 5px; font-size: 0.9em; background-color: rgba(0,0,0,0.4);
         padding: 3px 7px; border-radius: 7px; color: #fff; min-width: 80px; justify-content: flex-end;
@@ -153,51 +156,38 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
     }
     }
 
-// src/components/GameHeader.scss
-
-// ... (все переменные и стили выше .chapter-name-banner остаются как в предыдущем ответе) ...
-
-// --- Стили для баннера с названием главы ---
+// Стили для баннера с названием главы
 .chapter-name-banner {
-    position: absolute;
-    top: $game-header-body-total-height;
-    margin-top: -20px; // Отрицательный margin, чтобы баннер "заехал" на шапку. Подберите значение.
-    left: 51.7%;
-    transform: translateX(-50%);
-  
-    // === ЗАДАЕМ ФИКСИРОВАННУЮ ШИРИНУ ===
-    width: 140px; // Ваша предложенная ширина. Можете изменить на 120px, 150px и т.д.
-    height: 30px;          // min-width и max-width теперь не нужны, если ширина фиксированная.
-  
-    // Внутренние отступы. Вертикальные для высоты, горизонтальные можно сделать минимальными.
-    padding: 5px 0px; // 5px сверху/снизу, 3px слева/справа от текста до краев баннера.
-  
-    background: #daa520;
-    border: 1px solid rgba(120, 100, 150, 0.6);
-    border-top: none;
-    border-radius: 10px;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
-    z-index: 100;
-    
-    display: flex; // Используем flex для вертикального центрирования текста, если он ниже padding
-    justify-content: center; // Горизонтальное центрирование текста внутри фиксированной ширины
-    align-items: center; // Вертикальное центрирование текста
-    text-align: center; // Для самого текста (если он многострочный)
-  
-    .header-chapter-name {
-      font-size: 0.85em; // Может потребоваться немного уменьшить шрифт для узкого баннера
-      font-weight: bold;
-      color: #e8e8ff;
-      margin: 0;
-      padding: 0; // Убираем внутренние отступы у самого текста
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-      
-      white-space: normal;
-      overflow-wrap: break-word;
-      word-break: break-word; // Позволяет переносить очень длинные слова без пробелов
-      
-      line-height: 1.2; // Межстрочный интервал
-      // max-width: 100%; // Текст будет ограничен шириной родителя (.chapter-name-banner) минус его padding.
-                          // Если у родителя фиксированная ширина, это свойство не так критично.
-    }
+  position: absolute;
+  // top теперь зависит от $game-header-body-total-height, который изменился из-за нового padding-top крыльев
+  top: $game-header-body-total-height;
+  margin-top: -15px; // Отрицательный margin, чтобы баннер "заехал" на шапку. Подберите значение.
+  left: 51.7%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: $chapter-banner-height; // Используем переменную
+  padding: 5px 0px;
+  background: #daa520;
+  border: 1px solid rgba(120, 100, 150, 0.6);
+  border-top: none;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+  z-index: 100; // Может потребоваться z-index выше, чем у .game-header-energy-bar-placement (2) и .game-header-body (1)
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  .header-chapter-name {
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #e8e8ff;
+    margin: 0;
+    padding: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.2;
   }
+}
