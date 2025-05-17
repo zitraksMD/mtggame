@@ -1,29 +1,27 @@
 // src/components/GameHeader.scss
 
 // --- ПЕРЕМЕННЫЕ ДЛЯ НАСТРОЙКИ ---
-$safe-area-inset-top: env(safe-area-inset-top, 0px);
+$safe-area-inset-top: env(safe-area-inset-top, 0px); // Отступ для "челки" iPhone и т.п.
 $energy-bar-area-height: 35px;
-$energy_bar_placement_padding_top: 6px; // Отступ внутри .game-header-energy-bar-placement сверху
+$energy_bar_placement_padding_top: 6px; // Внутренний padding-top для самого блока энергии
+
+// --- Минимальный отступ для энергетического бара на Android ---
+// (когда $safe-area-inset-top равен 0)
+$min_energy_offset_android: 30px; // Можете настроить это значение
 
 // --- Рассчитываем отступ сверху для крыльев по вашей формуле ---
-// Это значение будет использовано для свойства top крыльев
-// и как эффективный "верхний отступ" для расчета общей высоты шапки.
+// (Эта логика остается пока прежней)
 $wing_top_offset_value: max(
-  70px, // Базовый минимальный отступ
-  calc(40px + #{$safe-area-inset-top}) // Отступ с учетом "челки"
+  80px, // Базовый минимальный отступ для крыльев
+  calc(40px + #{$safe-area-inset-top}) // Отступ крыльев с учетом "челки"
 );
 
 // --- Переменные для расчета высот ---
-$wing-content-visual-height: 78px; // Визуальная высота контента внутри крыла
+$wing-content-visual-height: 78px;
 $game-header-body-content-height: $wing-content-visual-height;
-
-// Эффективный "верхний отступ" для контента внутри .game-header-body до начала крыльев
-// Равен значению, на которое мы смещаем крылья свойством top
 $game-header-body_effective_top_padding_for_height_calc: $wing_top_offset_value;
+$game-header-body-bottom-padding: 10px;
 
-$game-header-body-bottom-padding: 10px; // Отступ снизу в шапке
-
-// Общая высота тела шапки
 $game-header-body-total-height: calc(
   #{$game-header-body_effective_top_padding_for_height_calc} +
   #{$game-header-body-content-height} +
@@ -44,10 +42,13 @@ $chapter-banner-height: 30px;
   & > * { pointer-events: auto; }
 }
 
-.game-header-energy-bar-placement { // Энерджи бар остается "на своем месте"
+.game-header-energy-bar-placement {
   position: absolute;
-  top: $safe-area-inset-top;
-  padding-top: $energy_bar_placement_padding_top;
+  // === Обновляем top для корректного смещения энергетического бара ===
+  // На Android top будет $min_energy_offset_android (e.g. 30px)
+  // На iPhone top будет $safe-area-inset-top (e.g. 44px), если он больше $min_energy_offset_android
+  top: max(#{$min_energy_offset_android}, #{$safe-area-inset-top});
+  padding-top: $energy_bar_placement_padding_top; // Внутренний отступ остается
   left: 50%;
   transform: translateX(-50%);
   width: auto;
@@ -81,7 +82,7 @@ $chapter-banner-height: 30px;
   background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);  backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; // Контент крыльев начнется от их "нормального" верха, а затем сместится свойством top
+  align-items: flex-start;
   padding-left: env(safe-area-inset-left, 8px);
   padding-right: env(safe-area-inset-right, 8px);
   box-sizing: border-box;
@@ -94,22 +95,9 @@ $chapter-banner-height: 30px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  // Устанавливаем position: relative, чтобы свойство top работало
   position: relative;
-  // Применяем ваше смещение через top
-  // ВАЖНО: Убедитесь, что значения 70px и 40px достаточны,
-  // чтобы крылья были НИЖЕ энергетического блока.
-  // Возможно, их потребуется увеличить.
-  top: $wing_top_offset_value;
-
-  // padding-top: ...; // Убираем padding-top, если смещение теперь через top
-  height: $wing-content-visual-height; // Задаем высоту для контента крыла, общая высота родителя учтет смещение top
-                                       // Либо можно использовать height: 100% и дать родительскому элементу .game-header-body правильный padding-top,
-                                       // но вы хотели применить именно `top` к крыльям.
-                                       // Если height: 100%, то .game-header-body должен иметь padding-top,
-                                       // а крылья не должны иметь свой top.
-                                       // С текущим подходом (top для крыльев), высота крыльев должна быть явной или определяться контентом,
-                                       // а $game-header-body-total-height учитывает это.
+  top: $wing_top_offset_value; // Этот отступ пока не изменен
+  height: $wing-content-visual-height;
 }
 
     .header-left-wing {
