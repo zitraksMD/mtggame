@@ -32,6 +32,7 @@ const MainMenu = ({ onStart }) => {
         setIsFullScreenMapActive, 
         startScreenTransition,
         ensureScreenIsOpening,
+        isZoneUnlocked 
     } = useGameStore(state => ({
         currentChapterIdFromStore: state.currentChapterId,
         setCurrentChapterInStore: state.setCurrentChapter,
@@ -43,6 +44,7 @@ const MainMenu = ({ onStart }) => {
         setIsFullScreenMapActive: state.setIsFullScreenMapActive,
         startScreenTransition: state.startScreenTransition,
         ensureScreenIsOpening: state.ensureScreenIsOpening,
+        isZoneUnlocked: state.isZoneUnlocked // <--- ДОБАВЛЕНО
     }));
 
     const [activeView, setActiveView] = useState('detailed'); 
@@ -444,10 +446,10 @@ const MainMenu = ({ onStart }) => {
         openDetailedChapterView(selectedChapterId);
     }, [openDetailedChapterView]);
 
-    const handleGoBackToZoneMapFromGlobal = useCallback(() => {
-        console.log(`[MainMenu] Возврат с GlobalMap на ZoneMap для зоны ${currentZoneId} и главы ${currentChapterId}.`);
-        openZoneMapView(currentZoneId, currentChapterId);
-    }, [currentZoneId, currentChapterId, openZoneMapView]);
+    const handleReturnToMainFromGlobalMap = useCallback(() => {
+        console.log(`[MainMenu] Возврат с GlobalMap на детальный вид главы ${currentChapterId || INITIAL_CHAPTER_ID}.`);
+        openDetailedChapterView(currentChapterId || INITIAL_CHAPTER_ID);
+    }, [currentChapterId, openDetailedChapterView]);
 
     const handleGoBackToDetailedViewFromZone = useCallback(() => {
         console.log(`[MainMenu] Возврат с ZoneMap на детальный вид главы ${currentChapterId}.`);
@@ -560,7 +562,7 @@ const MainMenu = ({ onStart }) => {
                         <GlobalMap
                             initialFocusZoneId={currentZoneId} 
                             onSelectZone={handleZoneSelectedOnGlobalMap}
-                            onGoBack={handleGoBackToZoneMapFromGlobal} 
+                            onGoBack={handleReturnToMainFromGlobalMap} 
                             allZonesData={ALL_ZONES_CONFIG}
                             findZoneForChapter={findZoneIdForChapter}
                         />
@@ -584,6 +586,7 @@ const MainMenu = ({ onStart }) => {
     onGoBack={handleGoBackToDetailedViewFromZone} // Этот goBack для возврата с ZoneMap на детальный вид главы
     isLevelUnlocked={isLevelUnlocked}
     getLevelCompletionStatus={getLevelCompletionStatus}
+    isZoneUnlocked={currentZoneId ? isZoneUnlocked(currentZoneId) : false}
     currentChapterId={currentChapterId} // <-- Значение локального состояния MainMenu
 />
                         )}

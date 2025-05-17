@@ -3,160 +3,190 @@
 // Основной контейнер экрана глобальной карты
 .global-map-screen {
   width: 100%;
-  height: 100vh; // Или 100% если родитель имеет высоту
+  height: 100vh;
   background: linear-gradient(160deg, #0f1a30 0%, #1a2a4a 100%);
   color: white;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden; // Важно для .global-map-viewport
+  overflow: hidden;
   user-select: none;
 }
 
 // Шапка экрана глобальной карты
 .global-map-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: calc(env(safe-area-inset-top, 0px) + 15px) 15px 15px 15px;
   width: 100%;
-  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
   position: relative;
-  z-index: 10; // Поверх карты, но ниже TransitionOverlay
-  // background-color: rgba(0,0,0,0.2); // Опционально из код1
+  z-index: 5;
+  pointer-events: none;
+}
 
-  h1 { // Стили из код2, т.к. в код1 не определены
+// Новый стиль для плашки с названием "Карта Мира"
+.global-map-title-plate {
+  position: absolute;
+  top: max(70px, calc(40px + env(safe-area-inset-top, 0px)));
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.65);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 20;
+  pointer-events: none;
+
+  h1 {
     margin: 0;
     font-size: 1.6em;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-  }
-
-  .map-back-button { // Стили из код2, т.к. в код1 не определены
-    position: absolute;
-    top: 15px; 
-    left: env(safe-area-inset-left, 15px);
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 20px; 
-    line-height: 1;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-    }
+    white-space: nowrap;
   }
 }
 
-// Viewport для карты (из код1, заменяет .global-map-background из код2 в этой роли)
-.global-map-viewport {
-  flex-grow: 1; // Занимает все доступное место
-  width: 100%;
-  position: relative; // Для позиционирования .global-map-pannable-content
-  overflow: hidden;   // ОЧЕНЬ ВАЖНО! Обрезает все, что выходит за пределы.
-  cursor: grab;       // Курсор для перетаскивания (из код1)
-  background-color: rgba(0,0,0,0.1); // Легкий фон для самого вьюпорта, если карта меньше (из код1)
-  
+// Кнопка "Назад" на GlobalMap
+.global-map-back-button {
+  position: absolute;
+  top: max(70px, calc(40px + env(safe-area-inset-top, 0px)));
+  right: calc(env(safe-area-inset-right, 0px) + 15px);
+  z-index: 100;
+
+  background-color: rgba(40, 40, 60, 0.7);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+
+  &:hover {
+    background-color: rgba(60, 60, 90, 0.8);
+    transform: scale(1.1);
+  }
+
   &:active {
-    cursor: grabbing; // (из код1)
+    transform: scale(0.95);
   }
 }
 
-// Перемещаемый и масштабируемый контент карты (из код1)
-.global-map-pannable-content {
-  position: absolute; // Чтобы можно было двигать через transform (x, y)
-  // background-image: url('/assets/maps/earth_texture.jpg'); // Если текстура земли здесь (из код1)
-  // background-size: 100% 100%; // (из код1)
-  transform-origin: 0 0; // Важно для корректного масштабирования (из код1)
+// Viewport для карты
+.global-map-viewport {
+  flex-grow: 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  background-color: rgba(0,0,0,0.1);
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
-// Стиль для одной зоны на карте (ранее .continent-node в код2)
-.zone-node { // Имя из код1
-  position: absolute; // Позиционируется относительно .global-map-pannable-content (из код1)
+// Перемещаемый и масштабируемый контент карты
+.global-map-pannable-content {
+  position: absolute;
+  transform-origin: 0 0;
+}
+
+// Стиль для одной зоны на карте
+.zone-node {
+  position: absolute;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  // transition и основные hover-эффекты (scale) создаются Framer Motion (философия код1)
-  // padding, border, background-color, width, height - не задаются здесь по стилю код1,
-  // так как предполагается, что размеры приходят из JS/данных (props) и применяются инлайн,
-  // а Framer Motion управляет интерактивными анимациями.
+  // Добавлено из код1:
+  transition: transform 0.2s ease-out, filter 0.2s ease-out, box-shadow 0.2s ease-out;
+  filter: none; // По умолчанию нет фильтров
 
-  // Стили для hover :not(.locked):not(.not-implemented) управляются Framer Motion (из код1)
-  // &:hover:not(.locked):not(.not-implemented) {
-  //   // Framer Motion позаботится об анимации scale
-  // }
+  // Эффект при наведении (из код1), не применяется к .locked и .not-implemented
+  &:hover:not(.locked):not(.not-implemented) {
+    transform: scale(1.05);
+    // Легкое свечение при наведении на НЕ ТЕКУЩУЮ зону (из код1):
+    &:not(.current-player-zone) {
+      filter: drop-shadow(0px 0px 6px rgba(200, 220, 255, 0.5)); // Легкое нейтральное свечение
+    }
+  }
 
-  .zone-image { // Ранее .continent-image
-    width: 100%; // Занимает всю ширину .zone-node (которая задана в JS/данных) (из код1)
-    height: auto; // Сохраняет пропорции (из код1)
-    max-height: 70%; // Ограничение, чтобы текст поместился (из код1)
-    object-fit: contain; // (из код1 и код2)
-    margin-bottom: 5px; // (из код1 и код2)
+  // Стиль для ТЕКУЩЕЙ ЗОНЫ ИГРОКА (из код1)
+  // Класс .not(.locked) и .not(.not-implemented) уже должен быть применен из JSX, если isCurrentPlayerZone true
+  &.current-player-zone {
+    filter: drop-shadow(0px 0px 12px gold) drop-shadow(0px 0px 6px gold) brightness(1.1);
+    border-color: transparent !important; // Убедимся, что никакие другие рамки не мешают
+    box-shadow: none !important;         // Убираем возможные внешние тени, чтобы не конфликтовали с filter
+    // При наведении на текущую зону, она будет увеличиваться (из общего &:hover:not(.locked)),
+    // и этот фильтр должен остаться или скомбинироваться.
+  }
+
+  .zone-image {
+    width: 100%;
+    height: auto;
+    max-height: 70%;
+    object-fit: contain;
+    margin-bottom: 5px;
     border-radius: 8px; // Скругление из код2 .continent-image, сохранено
   }
 
-  .zone-label { // Ранее .continent-label
-    color: white; // (из код1)
-    font-size: 12px; // (из код1)
-    font-weight: 500; // (из код1)
-    text-shadow: 1px 1px 1px rgba(0,0,0,0.7); // (из код1)
-    // white-space: nowrap; // Если нужно, чтобы не переносился (комментарий из код1)
+  .zone-label {
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
   }
-  
+
   // Стиль для заблокированной зоны (реализованной, но заблокированной)
-  // Адаптировано из .locked в код2
   &.locked {
-    cursor: not-allowed; 
+    cursor: not-allowed;
+    // Стили filter и transform при hover для .locked теперь управляются через :not(.locked) выше
+    // и через JS для Framer Motion.
     .zone-image {
-      filter: grayscale(90%) brightness(0.6); // Визуальное приглушение из код2
+      filter: grayscale(90%) brightness(0.6); // Визуальное приглушение
     }
     .zone-label {
-      color: #888; // Текст тоже приглушаем (из код2)
+      color: #888; // Текст тоже приглушаем
     }
-    // Если Framer Motion's whileHover={{ scale: 1.1 }} применяется,
-    // и вы хотите его отключить для .locked, это нужно делать в JS,
-    // например, не передавая whileHover проп для заблокированных зон.
-    // CSS :hover здесь не остановит Framer Motion transform.
   }
-  
+
   // Стиль для нереализованной зоны
-  // Адаптировано из .not-implemented в код2
   &.not-implemented {
     cursor: default;
-    // filter: grayscale(1); // Можно добавить общее обесцвечивание всей зоны, если требуется
-
+    // Стили filter и transform при hover для .not-implemented теперь управляются через :not(.not-implemented) выше
+    // и через JS для Framer Motion.
     .zone-image {
-      opacity: 0.5; // Делаем изображение полупрозрачным (из код2)
-      filter: grayscale(1); // Можно и обесцветить изображение (из код2)
+      opacity: 0.5; // Делаем изображение полупрозрачным
+      filter: grayscale(1); // Можно и обесцветить изображение
     }
-    .zone-label, .zone-status-label { // Текст тоже приглушаем (из код2)
+    .zone-label, .zone-status-label { // Текст тоже приглушаем
       color: #888;
     }
-    // Как и для .locked, управление Framer Motion hover-эффектами лучше делать в JS.
   }
 
-  // Иконка замка (адаптировано из .continent-lock-icon код2)
-  .zone-lock-icon {
+  // Иконка замка
+  .global-map-zone-lock-icon {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    font-size: 1.5em; // Усредненное значение или по вкусу
-    color: yellow; 
-    text-shadow: 0 0 5px black;
-    pointer-events: none; // Чтобы не мешал клику
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2em;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 6px black;
+    pointer-events: none;
+    z-index: 1;
   }
 
   // Статус лейбл (например, "Скоро" или "% прохождения")
-  // Адаптировано из .continent-status-label код2
   .zone-status-label {
     font-size: 0.9em;
     margin-top: 3px;
-    // color: white; // По умолчанию, будет переопределено в .not-implemented на #888
   }
 }

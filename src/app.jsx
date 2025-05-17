@@ -281,21 +281,38 @@ const App = () => {
         console.log("EnergyDisplay отрисован, энергия:", energyCurrent, "/", energyMax);
         return <div>Энергия: {energyCurrent}/{energyMax}</div>;
     };
-    
+
 
     const handleLevelComplete = useCallback((levelId, status, difficultyPlayed) => {
         setActiveLevelData(null); // Сбрасываем данные уровня после завершения
         setIsLoadingLevel(false); // Убедимся, что лоадер уровня выключен
-
+    
         // Логика обновления прогресса в сторе
         if (status === 'won') {
             const chapterId = getChapterIdFromLevelId(levelId);
-            if (chapterId !== null) {
-                useGameStore.getState().completeLevelAction(chapterId, levelId, difficultyPlayed);
+            if (chapterId !== null && activeLevelData) { // Убедимся, что activeLevelData есть
+                const store = useGameStore.getState();
+    
+                // Формируем контекстные данные для completeLevelAction
+                const chapterContext = {
+                    isZoneBossChapter: activeLevelData.isZoneBossChapter || false, // Предполагаем, что этот флаг есть в levelData/chapterData
+                    currentZoneIdForThisChapter: activeLevelData.zoneId, // Предполагаем, что levelData содержит zoneId
+                    levels: activeLevelData.levels // Массив уровней текущей главы
+                };
+                // Если в activeLevelData нет zoneId, его нужно получить другим способом
+                // например, через findZoneIdForChapter(chapterId)
+    
+                store.completeLevelAction(chapterId, levelId, difficultyPlayed, chapterContext);
                 // Тут можно подготовить данные для RewardsScreen, если он их ожидает через state
+            } else if (chapterId !== null) {
+                // Обработка случая, когда activeLevelData отсутствует, но chapterId есть
+                // Возможно, здесь стоит вызвать completeLevelAction без chapterContext
+                // или показать ошибку/предупреждение
+                useGameStore.getState().completeLevelAction(chapterId, levelId, difficultyPlayed);
+                console.warn("activeLevelData is not available, completing level without chapterContext");
             }
         }
-
+    
         // Навигация после завершения уровня
         useGameStore.getState().startScreenTransition(() => {
             if (status === 'won') {
@@ -305,7 +322,7 @@ const App = () => {
                 navigate("/main");
             }
         });
-    }, [navigate]);
+    }, [navigate, activeLevelData]); // Добавили activeLevelData в зависимости
 
     const handleLevelReady = useCallback(() => {
         // console.log("🎮 Компонент Уровня готов к игре!");

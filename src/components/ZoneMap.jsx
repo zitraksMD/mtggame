@@ -22,7 +22,7 @@ const ZoneMap = ({
     chaptersInZoneProp, // Этот проп УЖЕ содержит главы, но не информацию о зоне
     goToChapter,
     onGoToGlobalMap,
-    // goBack - убран, так как кнопка одна (из код1)
+    isZoneUnlocked, // <--- НОВЫЙ ПРОП: булево значение (true/false)
 }) => {
     console.log('ZoneMap received onGoToGlobalMap type:', typeof onGoToGlobalMap, onGoToGlobalMap);
     const mapContainerRef = useRef(null);
@@ -287,8 +287,11 @@ const ZoneMap = ({
         const chapterIndex = chaptersToDisplay.findIndex(c => c.chapterId === chapter.chapterId);
         let isActuallyUnlocked = false;
         let reasonForLock = "Глава не найдена в списке отображаемых глав.";
-    
-        if (chapterIndex === -1) {
+        
+        if (!isZoneUnlocked) { // <--- НОВАЯ ПРОВЕРКА: Если вся зона заблокирована
+            isActuallyUnlocked = false;
+            reasonForLock = `Зона "${currentZoneInfo?.name || zoneId}" еще не открыта.`; // Обновляем причину
+        } else if (chapterIndex === -1) {
             console.warn(`ZoneMap Click: Clicked chapter ${chapter.chapterId} not found in chaptersToDisplay.`);
         } else if (chapterIndex === 0) {
             isActuallyUnlocked = true;
@@ -313,7 +316,7 @@ const ZoneMap = ({
         } else {
             console.error("ZoneMap: goToChapter prop is not a function!");
         }
-    }, [isAnimatingFocus, dragging, chaptersToDisplay, goToChapter, isChapterCompleted]);
+    }, [isAnimatingFocus, dragging, chaptersToDisplay, goToChapter, isChapterCompleted, isZoneUnlocked, currentZoneInfo, zoneId]); // Добавили isZoneUnlocked и др. в зависимости
     
     const handleAnimationComplete = () => {
         if(isAnimatingFocus) {
@@ -376,6 +379,18 @@ const ZoneMap = ({
                         let prevChapterIdForLog = 'N/A';
                         let prevChapterWasActuallyCompleted = 'N/A';
 
+                        if (!isZoneUnlocked) { // <--- НОВАЯ ПРОВЕРКА: Если вся зона заблокирована
+                            isUnlockedForDisplayLogic = false; // То все главы в ней недоступны для отображения как unlocked/completed
+                            // statusClass останется 'locked'
+                        } else if (chapterIndex === 0) { // Зона разблокирована, И это первая глава зоны
+                            isUnlockedForDisplayLogic = true;
+                        } else if (chapterIndex > 0) { // Зона разблокирована, И это не первая глава
+                            const prevCh = chaptersToDisplay[chapterIndex - 1];
+                            if (prevCh && prevCh.data && Array.isArray(prevCh.data.levels)) {
+                                isUnlockedForDisplayLogic = prevCh.data.levels.length === 0 || isChapterCompleted(prevCh.chapterId, prevCh.data.levels);
+                            }
+                        }
+
                         if (chapterIndex === 0) {
                             isUnlockedForDisplayLogic = true;
                         } else if (chapterIndex > 0) {
@@ -399,6 +414,7 @@ const ZoneMap = ({
                         if (isUnlockedForDisplayLogic && chapter.data && Array.isArray(chapter.data.levels)) {
                             currentChapterIsActuallyCompleted = isChapterCompleted(chapter.chapterId, chapter.data.levels);
                         }
+
 
                         if (isUnlockedForDisplayLogic) {
                             statusClass = currentChapterIsActuallyCompleted ? 'completed' : 'unlocked';

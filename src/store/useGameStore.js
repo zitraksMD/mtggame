@@ -6,6 +6,7 @@ import forgeRecipes from "../data/forgeDatabase";     // Данные рецеп
 import { dailyShopDeals } from "../data/shopData";       // Данные магазина
 import achievementsData from '../data/achievementsDatabase'; // Импорт определений достижений
 import { RACES, getRaceDataById } from '../config/raceData';
+import { ALL_ZONES_CONFIG } from '../data/worldMapData'; // <-- ПРОВЕРЬ ПРАВИЛЬНОСТЬ ПУТИ
 // <<< НОВОЕ >>> Импорты для артефактов
 import {
     ARTIFACT_SETS,
@@ -111,6 +112,7 @@ const loadFromLocalStorage = () => {
                 lastOpenedChestInfo: null,
                 lastChestRewards: null,
                 activeDebuffs: [], // Инициализация дебаффов
+                completedZones: {}, // <--- ДОБАВЬ СЮДА
             };
         }
 
@@ -214,6 +216,7 @@ const loadFromLocalStorage = () => {
             lastEnergyRefillTimestamp: Date.now(),
             activeDebuffs: [], // Инициализация дебаффов
             isAffectedByWeakeningAura: false, // <<< НОВОЕ Состояние для ауры
+            completedZones: {}, // <--- ДОБАВЬ СЮДА
         };
     }
 };
@@ -397,7 +400,8 @@ const useGameStore = create((set, get) => ({
     lastOpenedLevelChestRewards: null, // <<< НОВОЕ: Массив с наградами [{ type, amount?, id?, name?, icon?, rarity? }] или null
     levelChestStates: {}, // <<< НОВОЕ (Опционально): для сохранения статуса открытых сундуков между сессиями { instanceId: true }
     currentLevelRewards: { gold: 0, diamonds: 0, items: [] },
-    currentChapterId: null,
+    currentChapterId: 1,
+    completedZones: savedState.completedZones || {}, // <--- ДОБАВЬ ЭТО СОСТОЯНИЕ
     hasClaimableRewardsIndicator: false,
     // --- Игрок ---
     playerHp: savedState.playerHp ?? DEFAULT_BASE_STATS.hp,
@@ -1176,14 +1180,23 @@ addEnergy: (amount) => {
             get().checkAllAchievements();
         }
     },
-    completeLevelAction: (chapterId, levelId, difficultyPlayed) => { // Добавляем difficultyPlayed
+    completeLevelAction: (chapterId, levelId, difficulty, chapterContextData) => {
+        // chapterContextData может быть объектом вида:
+        // { isZoneBossChapter: true, currentZoneIdForThisChapter: 'zone_01_necropolis', levels: [...] }
+        // где 'levels' - это массив уровней для данной главы, необходимый для isChapterCompleted.
+        // 'difficulty' - это строка, например, 'normal' или 'hard'.
+    
+        const get = useGameStore.getState; // или просто 'get', если в области видимости create(set, get)
+        const set = useGameStore.setState; // или просто 'set'
+    
         const levelKey = `c${chapterId}_l${levelId}`;
         const currentCompletion = get().levelsCompleted[levelKey] || { normal: false, hard: false };
-        
+    
         let difficultyKey = 'normal'; // По умолчанию
-        if (difficultyPlayed?.toLowerCase() === 'hard') {
+        if (difficulty?.toLowerCase() === 'hard') {
             difficultyKey = 'hard';
         }
+    
         // Если уровень пройден на Hard, он автоматически считается пройденным и на Normal
         const newCompletionStatus = {
             ...currentCompletion,
@@ -1192,8 +1205,9 @@ addEnergy: (amount) => {
         if (difficultyKey === 'hard') {
             newCompletionStatus.normal = true; // Если пройден Hard, то Normal тоже считается пройденным
         }
-
-        // Проверяем, изменился ли статус, чтобы не вызывать лишних обновлений
+    
+        // Проверяем, изменился ли статус, чтобы не вызывать лишних обновлений.
+        // Обновляем только если целевая сложность еще не была пройдена.
         if (get().levelsCompleted[levelKey]?.[difficultyKey] !== true) {
             console.log(`[Store Action] Уровень ${levelKey} пройден на сложности '${difficultyKey}'. Новый статус:`, newCompletionStatus);
             set((state) => ({
@@ -1202,8 +1216,23 @@ addEnergy: (amount) => {
                     [levelKey]: newCompletionStatus
                 }
             }));
-            get().checkAllAchievements(); // Проверяем ачивки
-            // TODO: Здесь можно добавить логику проверки, пройдена ли вся глава, и вызова completeChapterAction
+    
+            get().checkAllAchievements(); // Проверяем ачивки после успешного обновления статуса уровня
+    
+            // ▼▼▼ ПРОВЕРКА ЗАВЕРШЕНИЯ ЗОНЫ (из второй части Код 1) ▼▼▼
+            if (chapterContextData?.isZoneBossChapter && chapterContextData?.currentZoneIdForThisChapter) {
+                // chapterContextData.levels должен содержать все уровни этой главы,
+                // либо функция isChapterCompleted должна уметь их получать из состояния.
+                const levelsForThisChapter = chapterContextData.levels || []; // Передаем уровни главы или пустой массив
+    
+                if (get().isChapterCompleted(chapterId, levelsForThisChapter)) {
+                    console.log(`[useGameStore] Финальная/босс-глава ${chapterId} зоны ${chapterContextData.currentZoneIdForThisChapter} пройдена!`);
+                    get().completeZone(chapterContextData.currentZoneIdForThisChapter);
+                }
+            }
+            // TODO: Здесь можно добавить логику проверки, пройдена ли вся глава (не только босс-глава для зоны),
+            // и вызова completeChapterAction, если это необходимо отдельно от логики зон.
+    
         } else {
             console.log(`[Store Action] Уровень ${levelKey} уже был пройден на сложности '${difficultyKey}' или выше.`);
         }
@@ -2295,6 +2324,7 @@ clearLastLevelChestRewards: () => {
             energyMax: DEFAULT_MAX_ENERGY, // Сброс энергии
             energyCurrent: DEFAULT_MAX_ENERGY,
             lastEnergyRefillTimestamp: Date.now(),
+            completedZones: {}, // <--- ДОБАВЬ СБРОС ЗДЕСЬ
         });
         localStorage.removeItem(STORAGE_KEY);
         // console.log("Game reset complete.");
@@ -2385,6 +2415,70 @@ clearLastLevelChestRewards: () => {
         // No need to call updatePowerLevel here unless debuffs directly contribute to it.
     },
 
+    // === НОВЫЕ ФУНКЦИИ ДЛЯ ЗОН ===
+    /**
+     * Проверяет, разблокирована ли зона для доступа игрока.
+     * @param {string} zoneId - ID зоны для проверки.
+     * @returns {boolean} - true, если зона разблокирована.
+     */
+    isZoneUnlocked: (zoneId) => {
+        const zoneConfig = ALL_ZONES_CONFIG.find(z => z.id === zoneId);
+
+        if (!zoneConfig) {
+            console.warn(`[useGameStore] isZoneUnlocked: Конфигурация для зоны ${zoneId} не найдена.`);
+            return false; 
+        }
+
+        // Первая зона в ALL_ZONES_CONFIG всегда доступна, ИЛИ если нет unlockCondition
+        if (ALL_ZONES_CONFIG[0]?.id === zoneId || !zoneConfig.unlockCondition) {
+            return true;
+        }
+
+        const { type, requiredZoneId } = zoneConfig.unlockCondition;
+
+        if (type === 'zone_completed') {
+            if (!requiredZoneId) {
+                console.warn(`[useGameStore] isZoneUnlocked: Для зоны ${zoneId} условие 'zone_completed' не имеет requiredZoneId.`);
+                return false;
+            }
+            return !!get().completedZones[requiredZoneId];
+        }
+
+        // Сюда можно добавить другие типы условий, если они появятся
+        // console.warn(`[useGameStore] isZoneUnlocked: Неизвестный или нереализованный тип условия "${type}" для зоны ${zoneId}.`);
+        return false; // По умолчанию, если условие не распознано или не выполнено
+    },
+    
+        /**
+     * Отмечает зону как пройденную.
+     * @param {string} zoneId - ID пройденной зоны.
+     */
+        completeZone: (zoneId) => {
+            const zoneConfig = ALL_ZONES_CONFIG.find(z => z.id === zoneId);
+            if (!zoneConfig) {
+                console.warn(`[useGameStore] completeZone: Конфигурация для зоны ${zoneId} не найдена.`);
+                return;
+            }
+    
+            if (get().completedZones[zoneId]) {
+                // console.log(`[useGameStore] completeZone: Зона ${zoneId} уже была отмечена как пройденная.`);
+                return; // Уже пройдена, ничего не делаем
+            }
+    
+            set(state => ({
+                completedZones: {
+                    ...state.completedZones,
+                    [zoneId]: true,
+                }
+            }));
+            console.log(`[useGameStore] Зона <span class="math-inline">\{zoneId\} \(</span>{zoneConfig.name || zoneId}) отмечена как пройденная.`);
+    
+            // Можно добавить логику автоматического перехода или уведомления игрока
+            // const nextZoneInSequence = ALL_ZONES_CONFIG.find(z => z.unlockCondition?.requiredZoneId === zoneId);
+            // if (nextZoneInSequence) {
+            //    console.log(`[useGameStore] Зона ${nextZoneInSequence.name} теперь должна быть разблокирована.`);
+            // }
+        },
     // ================== Селекторы (Getters) ==================
 
     /**
