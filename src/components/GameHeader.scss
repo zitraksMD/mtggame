@@ -104,6 +104,7 @@ $chapter-banner-height: 30px;
     align-items: flex-start;
     gap: 8px;
     width: 45%;
+    margin-left: 10px;
     min-width: 180px;
 
     .player-identification-block { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
@@ -132,6 +133,7 @@ $chapter-banner-height: 30px;
     align-items: flex-end;
     gap: 4px;
     width: 40%;
+    margin-right: 10px;
     min-width: 100px;
 
     .header-resource-item {
