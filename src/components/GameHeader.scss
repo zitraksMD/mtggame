@@ -71,8 +71,7 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
   left: 0;
   width: 100%;
   height: $game-header-body-total-height; // Занимает всю высоту, которую мы для него определили // ИЗ КОД1
-  background-color: rgba(20, 10, 40, 0.93);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);  backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-between; // Чтобы крылья были по бокам // ИЗ КОД1
   align-items: flex-start; // Контент крыльев начнется после их padding-top // ИЗ КОД1
@@ -162,7 +161,7 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
 .chapter-name-banner {
     position: absolute;
     top: $game-header-body-total-height;
-    margin-top: -15px; // Отрицательный margin, чтобы баннер "заехал" на шапку. Подберите значение.
+    margin-top: -20px; // Отрицательный margin, чтобы баннер "заехал" на шапку. Подберите значение.
     left: 51.7%;
     transform: translateX(-50%);
   
@@ -173,7 +172,7 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
     // Внутренние отступы. Вертикальные для высоты, горизонтальные можно сделать минимальными.
     padding: 5px 0px; // 5px сверху/снизу, 3px слева/справа от текста до краев баннера.
   
-    background: linear-gradient(to bottom, rgba(45, 35, 70, 0.97), rgba(35, 25, 60, 0.98));
+    background: #daa520;
     border: 1px solid rgba(120, 100, 150, 0.6);
     border-top: none;
     border-radius: 10px;
