@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import './CraftingSuccessPopup.scss'; // Стили остаются те же
 // Импорт из твоего файла src/data/itemSets.js
-import { getItemSetById } from '../data/itemSets'; // <-- Убедись, что путь '../data/itemSets' верный относительно этого файла!
+import { getItemSetById } from '../../data/itemSets.js'; // <-- Убедись, что путь '../data/itemSets' верный относительно этого файла!
 
 // --- Анимации (оставляем как есть из кода 2) ---
 const popupOverlayVariants = {

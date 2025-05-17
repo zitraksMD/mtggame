@@ -6,12 +6,12 @@ import './LevelVictoryPopup.scss';
 // 1. Импорт для ОСНОВНЫХ ДАННЫХ ПРЕДМЕТА (из код 1)
 // Укажите ПРАВИЛЬНЫЙ путь к вашему файлу itemsDatabase.js
 // Например: import { getItemById } from '../data/itemsDatabase';
-import { getItemById } from '../data/itemsDatabase'; // Используем путь как в код 1, при необходимости скорректируйте
+import { getItemById } from '../../data/itemsDatabase.js'; // Используем путь как в код 1, при необходимости скорректируйте
 
 // 2. Импорт для ДАННЫХ О СЕТАХ ПРЕДМЕТОВ (из код 1)
 // Укажите ПРАВИЛЬНЫЙ путь к вашему файлу с данными о сетах
 // Например: import { getItemSetById as getSetDataFromDB } from '../data/itemSets';
-import { getItemSetById as getSetDataFromDB } from '../data/itemSets'; // Используем путь и имя файла как в код 1, при необходимости скорректируйте
+import { getItemSetById as getSetDataFromDB } from '../../data/itemSets.js'; // Используем путь и имя файла как в код 1, при необходимости скорректируйте
 
 // --- ХЕЛПЕРЫ И АНИМАЦИИ ---
 

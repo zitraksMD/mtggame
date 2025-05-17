@@ -4,17 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 // Импорты Компонентов
-import MainMenu from "./components/MainMenu";
+import MainMenu from "./components/screens/MainMenu";
 import Level from "./components/Level";
-import Inventory from "./components/Inventory";
-import Shop from "./components/Shop";
+import Inventory from "./components/screens/Inventory";
+import Shop from "./components/screens/Shop";
 import BottomNav from "./components/BottomNav";
-import UsernamePopup from "./components/UsernamePopup";
-import Forge from "./components/Forge";
-import Achievements from "./components/Achievements";
+import UsernamePopup from "./components/popups/UsernamePopup";
+import Forge from "./components/screens/Forge";
+import Achievements from "./components/screens/Achievements";
 import RaceSelection from "./components/RaceSelection";
 import LoadingScreen from "./components/LoadingScreen";
-import RewardsScreen from "./components/RewardsScreen";
+import RewardsScreen from "./components/screens/RewardsScreen";
 import GlobalMap from "./components/GlobalMap";
 import TransitionOverlay from './components/TransitionOverlay';
 

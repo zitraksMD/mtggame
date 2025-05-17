@@ -1,7 +1,7 @@
 // src/components/LevelDetailsPopup.jsx
 import React, { useState, useMemo, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import useGameStore from '../store/useGameStore';
+import useGameStore from '../../store/useGameStore.js';
 import './LevelDetailsPopup.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // <<< Из код1: Для иконки замка
 import { faLock } from '@fortawesome/free-solid-svg-icons';      // <<< Из код1: Иконка замка

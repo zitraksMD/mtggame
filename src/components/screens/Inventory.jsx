@@ -2,12 +2,12 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 // Убедись, что импортированы motion и AnimatePresence
 import { motion, AnimatePresence } from 'framer-motion';
-import useGameStore from "../store/useGameStore"; // Проверь путь к стору
+import useGameStore from '../../store/useGameStore.js';
 import { shallow } from "zustand/shallow"; // Для оптимизации подписки на стор
 import "./Inventory.scss"; // Основные стили инвентаря
-import CharacterViewer from "./CharacterViewer"; // Компонент для 3D модели
+import CharacterViewer from "../CharacterViewer"; // Компонент для 3D модели
 import ArtifactsPanel from "./ArtifactsPanel"; // Компонент панели артефактов
-import InventoryTabs from "./InventoryTabs"; // Компонент для кнопок табов
+import InventoryTabs from "../InventoryTabs"; // Компонент для кнопок табов
 // Подключаем стили, если они есть для дочерних компонентов и еще не импортированы глобально
 // import "./ArtifactsPanel.scss";
 

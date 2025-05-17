@@ -6,14 +6,14 @@ import './Styles.scss'; // Используем стиль из code1
 import useGameStore from '../store/useGameStore';
 import usePlayerLoader from './usePlayerLoader';
 import useEnemyLoader from './useEnemyLoader'; // Импорт из code1
-import GameOverPopup from './GameOverPopup';
+import GameOverPopup from './popups/GameOverPopup';
 import LoadingScreen from "./LoadingScreen"; // Импорт из code1
-import LevelLootPopup from './LevelLootPopup'; // Импортируем новый компонент
+import LevelLootPopup from './popups/LevelLootPopup'; // Импортируем новый компонент
 import { clamp, checkCollision, convertTiledX, convertTiledY, DEFAULT_WORLD_WIDTH, DEFAULT_WORLD_HEIGHT } from './utils';
 import { BASE_ENEMY_STATS } from '../data/enemyBaseStats';
 import { getLevelChestTypeById } from '../data/levelChestData'; // Adjust path
 import { CSSTransition } from 'react-transition-group'; // Импортируем CSSTransition
-import LevelVictoryPopup from './LevelVictoryPopup';
+import LevelVictoryPopup from './popups/LevelVictoryPopup';
 
 
 

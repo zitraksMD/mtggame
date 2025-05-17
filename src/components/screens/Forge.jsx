@@ -9,13 +9,13 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
 // --- Импорт попапа ---
-import CraftingSuccessPopup from './CraftingSuccessPopup'; // <-- Убедись, что импортируешь измененный
+import CraftingSuccessPopup from '../popups/CraftingSuccessPopup.jsx';
 
 // --- Остальные импорты (из код 2, проверены на соответствие) ---
-import useGameStore from '../store/useGameStore';
-import itemsDatabase, { getItemById } from '../data/itemsDatabase';
-import forgeRecipes from '../data/forgeDatabase';
-import CompactRecipeCard from './CompactRecipeCard';
+import useGameStore from '../../store/useGameStore';
+import itemsDatabase, { getItemById } from '../../data/itemsDatabase';
+import forgeRecipes from '../../data/forgeDatabase';
+import CompactRecipeCard from '../CompactRecipeCard';
 import './Forge.scss';
 
 // --- >>> Путь к видео (из код 1) <<< ---

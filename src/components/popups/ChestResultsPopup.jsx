@@ -1,7 +1,7 @@
 // src/components/ChestResultsPopup.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import useGameStore from '../store/useGameStore';
+import useGameStore from '../../store/useGameStore.js';
 import './ChestResultsPopup.scss'; // Убедись, что стили обновлены для flip-анимации
 
 // --- Анимации ---

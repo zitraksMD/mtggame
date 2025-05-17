@@ -1,9 +1,9 @@
 // src/components/RewardsScreen.jsx
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import './RewardsScreen.scss';
-import initialRewardDataFromFile from '../data/rewardStagesData.js';
+import initialRewardDataFromFile from '../../data/rewardStagesData.js';
 import { useNavigate } from 'react-router-dom';
-import useGameStore from '../store/useGameStore'; // Убедитесь, что путь верный
+import useGameStore from '../../store/useGameStore.js'; // Убедитесь, что путь верный
 
 // --- Компонент для отображения ОДНОЙ награды --- (без изменений)
 const RewardItem = React.memo(({ reward, isClaimed, isClaimable, isLocked, onClaim }) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import useGameStore from "../store/useGameStore";
+import useGameStore from '../../store/useGameStore.js';
 import "./UsernamePopup.scss";
 
 const UsernamePopup = () => {

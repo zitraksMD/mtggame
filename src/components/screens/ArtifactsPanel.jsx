@@ -1,8 +1,8 @@
 // src/components/ArtifactsPanel.jsx
 import React, { useMemo, useState } from 'react';
-import useGameStore from '../store/useGameStore'; // Путь к стору
-import { ARTIFACT_SETS, getArtifactById } from '../data/artifactsData'; // Путь к данным
-import ArtifactPopup from './ArtifactPopup'; // Импорт компонента попапа
+import useGameStore from '../../store/useGameStore.js';
+import { ARTIFACT_SETS, getArtifactById } from '../../data/artifactsData'; // Путь к данным
+import ArtifactPopup from '../popups/ArtifactPopup.jsx';
 import './ArtifactsPanel.scss';
 
 // --- ИЗМЕНЕНО: Принимаем onPowerChange как пропс ---

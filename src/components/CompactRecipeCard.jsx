@@ -1,7 +1,7 @@
 // src/components/CompactRecipeCard.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import './Forge.scss'; // Используем те же стили
+import './screens/Forge.scss';
 
 const CompactRecipeCard = ({ recipe, onSelect }) => {
   if (!recipe || !recipe.outputItemData) {

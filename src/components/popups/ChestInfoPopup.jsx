@@ -4,7 +4,7 @@ import './ChestInfoPopup.scss'; // Подключаем стили
 import { motion, AnimatePresence } from 'framer-motion';
 
 // <<< Импорты для расчетов шансов артефактов >>>
-import { ARTIFACT_SETS } from '../data/artifactsData'; // Импортируем сеты артефактов
+import { ARTIFACT_SETS } from '../../data/artifactsData.js'; // Импортируем сеты артефактов
 
 // <<< Веса для выбора артефакта ПО РЕДКОСТИ >>>
 // !!! ЛУЧШЕ ВЫНЕСТИ В ОБЩИЙ ФАЙЛ КОНСТАНТ И ИМПОРТИРОВАТЬ !!!

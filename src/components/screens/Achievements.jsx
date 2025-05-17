@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 // VVV ИЗМЕНЕНИЕ 1: Импортируем стор отдельно, а данные наград - из нового файла VVV
-import useGameStore from '../store/useGameStore';
-import levelRewards, { RewardType } from '../data/levelRewardsData'; // <<< Используем данные из levelRewardsData.js
+import useGameStore from '../../store/useGameStore.js';
+import levelRewards, { RewardType } from '../../data/levelRewardsData'; // <<< Используем данные из levelRewardsData.js
 // ^^^ КОНЕЦ ИЗМЕНЕНИЯ 1 ^^^
-import achievementsData from '../data/achievementsDatabase';
-import { pageVariants, pageTransition } from '../animations';
+import achievementsData from '../../data/achievementsDatabase';
+import { pageVariants, pageTransition } from '../../animations';
 import './Achievements.scss';
 
 const Achievements = () => {

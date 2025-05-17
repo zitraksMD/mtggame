@@ -1,6 +1,6 @@
 // src/components/ArtifactPopup.jsx
 import React from 'react';
-import useGameStore from '../store/useGameStore'; // Путь к стору
+import useGameStore from '../../store/useGameStore.js'; // Путь к стору
 import './ArtifactPopup.scss'; // Подключаем стили
 
 // Хелпер для форматирования статов (без изменений)

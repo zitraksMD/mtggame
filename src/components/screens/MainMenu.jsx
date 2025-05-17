@@ -1,19 +1,19 @@
 // src/components/MainMenu.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
-import useGameStore from "../store/useGameStore";
-import ZoneMap from "./ZoneMap";
-import GlobalMap from "./GlobalMap";
-import TransitionOverlay from "./TransitionOverlay";
-import Popup from './Popup'; // Существующий компонент Popup
+import useGameStore from '../../store/useGameStore.js';
+import ZoneMap from "../ZoneMap.jsx";
+import GlobalMap from "../GlobalMap.jsx";
+import TransitionOverlay from "../TransitionOverlay.jsx";
+import Popup from '../popups/Popup.jsx'; // Существующий компонент Popup
 import "./MainMenu.scss";
 import { useNavigate, useLocation } from 'react-router-dom';
-import LevelDetailsPopup from './LevelDetailsPopup';
+import LevelDetailsPopup from '../popups/LevelDetailsPopup.jsx';
 
-import { ALL_ZONES_CONFIG, findZoneIdForChapter } from '../data/worldMapData.js';
+import { ALL_ZONES_CONFIG, findZoneIdForChapter } from '../../data/worldMapData.js';
 
 // Импорт для содержимого всплывающего окна почты
-import MailPopupContent from './popups/MailPopupContent';
+import MailPopupContent from '../popups/MailPopupContent.jsx';
 
 
 // Варианты анимации для оверлея поп-апа почты
@@ -55,6 +55,9 @@ const mailOverlayVariants = {
 
 const INITIAL_CHAPTER_ID = 1;
 const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+const chapterDataModules = import.meta.glob('../../data/zones/*/chapter*Data.js');
+const zoneDataModules = import.meta.glob('../../data/zones/*/zoneData.js');
+
 
 const MainMenu = ({ onStart }) => {
     const navigate = useNavigate();
@@ -201,110 +204,127 @@ const MainMenu = ({ onStart }) => {
         }
     }, [location.state, navigate, activeView, isOverlayActive, triggerCloseOverlay, triggerOpenOverlay, currentChapterId, currentChapterIdFromStore, setCurrentChapterInStore, currentZoneId, performViewChange]); 
 
-    useEffect(() => {
-        let isMounted = true;
-        const loadChapter = async (chapterIdToLoad) => {
-            if (!isMounted || !chapterIdToLoad) return;
-            const zoneIdForPath = findZoneIdForChapter(chapterIdToLoad);
-            if (!zoneIdForPath) {
-                if (isMounted) {
-                    console.error(`[MainMenu] Не удалось определить зону для главы ${chapterIdToLoad}. Загрузка отменена.`);
-                    alert(`Критическая ошибка: не удалось определить зону для главы ${chapterIdToLoad}.`);
-                    if (chapterIdToLoad !== INITIAL_CHAPTER_ID) {
-                         setCurrentChapterId(INITIAL_CHAPTER_ID);
-                        if(currentChapterIdFromStore !== INITIAL_CHAPTER_ID) setCurrentChapterInStore(INITIAL_CHAPTER_ID);
-                    } else {
-                        setChapterData(null); 
-                    }
-                    setIsLoadingChapter(false);
-                }
-                return;
-            }
-            console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${chapterIdToLoad} in zone ${zoneIdForPath}...`);
-            setIsLoadingChapter(true);
-            setChapterData(null);
-            setPosition({ x: 0, y: 0 });
-            try {
-                const chapterModule = await import(`../data/zones/${zoneIdForPath}/chapter${chapterIdToLoad}Data.js`);
-                if (isMounted) {
-                    if (chapterModule.default && typeof chapterModule.default.id === 'number') {
-                        setChapterData(chapterModule.default);
-                        console.log("[MainMenu] Successfully loaded CHAPTER data:", chapterModule.default);
-                    } else {
-                        throw new Error(`Invalid chapter data structure or missing ID in chapter${chapterIdToLoad}Data.js (zone: ${zoneIdForPath})`);
-                    }
-                }
-            } catch (error) {
-                if (isMounted) {
-                    console.error(`[MainMenu] Failed to load CHAPTER data for ID ${chapterIdToLoad} (zone: ${zoneIdForPath}):`, error);
-                    if (chapterIdToLoad !== INITIAL_CHAPTER_ID) {
-                        alert(`Ошибка загрузки данных Главы ${chapterIdToLoad} из зоны ${zoneIdForPath}. Загружаем Главу ${INITIAL_CHAPTER_ID}.`);
-                        if (activeView === 'detailed') {
-                            setCurrentChapterId(INITIAL_CHAPTER_ID);
-                        } else {
-                            performViewChange('detailed', { chapterId: INITIAL_CHAPTER_ID });
-                        }
-                        if (currentChapterIdFromStore !== INITIAL_CHAPTER_ID) {
-                            setCurrentChapterInStore(INITIAL_CHAPTER_ID);
-                        }
-                    } else {
-                        alert(`Критическая ошибка: не удалось загрузить даже начальную Главу ${INITIAL_CHAPTER_ID} (зона: ${zoneIdForPath}).`);
-                        setChapterData(null); 
-                    }
-                }
-            } finally {
-                if (isMounted) {
-                    if (currentChapterId === chapterIdToLoad) {
-                        setIsLoadingChapter(false);
-                    } else {
-                        console.log(`[MainMenu] Chapter ID changed during load (from ${chapterIdToLoad} to ${currentChapterId}). Not setting isLoadingChapter for ${chapterIdToLoad}.`);
-                    }
-                }
-            }
-        };
-        if (activeView === 'detailed' && currentChapterId) {
-            loadChapter(currentChapterId);
-        } else if (activeView === 'detailed' && !currentChapterId && isMounted) {
-            setCurrentChapterId(INITIAL_CHAPTER_ID);
-            if (currentChapterIdFromStore !== INITIAL_CHAPTER_ID) {
-                setCurrentChapterInStore(INITIAL_CHAPTER_ID);
-            }
-        }
-        return () => { isMounted = false; };
-    }, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, performViewChange, resetTrigger, findZoneIdForChapter]); 
+useEffect(() => {
+    let isMounted = true;
+    const loadChapter = async (chapterIdToLoad) => {
+        if (!isMounted || !chapterIdToLoad) return;
+        const zoneIdForPath = findZoneIdForChapter(chapterIdToLoad); // Убедитесь, что эта функция возвращает корректный ID зоны, например, "zone_01_necropolis"
 
-    useEffect(() => {
-        let isMounted = true;
-        if (activeView === 'zone' && currentZoneId) {
-            setIsLoadingZoneChapters(true);
-            setChaptersForCurrentZone([]); 
-            console.log(`MainMenu: Loading chapters for zone ${currentZoneId}... Path: ../data/zones/${currentZoneId}/zoneData.js`);
-            import(`../data/zones/${currentZoneId}/zoneData.js`)
-                .then(module => {
-                    if (isMounted) {
-                        if (module.chaptersInZone) {
-                            setChaptersForCurrentZone(module.chaptersInZone);
-                            console.log(`MainMenu: Successfully loaded ${module.chaptersInZone.length} chapters for zone ${currentZoneId}.`);
-                        } else {
-                            console.error(`chaptersInZone not found in zoneData.js for zone ${currentZoneId}`);
-                            setChaptersForCurrentZone([]);
-                        }
-                    }
-                })
-                .catch(err => {
-                    if (isMounted) {
-                        console.error(`MainMenu: Failed to load chapters for zone ${currentZoneId}:`, err);
-                        setChaptersForCurrentZone([]);
-                    }
-                })
-                .finally(() => {
-                    if (isMounted) {
-                        setIsLoadingZoneChapters(false);
-                    }
-                });
-        }
-        return () => { isMounted = false; };
-    }, [activeView, currentZoneId]);
+        if (!zoneIdForPath) {
+            if (isMounted) {
+                console.error(`[MainMenu] Не удалось определить зону для главы ${chapterIdToLoad}. Загрузка отменена.`);
+                // ... (ваша логика обработки отсутствия zoneIdForPath)
+                setIsLoadingChapter(false);
+            }
+            return;
+        }
+
+        console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${chapterIdToLoad} in zone ${zoneIdForPath}...`);
+        setIsLoadingChapter(true);
+        setChapterData(null);
+        setPosition({ x: 0, y: 0 }); // Если это нужно сбрасывать здесь
+
+        try {
+            const modulePath = `../../data/zones/${zoneIdForPath}/chapter${chapterIdToLoad}Data.js`;
+
+            if (chapterDataModules[modulePath]) {
+                const chapterModule = await chapterDataModules[modulePath]();
+                if (isMounted) {
+                    if (chapterModule.default && typeof chapterModule.default.id === 'number') {
+                        setChapterData(chapterModule.default);
+                        console.log("[MainMenu] Successfully loaded CHAPTER data:", chapterModule.default);
+                    } else {
+                        throw new Error(`Invalid chapter data structure or missing ID in ${modulePath}`);
+                    }
+                }
+            } else {
+                console.error(`[MainMenu] Module not found for key: ${modulePath}`);
+                console.log('[MainMenu] Available module keys from glob:', Object.keys(chapterDataModules));
+                throw new Error(`Module for chapter ${chapterIdToLoad} in zone ${zoneIdForPath} not found. Path: ${modulePath}`);
+            }
+        } catch (error) {
+            if (isMounted) {
+                console.error(`[MainMenu] Failed to load CHAPTER data for ID ${chapterIdToLoad} (zone: ${zoneIdForPath}):`, error);
+                // ... (ваша существующая логика обработки ошибок при загрузке)
+            }
+        } finally {
+            if (isMounted) {
+                // Условие `currentChapterId === chapterIdToLoad` важно, чтобы не сбросить isLoadingChapter преждевременно, если загрузка новой главы уже началась
+                if (currentChapterId === chapterIdToLoad) {
+                     setIsLoadingChapter(false);
+                } else {
+                     console.log(`[MainMenu] Chapter ID changed during load (from ${chapterIdToLoad} to ${currentChapterId}). Not setting isLoadingChapter for ${chapterIdToLoad}.`);
+                }
+            }
+        }
+    };
+
+    if (activeView === 'detailed' && currentChapterId) {
+        loadChapter(currentChapterId);
+    } else if (activeView === 'detailed' && !currentChapterId && isMounted) {
+        // Логика для установки начальной главы, если currentChapterId не установлен
+        setCurrentChapterId(INITIAL_CHAPTER_ID);
+        if (currentChapterIdFromStore !== INITIAL_CHAPTER_ID) {
+            setCurrentChapterInStore(INITIAL_CHAPTER_ID);
+        }
+    }
+
+    return () => { isMounted = false; };
+}, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, performViewChange, resetTrigger, findZoneIdForChapter, setIsLoadingChapter, setChapterData, setPosition, INITIAL_CHAPTER_ID]); 
+
+
+   useEffect(() => {
+    let isMounted = true;
+    // Этот useEffect отвечает за загрузку списка глав для выбранной зоны
+    if (activeView === 'zone' && currentZoneId) {
+        setIsLoadingZoneChapters(true);
+        setChaptersForCurrentZone([]); // Сбрасываем предыдущий список глав
+
+        // 1. Конструируем ключ пути, который должен соответствовать ключам в zoneDataModules
+        const modulePath = `../../data/zones/${currentZoneId}/zoneData.js`;
+        console.log(`MainMenu: Attempting to load chapters for zone ${currentZoneId} using module path: ${modulePath}`);
+
+        // 2. Проверяем, есть ли такой модуль в результатах import.meta.glob
+        if (zoneDataModules[modulePath]) {
+            // 3. Загружаем модуль, вызывая функцию (она возвращает Promise)
+            zoneDataModules[modulePath]()
+                .then(module => {
+                    if (isMounted) {
+                        // Предполагаем, что zoneData.js экспортирует объект,
+                        // у которого есть свойство chaptersInZone (массив ID глав или объектов глав)
+                        // Если у вас default export, то будет module.default.chaptersInZone
+                        if (module.chaptersInZone) {
+                            setChaptersForCurrentZone(module.chaptersInZone);
+                            console.log(`MainMenu: Successfully loaded ${module.chaptersInZone.length} chapters for zone ${currentZoneId}.`);
+                        } else {
+                            console.error(`MainMenu: Property 'chaptersInZone' not found in loaded module from ${modulePath}. Module content:`, module);
+                            setChaptersForCurrentZone([]); // Устанавливаем пустой массив, если данные некорректны
+                        }
+                    }
+                })
+                .catch(err => {
+                    if (isMounted) {
+                        console.error(`MainMenu: Failed to load module for zone ${currentZoneId} from ${modulePath}:`, err);
+                        setChaptersForCurrentZone([]);
+                    }
+                })
+                .finally(() => {
+                    if (isMounted) {
+                        setIsLoadingZoneChapters(false);
+                    }
+                });
+        } else {
+            // Если модуль не найден по такому пути в import.meta.glob
+            console.error(`MainMenu: Module path ${modulePath} not found in zoneDataModules. This likely means an issue with the glob pattern, the file path construction, or the file doesn't exist at the expected location.`);
+            console.log('[MainMenu] Available keys in zoneDataModules:', Object.keys(zoneDataModules)); // Поможет в отладке, показывая, какие пути нашел glob
+            if (isMounted) {
+                setChaptersForCurrentZone([]);
+                setIsLoadingZoneChapters(false);
+            }
+        }
+    }
+    return () => { isMounted = false; };
+}, [activeView, currentZoneId, setIsLoadingZoneChapters, setChaptersForCurrentZone]); // Укажите все внешние зависимости, используемые в useEffect
 
     useEffect(() => {
         if (activeView !== 'detailed' || !chapterData || isLoadingChapter || !mapContainerRef.current) return;

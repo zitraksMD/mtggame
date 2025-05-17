@@ -2,19 +2,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // Импортируем AnimatePresence для анимации карусели
 import { motion, AnimatePresence } from 'framer-motion';
-import useGameStore from '../store/useGameStore';
+import useGameStore from '../../store/useGameStore.js';
 
 // Данные сундуков
-import { ARTIFACT_CHESTS, getArtifactChestById } from '../data/artifactChestData.js';
-import { GEAR_CHESTS, getGearChestById } from '../data/gearChestData.js';
+import { ARTIFACT_CHESTS, getArtifactChestById } from '../../data/artifactChestData.js';
+import { GEAR_CHESTS, getGearChestById } from '../../data/gearChestData.js';
 
 // Данные предметов и артефактов (для Daily Shop и потенциально InfoPopup)
-import itemsDatabase, { getItemById as getItemDataById } from '../data/itemsDatabase';
-import { getArtifactById } from '../data/artifactsData.js';
+import itemsDatabase, { getItemById as getItemDataById } from '../../data/itemsDatabase.js';
+import { getArtifactById } from '../../data/artifactsData.js';
 
 // Компоненты попапов
-import ChestResultsPopup from './ChestResultsPopup';
-import ChestInfoPopup from './ChestInfoPopup';
+import ChestResultsPopup from '../popups/ChestResultsPopup.jsx';
+import ChestInfoPopup from '../popups/ChestInfoPopup.jsx';
 
 // Стили
 import './Shop.scss';
