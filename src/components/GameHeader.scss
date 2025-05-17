@@ -55,14 +55,14 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
 .game-header-energy-bar { // Стили из код2, т.к. в код1 "как было"
   display: flex; align-items: center; gap: 5px; background-color: rgba(10, 10, 20, 0.9);
   padding: 4px 7px; border-radius: 12px; backdrop-filter: blur(6px);
-  min-width: 150px; max-width: 240px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  min-width: 150px; max-width: 240px;  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   .energy-icon { width: 14px; height: 14px; flex-shrink: 0; }
-  .energy-track { flex-grow: 1; height: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; position: relative; display:flex; align-items:center; justify-content:center; }
+  .energy-track { flex-grow: 1; height: 18px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; position: relative; display:flex; align-items:center; justify-content:center; }
   .energy-fill { position: absolute; left: 0; top: 0; bottom: 0; height: 100%; border-radius: 4px; transition: width 0.3s ease, background-color 0.3s ease; }
-  .energy-text { font-size: 0.6em; font-weight: 700; color: white; white-space: nowrap; position: relative; text-shadow: 0 0 2px rgba(0,0,0,0.6); }
+  .energy-text { font-size: 0.8em; font-weight: 700; color: white; white-space: nowrap; position: relative; text-shadow: 0 0 2px rgba(0,0,0,0.6); }
 }
 .energy-refill-timer-header { // Стили из код2, т.к. в код1 "как было"
-  font-size: 0.55em; color: #b0b0c0; text-align: center; margin-top: 2px; padding: 1px 4px; background-color: rgba(0,0,0,0.35); border-radius: 3px; line-height: 1.1;
+  font-size: 0.6em; color: #b0b0c0; text-align: center; margin-top: 2px; padding: 1px 4px; background-color: rgba(0,0,0,0.35); border-radius: 3px; line-height: 1.1;
 }
 
 .game-header-body {
@@ -102,57 +102,57 @@ $chapter-banner-offset-from-header: -20px; // Насколько баннер "�
   // background-color: rgba(0,255,0,0.05); // Отладка (из код1 - можно оставить для отладки) - удалено
 }
 
-.header-left-wing {
-  align-items: flex-start; // Уже было в код2, соответствует код1
-  gap: 8px;
-  width: 45%; // Дадим больше места, если название главы ушло // ИЗ КОД1
-  left: calc(10px + env(safe-area-inset-left, 0px));
-  min-width: 180px; // ИЗ КОД1 (было 180px в код2 с комментарием "Увеличил для контента (из код1)")
-  // padding-left из код2 удален, т.к. теперь он на .game-header-body
+    .header-left-wing {
+    align-items: flex-start; // Уже было в код2, соответствует код1
+    gap: 8px;
+    width: 45%; // Дадим больше места, если название главы ушло // ИЗ КОД1
+    margin-left: calc(env(safe-area-inset-left, 0px) + 10px);
+    min-width: 180px; // ИЗ КОД1 (было 180px в код2 с комментарием "Увеличил для контента (из код1)")
+    // padding-left из код2 удален, т.к. теперь он на .game-header-body
 
-  // Стили для .player-identification-block, .header-avatar и т.д. остаются как были (из код2)
-  .player-identification-block { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
-  .header-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); flex-shrink:0; }
-  .header-player-details {
-    display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; min-width: 0;
-    .header-player-name { font-size: 0.9em; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
-    .header-player-power { font-size: 0.8em; color: #c8d0e0; .power-icon { margin-right: 3px; } }
-  }
-  .header-battle-pass-button {
-    background: linear-gradient(to bottom, #f9a825, #f57f17); color: white; border: none;
-    padding: 6px 12px; border-radius: 6px; font-size: 0.75em; font-weight: bold;
-    cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.3); text-align: center;
-    width: auto; min-width: 90px; height: auto; min-height: 36px; align-self: flex-start;
-    transition: transform 0.1s ease, filter 0.1s ease;
-    &:hover { filter: brightness(1.15); }
-    &:active { transform: scale(0.96); }
-  }
-}
+    // Стили для .player-identification-block, .header-avatar и т.д. остаются как были (из код2)
+    .player-identification-block { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
+    .header-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); flex-shrink:0; }
+    .header-player-details {
+        display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; min-width: 0;
+        .header-player-name { font-size: 0.9em; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+        .header-player-power { font-size: 0.8em; color: #c8d0e0; .power-icon { margin-right: 3px; } }
+    }
+    .header-battle-pass-button {
+        background: linear-gradient(to bottom, #f9a825, #f57f17); color: white; border: none;
+        padding: 6px 12px; border-radius: 6px; font-size: 0.75em; font-weight: bold;
+        cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.3); text-align: center;
+        width: auto; min-width: 90px; height: auto; min-height: 36px; align-self: flex-start;
+        transition: transform 0.1s ease, filter 0.1s ease;
+        &:hover { filter: brightness(1.15); }
+        &:active { transform: scale(0.96); }
+    }
+    }
 
-.header-center-spacer { // ИЗ КОД1
-  flex-grow: 1; // Занимает центральное пространство в .game-header-body
-  // Этот блок теперь может быть пустым, так как название главы вынесено
-}
+    .header-center-spacer { // ИЗ КОД1
+    flex-grow: 1; // Занимает центральное пространство в .game-header-body
+    // Этот блок теперь может быть пустым, так как название главы вынесено
+    }
 
-// .header-center-dip-visual из код2 удален
+    // .header-center-dip-visual из код2 удален
 
-.header-right-wing {
-  // position: absolute; right: 0; top: 0; - удалено, т.к. код1 использует flexbox для позиционирования
-  align-items: flex-end; // Переопределяем из общего блока (из код1)
-  gap: 4px;
-  width: 40%; // Дадим больше места // ИЗ КОД1
-  right: calc(10px + env(safe-area-inset-left, 0px));
-  min-width: 100px; // ИЗ КОД1 (было 100px в код2 с комментарием "Увеличил (из код1)")
-  // padding-right из код2 удален, т.к. теперь он на .game-header-body
+    .header-right-wing {
+    // position: absolute; right: 0; top: 0; - удалено, т.к. код1 использует flexbox для позиционирования
+    align-items: flex-end; // Переопределяем из общего блока (из код1)
+    gap: 4px;
+    width: 40%; // Дадим больше места // ИЗ КОД1
+    margin-right: calc(env(safe-area-inset-right, 0px) + 10px);
+    min-width: 100px; // ИЗ КОД1 (было 100px в код2 с комментарием "Увеличил (из код1)")
+    // padding-right из код2 удален, т.к. теперь он на .game-header-body
 
-  // Стили для .header-resource-item остаются как были (из код2)
-  .header-resource-item {
-    display: flex; align-items: center; gap: 5px; font-size: 0.9em; background-color: rgba(0,0,0,0.4);
-    padding: 3px 7px; border-radius: 7px; color: #fff; min-width: 80px; justify-content: flex-end;
-    .header-resource-icon { width: 17px; height: 17px; }
-    span { font-weight: 600; }
-  }
-}
+    // Стили для .header-resource-item остаются как были (из код2)
+    .header-resource-item {
+        display: flex; align-items: center; gap: 5px; font-size: 0.9em; background-color: rgba(0,0,0,0.4);
+        padding: 3px 7px; border-radius: 7px; color: #fff; min-width: 80px; justify-content: flex-end;
+        .header-resource-icon { width: 17px; height: 17px; }
+        span { font-weight: 600; }
+    }
+    }
 
 // src/components/GameHeader.scss
 
