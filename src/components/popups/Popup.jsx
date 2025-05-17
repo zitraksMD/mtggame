@@ -16,7 +16,7 @@ const popupVariants = {
 };
 
 
-const Popup = ({ title, children, onClose }) => {
+const Popup = ({ title, children, onClose, bannerStyle  }) => {
 
   // Закрытие по нажатию Esc
   useEffect(() => {
@@ -34,35 +34,36 @@ const Popup = ({ title, children, onClose }) => {
   }, [onClose]); // Зависимость от onClose
 
   return (
-    // AnimatePresence нужен для анимации при удалении компонента
     <AnimatePresence>
-        {/* Фон-затемнение */}
         <motion.div
-            className="popup-backdrop"
-            onClick={onClose} // Закрытие по клику на фон
+            className="popup-backdrop" // Этот div центрирует .popup-box
+            onClick={onClose}
             variants={backdropVariants}
             initial="hidden"
             animate="visible"
-            exit="hidden" // Анимация при закрытии
+            exit="hidden"
         >
-            {/* Само окно */}
             <motion.div
-                className="popup-box"
-                onClick={(e) => e.stopPropagation()} // Предотвращаем закрытие при клике внутри окна
+                // Добавляем класс, если title должен быть в стиле баннера
+                className={`popup-box ${bannerStyle ? 'has-banner-header' : ''}`} 
+                onClick={(e) => e.stopPropagation()}
                 variants={popupVariants}
                 initial="hidden"
                 animate="visible"
-                exit="exit" // Анимация при закрытии
+                exit="exit"
             >
-                {/* Шапка окна */}
-                <div className="popup-header">
-                    <h3 className="popup-title">{title || 'Окно'}</h3>
-                    <button className="popup-close-button" onClick={onClose} aria-label="Закрыть">
-                        &times; {/* Крестик */}
-                    </button>
-                </div>
+                {/* Шапка окна - теперь ее рендеринг зависит от title */}
+                {title && (
+                    <div className="popup-header"> {/* .popup-header получит доп. стили от .has-banner-header */}
+                        <h3 className="popup-title">{title}</h3>
+                    </div>
+                )}
+                
+                {/* Кнопка закрытия всегда есть и позиционируется абсолютно */}
+                <button className="popup-close-button" onClick={onClose} aria-label="Закрыть">
+                    &times;
+                </button>
 
-                {/* Контент окна */}
                 <div className="popup-content">
                     {children}
                 </div>

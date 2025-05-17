@@ -111,6 +111,8 @@ const loadFromLocalStorage = () => {
                 dailyDealsLastGenerated: null,
                 lastOpenedChestInfo: null,
                 lastChestRewards: null,
+                treasureChestAttempts: 3, // Ежедневные бесплатные попытки
+                treasureChestLastReset: null, // Timestamp последнего сброса попыток
                 activeDebuffs: [], // Инициализация дебаффов
                 completedZones: {}, // <--- ДОБАВЬ СЮДА
             };
@@ -142,8 +144,11 @@ const loadFromLocalStorage = () => {
                    parsed.playerBaseStats[key] = DEFAULT_BASE_STATS[key];
                }
            });
-        }
+        }   
 
+
+        if (parsed.treasureChestAttempts === undefined) parsed.treasureChestAttempts = 3; // Это ты не показывал, но должно быть
+        if (parsed.treasureChestLastReset === undefined) parsed.treasureChestLastReset = null; // Это ты не показывал, но должно быть    
         if (parsed.playerHp === undefined) parsed.playerHp = parsed.playerBaseStats?.hp ?? DEFAULT_BASE_STATS.hp;
         if (parsed.playerRace === undefined) parsed.playerRace = null;
         if (parsed.inventory === undefined) parsed.inventory = [];
@@ -380,6 +385,7 @@ const _selectRandomGearItemByRarity_Gear = (targetRarity) => {
 };
 
 const REFRESH_HOUR_UTC = 2;
+const RUNE_ATTEMPTS_REFRESH_HOUR_UTC = 2;
 
 const INITIAL_CHAPTER_ID = 1;
 
@@ -393,6 +399,7 @@ const useGameStore = create((set, get) => ({
     gold: savedState.gold ?? 0,
     diamonds: savedState.diamonds ?? 0,
     username: savedState.username || null,
+    userPhotoUrl: null,
     powerLevel: savedState.powerLevel ?? 0, // Пересчитывается при изменении статов/экипировки/артефактов
     energyMax: savedState.energyMax ?? DEFAULT_MAX_ENERGY,
     energyCurrent: savedState.energyCurrent ?? DEFAULT_MAX_ENERGY,
@@ -820,6 +827,8 @@ computedStats: () => {
     setUsername: (name) => set({ username: name }),
     setGold: (amount) => set({ gold: amount }),
     setDiamonds: (amount) => set({ diamonds: amount }),
+
+    setTelegramPhotoUrl: (photoUrl) => set({ userPhotoUrl: photoUrl || null }),
 
     // --- Действия с Расой и Статами (без изменений, но вызывают updatePowerLevel) ---
     setPlayerRace: (raceId) => get().initializeCharacterStats(raceId),
@@ -2324,6 +2333,7 @@ clearLastLevelChestRewards: () => {
             energyMax: DEFAULT_MAX_ENERGY, // Сброс энергии
             energyCurrent: DEFAULT_MAX_ENERGY,
             lastEnergyRefillTimestamp: Date.now(),
+            treasureChestAttempts: 3, // Ежедневные бесплатные попытки
             completedZones: {}, // <--- ДОБАВЬ СБРОС ЗДЕСЬ
         });
         localStorage.removeItem(STORAGE_KEY);
@@ -2651,6 +2661,65 @@ clearLastLevelChestRewards: () => {
         }
     },
 
+    checkAndResetTreasureChestAttempts: () => set((state) => {
+        const nowTs = Date.now();
+        const lastResetTs = state.treasureChestLastReset; // Это значение должно быть корректно загружено из localStorage
+    
+        if (!lastResetTs) { 
+            console.log("Первый сброс попыток для Рун (lastResetTs отсутствует).");
+            return { treasureChestAttempts: 3, treasureChestLastReset: nowTs }; // Сбрасываем и устанавливаем текущее время как время сброса
+        }
+    
+        const nowUtcDate = new Date(nowTs);
+        let lastRefreshMarkerUtcTs = Date.UTC(
+            nowUtcDate.getUTCFullYear(), nowUtcDate.getUTCMonth(), nowUtcDate.getUTCDate(),
+            RUNE_ATTEMPTS_REFRESH_HOUR_UTC, 0, 0, 0
+        );
+    
+        if (nowTs < lastRefreshMarkerUtcTs) { 
+            lastRefreshMarkerUtcTs = Date.UTC(
+                nowUtcDate.getUTCFullYear(), nowUtcDate.getUTCMonth(), nowUtcDate.getUTCDate() - 1,
+                RUNE_ATTEMPTS_REFRESH_HOUR_UTC, 0, 0, 0
+            );
+        }
+    
+        if (lastResetTs < lastRefreshMarkerUtcTs) {
+            console.log(`Время обновить попытки Рун.`);
+            return { 
+                treasureChestAttempts: 3, 
+                treasureChestLastReset: nowTs // Важно обновить время последнего сброса!
+            };
+        }
+    
+        return {}; // Нет изменений, сброс сегодня уже был или еще не время
+    }),
+
+    useTreasureChestAttempt: () => set((state) => { // <--- ВОТ ТАК ОН ОПРЕДЕЛЕН В СТОРЕ
+        if (state.treasureChestAttempts > 0) {
+            return { treasureChestAttempts: state.treasureChestAttempts - 1 };
+        }
+        return {};
+    }),
+
+    initializeUserFromTelegram: (tgUserData) => {
+        if (tgUserData && tgUserData.photo_url) {
+            console.log("Setting userPhotoUrl from Telegram data:", tgUserData.photo_url);
+            set({ userPhotoUrl: tgUserData.photo_url });
+        } else {
+            // Если фото нет или tgUserData не пришел, можно установить null
+            // или оставить как есть, если в loadFromLocalStorage уже есть дефолт null
+            set(state => { // Используем функцию, чтобы не перезаписать, если уже null
+                if (state.userPhotoUrl !== null) {
+                    return { userPhotoUrl: null };
+                }
+                return {};
+            });
+        }
+        // В будущем, если понадобится, здесь можно будет добавить логику для tgUserData.id, tgUserData.first_name и т.д.
+        // Например, для аналитики или если решишь использовать имя из ТГ как дефолтное, если игрок свое не ввел.
+        // ПОКА ЧТО МЫ НЕ ТРОГАЕМ state.username здесь.
+    },
+
 })); // Конец create
 
 // ================== Сохранение в localStorage <<< ИЗМЕНЕНО >>> ==================
@@ -2675,6 +2744,9 @@ useGameStore.subscribe((state) => {
         gearChestPity,
         totalGearChestsOpened,
         activeDebuffs, // Сохраняем активные дебаффы
+        treasureChestAttempts,     // <<< ПРОВЕРЬ, ЧТО ЭТО ЕСТЬ
+        treasureChestLastReset,  
+        userPhotoUrl,  // <<< ПРОВЕРЬ, ЧТО ЭТО ЕСТЬ
     } = state;
 
     const stateToSave = {
@@ -2694,7 +2766,10 @@ useGameStore.subscribe((state) => {
         totalArtifactChestsOpened,
         gearChestPity,
         totalGearChestsOpened,
-        activeDebuffs, // Сохраняем активные дебаффы
+        activeDebuffs,
+        treasureChestAttempts,     // <<< ПРОВЕРЬ, ЧТО ЭТО ЕСТЬ
+        treasureChestLastReset,
+        userPhotoUrl,    // <<< ПРОВЕРЬ, ЧТО ЭТО ЕСТЬ // Сохраняем активные дебаффы
         // playerShards, // Если бы были
     };
 

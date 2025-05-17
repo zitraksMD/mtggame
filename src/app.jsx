@@ -79,6 +79,7 @@ const App = () => {
     const setUsernameAction = useGameStore((s) => s.setUsername);
     const initializeCharacterStats = useGameStore((s) => s.initializeCharacterStats);
     const checkAndRefreshDailyDeals = useGameStore((s) => s.checkAndRefreshDailyDeals);
+    const checkAndResetRuneAttempts = useGameStore((s) => s.checkAndResetTreasureChestAttempts); // Используем актуальное имя из твоего стора
 
     const avatarUrl = "/assets/default-avatar.png";
     const tonShards = 0; 
@@ -159,7 +160,10 @@ const App = () => {
             setNeedsRaceSelection(false);
         }
         if (checkAndRefreshDailyDeals) checkAndRefreshDailyDeals();
-
+        if (checkAndResetRuneAttempts) { // <--- ДОБАВЛЯЕМ ПРОВЕРКУ И ВЫЗОВ
+            checkAndResetRuneAttempts();
+            console.log("App Mount: checkAndResetRuneAttempts called.");
+        }
         const loadingDuration = 500;
         const timer = setTimeout(() => {
             setIsInitialLoading(false);
@@ -172,7 +176,7 @@ const App = () => {
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [navigate, initializeCharacterStats, setUsernameAction, checkAndRefreshDailyDeals]);
+    }, [navigate, initializeCharacterStats, setUsernameAction, checkAndRefreshDailyDeals, checkAndResetRuneAttempts, location.pathname]);
 
 
     // useEffect для ensureScreenIsOpening (логика из код1, применена к код2)

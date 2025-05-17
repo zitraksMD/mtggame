@@ -1,66 +1,106 @@
-// src/components/Popup.scss - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// src/components/Popup.scss
 
 .popup-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
-  align-items: flex-start; // Попап прижат к верху (до padding-top)
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(3px);
-  padding-top: calc(env(safe-area-inset-top, 10px) + 120px + 15px);
-  padding-left: calc(env(safe-area-inset-left, 15px) + 15px);
-  padding-right: calc(env(safe-area-inset-right, 15px) + 15px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 30px); // Адаптивный отступ снизу
+  align-items: center;    // Центрируем по вертикали
+  justify-content: center; // Центрируем по горизонтали
+  z-index: 1000; 
+  backdrop-filter: blur(4px);
+  padding: 0; // Общий безопасный отступ от краев экрана
   box-sizing: border-box;
-  // overflow-y: auto; // <<< УБРАТЬ ЭТУ СТРОКУ! Бэкдроп не должен скроллиться.
 }
 
 .popup-box {
-  background-color: #2d3748;
+  background-color: #29304a; 
   color: white;
-  padding: 0;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  border: 1px solid #4a5568;
-  min-width: 0;
-  width: 90%;
-  max-width: 600px;
-  max-height: 75vh; // Максимальная высота всего попапа
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  border: 1px solid #424a66;
+  
+  min-width: 300px;   
+  width: auto;        
+  max-width: 500px;   
+  
+  // === ИЗМЕНЕНИЯ ДЛЯ КОМПАКТНОЙ ВЫСОТЫ ===
+  height: auto;       // <--- ВЫСОТА ПО СОДЕРЖИМОМУ
+  max-height: 85vh;   // Ограничение, чтобы не вылезал за экран, если контента очень много
+                                 
   display: flex;
   flex-direction: column;
-  overflow: hidden; // <<< ОЧЕНЬ ВАЖНО: Ограничивает высоту и обрезает контент
+  overflow: visible;  // Для "нависающего" хедера
   box-sizing: border-box;
-  margin: auto 0; // Вертикальное центрирование если контент ниже max-height
+  position: relative; 
+  padding: 3px !important;         
 }
 
-.popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 15px;
-  background-color: rgba(74, 85, 104, 0.5);
-  border-bottom: 1px solid #4a5568;
-  flex-shrink: 0; // Фиксированная высота шапки
+.popup-header { // Теперь это всегда "нависающий баннер"
+  position: absolute;
+  top: -40px;         // Насколько баннер "выезжает" вверх от .popup-box. Подберите!
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;      // Ширина по содержимому текста + padding
+  min-width: 160px; // Минимальная ширина баннера
+  max-width: calc(100% - 60px); // Не шире самого попапа минус небольшие боковые зазоры (по 30px с каждой стороны)
+  
+  padding: 8px 25px; // Внутренние отступы баннера
+  color: #4a3b31; // Темный текст на светлом баннере
+  border-radius: 20px; // Сильно закругленные углы
+  z-index: 5; // Выше .popup-content, но ниже .popup-close-button
+  text-align: center; 
 }
 
-.popup-title {
+.popup-title { // Текст внутри .popup-header (баннера)
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem; 
   font-weight: 600;
-  padding-left: 5px;
+  width: 100%; // Растягиваем на всю ширину баннера
 }
 
 .popup-close-button {
-  // ... стили кнопки ...
-}
-
-.popup-content { // Этот контейнер растягивается между шапкой и футером попапа (если бы он был)
-  flex-grow: 1;    // Занимает все доступное место по высоте в .popup-box
+  background: rgba(40, 40, 60, 0.7);
+  border: 1px solid rgba(120, 100, 150, 0.5);
+  color: #d0d0e0;
+  font-size: 1.4rem;
+  font-weight: bold;
+  line-height: 1;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
-  overflow: hidden; // <<< ВАЖНО: Содержимое не должно вылезать из этого контейнера
-  position: relative;
-  min-height: 0;    // Для корректной работы flex-grow
+  cursor: pointer;
+  position: absolute;
+  // Позиционируем относительно .popup-box
+  top: 5px !important;          // Отступ от ВЕРХНЕГО КРАЯ .popup-box
+  right: 3px !important;      // Отступ от ПРАВОГО КРАЯ .popup-box
+  z-index: 10;         // Выше всего, включая .popup-header (баннер)
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #fff;
+    background-color: rgba(60, 60, 80, 0.9);
+  }
 }
 
+.popup-content {
+  flex-grow: 1; // Занимает оставшееся место в .popup-box
+  // Отступ сверху, чтобы контент начинался ПОД "нависающим" баннером.
+  // Это значение должно быть примерно равно (высота баннера - مقدار "нависания" баннера вверх + небольшой зазор).
+  // Если баннер высотой ~40px (с padding) и "нависает" на 20px, то его нижний край находится на +20px от верха .popup-box.
+  // Значит, контенту нужен padding-top примерно 25-30px.
+  padding-top: 15px; // Подберите это значение!
+  
+  // Боковые и нижний отступы для контента
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-bottom: 5px;
+  
+  overflow-y: auto; // Скролл для контента, если он не помещается
+  min-height: 0;    // Для корректной работы flex-grow
+  box-sizing: border-box;
+}

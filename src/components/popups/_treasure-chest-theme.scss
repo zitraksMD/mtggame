@@ -1,0 +1,22 @@
+// src/components/popups/_treasure-chest-theme.scss
+
+// Импортируем общие цвета, если есть, или определяем свои
+@use 'mail-theme' as mailTheme; // Если хотим наследовать что-то из почты
+
+// Переменные для Сокровищницы
+$tc-banner-bg: #DAA520; // Золотой/бронзовый для сокровищ
+$tc-banner-text-color: #FFFFFF;
+$tc-banner-border-color: darken($tc-banner-bg, 15%);
+
+$tc-popup-bg-start: mailTheme.$mail-popup-bg-start; // Берем фон из темы почты
+$tc-popup-bg-end: mailTheme.$mail-popup-bg-end;
+$tc-popup-border-color: mailTheme.$mail-popup-border-color;
+
+$tc-text-on-dark-bg: mailTheme.$mail-text-on-dark-bg;
+$tc-text-secondary-on-dark-bg: mailTheme.$mail-text-secondary-on-dark-bg;
+
+// Можно добавить другие специфичные переменные для кнопок, иконок и т.д.
+$tc-button-primary-bg: #5cb85c;
+$tc-button-primary-text: #fff;
+$tc-button-secondary-bg: #f0ad4e;
+$tc-button-secondary-text: #fff;

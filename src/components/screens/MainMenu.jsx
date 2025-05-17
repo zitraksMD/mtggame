@@ -9,12 +9,25 @@ import Popup from '../popups/Popup.jsx'; // Существующий компо�
 import "./MainMenu.scss";
 import { useNavigate, useLocation } from 'react-router-dom';
 import LevelDetailsPopup from '../popups/LevelDetailsPopup.jsx';
+import ShardboundRunesGamePopup from '../popups/ShardboundRunesGamePopup.jsx'; // Новый импорт
+import ShardboundRunesResultsPopup from '../popups/ShardboundRunesResultsPopup.jsx'; // Новый импорт
+
+
 
 import { ALL_ZONES_CONFIG, findZoneIdForChapter } from '../../data/worldMapData.js';
 
 // Импорт для содержимого всплывающего окна почты
 import MailPopupContent from '../popups/MailPopupContent.jsx';
 
+// Импорты для Сокровищницы
+import TreasureChestInfoPopup from '../popups/TreasureChestInfoPopup.jsx';
+// Позже добавим TreasureChestGamePopup и TreasureChestResultsPopup
+
+const popupContentVariants = {
+    initial: { opacity: 0, y: 20 }, // Начинается чуть ниже и прозрачно
+    animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+    exit: { opacity: 0, y: -20, transition: { duration: 0.2, ease: "easeIn" } } // Уходит вверх и исчезает
+  };
 
 // Варианты анимации для оверлея поп-апа почты
 const mailOverlayVariants = {
@@ -75,7 +88,9 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         setIsFullScreenMapActive,
         startScreenTransition,
         ensureScreenIsOpening,
-        isZoneUnlocked
+        isZoneUnlocked,
+        treasureChestAttempts, // Добавлено из код1
+        useTreasureChestAttempt: consumeChestAttempt, // Добавлено и переименовано из код1
     } = useGameStore(state => ({
         currentChapterIdFromStore: state.currentChapterId,
         setCurrentChapterInStore: state.setCurrentChapter,
@@ -87,7 +102,9 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         setIsFullScreenMapActive: state.setIsFullScreenMapActive,
         startScreenTransition: state.startScreenTransition,
         ensureScreenIsOpening: state.ensureScreenIsOpening,
-        isZoneUnlocked: state.isZoneUnlocked
+        isZoneUnlocked: state.isZoneUnlocked,
+        treasureChestAttempts: state.treasureChestAttempts, // Добавлено из код1
+        useTreasureChestAttempt: state.useTreasureChestAttempt, // Добавлено из код1
     }));
 
     const [activeView, setActiveView] = useState('detailed');
@@ -114,6 +131,11 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     const [chapterData, setChapterData] = useState(null);
     const [isLoadingChapter, setIsLoadingChapter] = useState(true);
     const [activePopup, setActivePopup] = useState(null); // Состояние для активного попапа
+    
+    // Состояния для Сокровищницы из код1
+    const [treasureChestState, setTreasureChestState] = useState('info'); // 'info', 'game', 'results'
+    const [lastChestRewards, setLastChestRewards] = useState(null);
+
     const mapContainerRef = useRef(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [dragging, setDragging] = useState(false);
@@ -500,6 +522,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     }, [resetGame, performViewChange, setCurrentChapterInStore, /*findZoneIdForChapter,*/ onChapterNameChange]); // findZoneIdForChapter - чистая функция
 
     const handleBattlePassClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('battlepass'); }, [activeView]);
+    
     const handleMailClick = useCallback(() => {
         console.log("handleMailClick called. activeView:", activeView);
         if (activeView === 'detailed') {
@@ -509,14 +532,104 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             console.log("Mail popup not opened because activeView is not 'detailed'.");
         }
     }, [activeView]);
-    const handleDailyGrindClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('hunting'); }, [activeView]);
+    
+    // Обработчик для Сокровищницы из код1 (обновлен)
+    const handleTreasureChestClick = useCallback(() => {
+        if (activeView === 'detailed') {
+            useGameStore.getState().checkAndResetTreasureChestAttempts();
+            setTreasureChestState('info'); 
+            setActivePopup('treasure_chest'); // Просто 'treasure_chest', без '_main'
+        }
+    }, [activeView]);;
+
+    // Новые обработчики для Сокровищницы из код1
+    const handleStartChestGame = useCallback(() => {
+        // Перед началом игры списываем попытку
+        consumeChestAttempt(); 
+        setTreasureChestState('game');
+        // setActivePopup остается 'treasure_chest_main', но внутреннее состояние изменится
+    }, [consumeChestAttempt, setTreasureChestState]);
+
+    const handleChestGameEnd = useCallback((rewards) => {
+        setLastChestRewards(rewards);
+        setTreasureChestState('results');
+    }, [setLastChestRewards, setTreasureChestState]);
+
+    const handleCloseTreasureChest = useCallback(() => { // Общая функция закрытия для сокровищницы
+        setLastChestRewards(null);
+        // setActivePopup(null); // Просто закрываем, возврата к 'info' нет, если не нужно
+        // Если нужно возвращаться к инфо-окну после результатов:
+        // if (treasureChestState === 'results') {
+        //  setTreasureChestState('info');
+        // } else {
+        //  setActivePopup(null);
+        // }
+        setActivePopup(null); // Пока просто закрываем
+    }, [/* treasureChestState */]);
+    
+    const handleCloseTreasureChestResults = useCallback(() => {
+        setLastChestRewards(null);
+        setTreasureChestState('info'); // Возвращаемся к инфо или закрываем совсем
+        // Если хотим закрыть совсем после результатов:
+        // setActivePopup(null); 
+    }, [setLastChestRewards, setTreasureChestState]);
+
     const handleQuestsClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('tasks'); }, [activeView]);
     const handleExchangeClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('exchange'); }, [activeView]);
+    // Заглушка для handleDailyGrindClick, если она используется в JSX, но не определена
+    const handleDailyGrindClick = useCallback(() => { 
+        if (activeView === 'detailed') {
+            // Логика для daily grind, например setActivePopup('daily_grind');
+            console.log("Daily Grind clicked - popup to be implemented");
+        }
+    }, [activeView]);
 
-    const closePopup = useCallback(() => setActivePopup(null), []);
 
-    const getPopupContent = (popupType) => { /* ... без изменений ... */ };
-    const getPopupTitle = (popupType) => { /* ... без изменений ... */ };
+    const closePopup = useCallback(() => setActivePopup(null), [setActivePopup]);
+
+    const getPopupContent = (popupType) => {
+        switch (popupType) {
+            case 'treasure_chest_main': // Добавлено из код1
+                if (treasureChestState === 'info') {
+                    return <TreasureChestInfoPopup onStartChest={handleStartChestGame} onClose={closePopup} />;
+                } else if (treasureChestState === 'game') {
+                    // return <TreasureChestGamePopup onGameEnd={handleChestGameEnd} />; // Создадим позже
+                    return <div>Игровой процесс Сокровищницы (кликалка)... <button onClick={() => handleChestGameEnd({gold: 100, diamonds: 2})}>Завершить (тест)</button></div>;
+                } else if (treasureChestState === 'results') {
+                    // return <TreasureChestResultsPopup rewards={lastChestRewards} onClose={handleCloseTreasureChestResults} />; // Создадим позже
+                    return <div>Результаты: Золото - {lastChestRewards?.gold}, Алмазы - {lastChestRewards?.diamonds} <button onClick={handleCloseTreasureChestResults}>OK</button></div>;
+                }
+                return null;
+            // ... другие ваши case из код2, если они там были (в примере не показаны)
+            case 'battlepass':
+                return <div>Содержимое Боевого Пропуска... <button onClick={closePopup}>Закрыть</button></div>;
+            case 'tasks':
+                return <div>Содержимое Заданий... <button onClick={closePopup}>Закрыть</button></div>;
+            case 'exchange':
+                return <div>Содержимое Обмена... <button onClick={closePopup}>Закрыть</button></div>;
+            default:
+                return null;
+        }
+    };
+
+    const getPopupTitle = (popupType) => {
+        switch (popupType) {
+            case 'treasure_chest_main': // Добавлено из код1
+                if (treasureChestState === 'info') return "Руны Древних";
+                if (treasureChestState === 'game') return "Открываем Сундук!";
+                if (treasureChestState === 'results') return "Ваша Добыча!";
+                return "Сокровищница";
+            // ... другие ваши case из код2, если они там были
+            case 'battlepass':
+                return "Боевой Пропуск";
+            case 'tasks':
+                return "Задания";
+            case 'exchange':
+                return "Обмен Валют";
+            default:
+                return "";
+        }
+    };
 
     const internalScreenVariants = { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 0, transition: { duration: 0.1 } } };
     const loadingScreenVariants = { initial: { opacity: 0 }, animate: { opacity: 1, transition: { duration: 0.3 } }, exit: { opacity: 0, transition: { duration: 0.2 } } };
@@ -658,14 +771,21 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                                     <button className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`} onClick={handleRewardsChestClick} title="Награды" >
                                         <img src="/assets/icons/gift-icon.png" alt="Награды" />
                                     </button>
-                                    <button className="main-menu-button icon-button daily-grind-button" onClick={handleDailyGrindClick} title="Ежедневная охота"><img src="/assets/icons/daily-grind-icon.png" alt="Daily Grind" /></button>
-                                </div>
+                                    {/* Добавление кнопки сокровищницы, если она должна быть здесь */}
+                                    {/* <button className="main-menu-button icon-button treasure-chest-button" onClick={handleTreasureChestClick} title="Сокровищница"><img src="/assets/icons/treasure-chest-icon.png" alt="Сокровищница" /></button> */}
+                                    <button className="main-menu-button icon-button" onClick={handleTreasureChestClick} title="Руны Древних">
+                                       <img src="/assets/icons/runes-icon.png" alt="Руны" /> {/* Замените на актуальную иконку */}
+                                    </button>                                </div>
                                 <div className="main-menu-right-column">
                                     <button className="main-menu-button icon-button world-map-button" onClick={handleOpenMapSystemClick} title="Карта Мира">
                                         <img src="/assets/icons/map-icon.png" alt="Карта Мира" />
                                     </button>
                                     <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick} title="Задания"><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
                                     <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick} title="Обмен"><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
+                                    {/* Кнопка для вызова попапа сокровищницы (если нужна отдельная кнопка) */}
+                                    {/* Если сокровищница - это другой тип "сундука", можно создать отдельную кнопку. Если это тот же, что и "Награды", то не нужно. */}
+                                    {/* По код1, handleTreasureChestClick - это отдельная логика */}
+                                    {/* Предположим, нужна отдельная кнопка: */}
                                 </div>
                                 <AnimatePresence>
                                     {showLevelPopup && selectedLevelData && (
@@ -681,61 +801,147 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* === НАЧАЛО ИЗМЕНЕНИЙ: Логика отображения попапов === */}
-            <AnimatePresence>
+ {/* === НАЧАЛО ИЗМЕНЕНИЙ: Логика отображения попапов === */}
+ <AnimatePresence>
+                {/* Попап Почты (кастомный) */}
                 {activeView === 'detailed' && activePopup === 'mail' && (
                     <motion.div
                         key="mail-popup-overlay"
-                        className="popup-overlay-for-mail"
+                        className="popup-overlay-for-mail" // Стили для оверлея почты
                         variants={mailOverlayVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        onClick={closePopup}
+                        initial="hidden" animate="visible" exit="exit"
+                        onClick={closePopup} 
                     >
                         <motion.div
-                            className="mail-popup-outer-frame"
+                            className="mail-popup-outer-frame" // Стили для рамки почты
                             variants={mailPopupFrameVariants}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="mail-title-banner">
-                                Почта
-                            </div>
+                            {/* Содержимое попапа почты, включая его заголовок-баннер и кнопку закрытия */}
+                            <div className="mail-title-banner">Почта</div>
                             <div className="mail-main-content-body">
-                                <button
-                                    onClick={closePopup}
-                                    className="mail-interface-close-button"
-                                    aria-label="Закрыть почту"
-                                >
-                                    &times;
-                                </button>
+                                <button onClick={closePopup} className="mail-interface-close-button" aria-label="Закрыть почту">&times;</button>
                                 <MailPopupContent onCloseRequest={closePopup} />
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
+
+                {/* КАСТОМНЫЙ ПОПАП "СОКРОВИЩНИЦА" */}
+    {activeView === 'detailed' && activePopup === 'treasure_chest' && (
+        <motion.div
+            key="treasure-chest-overlay"
+            // === ИСПОЛЬЗУЕМ НОВЫЕ КЛАССЫ ДЛЯ СОКРОВИЩНИЦЫ ===
+            className="treasure-chest-backdrop"  // Этот класс будет в TreasureChestInfoPopup.scss
+            variants={mailOverlayVariants}       // Анимацию можно оставить ту же или сделать свою
+            initial="hidden" animate="visible" exit="exit"
+            onClick={handleCloseTreasureChest}   // Своя функция закрытия
+        >
+            <motion.div
+                // === ИСПОЛЬЗУЕМ НОВЫЕ КЛАССЫ ДЛЯ СОКРОВИЩНИЦЫ ===
+                className="treasure-chest-popup-box" // Этот класс будет в TreasureChestInfoPopup.scss
+                variants={mailPopupFrameVariants}    // Анимацию можно оставить ту же или сделать свою
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Заголовок-баннер для Сокровищницы (часть .treasure-chest-popup-box) */}
+                <div className="treasure-chest-title-banner">
+                {treasureChestState === 'info' && "Древние Руны"}
+                {treasureChestState === 'game' && "Активация Руны!"}
+                {treasureChestState === 'results' && "Итоги Активации"}
+            </div>
+            
+            <button onClick={handleCloseTreasureChest} className="treasure-chest-close-button">&times;</button>
+            
+            {/* AnimatePresence для ВНУТРЕННЕГО контента попапа */}
+            <AnimatePresence mode="wait"> {/* mode="wait" дождется окончания exit анимации перед тем как показать новый */}
+            {treasureChestState === 'info' && (
+                                    <motion.div
+                                        key="treasure-info-content" // Уникальный ключ
+                                        className="popup-content-area-for-treasure" // Общий класс для области контента
+                                        variants={popupContentVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                    >
+                                        <TreasureChestInfoPopup 
+                                            onStartChest={handleStartChestGame} 
+                                        />
+                    </motion.div>
+                )}
+                {treasureChestState === 'game' && (
+                    <motion.div
+                        key="runes-game" // Уникальный ключ
+                        variants={popupContentVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="popup-content-area-wrapper"
+                    >
+                        <ShardboundRunesGamePopup onGameEnd={handleChestGameEnd} />
+                    </motion.div>
+                )}
+                {treasureChestState === 'results' && lastChestRewards && (
+                    <motion.div
+                        key="runes-results" // Уникальный ключ
+                        variants={popupContentVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="popup-content-area-wrapper"
+                    >
+                        <ShardboundRunesResultsPopup 
+                            rewards={lastChestRewards} 
+                            onClose={handleCloseTreasureChest} 
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    </motion.div>
+                )}
             </AnimatePresence>
 
             <AnimatePresence>
-                {activeView === 'detailed' && activePopup && activePopup !== 'mail' && activePopup !== 'rewards' && (
-                    <motion.div
-                        key={activePopup}
+
+                {/* Содержимое в зависимости от состояния Сокровищницы */}
+                {treasureChestState === 'info' && (
+                    // TreasureChestInfoPopup теперь НЕ должен иметь свой корневой div 
+                    // с классом .treasure-chest-info-content, если этот класс уже
+                    // является частью .treasure-chest-popup-box или его дочерним элементом
+                    // для основного контента.
+                    // Правильнее, если TreasureChestInfoPopup возвращает только ВНУТРЕННЕЕ содержимое.
+                    <TreasureChestInfoPopup 
+                        onStartChest={handleStartChestGame} 
+                    />
+                )}
+                {/* ОБЩИЙ КОМПОНЕНТ POPUP ДЛЯ ОСТАЛЬНЫХ ТИПОВ (ЗАДАНИЯ, ОБМЕН, БАТЛПАСС-ПОПАП) */}
+                {activeView === 'detailed' && 
+                 activePopup && 
+                 activePopup !== 'mail' &&
+                 activePopup !== 'treasure_chest' && // <--- УБЕДИТЕСЬ, ЧТО 'treasure_chest' ЗДЕСЬ ИСКЛЮЧЕН
+                 activePopup !== 'rewards' && // 'rewards' обрабатывается переходом на другой экран/компонент
+                 (
+                    <motion.div 
+                        key={activePopup} // Используем activePopup как ключ для корректной анимации смены попапов
+                        // Анимации и стили из вашего код2 для общих попапов:
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20, transition: {duration: 0.2} }}
-                        style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+                        style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.5)'}}
+                        onClick={closePopup} // Закрытие по клику на оверлей
                     >
-                        <Popup
-                            title={getPopupTitle(activePopup)}
+                        <Popup // Ваш ОБЩИЙ компонент Popup.jsx
+                            title={getPopupTitle(activePopup)} // getPopupTitle ТЕПЕРЬ НЕ ДОЛЖЕН ОБРАБАТЫВАТЬ 'treasure_chest'
                             onClose={closePopup}
+                            // bannerStyle={activePopup === 'treasure_chest_main' && treasureChestState === 'info'} // Этот prop больше не нужен здесь, т.к. сокровищница кастомная
                         >
-                            {getPopupContent(activePopup)}
+                            {getPopupContent(activePopup)} {/* getPopupContent ТЕПЕРЬ НЕ ДОЛЖЕН ОБРАБАТЫВАТЬ 'treasure_chest' */}
                         </Popup>
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* === КОНЕЦ ИЗМЕНЕНИЙ === */}
+            {/* === КОНЕЦ ИЗМЕНЕНИЙ === */} 
+
             {!isOverlayActive && (
                 <button className="reset-button" onClick={handleFullResetClick} title="Сбросить весь игровой прогресс" >
                     Сброс

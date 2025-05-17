@@ -1,0 +1,554 @@
+// src/components/popups/TreasureChestInfoPopup.scss (или твой актуальный файл)
+
+// --- ЦВЕТА И СТИЛИ ДЛЯ "SHARDBOUND RUNES" ---
+// Фоны
+$sb-popup-bg-start: #201a2f;
+$sb-popup-bg-end: #2f203f;
+$sb-popup-border-color: #5a4a7e;
+
+// Баннер-заголовок ("Древние Руны" / "Источник Осколков")
+$sb-banner-bg: linear-gradient(to right, #4f3a9a, #7e4ae0);
+$sb-banner-text-color: #e8e0ff;
+$sb-banner-border-color: darken(#4f3a9a, 10%);
+
+// Тексты
+$sb-text-primary: #e8e0ff;
+$sb-text-secondary: #b0a8d0;
+$sb-text-highlight: #82eefd; // Используется в .attempts-timer-info из код1
+$sb-button-shadow-color: #3d1f7a; // Пример темного фиолетового
+
+// Кнопки
+$sb-button-primary-gradient-start: #7e4ae0;
+$sb-button-primary-gradient-end: #5927a8;
+$sb-button-primary-bg: linear-gradient(to right, $sb-button-primary-gradient-start, $sb-button-primary-gradient-end); // Используется для кнопки "Активировать" из код1
+$sb-button-secondary-bg: #404466;
+$sb-button-text-color: #fff; // Используется для кнопки "Активировать" из код1
+$critical-time-color: #ff4d4d; // Ярко-красный
+
+
+// --- Стили для существующих классов ---
+
+// Класс для бэкдропа из MainMenu.jsx
+.treasure-chest-backdrop { // Или как он у тебя называется
+  position: fixed;
+  inset: 0;
+  background-color: rgba(10, 5, 20, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  backdrop-filter: blur(4px);
+  padding: 15px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+// Класс для основного бокса попапа из MainMenu.jsx
+.treasure-chest-popup-box { // Или как он у тебя называется
+  background: linear-gradient(160deg, $sb-popup-bg-start, $sb-popup-bg-end);
+  color: $sb-text-primary;
+  border-radius: 18px;
+  box-shadow: 0 0 25px rgba(106, 17, 203, 0.45);
+  border: 1px solid $sb-popup-border-color;
+
+  width: 330px;   
+  height: 420px;  
+  max-height: 85vh; // На всякий случай, если $runes-popup-fixed-height будет слишком большим для экрана
+
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  box-sizing: border-box;
+  position: relative;
+  padding: 0;
+}
+
+// Класс для нависающего баннера-заголовка из MainMenu.jsx
+.treasure-chest-title-banner { // Или как он у тебя называется
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: 180px;
+  max-width: calc(100% - 30px);
+  padding: 8px 22px;
+  background: $sb-banner-bg;
+  color: $sb-banner-text-color;
+  border-radius: 12px;
+  border: 1px solid $sb-banner-border-color;
+  box-shadow: 0 3px 8px rgba(74, 0, 224, 0.4);
+  z-index: 5;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: bold;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+// Класс для кнопки закрытия из MainMenu.jsx
+.treasure-chest-close-button { // Или .runes-close-button
+    position: absolute;
+    top: -12px;  // Из код1
+    right: -8px; // Из код1
+    z-index: 10;
+  
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    
+    background-color: rgba(40, 35, 60, 0.85);
+    border: 1px solid $sb-popup-border-color;
+    border-radius: 50%;
+    
+    color: $sb-text-secondary;
+    font-family: 'Arial', sans-serif;
+    font-size: 1.5rem;
+    font-weight: normal;
+    line-height: 1;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  
+    &:hover {
+      color: $sb-text-primary;
+      background-color: rgba(55, 45, 75, 0.95);
+      border-color: lighten($sb-popup-border-color, 10%);
+      transform: scale(1.1);
+    }
+  
+    &:active {
+      transform: scale(0.95);
+    }
+}
+
+// Этот класс на корневом div в TreasureChestInfoPopup.jsx
+.treasure-chest-info-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px; // Зазор между основными блоками (из код1)
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: calc(18px + 15px); // Отступ под баннер (из код1, ПОДБЕРИ!)
+  padding-left: 15px;  // (из код1)
+  padding-right: 15px; // (из код1)
+  padding-bottom: 20px; // (из код1)
+}
+
+// Элементы ВНУТРИ .treasure-chest-info-content
+
+.treasure-banner-image { // Стили из код1, обновлены для соответствия
+  display: block;
+  width: calc(100% - 10px); // Почти на всю ширину (из код1)
+  height: 130px;             // Фиксированная высота для картинки (из код1)
+  margin: 0 auto 12px auto;  // Центрируем и нижний отступ (из код1)
+  border-radius: 6px;        // (из код1)
+  overflow: hidden;
+  background-color: #1a1c2a; // Фон, если картинка с object-fit: contain (из код1)
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover; // (из код1)
+  }
+}
+
+.description { // Стили из код1
+  font-size: 0.9em;
+  color: $sb-text-secondary;
+  max-width: 100%; // В код1 было так, в код2 290px
+  line-height: 1.4;
+  margin-bottom: 12px; // Отступ до секции активации (из код1)
+}
+
+// --- НАЧАЛО: Секция активации и информация о попытках/таймере (из КОД1) ---
+.activation-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; // Зазор между кнопкой и текстом под ней
+  width: 100%; // Растягиваем на всю доступную ширину (с учетом padding родителя)
+}
+
+// Стили для кнопки "Активировать" из код1.
+// Она может быть внутри .activation-section или .popup-actions в зависимости от твоей JSX структуры.
+// Этот селектор более специфичен, чем просто .popup-button.primary
+.popup-button.primary.activate-button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold; // В код1 "bold", в код2 общая кнопка "600"
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1em;    // В код1 "1em", в код2 общая кнопка "0.9em"
+  width: auto;
+  min-width: 180px; // Сделаем кнопку пошире
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $sb-button-text-color;
+  background: $sb-button-primary-bg; // Градиент из переменных
+  // Используем $sb-button-primary-bg как основу для darken, т.к. это переменная для градиента
+  // Для градиента darken может не работать как ожидается напрямую.
+  // Лучше использовать один из цветов градиента или новый цвет.
+  // Возьмем $sb-button-primary-gradient-end (второй цвет градиента) для border и shadow, как в общей кнопке код2
+  border-bottom: 2px solid darken($sb-button-primary-gradient-end, 10%);
+  box-shadow: 0 2px 0 darken($sb-button-primary-gradient-end, 15%), 0 3px 5px rgba(0,0,0,0.2);
+
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: none;
+    border-bottom: none;
+  }
+  &:disabled { // Стили для неактивной кнопки "Активировать"
+    background: lighten($sb-popup-bg-start, 10%);
+    color: $sb-text-secondary;
+    cursor: not-allowed;
+    box-shadow: none;
+    border-bottom: none;
+    // filter: grayscale(0.5) opacity(0.6); // Пример дополнительного стиля для disabled
+  }
+}
+
+.attempts-timer-info { // Новый блок для лимита и таймера (заменяет .attempts-info из код2)
+  font-size: 0.85em; // Общий размер шрифта для этого блока
+  color: $sb-text-secondary;
+  line-height: 1.4;
+
+  p { // Убираем лишние отступы у параграфов внутри
+    margin: 1px 0;
+  }
+
+  .attempts-count strong { // Был .attempts-info strong
+    color: $sb-text-highlight;
+    font-weight: 600;
+  }
+
+  .reset-timer strong { // Для текста таймера
+    color: $sb-text-highlight; // Тоже подсвечиваем
+    font-weight: 600;
+  }
+}
+// --- КОНЕЦ: Секция активации и информация о попытках/таймере ---
+
+
+// Общие стили для кнопок, если есть другие кнопки (например, "Доп. Энергия")
+// Они будут использовать эти стили, если к ним не применен более специфичный .activate-button
+.popup-actions { // Класс для обертки кнопок внутри .treasure-chest-info-content
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px; // Добавим небольшой отступ сверху, если .activation-section идет отдельно
+
+  .popup-button { // Класс для ДРУГИХ кнопок (например "Доп. Энергия")
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9em;
+    flex-grow: 1;
+    min-width: 125px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $sb-button-text-color;
+    box-shadow: 0 2px 0 darken($sb-button-primary-gradient-end, 15%),
+                0 3px 5px rgba(0,0,0,0.2);
+
+    &.primary:not(.activate-button) { // Чтобы не конфликтовало с .activate-button
+      background: $sb-button-primary-bg;
+      border-bottom: 2px solid darken($sb-button-primary-gradient-end, 10%);
+      &:hover:not(:disabled) { filter: brightness(1.1); }
+    }
+    &.secondary {
+      background: $sb-button-secondary-bg;
+      border-bottom: 2px solid darken($sb-button-secondary-bg, 15%);
+      &:hover:not(:disabled) { filter: brightness(1.1); }
+    }
+    &:disabled {
+      background: lighten($sb-popup-bg-start, 10%);
+      color: $sb-text-secondary;
+      cursor: not-allowed;
+      box-shadow: none;
+      border-bottom: none;
+    }
+    &:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: none;
+      border-bottom: none;
+    }
+  }
+}
+
+.runes-game-content { // Класс корневого div в ShardboundRunesGamePopup.jsx
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; // Чтобы элементы распределились по высоте
+  text-align: center;
+  gap: 15px; 
+  width: 100%; 
+  height: 100%; // Занимает всю высоту .runes-popup-box (у которого фиксированная высота)
+  box-sizing: border-box;
+  // Отступ сверху, чтобы не залезать под нависающий баннер и кнопку закрытия
+  padding-top: calc(18px + 15px); // (Примерная видимая высота баннера) + зазор. ПОДБЕРИ!
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-bottom: 20px; // Нижний отступ
+  color: $sb-text-primary;
+}
+
+// Анимация для таймера
+@keyframes pulseTimer {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 5px rgba($sb-text-highlight, 0.3); // Используем $sb-text-highlight для свечения
+  }
+  50% {
+    transform: scale(1.08); // Немного увеличиваем
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 0 15px rgba($sb-text-highlight, 0.6); // Увеличиваем тень и свечение
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 5px rgba($sb-text-highlight, 0.3);
+  }
+}
+
+.game-timer {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: $sb-text-highlight; 
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; // Плавный переход для фона/тени
+  background: rgba(40, 30, 60, 0.85); // Более насыщенный фон
+  padding: 8px 15px;
+  border-radius: 10px; // Больше скругление
+  border: 1px solid lighten($sb-popup-border-color, 15%); // Светлее обводка
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 5px rgba($sb-text-highlight, 0.3); // Начальная тень и свечение
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  // Применяем анимацию
+  &.animating-timer {
+    animation: pulseTimer 1.5s infinite ease-in-out;
+  }
+
+  // Стили, когда время критическое (для всего блока таймера)
+  &.critical-time {
+    background: rgba(70, 20, 30, 0.85); // Темно-красная подложка
+    border-color: lighten($critical-time-color, 10%);
+    // Анимацию пульсации можно сделать интенсивнее или другой
+    // animation: pulseCriticalTimer 0.8s infinite ease-in-out; 
+    // box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 8px rgba($critical-time-color, 0.7); // Красное свечение
+  }
+
+  .timer-icon {
+    width: 20px;
+    height: 20px;
+    // Можно добавить filter: invert(20%) sepia(100%) saturate(5000%) hue-rotate(330deg) brightness(100%) contrast(100%); 
+    // для красного оттенка иконки, когда активен .critical-time на родителе
+  }
+  
+  span { // Стили для текста времени (цифр)
+    transition: color 0.3s ease; // Плавный переход цвета текста
+  }
+
+  // Стили для текста таймера, когда время критическое
+  .critical-time-text { // Этот класс будет на span с цифрами
+    color: $critical-time-color !important; // Важно, чтобы переопределить стандартный цвет
+    font-weight: bold; // Можно сделать жирнее
+  }
+}
+.rune-clickable-area {
+  width: 160px; // Подбери размер руны
+  height: 160px;
+  border-radius: 50%; // Если руна круглая
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.07s ease-out, box-shadow 0.1s ease;
+  // background-color: rgba(126, 74, 224, 0.1); // Легкий фон для области клика
+  // border: 2px dashed rgba(126, 74, 224, 0.3);
+
+  img {
+    max-width: 90%; // Картинка чуть меньше контейнера
+    max-height: 90%;
+    pointer-events: none;
+    filter: drop-shadow(0 0 8px rgba(130, 238, 253, 0.5)); // Голубое свечение вокруг руны
+  }
+
+  &.clicked {
+    transform: scale(0.92); // Эффект "вдавливания"
+    // box-shadow: 0 0 15px rgba(130, 238, 253, 0.7); // Более яркое свечение при клике
+  }
+  &.inactive { // Когда время вышло
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+.current-loot-feedback {
+  display: flex;
+  flex-direction: column; // Отображаем золото и алмазы друг под другом
+  align-items: center; // Центрируем каждый элемент добычи
+  gap: 8px; // Зазор между золотом и алмазами
+  font-size: 1em;
+  color: $sb-text-primary;
+  min-height: 50px; // Место для отображения
+  width: 100%; // Чтобы элементы внутри могли центрироваться
+
+  .loot-item {
+    display: flex;
+    align-items: center;
+    justify-content: center; // Центрируем иконку и текст внутри .loot-item
+    gap: 6px;
+    background-color: rgba(20, 10, 40, 0.7); // Темно-фиолетовая подложка для каждого ресурса
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid lighten($sb-popup-border-color, 5%);
+    min-width: 100px; // Минимальная ширина для блока с ресурсом
+    text-align: center;
+
+    .loot-icon {
+      width: 20px; // Размер иконок золота/алмазов
+      height: 20px;
+    }
+    .loot-count {
+      font-weight: 600;
+      min-width: 30px; // Чтобы цифры не прыгали при изменении количества
+      text-align: left; // Выравниваем цифры по левому краю от иконки
+    }
+  }
+}
+
+// Стили для содержимого попапа результатов
+.runes-results-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 15px; // Зазор между элементами
+  width: 100%; 
+  height: 100%; // Занимает всю высоту .runes-popup-box (у которого фикс. высота)
+  box-sizing: border-box;
+  // Отступ сверху, чтобы не залезать под нависающий баннер-заголовок
+  padding-top: calc(18px + 15px); // (Примерная видимая высота баннера) + зазор. ПОДБЕРИТЕ!
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-bottom: 20px; // Нижний отступ
+  color: $sb-text-primary;
+  justify-content: center; // Центрируем контент вертикально, если его мало
+}
+
+.results-banner-image {
+  display: block;
+  width: calc(100% - 10px); // Почти на всю ширину (из код1)
+  height: 130px;             // Фиксированная высота для картинки (из код1)
+  margin: 0 auto 12px auto;  // Центрируем и нижний отступ (из код1)
+  border-radius: 6px;        // (из код1)
+  overflow: hidden;
+  background-color: #1a1c2a; // Фон, если картинка с object-fit: contain (из код1)
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover; // (из код1)
+  }
+}
+
+.results-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: $sb-text-primary;
+  margin-bottom: 10px;
+}
+
+.results-loot-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; // Элементы будут растягиваться по ширине
+  gap: 8px;
+  width: 100%;
+  max-width: 260px; // Ограничиваем ширину списка наград
+  margin-bottom: 20px;
+
+  .loot-item-result {
+    display: flex;
+    align-items: center;
+    background-color: rgba(20, 10, 40, 0.7); // Фон как у игрового попапа для наград
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid lighten($sb-popup-border-color, 7%);
+
+    .loot-icon-result {
+      width: 24px; // Иконки чуть крупнее
+      height: 24px;
+      margin-right: 10px;
+    }
+
+    .loot-text-result {
+      font-size: 0.95em;
+      color: $sb-text-secondary;
+      text-align: left; // Текст слева
+      flex-grow: 1; // Занимает оставшееся место
+
+      .loot-amount {
+        font-weight: bold;
+        color: $sb-text-highlight; // Яркий цвет для количества
+        margin-left: 5px;
+      }
+    }
+  }
+}
+
+.ok-button { // Стили для кнопки "Забрать" или "ОК" или "Завершить"
+  padding: 12px 30px; 
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1em;
+  width: auto;
+  min-width: 150px; 
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $sb-button-text-color; // Убедись, что эта переменная определена ($fff)
+  background: $sb-button-primary-bg; // Фон кнопки - градиент
+
+  // === ИСПРАВЛЕНИЕ ЗДЕСЬ ===
+  // Используем один из цветов градиента (например, $sb-button-primary-gradient-end) для darken()
+  border-bottom: 2px solid darken($sb-button-primary-gradient-end, 15%); // Затемняем более темный цвет градиента
+  box-shadow: 0 2px 0 darken($sb-button-primary-gradient-end, 20%), // И для тени тоже его
+              0 3px 5px rgba(0,0,0,0.2);
+  
+  &:hover:not(:disabled) { filter: brightness(1.1); }
+  &:active:not(:disabled) { 
+    transform: translateY(2px); 
+    // При нажатии можно убрать или изменить тень и границу
+    box-shadow: 0 0px 0 darken($sb-button-primary-gradient-end, 20%), 
+                0 1px 3px rgba(0,0,0,0.2); 
+    border-bottom: none; 
+  }
+  &:disabled { /* ... стили для неактивной кнопки ... */ }
+}
