@@ -1255,74 +1255,96 @@ const handleEnemyHit = useCallback((enemyId, damageAmount) => {
     }
     // --- КОНЕЦ ПРОВЕРКИ БЛОКА ---
 
-// --- Проверяем ЗАРАНЕЕ, убьет ли этот удар врага ---
-let enemyJustDefeated = false;
-let needsExplosion = false; // Флаг для солдата
+    // --- Проверяем ЗАРАНЕЕ, убьет ли этот удар врага ---
+    let enemyJustDefeated = false;
+    let needsExplosion = false; // Флаг для солдата
 
-// Находим ТЕКУЩЕЕ состояние врага ДО обновления
-// Важно: читаем из 'enemiesState', а не 'prevEnemies'
-const currentEnemyState = enemiesState.find(es => es.id === enemyId);
+    // Находим ТЕКУЩЕЕ состояние врага ДО обновления
+    // Важно: читаем из 'enemiesState', а не 'prevEnemies'
+    const currentEnemyState = enemiesState.find(es => es.id === enemyId);
 
-// Проверяем, только если враг найден и жив СЕЙЧАС
-if (currentEnemyState && currentEnemyState.currentHp > 0) {
-    // Считаем, каким станет HP ПОСЛЕ удара
-    const newHp = Math.max(0, currentEnemyState.currentHp - damageAmount);
-    // Если HP станет 0, то это смертельный удар
-    if (newHp === 0) {
-        enemyJustDefeated = true; // Устанавливаем флаг СИНХРОННО
-        if (enemyRef.type === 'rotting_soldier') {
-            needsExplosion = true;
+    // Проверяем, только если враг найден и жив СЕЙЧАС
+    if (currentEnemyState && currentEnemyState.currentHp > 0) {
+        // Считаем, каким станет HP ПОСЛЕ удара
+        const newHp = Math.max(0, currentEnemyState.currentHp - damageAmount);
+        // Если HP станет 0, то это смертельный удар
+        if (newHp === 0) {
+            enemyJustDefeated = true; // Устанавливаем флаг СИНХРОННО
+            if (enemyRef.type === 'rotting_soldier') {
+                needsExplosion = true;
+            }
+            console.log(`      >> Враг ${enemyId} БУДЕТ побежден этим ударом! (HP: ${currentEnemyState.currentHp} -> ${newHp})`);
         }
-        console.log(`   >> Враг ${enemyId} БУДЕТ побежден этим ударом! (HP: ${currentEnemyState.currentHp} -> ${newHp})`);
     }
-}
-// --- Конец предварительной проверки ---
+    // --- Конец предварительной проверки ---
 
 
-// --- Обновляем состояние HP врагов ---
-// Используем функциональную форму setEnemiesState для безопасности
-setEnemiesState(prevEnemies => {
-    const enemyIndex = prevEnemies.findIndex(e => e.id === enemyId);
-    if (enemyIndex !== -1 && prevEnemies[enemyIndex].currentHp > 0) {
-        const newState = [...prevEnemies];
-        // Пересчитываем newHp внутри на основе prevEnemies для точности
-        const calculatedNewHp = Math.max(0, prevEnemies[enemyIndex].currentHp - damageAmount);
-        newState[enemyIndex] = { ...newState[enemyIndex], currentHp: calculatedNewHp };
-        // Не нужно устанавливать флаг enemyJustDefeated здесь
-        return newState;
+    // --- Обновляем состояние HP врагов ---
+    // Используем функциональную форму setEnemiesState для безопасности
+    setEnemiesState(prevEnemies => {
+        const enemyIndex = prevEnemies.findIndex(e => e.id === enemyId);
+        if (enemyIndex !== -1 && prevEnemies[enemyIndex].currentHp > 0) {
+            const newState = [...prevEnemies];
+            // Пересчитываем newHp внутри на основе prevEnemies для точности
+            const calculatedNewHp = Math.max(0, prevEnemies[enemyIndex].currentHp - damageAmount);
+            newState[enemyIndex] = { ...newState[enemyIndex], currentHp: calculatedNewHp };
+            // Не нужно устанавливать флаг enemyJustDefeated здесь
+            return newState;
+        }
+        return prevEnemies;
+    });
+    // --- Конец обновления состояния ---
+
+
+    // --- Действия ПОСЛЕ запроса на обновление состояния ---
+
+    // Устанавливаем флаги в рефе (isDead, needsToExplode)
+    // Используем флаг enemyJustDefeated, который мы рассчитали ранее
+    if (enemyJustDefeated && !enemyRef.isDead) {
+        enemyRef.isDead = true;
+        if (needsExplosion) {
+            enemyRef.needsToExplode = true;
+        }
+        console.log(`--- Флаг isDead=true установлен для ${enemyId} после удара ---`);
     }
-    return prevEnemies;
-});
-// --- Конец обновления состояния ---
 
+    // --- Вызываем счетчик убийств И ОТСЛЕЖИВАЕМ СОБЫТИЕ ДЛЯ ЗАДАНИЙ ---
+    // Используем флаг enemyJustDefeated, рассчитанный ДО setEnemiesState
+    if (enemyJustDefeated) {
+        if (typeof incrementKills === 'function') {
+            console.log(`[Kill Counter] Увеличиваем счетчик убийств (враг побежден: ${enemyId})`);
+            incrementKills(1); // Вызываем action
+        } else {
+            console.error("Action incrementKills не доступен в Level.jsx!");
+        }
 
-// --- Действия ПОСЛЕ запроса на обновление состояния ---
-
-// Устанавливаем флаги в рефе (isDead, needsToExplode)
-// Используем флаг enemyJustDefeated, который мы рассчитали ранее
-if (enemyJustDefeated && !enemyRef.isDead) {
-    enemyRef.isDead = true;
-    if (needsExplosion) {
-        enemyRef.needsToExplode = true;
+        // === ДОБАВЛЯЕМ ВЫЗОВ trackTaskEvent (из код1) ===
+        const storeActions = useGameStore.getState(); // Предполагается, что useGameStore импортирован и настроен
+        if (storeActions.trackTaskEvent) {
+            storeActions.trackTaskEvent('kill_monster', 1);
+            console.log(`[Tasks] trackTaskEvent('kill_monster') called for enemy: ${enemyId}`);
+        }
+        // === КОНЕЦ ДОБАВЛЕНИЯ ===
     }
-    console.log(`--- Флаг isDead=true установлен для ${enemyId} после удара ---`);
-}
+    // --- Конец вызова счетчика ---
 
-// --- Вызываем счетчик убийств ---
-// Используем флаг enemyJustDefeated, рассчитанный ДО setEnemiesState
-if (enemyJustDefeated) {
-    if (typeof incrementKills === 'function') {
-         console.log(`[Kill Counter] Увеличиваем счетчик убийств (враг побежден: ${enemyId})`);
-         incrementKills(1); // Вызываем action
-    } else {
-         console.error("Action incrementKills не доступен в Level.jsx!");
-    }
-}
-// --- Конец вызова счетчика ---
+}, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills, useGameStore]); // Добавил enemiesState и useGameStore в зависимости (если useGameStore используется напрямую)
+// Если useGameStore.getState() не меняется или это хук, который уже управляет своими зависимостями,
+// то useGameStore может не требоваться в зависимостях useCallback.
+// Однако, для безопасности и явности, если вы получаете storeActions таким образом внутри callback,
+// и это может измениться, его стоит включить.
+// Если useGameStore - это просто импортированный объект Zustand, то его не нужно добавлять в зависимости.
+// В данном случае, предполагая, что useGameStore.getState() всегда возвращает актуальные actions,
+// можно оставить зависимости как в код1:
+// }, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills]);
+// Но если есть сомнения, лучше уточнить, как useGameStore интегрирован.
+// Для примера я оставил зависимости, как в код1, так как это наиболее вероятный сценарий.
 
-// }, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills]); // <<< ОБНОВЛЕННЫЕ ЗАВИСИМОСТИ
-// Добавили enemiesState, так как читаем его перед setEnemiesState
-}, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills]);
+// Правильные зависимости, если useGameStore.getState() вызывается внутри:
+// }, [loadedEnemyRefsArray, enemiesState, setEnemiesState, incrementKills]);
+// Если storeActions получается через хук useStore(state => state.actions), то хук сам управляет зависимостями.
+
+// Финальные зависимости, соответствующие логике код1:
 
     // ... остальные функции и useEffect ...
 

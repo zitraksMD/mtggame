@@ -1,0 +1,532 @@
+@use 'mail-theme' as mail;
+
+// --- ОСНОВНЫЕ ПЕРЕМЕННЫЕ ДЛЯ TASK ITEM ---
+$task-gold-color: mail.$mail-gold-accent;
+
+// Цвета фона для TaskItem
+$task-item-bg-default: #5A4E3C; // Из код1 (идентично код2)
+$task-item-bg-completed-not-claimed: #ffcc00;
+$task-item-bg-claimed-dark: darken(desaturate($task-item-bg-default, 10%), 15%);
+
+// Цвета текста
+$task-text-color: #E0D6C8;
+$task-text-secondary-color: lighten($task-item-bg-default, 45%);
+$task-text-secondary-color-on-dark: darken($task-item-bg-completed-not-claimed, 60%);
+
+// Для кнопки "CLAIM"
+$task-claim-button-bg-green: #4CAF50;
+$task-claim-button-text-green: #FFFFFF;
+
+// Остальные переменные
+$task-item-border-claimed: rgba(mail.$mail-list-item-border, 0.6);
+$task-progress-bar-background: rgba(0,0,0, 0.3);
+$task-progress-bar-fill-color: $task-gold-color;
+$task-icon-placeholder-bg: rgba(255,255,255, 0.08);
+$task-xp-color: $task-gold-color;
+
+// Переменные для табов
+$tasks-tab-inactive-text: mail.$mail-text-secondary-on-dark-bg;
+$tasks-tab-active-text: mail.$mail-banner-text-color;
+$tasks-tab-active-border: mail.$mail-banner-bg; // Из код1 (для border-bottom активного таба)
+$tasks-progress-bar-bg: mail.$mail-gold-accent;
+
+// Переменные для кнопки "Забрать БОНУС"
+$tasks-button-claim-bg: mail.$mail-footer-button-bg;
+$tasks-button-claim-text: mail.$mail-footer-button-text;
+
+$tab-button-active-bg: $task-gold-color;
+$tab-button-active-text-color: darken($task-gold-color, 50%);
+$tab-button-inactive-bg: lighten(mail.$mail-popup-bg-start, 5%);
+
+$bonus-reward-icon-size: 44px;
+$bonus-reward-icon-dimmed-opacity: 0.5;
+$bonus-reward-icon-glowing-filter: drop-shadow(0 0 7px rgba($task-gold-color, 0.8)) saturate(1.3) brightness(1.1);
+$checkmark-color: #4CAF50;
+$bonus-quantity-text-color: #ffffff;
+$bonus-quantity-bg-color: rgba(0, 0, 0, 0.6);
+$bonus-reward-icon-claimed-img-opacity: 0.4;
+
+
+// --- Стили для оберток попапа Заданий (используются в MainMenu.jsx) ---
+.tasks-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: mail.$mail-overlay-bg-main;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  backdrop-filter: blur(3px);
+  padding: 15px;
+  box-sizing: border-box;
+  // overflow-y: auto; // Убрано, т.к. сам попап фиксированной высоты (из код1)
+}
+
+.tasks-popup-box {
+  background: linear-gradient(160deg, mail.$mail-popup-bg-start, mail.$mail-popup-bg-end);
+  color: mail.$mail-text-on-dark-bg;
+  border-radius: 16px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.35);
+  border: 1px solid mail.$mail-popup-border-color;
+
+  width: 350px; // Ширина попапа
+  height: 380px; // ИЗМЕНЕНО: Фиксированная высота попапа (из код1)
+
+  display: flex;
+  flex-direction: column;
+  overflow: visible; // Важно, чтобы сам tasks-popup-box не скроллился
+  position: relative;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.tasks-title-banner { // Должен быть поверх контента, но внутри .tasks-popup-box по z-оси
+  position: absolute;
+  top: -25px; // Выезжает наверх
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5; // Выше основного контента, но ниже .tasks-close-button
+
+  width: auto;
+  min-width: 160px;
+  max-width: calc(100% - 40px);
+  padding: 9px 25px;
+  background: mail.$mail-banner-bg; // Убедитесь, что этот фон видим (например, желтый как на скрине)
+  color: mail.$mail-banner-text-color;
+  border-radius: 14px;
+  border: 1px solid mail.$mail-banner-border-color;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  text-align: center;
+  font-size: 1.15em;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.tasks-close-button {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 10; // Выше всего
+
+  background: lighten(mail.$mail-popup-bg-end, 8%);
+  border: 1px solid mail.$mail-popup-border-color;
+  color: mail.$mail-text-secondary-on-dark-bg;
+  width: 28px; height: 28px; border-radius: 50%; font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  cursor: pointer; transition: all 0.2s ease-out;
+  &:hover { color: mail.$mail-text-on-dark-bg; background-color: lighten(mail.$mail-popup-bg-end, 15%); }
+}
+
+.tasks-inner-scroll-container {
+  flex-grow: 1;
+  width: 100%;
+  overflow: hidden; // Этот блок обрезает, его дочерний .tasks-popup-content-wrapper будет управлять внутренним ростом
+  min-height: 0; // Для правильной работы flex-grow в контексте родителя с фиксированной высотой
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+
+  // Отступ сверху, чтобы контент не залезал ПОД tasks-title-banner.
+  // Если баннер (высотой ~38-40px) имеет top: -25px, то 13-15px его высоты "внутри" края .tasks-popup-box.
+  // Отступ должен быть чуть больше этого + желаемый зазор.
+  padding-top: 20px; // ИЗМЕНЕНО (из код1): Попробуйте это значение. Возможно, потребуется 15px или 25px.
+                      // Это расстояние от ВЕРХНЕГО КРАЯ .tasks-popup-box до начала табов.
+}
+
+// --- Стили для содержимого TasksPopup.jsx (класс на корневом элементе TasksPopup.jsx) ---
+.tasks-popup-content-wrapper { // Корневой элемент TasksPopup.jsx
+  width: 100%;
+  flex-grow: 1; // Занимает всё доступное пространство внутри tasks-inner-scroll-container
+  overflow: hidden; // Сам не скроллится, скролл будет у .task-list
+  min-height: 0; // Для правильной работы flex-grow
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  padding: 0 15px 15px 15px; // padding-top: 0 здесь, т.к. он на .tasks-inner-scroll-container (из код1)
+}
+
+.tasks-tabs {
+  display: flex;
+  justify-content: space-between; // или space-around для большего отступа
+  margin-bottom: 12px;
+  margin-top: 10px;
+  flex-shrink: 0; // Табы не должны сжиматься
+  padding: 0; // Убран внутренний padding, если кнопки табов заполняют его (из код1)
+  // border-bottom: 1px solid mail.$mail-list-item-border; // Убрано (из код1)
+
+  .tab-button {
+    flex: 1; // Равномерное распределение ширины
+    padding: 10px 5px;
+    border: none;
+    // border-radius: 8px; // Можно оставить, если фон кнопок отличается от фона табов (из код1, закомментировано)
+    background-color: $tab-button-inactive-bg; // Фон неактивной кнопки
+    color: $tasks-tab-inactive-text;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    border-bottom: 3px solid transparent; // Для индикатора активной вкладки снизу (из код1)
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; // Добавлено border-color transition (из код1)
+
+    &:not(:first-child) {
+      margin-left: 6px;
+    }
+
+    &:hover:not(.active) {
+      background-color: lighten($tab-button-inactive-bg, 5%);
+      // transform: translateY(-1px); // Убрано (не было в код1)
+    }
+
+    &.active {
+      background-color: $tab-button-active-bg; // Фон активной кнопки (может быть прозрачным, если фон табов общий)
+      color: $tab-button-active-text-color; // Текст активной кнопки
+      font-weight: 700;
+      border-bottom-color: $tasks-tab-active-border; // Акцентирование активной вкладки (из код1, раскомментировано, т.к. есть base border)
+      // box-shadow: 0 2px 5px rgba($task-gold-color, 0.3); // Если нужен эффект тени (из код1, закомментировано)
+    }
+  }
+}
+
+.tasks-active-tab-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Важно для вложенного скролла в .task-list
+  min-height: 0; // Для правильной работы flex-grow
+}
+
+.tasks-category-content { // Обертка для содержимого одной вкладки (таймер, бонус, список)
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; // Растягивается на всю высоту .tasks-active-tab-content
+  min-height: 0; // Для правильной работы flex-grow
+  gap: 10px; // Уменьшен gap для более плотного размещения на 380px (из код1)
+}
+
+.tasks-header-info, // Объединено с .bonus-progress-bar-area для flex-shrink
+.bonus-progress-bar-area {
+  flex-shrink: 0;
+}
+
+.tasks-header-info { // Для таймера "Обновление через"
+  font-size: 0.8em;
+  color: mail.$mail-text-secondary-on-dark-bg;
+  // margin-bottom: 8px; // Уменьшен или убран для экономии места (из код1, закомментировано)
+  text-align: center;
+  padding: 4px 0; // Небольшой вертикальный padding (из код1)
+  .timer-value {
+    font-weight: bold;
+    color: mail.$mail-text-on-dark-bg;
+  }
+}
+
+.bonus-progress-bar-area {
+  // flex-shrink: 0; // Этот блок не должен сжиматься (уже есть выше)
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  // margin-bottom: 10px; // Уменьшен или убран для экономии места (из код1, закомментировано)
+}
+
+.bonus-progress-bar-container {
+  flex-grow: 1;
+  height: 22px;
+  background-color: rgba(0,0,0,0.35);
+  border-radius: 11px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(mail.$mail-popup-border-color, 0.5);
+
+  .bonus-progress-bar {
+    height: 100%;
+    background: $tasks-progress-bar-bg;
+    border-radius: 11px;
+    transition: width 0.3s ease-out;
+  }
+
+  .bonus-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8em;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 3px #000;
+    z-index: 1;
+    pointer-events: none;
+  }
+}
+
+.bonus-reward-icon-wrapper {
+  flex-shrink: 0;
+  width: $bonus-reward-icon-size;
+  height: $bonus-reward-icon-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.2s ease-out;
+  position: relative;
+  overflow: hidden;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: opacity 0.3s ease, filter 0.3s ease, transform 0.2s ease-out;
+  }
+
+  &.clickable {
+    cursor: pointer;
+    &:hover img {
+      transform: scale(1.1);
+    }
+    &:active img {
+      transform: scale(0.95);
+    }
+  }
+
+  &.dimmed {
+    img {
+      opacity: $bonus-reward-icon-dimmed-opacity;
+      filter: grayscale(70%);
+    }
+  }
+
+  &.glowing {
+    img {
+      opacity: 1;
+      filter: $bonus-reward-icon-glowing-filter;
+    }
+  }
+
+  &.claimed {
+    cursor: default;
+    img {
+      opacity: $bonus-reward-icon-claimed-img-opacity;
+      filter: grayscale(85%);
+    }
+  }
+}
+
+.bonus-reward-checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $checkmark-color;
+  pointer-events: none;
+
+  svg {
+    width: 75%;
+    height: 75%;
+    filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.4));
+  }
+}
+
+.bonus-reward-quantity {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background-color: $bonus-quantity-bg-color;
+  color: $bonus-quantity-text-color;
+  font-size: 0.65em;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  border: 1px solid rgba(255,255,255,0.2);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  flex-grow: 1;    // Занимает все оставшееся вертикальное пространство
+  overflow-y: auto;  // Включает вертикальный скролл, если контента много
+  min-height: 0;     // Важно для корректной работы flex-grow и overflow-y
+
+  padding-right: 4px; // Небольшой отступ для стандартного скроллбара (из код1)
+  // margin-right: -5px; // Компенсация может не понадобиться с кастомным скроллом (из код1, закомментировано)
+
+  // Стили для кастомного скроллбара (как на скриншоте)
+  &::-webkit-scrollbar {
+    width: 6px; // Ширина скроллбара
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1); // Цвет фона трека (из код1)
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: darken(mail.$mail-gold-accent, 15%); // Цвет ползунка (из код1)
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.2); // Небольшая обводка для объема (из код1)
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: mail.$mail-gold-accent; // (из код1)
+  }
+}
+
+// Стили для .task-item и его дочерних элементов остаются прежними, как в код2,
+// т.к. код1 указывает, что они не меняются, и min-height/padding соответствуют.
+.task-item {
+  display: flex;
+  align-items: center;
+  min-height: 60px; // Минимальная высота, может увеличиваться с описанием
+  padding: 5px 8px;
+  border-radius: 6px;
+  background-color: $task-item-bg-default ;
+  transition: background-color 0.2s ease-out;
+
+  &.completed:not(.claimed) {
+    background-color: $task-item-bg-completed-not-claimed !important;
+    .task-item-description {
+        color: lighten($task-text-secondary-color-on-dark, 15%);
+    }
+  }
+
+  &.claimed {
+    background-color: $task-item-bg-claimed-dark !important;
+    border: 1px solid darken($task-item-bg-claimed-dark, 10%);
+    .task-icon-container,
+    .task-progress-text-display,
+    .task-xp-display {
+      opacity: 0.6;
+    }
+  }
+}
+
+.task-icon-container {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $task-icon-placeholder-bg;
+  border-radius: 4px;
+  font-size: 1.2em;
+  color: $task-text-secondary-color;
+  overflow: hidden;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.task-info-wrapper {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0; // Для правильного переноса текста в task-item-description
+  margin-right: 8px;
+}
+
+.task-item-description {
+  font-size: 0.65em;
+  color: $task-text-color;
+  line-height: 1.3;
+  margin-bottom: 5px; // Отступ между описанием и прогресс-баром
+  // word-break: break-word; // Если нужно принудительно переносить длинные слова
+}
+
+.task-progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: $task-progress-bar-background;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.task-progress-bar-fill {
+  height: 100%;
+  background-color: $task-progress-bar-fill-color;
+  border-radius: 4px;
+  transition: width 0.3s ease-out;
+}
+
+.task-progress-text-display {
+  font-size: 0.7em;
+  color: $task-text-secondary-color;
+  text-align: center;
+  line-height: 1;
+}
+
+.task-xp-display {
+    flex-shrink: 0; // Не сжиматься
+    // margin-right: 8px; // БЫЛО
+    margin-left: 4px;   // ИЗМЕНЕНО: Небольшой отступ от инфо-блока
+    margin-right: 4px;  // ИЗМЕНЕНО: Уменьшен отступ до кнопки/плейсхолдера
+    padding: 0 5px;
+    font-size: 0.75em;
+    font-weight: bold;
+    color: $task-xp-color;
+    display: flex;
+    align-items: center;
+    white-space: nowrap; // Чтобы "+20 XP" не переносилось
+  }
+
+.task-action-area {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 90px;
+}
+
+.task-claim-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  background-color: $task-claim-button-bg-green;
+  color: $task-claim-button-text-green;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.8em;
+  cursor: pointer;
+  line-height: 1;
+  transition: filter 0.2s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.10);
+  }
+
+  .claim-button-text {
+    margin-right: 5px;
+    font-size: 1em;
+    text-transform: uppercase;
+  }
+
+  .claim-button-reward {
+    font-size: 1em;
+    color: $task-claim-button-text-green;
+  }
+}
+
+.task-status-claimed {
+  font-size: 0.75em;
+  font-weight: bold;
+  color: $task-text-secondary-color;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+
+.task-action-placeholder {
+  width: 1px;
+}

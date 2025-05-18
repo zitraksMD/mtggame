@@ -1,69 +1,37 @@
-// src/components/MainMenu.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../../store/useGameStore.js';
 import ZoneMap from "../ZoneMap.jsx";
 import GlobalMap from "../GlobalMap.jsx";
 import TransitionOverlay from "../TransitionOverlay.jsx";
-import Popup from '../popups/Popup.jsx'; // Существующий компонент Popup
+import Popup from '../popups/Popup.jsx'; 
 import "./MainMenu.scss";
 import { useNavigate, useLocation } from 'react-router-dom';
 import LevelDetailsPopup from '../popups/LevelDetailsPopup.jsx';
-import ShardboundRunesGamePopup from '../popups/ShardboundRunesGamePopup.jsx'; // Новый импорт
-import ShardboundRunesResultsPopup from '../popups/ShardboundRunesResultsPopup.jsx'; // Новый импорт
-
-
+import ShardboundRunesGamePopup from '../popups/ShardboundRunesGamePopup.jsx';
+import ShardboundRunesResultsPopup from '../popups/ShardboundRunesResultsPopup.jsx';
 
 import { ALL_ZONES_CONFIG, findZoneIdForChapter } from '../../data/worldMapData.js';
-
-// Импорт для содержимого всплывающего окна почты
 import MailPopupContent from '../popups/MailPopupContent.jsx';
-
-// Импорты для Сокровищницы
 import TreasureChestInfoPopup from '../popups/TreasureChestInfoPopup.jsx';
-// Позже добавим TreasureChestGamePopup и TreasureChestResultsPopup
+import TasksPopup from '../popups/TasksPopup.jsx'; // Импорт TasksPopup
 
 const popupContentVariants = {
-    initial: { opacity: 0, y: 20 }, // Начинается чуть ниже и прозрачно
+    initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
-    exit: { opacity: 0, y: -20, transition: { duration: 0.2, ease: "easeIn" } } // Уходит вверх и исчезает
-  };
+    exit: { opacity: 0, y: -20, transition: { duration: 0.2, ease: "easeIn" } }
+};
 
-// Варианты анимации для оверлея поп-апа почты
 const mailOverlayVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.2, ease: "easeInOut" } },
-    exit: { opacity: 0, transition: { duration: 0.3, ease: "easeInOut" } } // Оверлей исчезает
+    exit: { opacity: 0, transition: { duration: 0.3, ease: "easeInOut" } }
 };
 
-// Варианты анимации для основного контейнера поп-апа почты (внешняя рамка)
 const mailPopupFrameVariants = {
-    hidden: { // Начальное состояние (перед появлением) и конечное (после исчезновения)
-        opacity: 0,
-        scale: 0.85,
-        // y: "10%" // Можно добавить сдвиг по Y для эффекта "выпрыгивания/ухода"
-    },
-    visible: { // Активное состояние
-        opacity: 1,
-        scale: 1,
-        // y: "0%",
-        transition: {
-            type: "spring", // Пружинная анимация для появления
-            stiffness: 300,
-            damping: 25,
-            duration: 0.3
-        }
-    },
-    exit: { // Состояние при закрытии
-        opacity: 0,
-        scale: 0.85,
-        // y: "10%",
-        transition: {
-            type: "tween", // Обычная анимация для закрытия
-            ease: "easeIn",
-            duration: 0.2
-        }
-    }
+    hidden: { opacity: 0, scale: 0.85 },
+    visible: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 300, damping: 25, duration: 0.3 } },
+    exit: { opacity: 0, scale: 0.85, transition: { type: "tween", ease: "easeIn", duration: 0.2 } }
 };
 
 const INITIAL_CHAPTER_ID = 1;
@@ -72,7 +40,6 @@ const chapterDataModules = import.meta.glob('../../data/zones/*/chapter*Data.js'
 const zoneDataModules = import.meta.glob('../../data/zones/*/zoneData.js');
 
 
-// Добавляем onChapterNameChange в пропсы
 const MainMenu = ({ onStart, onChapterNameChange }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -89,8 +56,8 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         startScreenTransition,
         ensureScreenIsOpening,
         isZoneUnlocked,
-        treasureChestAttempts, // Добавлено из код1
-        useTreasureChestAttempt: consumeChestAttempt, // Добавлено и переименовано из код1
+        treasureChestAttempts, 
+        useTreasureChestAttempt: consumeChestAttempt, 
     } = useGameStore(state => ({
         currentChapterIdFromStore: state.currentChapterId,
         setCurrentChapterInStore: state.setCurrentChapter,
@@ -103,8 +70,8 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         startScreenTransition: state.startScreenTransition,
         ensureScreenIsOpening: state.ensureScreenIsOpening,
         isZoneUnlocked: state.isZoneUnlocked,
-        treasureChestAttempts: state.treasureChestAttempts, // Добавлено из код1
-        useTreasureChestAttempt: state.useTreasureChestAttempt, // Добавлено из код1
+        treasureChestAttempts: state.treasureChestAttempts, 
+        useTreasureChestAttempt: state.useTreasureChestAttempt, 
     }));
 
     const [activeView, setActiveView] = useState('detailed');
@@ -130,10 +97,9 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     const [isLoadingLevel, setIsLoadingLevel] = useState(false);
     const [chapterData, setChapterData] = useState(null);
     const [isLoadingChapter, setIsLoadingChapter] = useState(true);
-    const [activePopup, setActivePopup] = useState(null); // Состояние для активного попапа
+    const [activePopup, setActivePopup] = useState(null);
     
-    // Состояния для Сокровищницы из код1
-    const [treasureChestState, setTreasureChestState] = useState('info'); // 'info', 'game', 'results'
+    const [treasureChestState, setTreasureChestState] = useState('info'); 
     const [lastChestRewards, setLastChestRewards] = useState(null);
 
     const mapContainerRef = useRef(null);
@@ -145,7 +111,6 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     const levelDetailsPopupRef = useRef(null);
     const [resetTrigger, setResetTrigger] = useState(0);
 
-    // ... (остальные хуки useEffect и функции без изменений до performViewChange) ...
     const performViewChange = useCallback((targetView, focusData = null) => {
         if (activeView === targetView && !isOverlayActive && !focusData) {
             console.log(`MainMenu: performViewChange - Already on view '${targetView}'. Skipping.`);
@@ -169,17 +134,16 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
 
         nextViewAfterOverlayRef.current = { view: targetView, focus: focusData || {} };
         setIsOverlayActive(true);
-        setTriggerOpenOverlay(false);
+        setTriggerOpenOverlay(false); 
         setTriggerCloseOverlay(true);
     }, [activeView, isOverlayActive, triggerCloseOverlay, triggerOpenOverlay, currentChapterId, currentZoneId]);
-
+    
     useEffect(() => {
-        // Если мы не в детальном виде, имя главы в шапке нерелевантно или должно быть очищено
         if (activeView !== 'detailed' && onChapterNameChange) {
             onChapterNameChange(null);
         }
         setIsFullScreenMapActive(activeView === 'zone' || activeView === 'global');
-    }, [activeView, setIsFullScreenMapActive, onChapterNameChange]); // Добавляем onChapterNameChange в зависимости
+    }, [activeView, setIsFullScreenMapActive, onChapterNameChange]);
 
     useEffect(() => {
         const stateFromLocation = location.state || {};
@@ -220,7 +184,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             console.log(`MainMenu: useEffect[location.state] - Requesting view change to '${viewToOpen}' with chapterId: ${finalChapterId}, zoneId: ${finalZoneId}`);
             performViewChange(viewToOpen, {
                 zoneId: finalZoneId || derivedZoneIdFromChapter,
-                chapterId: finalChapterId
+                chapterId: finalChapterId 
             });
             stateNeedsClearing = true;
         }
@@ -235,7 +199,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         let isMounted = true;
         const loadChapter = async (chapterIdToLoad) => {
             if (!isMounted || !chapterIdToLoad) {
-                if (isMounted && onChapterNameChange) onChapterNameChange(null); // Очищаем, если нет chapterIdToLoad
+                if (isMounted && onChapterNameChange) onChapterNameChange(null);
                 return;
             }
             const zoneIdForPath = findZoneIdForChapter(chapterIdToLoad);
@@ -243,7 +207,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             if (!zoneIdForPath) {
                 if (isMounted) {
                     console.error(`[MainMenu] Не удалось определить зону для главы ${chapterIdToLoad}. Загрузка отменена.`);
-                    if (onChapterNameChange) onChapterNameChange(null); // Очищаем имя
+                    if (onChapterNameChange) onChapterNameChange(null);
                     setIsLoadingChapter(false);
                 }
                 return;
@@ -252,40 +216,40 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${chapterIdToLoad} in zone ${zoneIdForPath}...`);
             setIsLoadingChapter(true);
             setChapterData(null);
-            if (onChapterNameChange) onChapterNameChange(null); // Очищаем имя перед загрузкой новой главы
+            if (onChapterNameChange) onChapterNameChange(null); 
             setPosition({ x: 0, y: 0 });
 
             try {
                 const modulePath = `../../data/zones/${zoneIdForPath}/chapter${chapterIdToLoad}Data.js`;
-
+                
                 if (chapterDataModules[modulePath]) {
                     const chapterModule = await chapterDataModules[modulePath]();
                     if (isMounted) {
                         if (chapterModule.default && typeof chapterModule.default.id === 'number') {
                             setChapterData(chapterModule.default);
-                            if (onChapterNameChange) { // <--- ВЫЗЫВАЕМ CALLBACK
+                            if (onChapterNameChange) {
                                 onChapterNameChange(chapterModule.default.name);
                             }
                             console.log("[MainMenu] Successfully loaded CHAPTER data:", chapterModule.default);
                         } else {
-                            if (onChapterNameChange) onChapterNameChange(null); // Очищаем имя при ошибке структуры
+                            if (onChapterNameChange) onChapterNameChange(null);
                             throw new Error(`Invalid chapter data structure or missing ID in ${modulePath}`);
                         }
                     }
                 } else {
-                    if (isMounted && onChapterNameChange) onChapterNameChange(null); // Очищаем имя, если модуль не найден
+                    if (isMounted && onChapterNameChange) onChapterNameChange(null);
                     console.error(`[MainMenu] Module not found for key: ${modulePath}`);
                     console.log('[MainMenu] Available module keys from glob:', Object.keys(chapterDataModules));
                     throw new Error(`Module for chapter ${chapterIdToLoad} in zone ${zoneIdForPath} not found. Path: ${modulePath}`);
                 }
             } catch (error) {
                 if (isMounted) {
-                    if (onChapterNameChange) onChapterNameChange(null); // Очищаем имя при ошибке загрузки
+                    if (onChapterNameChange) onChapterNameChange(null);
                     console.error(`[MainMenu] Failed to load CHAPTER data for ID ${chapterIdToLoad} (zone: ${zoneIdForPath}):`, error);
                 }
             } finally {
                 if (isMounted) {
-                    if (currentChapterId === chapterIdToLoad) {
+                    if (currentChapterId === chapterIdToLoad) { 
                         setIsLoadingChapter(false);
                     } else {
                         console.log(`[MainMenu] Chapter ID changed during load (from ${chapterIdToLoad} to ${currentChapterId}). Not setting isLoadingChapter for ${chapterIdToLoad}.`);
@@ -301,19 +265,14 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             if (currentChapterIdFromStore !== INITIAL_CHAPTER_ID) {
                 setCurrentChapterInStore(INITIAL_CHAPTER_ID);
             }
-            // Если нет currentChapterId и не грузим, очищаем имя
             if (onChapterNameChange) onChapterNameChange(null);
         } else if (activeView !== 'detailed') {
-            // Если мы не в детальном виде, имя главы в шапке нерелевантно
             if (onChapterNameChange) onChapterNameChange(null);
         }
-
+        
         return () => { isMounted = false; };
-    }, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, /* performViewChange, */ resetTrigger, /* findZoneIdForChapter, */ /* setIsLoadingChapter, setChapterData, setPosition, */ /* INITIAL_CHAPTER_ID, */ onChapterNameChange]);
-    // Убрал некоторые зависимости из loadChapter, так как они передаются в саму функцию или являются константами/импортами
-    // findZoneIdForChapter, setIsLoadingChapter, setChapterData, setPosition, INITIAL_CHAPTER_ID - используются внутри loadChapter и самого useEffect, но не должны вызывать его перезапуск сами по себе, если не меняются внешне.
-    // performViewChange - также убрал, т.к. его вызов не должен напрямую влиять на перезагрузку данных главы в этом хуке.
-
+    }, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, onChapterNameChange, resetTrigger]);
+    
     useEffect(() => {
         let isMounted = true;
         if (activeView === 'zone' && currentZoneId) {
@@ -368,7 +327,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         let initialX = chapterData.initialView?.x ?? clamp(containerWidth / 2 - mapWidth / 2, containerWidth - mapWidth, 0);
         let initialY = chapterData.initialView?.y ?? clamp(containerHeight / 2 - mapHeight / 2, containerHeight - mapHeight, 0);
         setPosition({ x: initialX, y: initialY });
-        hasStarted.current = false;
+        hasStarted.current = false; 
         setIsLoadingLevel(false);
     }, [chapterData, isLoadingChapter, activeView]);
 
@@ -388,7 +347,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             if (focus.chapterId !== currentChapterIdFromStore) {
                 setCurrentChapterInStore(focus.chapterId);
             }
-            if (!focus.zoneId) {
+            if (!focus.zoneId) { 
                 const newZoneIdForChapter = findZoneIdForChapter(focus.chapterId);
                 if (newZoneIdForChapter && newZoneIdForChapter !== finalZoneId) {
                     finalZoneId = newZoneIdForChapter;
@@ -404,20 +363,20 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             if (currentChapterIdFromStore !== defaultChapterId) setCurrentChapterInStore(defaultChapterId);
             const zoneForDefaultChapter = findZoneIdForChapter(defaultChapterId);
             if (zoneForDefaultChapter && zoneForDefaultChapter !== currentZoneId) {
-                setCurrentZoneId(zoneForDefaultChapter);
+                 setCurrentZoneId(zoneForDefaultChapter);
             }
         }
         else if (targetView === 'zone' && !finalZoneId) {
-            const fallbackZoneId = ALL_ZONES_CONFIG[0]?.id || null;
-            setCurrentZoneId(fallbackZoneId);
+             const fallbackZoneId = ALL_ZONES_CONFIG[0]?.id || null;
+             setCurrentZoneId(fallbackZoneId);
         }
         setActiveView(targetView);
         setTriggerCloseOverlay(false);
         setTriggerOpenOverlay(true);
-    }, [currentChapterId, currentZoneId, /* setActiveView, setCurrentChapterId, setCurrentZoneId, */ currentChapterIdFromStore, setCurrentChapterInStore, /* findZoneIdForChapter */]); // setActiveView, setCurrentChapterId, setCurrentZoneId, findZoneIdForChapter убраны для предотвращения циклов, т.к. они сеттеры или чистые функции
+    }, [currentChapterId, currentZoneId, currentChapterIdFromStore, setCurrentChapterInStore]);
 
-    const RaceDisplay = () => { /* ... без изменений ... */ };
-    const EnergyDisplay = () => { /* ... без изменений ... */ };
+    const RaceDisplay = () => { /* ... без изменений ... */ return null; };
+    const EnergyDisplay = () => { /* ... без изменений ... */ return null; };
 
     const handleOverlayOpenComplete = useCallback(() => {
         console.log("MainMenu: OverlayOpenComplete. Transition finished.");
@@ -442,7 +401,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         console.log(`MainMenu: openDetailedChapterView. Target chapter ${selectedChapterId}.`);
         const zoneIdForChapter = findZoneIdForChapter(selectedChapterId);
         performViewChange('detailed', { chapterId: selectedChapterId, zoneId: zoneIdForChapter });
-    }, [performViewChange /*, findZoneIdForChapter */]); // findZoneIdForChapter - чистая функция
+    }, [performViewChange]);
 
     const handleOpenMapSystemClick = useCallback(() => {
         console.log("[MainMenu] Клик на 'Карта Мира' из детального вида. Открываем GlobalMap.");
@@ -474,7 +433,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         startScreenTransition(() => navigate('/rewards'));
     }, [navigate, startScreenTransition]);
 
-    const updatePosition = useCallback((dx, dy) => { if (activeView !== 'detailed' || !mapContainerRef.current || !chapterData?.imageWidth || !chapterData?.imageHeight) return; const cw=mapContainerRef.current.offsetWidth; const ch=mapContainerRef.current.offsetHeight; const mw=chapterData.imageWidth; const mh=chapterData.imageHeight; setPosition(prevPos => ({ x: clamp(mapStart.current.x+dx, Math.min(0,cw-mw),0), y: clamp(mapStart.current.y+dy, Math.min(0,ch-mh),0) })); }, [chapterData, activeView]); // Добавил prevPos для setPosition
+    const updatePosition = useCallback((dx, dy) => { if (activeView !== 'detailed' || !mapContainerRef.current || !chapterData?.imageWidth || !chapterData?.imageHeight) return; const cw=mapContainerRef.current.offsetWidth; const ch=mapContainerRef.current.offsetHeight; const mw=chapterData.imageWidth; const mh=chapterData.imageHeight; setPosition(prevPos => ({ x: clamp(mapStart.current.x+dx, Math.min(0,cw-mw),0), y: clamp(mapStart.current.y+dy, Math.min(0,ch-mh),0) })); }, [chapterData, activeView]);
     const handleMouseDown = useCallback((e) => { if (activeView !== 'detailed' || e.button !== 0) return; setDragging(true); dragStart.current = { x: e.clientX, y: e.clientY }; mapStart.current = { ...position }; if (e.currentTarget) e.currentTarget.style.cursor = 'grabbing'; }, [position, activeView]);
     const handleTouchStart = useCallback((e) => { if (activeView !== 'detailed') return; setDragging(true); dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; mapStart.current = { ...position }; }, [position, activeView]);
     const handleMouseMove = useCallback((e) => { if (activeView !== 'detailed' || !dragging) return; updatePosition(e.clientX - dragStart.current.x, e.clientY - dragStart.current.y); }, [dragging, updatePosition, activeView]);
@@ -489,7 +448,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             alert("Уровень пока заблокирован. Пройдите предыдущие!"); return;
         }
         const levelData = chapterData?.levels?.find(l => l.id === levelUniqueId);
-        if (levelData) { setSelectedLevelId(levelUniqueId); setShowLevelPopup(true); }
+        if (levelData) { setSelectedLevelId(levelUniqueId); setShowLevelPopup(true); } 
     }, [chapterData, currentChapterId, isLevelUnlocked, activeView]);
 
     const handleCloseLevelPopup = useCallback(() => { setShowLevelPopup(false); setSelectedLevelId(null); }, []);
@@ -517,9 +476,9 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             setShowLevelPopup(false);
             setSelectedLevelId(null);
             setActivePopup(null);
-            if (onChapterNameChange) onChapterNameChange(null); // Сбрасываем имя главы при полном сбросе
+            if (onChapterNameChange) onChapterNameChange(null);
         }
-    }, [resetGame, performViewChange, setCurrentChapterInStore, /*findZoneIdForChapter,*/ onChapterNameChange]); // findZoneIdForChapter - чистая функция
+    }, [resetGame, performViewChange, setCurrentChapterInStore, onChapterNameChange]);
 
     const handleBattlePassClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('battlepass'); }, [activeView]);
     
@@ -533,78 +492,45 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         }
     }, [activeView]);
     
-    // Обработчик для Сокровищницы из код1 (обновлен)
     const handleTreasureChestClick = useCallback(() => {
         if (activeView === 'detailed') {
             useGameStore.getState().checkAndResetTreasureChestAttempts();
             setTreasureChestState('info'); 
-            setActivePopup('treasure_chest'); // Просто 'treasure_chest', без '_main'
+            setActivePopup('treasure_chest'); 
         }
-    }, [activeView]);;
+    }, [activeView]);
 
-    // Новые обработчики для Сокровищницы из код1
     const handleStartChestGame = useCallback(() => {
-        // Перед началом игры списываем попытку
         consumeChestAttempt(); 
         setTreasureChestState('game');
-        // setActivePopup остается 'treasure_chest_main', но внутреннее состояние изменится
-    }, [consumeChestAttempt, setTreasureChestState]);
+    }, [consumeChestAttempt]);
 
     const handleChestGameEnd = useCallback((rewards) => {
         setLastChestRewards(rewards);
         setTreasureChestState('results');
-    }, [setLastChestRewards, setTreasureChestState]);
+    }, []);
 
-    const handleCloseTreasureChest = useCallback(() => { // Общая функция закрытия для сокровищницы
+    const handleCloseTreasureChest = useCallback(() => { 
         setLastChestRewards(null);
-        // setActivePopup(null); // Просто закрываем, возврата к 'info' нет, если не нужно
-        // Если нужно возвращаться к инфо-окну после результатов:
-        // if (treasureChestState === 'results') {
-        //  setTreasureChestState('info');
-        // } else {
-        //  setActivePopup(null);
-        // }
-        setActivePopup(null); // Пока просто закрываем
-    }, [/* treasureChestState */]);
+        setActivePopup(null); 
+    }, []);
     
-    const handleCloseTreasureChestResults = useCallback(() => {
-        setLastChestRewards(null);
-        setTreasureChestState('info'); // Возвращаемся к инфо или закрываем совсем
-        // Если хотим закрыть совсем после результатов:
-        // setActivePopup(null); 
-    }, [setLastChestRewards, setTreasureChestState]);
-
     const handleQuestsClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('tasks'); }, [activeView]);
     const handleExchangeClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('exchange'); }, [activeView]);
-    // Заглушка для handleDailyGrindClick, если она используется в JSX, но не определена
     const handleDailyGrindClick = useCallback(() => { 
         if (activeView === 'detailed') {
-            // Логика для daily grind, например setActivePopup('daily_grind');
             console.log("Daily Grind clicked - popup to be implemented");
         }
     }, [activeView]);
 
-
-    const closePopup = useCallback(() => setActivePopup(null), [setActivePopup]);
+    const closePopup = useCallback(() => setActivePopup(null), []);
 
     const getPopupContent = (popupType) => {
         switch (popupType) {
-            case 'treasure_chest_main': // Добавлено из код1
-                if (treasureChestState === 'info') {
-                    return <TreasureChestInfoPopup onStartChest={handleStartChestGame} onClose={closePopup} />;
-                } else if (treasureChestState === 'game') {
-                    // return <TreasureChestGamePopup onGameEnd={handleChestGameEnd} />; // Создадим позже
-                    return <div>Игровой процесс Сокровищницы (кликалка)... <button onClick={() => handleChestGameEnd({gold: 100, diamonds: 2})}>Завершить (тест)</button></div>;
-                } else if (treasureChestState === 'results') {
-                    // return <TreasureChestResultsPopup rewards={lastChestRewards} onClose={handleCloseTreasureChestResults} />; // Создадим позже
-                    return <div>Результаты: Золото - {lastChestRewards?.gold}, Алмазы - {lastChestRewards?.diamonds} <button onClick={handleCloseTreasureChestResults}>OK</button></div>;
-                }
-                return null;
-            // ... другие ваши case из код2, если они там были (в примере не показаны)
             case 'battlepass':
                 return <div>Содержимое Боевого Пропуска... <button onClick={closePopup}>Закрыть</button></div>;
-            case 'tasks':
-                return <div>Содержимое Заданий... <button onClick={closePopup}>Закрыть</button></div>;
+            // case 'tasks': // TasksPopup теперь обрабатывается отдельно
+            //     return <TasksPopup onClose={closePopup} />; 
             case 'exchange':
                 return <div>Содержимое Обмена... <button onClick={closePopup}>Закрыть</button></div>;
             default:
@@ -614,16 +540,10 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
 
     const getPopupTitle = (popupType) => {
         switch (popupType) {
-            case 'treasure_chest_main': // Добавлено из код1
-                if (treasureChestState === 'info') return "Руны Древних";
-                if (treasureChestState === 'game') return "Открываем Сундук!";
-                if (treasureChestState === 'results') return "Ваша Добыча!";
-                return "Сокровищница";
-            // ... другие ваши case из код2, если они там были
             case 'battlepass':
                 return "Боевой Пропуск";
             case 'tasks':
-                return "Задания";
+                return "Задания"; 
             case 'exchange':
                 return "Обмен Валют";
             default:
@@ -761,31 +681,21 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                                         })}
                                     </div>
                                 </div>
-                                {/* ЭТОТ H2 БОЛЬШЕ НЕ НУЖЕН ЗДЕСЬ, ЕСЛИ ИМЯ ОТОБРАЖАЕТСЯ В GameHeader
-                                <h2 className="chapter-name">
-                                    {chapterData.name}
-                                </h2>
-                                */}
                                 <div className="main-menu-left-column">
                                     <button className="main-menu-button icon-button mail-button" onClick={handleMailClick} title="Почта"><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
                                     <button className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`} onClick={handleRewardsChestClick} title="Награды" >
                                         <img src="/assets/icons/gift-icon.png" alt="Награды" />
                                     </button>
-                                    {/* Добавление кнопки сокровищницы, если она должна быть здесь */}
-                                    {/* <button className="main-menu-button icon-button treasure-chest-button" onClick={handleTreasureChestClick} title="Сокровищница"><img src="/assets/icons/treasure-chest-icon.png" alt="Сокровищница" /></button> */}
                                     <button className="main-menu-button icon-button" onClick={handleTreasureChestClick} title="Руны Древних">
-                                       <img src="/assets/icons/runes-icon.png" alt="Руны" /> {/* Замените на актуальную иконку */}
-                                    </button>                                </div>
+                                       <img src="/assets/icons/runes-icon.png" alt="Руны" />
+                                    </button>
+                                </div>
                                 <div className="main-menu-right-column">
                                     <button className="main-menu-button icon-button world-map-button" onClick={handleOpenMapSystemClick} title="Карта Мира">
                                         <img src="/assets/icons/map-icon.png" alt="Карта Мира" />
                                     </button>
                                     <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick} title="Задания"><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
                                     <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick} title="Обмен"><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
-                                    {/* Кнопка для вызова попапа сокровищницы (если нужна отдельная кнопка) */}
-                                    {/* Если сокровищница - это другой тип "сундука", можно создать отдельную кнопку. Если это тот же, что и "Награды", то не нужно. */}
-                                    {/* По код1, handleTreasureChestClick - это отдельная логика */}
-                                    {/* Предположим, нужна отдельная кнопка: */}
                                 </div>
                                 <AnimatePresence>
                                     {showLevelPopup && selectedLevelData && (
@@ -801,23 +711,23 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
- {/* === НАЧАЛО ИЗМЕНЕНИЙ: Логика отображения попапов === */}
- <AnimatePresence>
+
+            {/* === Логика отображения попапов === */}
+            <AnimatePresence>
                 {/* Попап Почты (кастомный) */}
                 {activeView === 'detailed' && activePopup === 'mail' && (
                     <motion.div
                         key="mail-popup-overlay"
-                        className="popup-overlay-for-mail" // Стили для оверлея почты
+                        className="popup-overlay-for-mail" 
                         variants={mailOverlayVariants}
                         initial="hidden" animate="visible" exit="exit"
                         onClick={closePopup} 
                     >
                         <motion.div
-                            className="mail-popup-outer-frame" // Стили для рамки почты
+                            className="mail-popup-outer-frame"
                             variants={mailPopupFrameVariants}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Содержимое попапа почты, включая его заголовок-баннер и кнопку закрытия */}
                             <div className="mail-title-banner">Почта</div>
                             <div className="mail-main-content-body">
                                 <button onClick={closePopup} className="mail-interface-close-button" aria-label="Закрыть почту">&times;</button>
@@ -828,119 +738,138 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                 )}
 
                 {/* КАСТОМНЫЙ ПОПАП "СОКРОВИЩНИЦА" */}
-    {activeView === 'detailed' && activePopup === 'treasure_chest' && (
-        <motion.div
-            key="treasure-chest-overlay"
-            // === ИСПОЛЬЗУЕМ НОВЫЕ КЛАССЫ ДЛЯ СОКРОВИЩНИЦЫ ===
-            className="treasure-chest-backdrop"  // Этот класс будет в TreasureChestInfoPopup.scss
-            variants={mailOverlayVariants}       // Анимацию можно оставить ту же или сделать свою
-            initial="hidden" animate="visible" exit="exit"
-            onClick={handleCloseTreasureChest}   // Своя функция закрытия
-        >
-            <motion.div
-                // === ИСПОЛЬЗУЕМ НОВЫЕ КЛАССЫ ДЛЯ СОКРОВИЩНИЦЫ ===
-                className="treasure-chest-popup-box" // Этот класс будет в TreasureChestInfoPopup.scss
-                variants={mailPopupFrameVariants}    // Анимацию можно оставить ту же или сделать свою
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Заголовок-баннер для Сокровищницы (часть .treasure-chest-popup-box) */}
-                <div className="treasure-chest-title-banner">
-                {treasureChestState === 'info' && "Древние Руны"}
-                {treasureChestState === 'game' && "Активация Руны!"}
-                {treasureChestState === 'results' && "Итоги Активации"}
-            </div>
-            
-            <button onClick={handleCloseTreasureChest} className="treasure-chest-close-button">&times;</button>
-            
-            {/* AnimatePresence для ВНУТРЕННЕГО контента попапа */}
-            <AnimatePresence mode="wait"> {/* mode="wait" дождется окончания exit анимации перед тем как показать новый */}
-            {treasureChestState === 'info' && (
+                {activeView === 'detailed' && activePopup === 'treasure_chest' && (
+                    <motion.div
+                        key="treasure-chest-overlay"
+                        className="treasure-chest-backdrop"
+                        variants={mailOverlayVariants} 
+                        initial="hidden" animate="visible" exit="exit"
+                        onClick={handleCloseTreasureChest} 
+                    >
+                        <motion.div
+                            className="treasure-chest-popup-box"
+                            variants={mailPopupFrameVariants} 
+                            onClick={(e) => e.stopPropagation()} 
+                        >
+                            <div className="treasure-chest-title-banner">
+                                {treasureChestState === 'info' && "Древние Руны"}
+                                {treasureChestState === 'game' && "Активация Руны!"}
+                                {treasureChestState === 'results' && "Итоги Активации"}
+                            </div>
+                            <button onClick={handleCloseTreasureChest} className="treasure-chest-close-button">&times;</button>
+                            <AnimatePresence mode="wait">
+                                {treasureChestState === 'info' && (
                                     <motion.div
-                                        key="treasure-info-content" // Уникальный ключ
-                                        className="popup-content-area-for-treasure" // Общий класс для области контента
+                                        key="treasure-info-content"
+                                        className="popup-content-area-for-treasure" // Убедитесь, что этот класс имеет нужные отступы
                                         variants={popupContentVariants}
-                                        initial="initial"
-                                        animate="animate"
-                                        exit="exit"
+                                        initial="initial" animate="animate" exit="exit"
                                     >
-                                        <TreasureChestInfoPopup 
-                                            onStartChest={handleStartChestGame} 
-                                        />
+                                        <TreasureChestInfoPopup onStartChest={handleStartChestGame} />
+                                    </motion.div>
+                                )}
+                                {treasureChestState === 'game' && (
+                                    <motion.div
+                                        key="runes-game" 
+                                        variants={popupContentVariants} initial="initial" animate="animate" exit="exit"
+                                        className="popup-content-area-wrapper" // Убедитесь, что этот класс имеет нужные отступы
+                                    >
+                                         {/* Замените на ваш компонент игры */}
+                                        <ShardboundRunesGamePopup onGameEnd={handleChestGameEnd} />
+                                    </motion.div>
+                                )}
+                                {treasureChestState === 'results' && lastChestRewards && (
+                                    <motion.div
+                                        key="runes-results" 
+                                        variants={popupContentVariants} initial="initial" animate="animate" exit="exit"
+                                        className="popup-content-area-wrapper" // Убедитесь, что этот класс имеет нужные отступы
+                                    >
+                                        {/* Замените на ваш компонент результатов */}
+                                        <ShardboundRunesResultsPopup rewards={lastChestRewards} onClose={handleCloseTreasureChest} />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
                     </motion.div>
                 )}
-                {treasureChestState === 'game' && (
-                    <motion.div
-                        key="runes-game" // Уникальный ключ
-                        variants={popupContentVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="popup-content-area-wrapper"
-                    >
-                        <ShardboundRunesGamePopup onGameEnd={handleChestGameEnd} />
-                    </motion.div>
-                )}
-                {treasureChestState === 'results' && lastChestRewards && (
-                    <motion.div
-                        key="runes-results" // Уникальный ключ
-                        variants={popupContentVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        className="popup-content-area-wrapper"
-                    >
-                        <ShardboundRunesResultsPopup 
-                            rewards={lastChestRewards} 
-                            onClose={handleCloseTreasureChest} 
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+{activeView === 'detailed' && activePopup === 'tasks' && (
+    <motion.div
+        key="tasks-popup-overlay"
+        className="tasks-popup-backdrop" // Фон
+        variants={mailOverlayVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        onClick={closePopup} // Закрытие по клику на фон
+    >
+        <motion.div
+            className="tasks-popup-box" // Основной контейнер попапа (с фиксированной высотой 380px)
+            variants={mailPopupFrameVariants}
+            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике внутри окна
+        >
+            {/* Заголовок-баннер для Заданий */}
+            <div className="tasks-title-banner">
+                {getPopupTitle('tasks')}
+            </div>
+
+            {/* Кнопка закрытия */}
+            <button
+                onClick={closePopup}
+                className="tasks-close-button"
+                aria-label="Закрыть задания"
+            >
+                &times;
+            </button>
+
+            {/* Контейнер для контента TasksPopup, обеспечивающий отступ от баннера */}
+            <div className="tasks-inner-scroll-container">
+                {/* motion.div для анимации содержимого TasksPopup */}
+                {/* Важно: этот div должен быть flex-контейнером, чтобы TasksPopup мог расти */}
+                <motion.div
+                    key="tasks-popup-motion-wrapper"
+                    style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, width: '100%' }}
+                    variants={popupContentVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                >
+                    <TasksPopup onClose={closePopup} />
+                </motion.div>
+            </div>
         </motion.div>
     </motion.div>
-                )}
+)}
+{/* ========== КОНЕЦ: КАСТОМНЫЙ ПОПАП "ЗАДАНИЯ" ========== */}
+
             </AnimatePresence>
 
             <AnimatePresence>
-
-                {/* Содержимое в зависимости от состояния Сокровищницы */}
-                {treasureChestState === 'info' && (
-                    // TreasureChestInfoPopup теперь НЕ должен иметь свой корневой div 
-                    // с классом .treasure-chest-info-content, если этот класс уже
-                    // является частью .treasure-chest-popup-box или его дочерним элементом
-                    // для основного контента.
-                    // Правильнее, если TreasureChestInfoPopup возвращает только ВНУТРЕННЕЕ содержимое.
-                    <TreasureChestInfoPopup 
-                        onStartChest={handleStartChestGame} 
-                    />
-                )}
-                {/* ОБЩИЙ КОМПОНЕНТ POPUP ДЛЯ ОСТАЛЬНЫХ ТИПОВ (ЗАДАНИЯ, ОБМЕН, БАТЛПАСС-ПОПАП) */}
                 {activeView === 'detailed' && 
-                 activePopup && 
-                 activePopup !== 'mail' &&
-                 activePopup !== 'treasure_chest' && // <--- УБЕДИТЕСЬ, ЧТО 'treasure_chest' ЗДЕСЬ ИСКЛЮЧЕН
-                 activePopup !== 'rewards' && // 'rewards' обрабатывается переходом на другой экран/компонент
-                 (
+                  activePopup && 
+                  activePopup !== 'mail' &&
+                  activePopup !== 'treasure_chest' &&
+                  activePopup !== 'tasks' && // 'tasks' теперь исключен
+                  activePopup !== 'rewards' && 
+                  (
                     <motion.div 
-                        key={activePopup} // Используем activePopup как ключ для корректной анимации смены попапов
-                        // Анимации и стили из вашего код2 для общих попапов:
+                        key={activePopup} // Ключ по типу попапа
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20, transition: {duration: 0.2} }}
                         style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.5)'}}
                         onClick={closePopup} // Закрытие по клику на оверлей
                     >
-                        <Popup // Ваш ОБЩИЙ компонент Popup.jsx
-                            title={getPopupTitle(activePopup)} // getPopupTitle ТЕПЕРЬ НЕ ДОЛЖЕН ОБРАБАТЫВАТЬ 'treasure_chest'
+                        {/* Используем общий Popup для остальных */}
+                        <Popup
+                            title={getPopupTitle(activePopup)}
                             onClose={closePopup}
-                            // bannerStyle={activePopup === 'treasure_chest_main' && treasureChestState === 'info'} // Этот prop больше не нужен здесь, т.к. сокровищница кастомная
                         >
-                            {getPopupContent(activePopup)} {/* getPopupContent ТЕПЕРЬ НЕ ДОЛЖЕН ОБРАБАТЫВАТЬ 'treasure_chest' */}
+                            {getPopupContent(activePopup)} 
                         </Popup>
                     </motion.div>
-                )}
+                  )}
             </AnimatePresence>
-            {/* === КОНЕЦ ИЗМЕНЕНИЙ === */} 
 
             {!isOverlayActive && (
                 <button className="reset-button" onClick={handleFullResetClick} title="Сбросить весь игровой прогресс" >
