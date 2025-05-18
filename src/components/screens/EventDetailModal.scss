@@ -1,0 +1,237 @@
+// src/components/screens/EventDetailModal.scss
+
+.event-detail-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background-color: #ffffff;
+    color: #000000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  
+  .event-detail-view-header {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+  
+    .back-button {
+      background: none;
+      border: none;
+      color: #007bff;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 5px 10px 5px 0;
+      margin-right: 15px;
+  
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  .event-detail-view-main-content {
+    // flex-grow: 1; // <--- УБИРАЕМ ИЛИ КОММЕНТИРУЕМ ЭТУ СТРОКУ
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .promo-banner-container {
+    width: auto; // Позволяем padding влиять на фактическую ширину содержимого
+    max-height: 300px;
+    overflow: hidden; // Обычно хорошо для изображений с object-fit
+    flex-shrink: 0;
+  
+    // ДОБАВЛЯЕМ ОТСТУПЫ ПО БОКАМ ДЛЯ КОНТЕЙНЕРА БАННЕРА
+    // И, возможно, сверху/снизу, если нужно
+    padding-left: 15px;   // Отступ слева для контейнера
+    padding-right: 15px;  // Отступ справа для контейнера
+    padding-top: 0px;    // Опциональный отступ сверху для контейнера
+    padding-bottom: 0px; // Опциональный отступ снизу для контейнера
+  
+    .promo-banner-image {
+      width: 100%; // Изображение занимает всю ширину контейнера (который теперь с отступами)
+      height: 90%;
+      object-fit: cover; // или 'contain', если важно видеть все изображение без обрезки
+      display: block; // Убирает возможный нижний отступ у inline-block изображений
+      border-radius: 10px; // Добавляем закругленные углы самому изображению, если нужно
+                           // Если у вас уже есть изображение с закругленными углами, это может не понадобиться
+    }
+  }
+  
+  .event-info-content {
+    // УМЕНЬШАЕМ ВЕРХНИЙ ОТСТУП У БЛОКА С ТЕКСТОМ
+    padding-top: 0px; // Например, 15px (было 25px).
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 25px; // Пока оставляем этот, но можно тоже уменьшить, если нужно
+    text-align: left;
+  
+    .event-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 0;
+      margin-bottom: 15px;
+      line-height: 1.3;
+    }
+  
+    .event-description {
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+  
+    .how-it-works-section {
+      margin-bottom: 25px;
+  
+      .section-subtitle {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+  
+      .how-it-works-list {
+        list-style: none;
+        padding-left: 0;
+  
+        .how-it-works-item {
+          font-size: 12px;
+          line-height: 1.7;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: flex-start;
+  
+          .list-item-number {
+            font-weight: bold;
+            margin-right: 8px;
+            color: #555;
+          }
+        }
+      }
+    }
+  
+    .event-ends-in {
+      font-size: 12px;
+      color: #777777;
+      padding-top: 5px;
+      border-top: 1px dashed #e0e0e0;
+      text-align: center;
+      margin-bottom: 0; // Правильно
+    }
+  } // Конец .event-info-content
+  
+  .event-detail-view-footer {
+    padding-top: 0;    // Правильно
+    padding-bottom: 15px;
+    padding-left: 20px;
+    padding-right: 20px;
+    background-color: #ffffff;
+    border-top: none; // Правильно
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+
+      .join-promo-button {
+        // Стили для кнопки остаются прежними
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    
+        &:hover {
+          background-color: #0056b3;
+        }
+    
+        &:active {
+          background-color: #004085;
+        }
+      }
+    }
+ // Стили для контента ПОСЛЕ присоединения
+ .promo-joined-content {
+    text-align: left; // Можно центрировать этот блок
+
+    .joined-title {
+      font-size: 26px;
+      font-weight: bold;
+      color: #28a745; // Зеленый цвет для поздравления
+      margin-bottom: 10px;
+    }
+
+    .joined-message {
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .section-subtitle-joined { // Немного другие стили для подзаголовка здесь
+      font-size: 18px;
+      font-weight: normal; // Можно сделать не таким жирным, как основной "Как это работает"
+      margin-top: 20px;
+      margin-bottom: 15px;
+    }
+
+    // Можно переиспользовать .how-it-works-section и .how-it-works-list стили,
+    // но убедитесь, что они не конфликтуют или скопируйте и адаптируйте при необходимости.
+    // Если вы хотите немного другие отступы для списка здесь, можно добавить специфичные классы.
+  }
+ // Конец .event-info-content
+
+.event-detail-view-footer {
+  padding-top: 0;
+  padding-bottom: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
+  background-color: #ffffff;
+  border-top: none;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .join-promo-button {
+    background-color: #007bff; // Синий цвет по умолчанию
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease; // Добавил opacity для disabled
+
+    &:hover:not(:disabled) { // Ховер только если кнопка не disabled
+      background-color: #0056b3;
+    }
+
+    &:active:not(:disabled) { // Active только если кнопка не disabled
+      background-color: #004085;
+    }
+
+    // Стили для кнопки ПОСЛЕ присоединения
+    &.joined {
+      background-color: #28a745; // Зеленый цвет
+      color: white;
+      cursor: not-allowed; // Показывает, что кнопка неактивна
+
+      &:hover {
+        background-color: #218838; // Немного темнее зеленый при наведении (хотя она disabled)
+      }
+    }
+
+    &:disabled { // Общие стили для неактивной кнопки
+      opacity: 0.7; // Немного прозрачнее, чтобы показать неактивность
+    }
+  }
+}

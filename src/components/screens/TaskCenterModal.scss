@@ -1,0 +1,200 @@
+/* src/components/screens/TaskCenterModal.scss */
+
+.task-center-modal-overlay { // <--- Изменен класс
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    padding: 15px;
+    box-sizing: border-box;
+    backdrop-filter: blur(3px);
+  }
+  
+  .task-center-modal-content { // <--- Изменен класс
+    background-color: #2c3e50;
+    color: #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 450px;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    animation: fadeInScaleModal 0.3s ease-out; // Можно использовать другое имя анимации
+  }
+  
+  @keyframes fadeInScaleModal { // Адаптированное имя анимации
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  .task-center-modal-header { // <--- Изменен класс
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 25px;
+    border-bottom: 1px solid #4a617a;
+  
+    .task-center-modal-title { // <--- Изменен класс
+      margin: 0;
+      font-size: 1.7em;
+      color: #ffffff;
+      font-weight: 600;
+    }
+  
+    .task-center-modal-close-btn { // <--- Изменен класс
+      background: none;
+      border: none;
+      color: #bdc3c7;
+      font-size: 2.2em;
+      cursor: pointer;
+      padding: 0 5px;
+      line-height: 0.8;
+      transition: color 0.2s ease;
+  
+      &:hover {
+        color: #ffffff;
+      }
+    }
+  }
+  
+  .task-center-modal-tabs-nav { // <--- Изменен класс
+    display: flex;
+    background-color: #34495e;
+  
+    .modal-tab-btn { // <--- Изменен класс (сделал более общим для модальных окон)
+      flex: 1;
+      padding: 14px 10px;
+      font-size: 1em;
+      font-weight: 500;
+      cursor: pointer;
+      background-color: transparent;
+      color: #bdc3c7;
+      border: none;
+      border-bottom: 3px solid transparent;
+      outline: none;
+      transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+      text-align: center;
+  
+      &:hover {
+        color: #ffffff;
+        background-color: lighten(#34495e, 5%);
+      }
+  
+      &.active {
+        color: #ffffff;
+        font-weight: 600;
+        border-bottom-color: #3498db;
+        background-color: lighten(#34495e, 2%);
+      }
+    }
+  }
+  
+  .task-center-modal-body { // <--- Изменен класс
+    padding: 20px 25px;
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+  
+  /* Стили для секции прогресс-бара категории */
+  .category-progress-wrapper {
+    display: flex;
+    align-items: center; // Выравниваем по центру блок прогресса и блок награды
+    justify-content: space-between;
+    background-color: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    gap: 20px; // Увеличим немного отступ между прогрессом и наградой
+  }
+  
+  
+  .progress-bar-area {
+    display: flex;
+    flex-direction: column; // Располагаем бар и текст вертикально
+    flex-grow: 1; // Занимает большую часть доступного пространства
+    gap: 6px; // Небольшой отступ между баром и текстом под ним
+  }
+  
+  .progress-bar-background {
+    // flex-grow: 1; // Это свойство больше не нужно здесь, т.к. родитель .progress-bar-area будет управлять шириной
+    width: 100%; // Растягиваем фон бара на всю ширину .progress-bar-area
+    height: 20px; // Можно сделать чуть меньше, если текст под ним: например, 18px
+    background-color: #1c2833;
+    border-radius: 9px; // Соответственно высоте
+    overflow: hidden;
+    border: 1px solid #2a3b4d;
+  }
+  
+  .progress-bar-foreground {
+    height: 100%;
+    background: linear-gradient(90deg, #2980b9, #3498db, #85c1e9);
+    border-radius: 8px; // Скругление чуть меньше для вложенности
+    transition: width 0.4s ease-in-out;
+  }
+  
+  // Стили для текста опыта ПОД прогресс-баром
+  .progress-bar-text-underneath {
+    font-size: 0.9em;
+    color: #bdc3c7;
+    font-weight: 500;
+    // text-align: center; // Если нужно центрировать текст под баром
+    // или text-align: right; если нужно прижать к правому краю бара
+    text-align: left; // Оставим слева, как на скриншоте, но под баром
+    width: 100%; // Чтобы text-align работал, если он не left
+  }
+  
+  .category-main-reward {
+    display: flex;
+    align-items: center;
+    background-color: rgba(0,0,0,0.2);
+    padding: 10px 15px; // Сделаем чуть побольше
+    border-radius: 6px;
+    gap: 10px;
+    flex-shrink: 0; // Чтобы блок с наградой не сжимался, если прогресс-бар очень длинный
+  
+    .reward-icon {
+      font-size: 1.8em; // Увеличим иконку
+      line-height: 1;
+    }
+  
+    .reward-text {
+      font-size: 1em; // Увеличим текст награды
+      color: #e0e0e0;
+      font-weight: 600;
+    }
+  }
+  .modal-task-list { // <--- Изменен класс
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  
+    /* Стили для .task-item и его дочерних элементов (TaskItemComponent) 
+      предполагаются глобальными или определенными в самом TaskItemComponent.
+      Если они были специфичны для DiscoveryScreen.scss и не применяются здесь,
+      их нужно будет сделать доступными (например, переместив в глобальные стили
+      или продублировав/адаптировав сюда, если TaskItemComponent не инкапсулирует свои стили).
+    */
+  }
+  
+  .no-tasks-info { // Класс без изменений, т.к. он довольно общий
+    text-align: center;
+    color: #bdc3c7;
+    padding: 30px 0;
+    font-style: italic;
+  }

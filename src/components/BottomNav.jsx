@@ -11,6 +11,7 @@ const BottomNav = () => {
     { path: "/forge", icon: "/assets/forge-icon.png", label: "Кузня", alt: "Кузница" },
     { path: "/main", icon: "/assets/icon-play.png", label: "Бой", alt: "Играть" },
     { path: "/achievements", icon: "/assets/achievement-icon.png", label: "Задания", alt: "Достижения" },
+    { path: "/discovery", icon: "/assets/icon-discovery.png", label: "Discovery", alt: "Discovery" }, 
   ];
   // ▲▲▲--------------------------------------------▲▲▲
 

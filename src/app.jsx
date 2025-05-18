@@ -18,6 +18,7 @@ import RewardsScreen from "./components/screens/RewardsScreen";
 import GlobalMap from "./components/GlobalMap";
 import TransitionOverlay from './components/TransitionOverlay';
 import GameHeader from './components/GameHeader';
+import DiscoveryScreen from "./components/screens/DiscoveryScreen"; // <--- НОВЫЙ ИМПОРТ ИЗ КОД1
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
@@ -205,30 +206,26 @@ const App = () => {
     }, [location.pathname, isInitialLoading]);
 
     const getChapterIdFromLevelId = (levelId) => {
-        // Эта функция уже существует в коде 2, убедимся что она используется.
-        // В предоставленном коде 2 она определена ниже.
-        if (typeof levelId === 'string') levelId = parseInt(levelId, 10); // Добавим парсинг, если levelId строка
+        if (typeof levelId === 'string') levelId = parseInt(levelId, 10); 
         if (typeof levelId === 'number' && levelId >= 100) return Math.floor(levelId / 100);
-        if (typeof levelId === 'number' && levelId > 0 && levelId < 100) return 0; // Предположим, что уровни < 100 относятся к главе 0 или специальной главе
+        if (typeof levelId === 'number' && levelId > 0 && levelId < 100) return 0; 
         console.warn(`getChapterIdFromLevelId: Не удалось определить ID главы для levelId: ${levelId} (тип: ${typeof levelId}). Возвращен null.`);
         return null;
     };
 
     const handleLevelComplete = useCallback((levelId, status, difficultyPlayed) => {
-        // Захватываем activeLevelData ПЕРЕД тем, как его сбросить, для использования в chapterContext
         const levelDataForContext = activeLevelData; 
         
         setActiveLevelData(null); 
         setIsLoadingLevel(false); 
     
-        const store = useGameStore.getState(); // Получаем доступ к стору один раз
+        const store = useGameStore.getState(); 
 
         if (status === 'won') {
             const chapterId = getChapterIdFromLevelId(levelId); 
             
             if (chapterId !== null) {
                 let chapterContext = undefined;
-                // Логика для chapterContext, адаптированная из Кода 2:
                 if (levelDataForContext && levelDataForContext.id === parseInt(levelId, 10)) {
                     chapterContext = {
                         isZoneBossChapter: levelDataForContext.isZoneBossChapter || false,
@@ -238,29 +235,23 @@ const App = () => {
                     console.warn(`handleLevelComplete: levelDataForContext is not available or outdated for levelId: ${levelId}. Chapter context will be undefined. levelDataForContext:`, levelDataForContext);
                 }
                 
-                // Вызов completeLevelAction с проверкой его существования
                 if (store.completeLevelAction) {
                     store.completeLevelAction(chapterId, levelId, difficultyPlayed, chapterContext);
                 } else {
                      console.error("handleLevelComplete: store.completeLevelAction action is not found in the game store.");
                 }
             } else {
-                // Сообщение об ошибке уже выводится из getChapterIdFromLevelId, если levelId некорректен.
-                // Можно добавить дополнительное логирование здесь при необходимости.
                  console.error(`handleLevelComplete: chapterId is null for levelId: ${levelId}. Cannot complete level action.`);
             }
 
-            // === ОТСЛЕЖИВАЕМ ПРОХОЖДЕНИЕ УРОВНЯ ДЛЯ ЗАДАНИЙ (из Кода 1) ===
             if (store.trackTaskEvent) { 
                 store.trackTaskEvent('complete_level', 1); 
                 console.log(`App Event: trackTaskEvent('complete_level') called for levelId: ${levelId}`);
             } else {
                 console.warn("App Event: store.trackTaskEvent action is not found. Cannot track level completion for tasks.");
             }
-            // === КОНЕЦ ===
         }
     
-        // Вызов startScreenTransition (используем проверку из Кода 2 для надежности)
         if (store.startScreenTransition) {
             store.startScreenTransition(() => {
                 if (status === 'won') {
@@ -277,7 +268,7 @@ const App = () => {
                 navigate("/main");
             }
         }
-    }, [navigate, activeLevelData]); // activeLevelData необходим для levelDataForContext
+    }, [navigate, activeLevelData]); 
 
     const path = location.pathname;
     const showAnyFixedUIBaseConditions = !isInitialLoading && !needsRaceSelection && !isFullScreenMapActive;
@@ -317,13 +308,6 @@ const App = () => {
         if (activeLevelData && isLoadingLevel) setIsLoadingLevel(false);
         if (loadingError && isLoadingLevel) setIsLoadingLevel(false);
     }, [activeLevelData, isLoadingLevel, loadingError]);
-
-    // Функция getChapterIdFromLevelId была перемещена выше для использования в handleLevelComplete,
-    // здесь она была в оригинальном коде 2. Убедимся, что она определена только один раз.
-    // const getChapterIdFromLevelId = (levelId) => {
-    //  if (typeof levelId === 'number' && levelId >= 100) return Math.floor(levelId / 100);
-    //  return null;
-    // };
 
     const handleLevelReady = useCallback(() => {}, []);
     const handleRaceSelectionComplete = useCallback(() => {
@@ -393,6 +377,11 @@ const App = () => {
                         <Route path="/achievements" element={<motion.div key="achievements" {...routeContentVariants}><Achievements /></motion.div>} />
                         <Route path="/rewards" element={<motion.div key="rewards" {...routeContentVariants}><RewardsScreen /></motion.div>} />
                         <Route path="/global-map" element={<motion.div key="globalmap" {...routeContentVariants}><GlobalMap onSelectContinent={handleSelectContinentOnGlobalMap} onGoBackToChapterMap={handleGoBackToMainFromGlobalMap} /></motion.div>} />
+                        
+                        {/* ▼▼▼ НОВЫЙ МАРШРУТ ИЗ КОД1 ▼▼▼ */}
+                        <Route path="/discovery" element={<motion.div key="discovery" {...routeContentVariants}><DiscoveryScreen /></motion.div>} />
+                        {/* ▲▲▲---------------------▲▲▲ */}
+
                         <Route path="/main" element={<motion.div key="main" {...routeContentVariants}><MainMenu onStart={handleStartGame} onChapterNameChange={handleChapterNameChange} /></motion.div>} />
                         <Route path="*" element={<motion.div key="mainfallback" {...routeContentVariants}><MainMenu onStart={handleStartGame} onChapterNameChange={handleChapterNameChange} /></motion.div>} />
                     </Routes>
