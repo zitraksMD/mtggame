@@ -10,7 +10,7 @@ export const TASK_TYPES = {
       description: "Войти в игру", 
       target: 1, 
       reward: { diamonds: 25 }, 
-      xp: 100,
+      xp: 20,
       eventTracked: 'dailyLoginToday', // Событие, которое отслеживается в useGameStore
       // statResetType не нужен, т.к. это одноразовое событие в день
     },
