@@ -32,6 +32,9 @@ const STORAGE_KEY = "gameState";
 const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000; // 30 минут
 const DEFAULT_MAX_ENERGY = 30;
 
+export const TON_SHARD_TO_TON_EXCHANGE_RATE = 10; // Пример: 1000 осколков = 1 TON
+
+
 // --- Конфигурация уровней достижений ---
 const ACHIEVEMENT_LEVEL_XP_THRESHOLDS = { 1: 0, 2: 100, 3: 250, 4: 500, 5: 1000 /* ... и так далее */ };
 export const ACHIEVEMENT_LEVEL_REWARDS = {
@@ -117,6 +120,8 @@ const loadFromLocalStorage = () => {
                 collectedArtifacts: new Set(),
                 gold: 100000, // Generous starting gold for testing
                 diamonds: 10000, // Generous starting diamonds for testing
+                toncoinShards: 0,
+                toncoinBalance: 0,
                 username: null,
                 powerLevel: 0,
                 playerBaseStats: { ...DEFAULT_BASE_STATS },
@@ -219,6 +224,23 @@ const loadFromLocalStorage = () => {
             }
         }
 
+        if (parsed.toncoinBalance === undefined) {
+            parsed.toncoinBalance = 0;
+        }
+
+        for (const key in defaultFullStateForNewKeys) {
+            if (parsed[key] === undefined) {
+                // ... (ваша существующая логика для collectedArtifacts, equipped) ...
+                if (key === 'toncoinBalance') { // Явно проверяем новое поле
+                     parsed[key] = defaultFullStateForNewKeys[key]; // должно быть 0
+                } else if (key === 'collectedArtifacts') { /* ... */ }
+                // ... остальная логика ...
+                else {
+                    parsed[key] = defaultFullStateForNewKeys[key];
+                }
+            }
+        }
+
 
         if (parsed.collectedArtifacts && !(parsed.collectedArtifacts instanceof Set)) {
             try {
@@ -242,7 +264,8 @@ const loadFromLocalStorage = () => {
         localStorage.removeItem(STORAGE_KEY); // Clear corrupted storage
         // Return a fully default state on critical error
         const defaultOnErrorState = {
-            equipped: getDefaultEquippedSet(), collectedArtifacts: new Set(), gold: 0, diamonds: 0, username: null, powerLevel: 0,
+            equipped: getDefaultEquippedSet(), collectedArtifacts: new Set(), gold: 0, diamonds: 0, toncoinShards: 0,
+            toncoinBalance: 0, username: null, powerLevel: 0,
             playerBaseStats: { ...DEFAULT_BASE_STATS }, playerHp: DEFAULT_BASE_STATS.hp, playerRace: null, inventory: [],
             energyMax: DEFAULT_MAX_ENERGY, energyCurrent: DEFAULT_MAX_ENERGY, lastEnergyRefillTimestamp: Date.now(),
             dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0, booleanFlags: {},
@@ -375,6 +398,8 @@ const useGameStore = create((set, get) => ({
     // ================== Состояние (State) - Объединенное ==================
     gold: savedState.gold,
     diamonds: savedState.diamonds,
+    toncoinShards: savedState.toncoinShards || 0, // Убедимся, что есть значение по умолчанию
+    toncoinBalance: savedState.toncoinBalance || 0,
     username: savedState.username,
     userPhotoUrl: savedState.userPhotoUrl,
     powerLevel: savedState.powerLevel,
@@ -837,6 +862,92 @@ const useGameStore = create((set, get) => ({
         set((state) => ({ diamonds: state.diamonds + amount }));
         get().checkAllAchievements(); // Check if any diamond-related achievements are met
     },
+
+    addToncoinShards: (amount) => {
+        if (amount <= 0) return; // Проверка на валидность
+        set((state) => {
+            const newAmount = (state.toncoinShards || 0) + amount;
+            console.log(`[Currency] Added ${amount} TON Shards. New total: ${newAmount}`);
+            return { toncoinShards: newAmount };
+        });
+        // Возможно, здесь также нужно будет вызвать проверку достижений, если есть ачивки за сбор крипты
+        // get().checkAllAchievements(); 
+    },
+    
+    // Возможно, понадобится и функция для уменьшения (траты/вывода)
+    spendToncoinShards: (amount) => {
+        if (amount <= 0) return false; // Нельзя потратить 0 или отрицательное количество
+        const currentShards = get().toncoinShards || 0;
+        if (currentShards < amount) {
+            console.warn(`[Currency] Not enough TON Shards to spend. Has: ${currentShards}, Tried to spend: ${amount}`);
+            return false; // Недостаточно средств
+        }
+        set((state) => {
+            const newAmount = state.toncoinShards - amount;
+            console.log(`[Currency] Spent ${amount} TON Shards. Remaining: ${newAmount}`);
+            return { toncoinShards: newAmount };
+        });
+        return true; // Успешная трата
+    },
+
+    // --- НОВЫЕ ЭКШЕНЫ ДЛЯ ОБМЕНА И ВЫВОДА ---
+    exchangeShardsToTon: (shardsToSpend) => {
+        const currentShards = get().toncoinShards;
+        if (typeof shardsToSpend !== 'number' || shardsToSpend <= 0) {
+            console.warn("[Exchange] Invalid amount of shards to spend:", shardsToSpend);
+            return { success: false, message: "Неверное количество осколков." };
+        }
+        if (currentShards < shardsToSpend) {
+            console.warn(`[Exchange] Not enough TON Shards. Has: ${currentShards}, Tried to spend: ${shardsToSpend}`);
+            return { success: false, message: "Недостаточно осколков для обмена." };
+        }
+        if (TON_SHARD_TO_TON_EXCHANGE_RATE <= 0) {
+            console.error("[Exchange] Invalid exchange rate configured.");
+            return { success: false, message: "Ошибка конфигурации курса обмена." };
+        }
+
+        const tonToReceive = shardsToSpend / TON_SHARD_TO_TON_EXCHANGE_RATE;
+        // Здесь можно добавить округление или проверку минимальной суммы для обмена, если нужно
+
+        set((state) => ({
+            toncoinShards: state.toncoinShards - shardsToSpend,
+            toncoinBalance: (state.toncoinBalance || 0) + tonToReceive,
+        }));
+        console.log(`[Exchange] Exchanged ${shardsToSpend} shards for ${tonToReceive} TON. New shard balance: ${get().toncoinShards}, New TON balance: ${get().toncoinBalance}`);
+        return { success: true, message: `Обмен успешно совершен! Вы получили ${tonToReceive.toFixed(4)} TON.` }; // Используем toFixed для отображения
+    },
+
+    requestToncoinWithdrawal: async (amountToWithdraw, address) => {
+        // ЭТО ИМИТАЦИЯ! Реальный вывод требует бэкенда и мер безопасности.
+        const currentTonBalance = get().toncoinBalance;
+        if (typeof amountToWithdraw !== 'number' || amountToWithdraw <= 0) {
+            console.warn("[Withdrawal] Invalid amount to withdraw:", amountToWithdraw);
+            return { success: false, message: "Неверная сумма для вывода." };
+        }
+        if (!address || typeof address !== 'string' || address.trim().length < 10) { // Простая проверка адреса
+            console.warn("[Withdrawal] Invalid address:", address);
+            return { success: false, message: "Неверный адрес для вывода." };
+        }
+        if (currentTonBalance < amountToWithdraw) {
+            console.warn(`[Withdrawal] Not enough TON. Has: ${currentTonBalance}, Tried to withdraw: ${amountToWithdraw}`);
+            return { success: false, message: "Недостаточно TON для вывода." };
+        }
+
+        // Имитация задержки сети/бэкенда
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // В реальном приложении здесь был бы вызов API к вашему бэкенду.
+        // Бэкенд бы проверил все, обработал вывод и вернул результат.
+        // Мы просто обновляем баланс в сторе.
+        set((state) => ({
+            toncoinBalance: state.toncoinBalance - amountToWithdraw,
+        }));
+
+        console.log(`[Withdrawal SIMULATION] Requested withdrawal of ${amountToWithdraw} TON to address ${address}. New TON balance: ${get().toncoinBalance}`);
+        // ВАЖНО: Этот лог не должен содержать реальные адреса в продакшене без маскирования.
+        return { success: true, message: `Запрос на вывод ${amountToWithdraw.toFixed(4)} TON на адрес ${address.substring(0,6)}...${address.substring(address.length-4)} успешно отправлен (имитация).` };
+    },
+
     // Modified to call trackTaskEvent
     incrementKills: (count = 1) => {
         set((state) => ({ totalKills: state.totalKills + count }));
@@ -1086,7 +1197,9 @@ const useGameStore = create((set, get) => ({
     },
     // Modified to call trackTaskEvent
     completeLevelAction: (chapterId, levelId, difficulty, chapterContextData) => {
+        console.log(`[completeLevelAction CALLED] chapterId: ${chapterId}, levelId: ${levelId}, difficulty: ${difficulty}`);
         const levelKey = `c${chapterId}_l${levelId}`;
+        console.log(`[completeLevelAction GENERATED KEY] levelKey: "${levelKey}"`);
         const currentCompletion = get().levelsCompleted[levelKey] || { normal: false, hard: false };
         let difficultyKey = difficulty?.toLowerCase() === 'hard' ? 'hard' : 'normal';
         
@@ -2138,7 +2251,7 @@ const useGameStore = create((set, get) => ({
             monthlyLoginDays: 0, killsThisMonth: 0, levelsCompletedThisMonth: 0, gearUpgradedThisMonth: 0, chestsOpenedThisMonth: 0,
         };
         set({
-            gold: 100000, diamonds: 10000, username: null, powerLevel: 0, userPhotoUrl: null,
+            gold: 100000, diamonds: 10000, toncoinShards: 0, username: null, powerLevel: 0, userPhotoUrl: null,
             playerBaseStats: { ...DEFAULT_BASE_STATS },
             playerHp: DEFAULT_BASE_STATS.hp,
             playerRace: null,
@@ -2635,6 +2748,8 @@ console.log(`[TASKS_DEBUG] Current state before daily check: lastDailyReset=<spa
 // --- Начало методов вашего хранилища (store) ---
 trackTaskEvent: (eventType, amount = 1) => {
     console.log(`[Tasks] Track Event: ${eventType}, Amount: ${amount}`);
+    console.log(`[TASKS_DEBUG] trackTaskEvent('login') called at ${new Date().toISOString()}`);
+console.log(`[TASKS_DEBUG] Current state before login track: dailyLoginToday=<span class="math-inline">\{state\.dailyLoginToday\}, dailyLoginTaskProgress\=</span>{JSON.stringify(state.dailyTaskProgress['ID_ВАШЕЙ_ЗАДАЧИ_НА_ЛОГИН'])}`);
     const state = get(); // Получаем текущее состояние в начале
     let counterChanges = {}; // Для атомарного обновления счетчиков
     const now = new Date();
@@ -2935,7 +3050,8 @@ checkIfAnyTaskOrAchievementIsClaimable: () => {
 // ================== Сохранение в localStorage (ОБЪЕДИНЕНО С КОД1) ==================
 useGameStore.subscribe((state) => {
     const {
-        gold, diamonds, username, inventory, equipped, powerLevel,
+        gold, diamonds, toncoinShards, 
+        toncoinBalance, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
         energyCurrent, energyMax, lastEnergyRefillTimestamp,
         dailyDeals, dailyDealsLastGenerated, dailyShopPurchases,
@@ -2961,7 +3077,8 @@ useGameStore.subscribe((state) => {
     } = state;
 
     const stateToSave = {
-        gold, diamonds, username, inventory, equipped, powerLevel,
+        gold, diamonds, toncoinShards,
+        toncoinBalance, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
         energyCurrent, energyMax, lastEnergyRefillTimestamp,
         dailyDeals, dailyDealsLastGenerated, dailyShopPurchases,

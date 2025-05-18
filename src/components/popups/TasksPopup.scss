@@ -151,6 +151,7 @@ $bonus-reward-icon-claimed-img-opacity: 0.4;
   justify-content: space-between; // или space-around для большего отступа
   margin-bottom: 12px;
   margin-top: 10px;
+  border-radius: 14px;
   flex-shrink: 0; // Табы не должны сжиматься
   padding: 0; // Убран внутренний padding, если кнопки табов заполняют его (из код1)
   // border-bottom: 1px solid mail.$mail-list-item-border; // Убрано (из код1)

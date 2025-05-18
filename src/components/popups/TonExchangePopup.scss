@@ -1,0 +1,452 @@
+// src/components/popups/TonExchangePopup.scss
+
+// --- БЛОК ОПРЕДЕЛЕНИЯ ПЕРЕМЕННЫХ ---
+// (Переменные остаются без изменений, как в вашем код2, включая $input-error-message-height)
+$popup-bg-start: #1a2a4a;
+$popup-bg-end: #0f1a30;
+$popup-border-color: lighten($popup-bg-start, 10%);
+$floating-header-bg: #f39c12;
+$floating-header-text-color: #2c3e50;
+$floating-header-border-radius: 10px;
+$floating-header-shadow: 0 4px 12px rgba(0,0,0,0.2);
+$tabs-container-bg: lighten($popup-bg-end, 7%);
+$tab-text-color: #8a9bab;
+$active-tab-bg: $floating-header-bg;
+$active-tab-text-color: $floating-header-text-color;
+$text-primary: #e8ecf1;
+$text-secondary: #a0b0c0;
+$input-bg: lighten($popup-bg-end, 8%);
+$input-border: darken($popup-bg-start, 5%);
+$input-focus-border: $floating-header-bg;
+$action-button-bg: #007bff;
+$action-button-hover-bg: #0056b3;
+$withdraw-button-bg: $floating-header-bg;
+$withdraw-button-text-color: $floating-header-text-color;
+$withdraw-button-hover-bg: darken($floating-header-bg, 10%);
+$error-color: #e74c3c;
+$input-error-border-color: $error-color;
+$input-error-shadow-color: rgba($error-color, 0.25);
+$disabled-button-bg: #535c68;
+// $error-color: #e74c3c; // Уже определено выше
+$input-error-message-height: 0.55em; // Убедимся, что значение адекватное, как в код1 (или 0.6em, если это было намеренно) - используем 1.5em для наглядности
+
+// --- ОБЩИЕ СТИЛИ ПОПАПА (из MainMenu.jsx, как в код1) ---
+.ton-exchange-popup-backdrop {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.ton-exchange-popup-container-for-header-and-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-top: 25px;
+}
+
+.ton-exchange-floating-header {
+  background-color: $floating-header-bg;
+  color: $floating-header-text-color;
+  padding: 8px 18px;
+  border-radius: $floating-header-border-radius;
+  box-shadow: $floating-header-shadow;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: 600;
+  min-width: 180px;
+  position: relative;
+  z-index: 2;
+  margin-bottom: -18px;
+}
+
+.main-popup-close-btn {
+    position: absolute;
+    top: -30px;
+    right: -3px;
+    background: none;
+    border: none;
+    font-size: 1.7em;
+    color: lighten($popup-bg-start, 50%);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    z-index: 20;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.ton-exchange-popup-main-box {
+    width: 280px;
+    background: linear-gradient(160deg, $popup-bg-start, $popup-bg-end);
+    border: 1px solid $popup-border-color;
+    border-radius: 18px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    height: 445px;
+    padding: 30px 15px 15px 15px;
+    z-index: 1;
+}
+
+// --- Стили для ВНУТРЕННЕГО СОДЕРЖИМОГО (компонент TonExchangePopupInternalContent) ---
+.ton-exchange-internal-wrapper {
+  width: 100%;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.exchange-popup-body-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .balance-area-title {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: $text-secondary;
+    text-align: center;
+    margin: 0;
+  }
+
+  .balances-overview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+    background-color: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    color: $text-primary;
+
+    .balance-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85em;
+      padding: 0;
+
+      .currency-icon { width: 20px; height: 20px; }
+      .balance-details {
+        display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;
+        span:first-child { font-size: 1.1em; font-weight: bold; color: $text-primary; }
+        .currency-label { font-size: 0.55em; color: $text-secondary; text-transform: uppercase; letter-spacing: 0.25px; }
+      }
+    }
+  }
+
+  // Стили для СОДЕРЖИМОГО вкладок (общий класс) - из код1
+  .exchange-tab-content-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 0;
+
+    // Стили для НОВОГО интерфейса обмена (из код1)
+    &.new-exchange-ui {
+      align-items: center;
+      gap: 8px;
+
+      .exchange-currency-label {
+        font-size: 0.9em;
+        color: $text-secondary;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      // Применяем max-width к инпуту и аутпуту в новом UI
+      .exchange-value-input,
+      .exchange-value-output {
+        max-width: 220px;
+      }
+      // Стили для .exchange-value-input теперь в основном глобальные,
+      // здесь могут быть только специфичные для .new-exchange-ui переопределения или дополнения,
+      // например, max-width уже задан выше.
+
+      .exchange-value-output { // Специфично для поля вывода в .new-exchange-ui
+        width: 100%; // Убедимся, что output тоже занимает доступную ширину (в пределах max-width)
+        // max-width: 220px; // Уже задано выше в общем селекторе
+        padding: 10px 12px; // Скопировано из исходного .exchange-value-input, .exchange-value-output
+        background-color: $input-bg; // Скопировано
+        border: 1px solid $input-border; // Скопировано
+        border-radius: 8px; // Скопировано
+        color: $floating-header-bg; // Акцентный цвет для результата (из вашего код2)
+        font-size: 1em; // Скопировано
+        text-align: center; // Скопировано
+        box-sizing: border-box; // Скопировано
+        transition: border-color 0.2s ease, box-shadow 0.2s ease; // Скопировано
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+
+        &::placeholder { // Скопировано из исходного .exchange-value-input
+            color: darken($text-secondary, 20%);
+        }
+      }
+
+      // .input-error-message-container и .input-error-message-text ВЫНЕСЕНЫ ГЛОБАЛЬНО
+
+      .input-error-message { // Этот класс был в вашем код2, он отличается от input-error-message-text. Оставляем, если он нужен для другого.
+        font-size: 0.55em;
+        color: $error-color;
+        text-align: center;
+        margin: -4px 0 4px 0;
+      }
+
+      .conversion-arrow-icon {
+        color: $text-secondary;
+        margin: 2px 0;
+        svg {
+          display: block;
+        }
+      }
+
+      .action-button {
+        width: 100%;
+        max-width: 220px;
+        margin-top: 10px;
+      }
+
+      .rate-details-compact {
+        font-size: 0.7em;
+        color: darken($text-secondary, 15%);
+        text-align: center;
+        margin-top: 8px;
+      }
+    } // Конец &.new-exchange-ui
+
+    // Стили, специфичные для вкладки ВЫВОДА (если нужны для .input-group и т.д.)
+    &.withdraw-ui {
+        align-items: stretch;
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            label {
+                font-size: 0.75em;
+                color: $text-secondary;
+                margin-bottom: 4px;
+                display: block;
+            }
+            // Для .exchange-value-input здесь будут применяться общие стили
+        }
+        .action-button.withdraw-button {
+            // Специфичные стили для кнопки вывода, если нужно
+        }
+    }
+  } // Конец .exchange-tab-content-inner
+
+
+  // ▼▼▼ ОБЩИЕ СТИЛИ ДЛЯ ОШИБОК (перемещены сюда из .new-exchange-ui согласно код1) ▼▼▼
+  .input-error-message-container {
+    min-height: $input-error-message-height;
+    width: 100%;
+    max-width: 220px; // Или другая подходящая ширина
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: center; // Если родитель flex и нужно центрировать этот блок
+    margin: 4px 0;
+  }
+
+  .input-error-message-text {
+    font-size: 0.55em;
+    color: $error-color;
+    text-align: center;
+    margin: 0;
+    padding: 0px 0;
+    line-height: 1;
+  }
+  // ▲▲▲ КОНЕЦ ОБЩИХ СТИЛЕЙ ДЛЯ ОШИБОК ▲▲▲
+
+  // Общие стили для .exchange-value-input (согласно код1)
+  .exchange-value-input {
+    width: 100%;
+    // max-width: 220px; // Теперь применяется специфично в .new-exchange-ui
+    padding: 10px 12px;
+    background-color: $input-bg;
+    border: 1px solid $input-border;
+    border-radius: 8px;
+    color: $text-primary;
+    font-size: 1em;
+    text-align: center;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+        color: darken($text-secondary, 20%);
+    }
+    &:focus {
+        border-color: $input-focus-border;
+        box-shadow: 0 0 0 3px rgba($input-focus-border, 0.25);
+        outline: none;
+    }
+    &.error {
+        border-color: $input-error-border-color;
+        color: $error-color; // Можно сделать текст внутри тоже красным
+        &:focus {
+            box-shadow: 0 0 0 3px $input-error-shadow-color;
+        }
+    }
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    &[type=number] {
+        -moz-appearance: textfield;
+    }
+  }
+
+  // Стили для "старого" интерфейса / вкладки вывода
+  .input-group {
+    label { font-size: 0.75em; color: $text-secondary; margin-bottom: 4px; display: block; }
+    input { // Если это НЕ .exchange-value-input, а другой тип инпута, то эти стили остаются.
+            // Если это ДОЛЖЕН БЫТЬ .exchange-value-input, то он получит общие стили.
+      width:100%;
+      padding: 10px;
+      background-color: $input-bg;
+      border: 1px solid $input-border;
+      border-radius: 6px;
+      color: $text-primary;
+      font-size: 0.85em;
+      box-sizing: border-box;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      &::placeholder {
+        color: darken($text-secondary, 15%);
+      }
+      &:focus {
+        border-color: $input-focus-border;
+        box-shadow: 0 0 0 3px rgba($input-focus-border, 0.25);
+        outline: none;
+      }
+    }
+  }
+  .exchange-preview {
+    font-size: 0.8em;
+    color: $text-secondary;
+    padding: 6px 0;
+    .ton-to-receive {
+      font-weight: bold;
+      color: $floating-header-bg;
+      font-size: 1em;
+    }
+  }
+  .rate-details { font-size: 0.7em; color: darken($text-secondary, 10%); margin-bottom: 3px; }
+
+
+  .action-button {
+    padding: 10px 12px;
+    font-size: 0.9em;
+    margin-top: 8px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    &:active:not(:disabled) {
+      transform: translateY(0px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    &:disabled {
+      background-color: $disabled-button-bg;
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
+  .exchange-button {
+    background-color: $action-button-bg;
+    &:hover:not(:disabled) { background-color: $action-button-hover-bg; }
+  }
+  .withdraw-button {
+    background-color: $withdraw-button-bg;
+    color: $withdraw-button-text-color;
+    &:hover:not(:disabled) { background-color: $withdraw-button-hover-bg; }
+  }
+} // Конец .exchange-popup-body-content
+
+.exchange-notice.fixed-bottom-notice {
+    font-size: 0.7em;
+    padding: 8px 10px;
+    margin: 10px 0 40px 0;
+    background-color: rgba(0,0,0,0.15);
+    color: $text-secondary;
+    text-align: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+// Эти стили ниже .exchange-popup-body-content уже не нужны в этой области, если они дублируют то, что было перемещено/обобщено.
+// .exchange-value-input.error { ... } // Теперь часть общего .exchange-value-input &.error
+// .input-error-message { ... } // Если это дубликат .input-error-message-text или .input-error-message-container, то можно удалить.
+                                // В вашем код2 он был внутри .new-exchange-ui и имел другие значения, оставил его там на случай, если он для чего-то другого.
+// .input-group { ... } // Уже есть выше, внутри .exchange-popup-body-content
+
+
+// --- Стили для "НАВИСАЮЩИХ" ТАБОВ ---
+.exchange-popup-tabs-footer {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 30px);
+  z-index: 5;
+
+  .tabs-container {
+    display: flex;
+    background-color: $tabs-container-bg;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 -2px 6px rgba(0,0,0,0.2), 0 3px 5px rgba(0,0,0,0.1);
+
+    .tab-button {
+      flex-grow: 1;
+      padding: 10px 8px;
+      background-color: transparent;
+      color: $tab-text-color;
+      border: none;
+      font-size: 0.85em;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      text-align: center;
+      transition: color 0.2s ease, background-color 0.2s ease;
+      position: relative;
+
+      &:hover:not(.active) {
+        color: lighten($tab-text-color, 20%);
+        background-color: rgba(255,255,255,0.08);
+      }
+
+      &.active {
+        background-color: $active-tab-bg;
+        color: $active-tab-text-color;
+      }
+    }
+  }
+}

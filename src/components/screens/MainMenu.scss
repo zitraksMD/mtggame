@@ -353,8 +353,8 @@
 .reset-button {
   position: absolute; // Позиционируем относительно .main-menu (если у него position: relative) или viewport
   // Отступы от нижнего левого угла, УЧИТЫВАЯ безопасные зоны
-  left: calc(env(safe-area-inset-left, 0px) + 15px);   // 15px от левого края + safe area
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); // 15px от нижнего края + safe area
+  left: calc(env(safe-area-inset-left, 0px) + 165px);   // 15px от левого края + safe area
+  top: calc(env(safe-area-inset-bottom, 0px) + 70px); // 15px от нижнего края + safe area
   
   // Если у тебя есть навбар внизу фиксированной высоты (например, 60px),
   // то bottom нужно будет поднять еще выше:
@@ -369,7 +369,7 @@
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-  z-index: 1100; // Поверх других элементов меню
+  z-index: 1000; // Поверх других элементов меню
 
   &:hover {
     background-color: #c82333; // Темнее при наведении

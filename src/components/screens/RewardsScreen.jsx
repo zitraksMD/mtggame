@@ -1,23 +1,41 @@
 // src/components/RewardsScreen.jsx
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import './RewardsScreen.scss';
-import initialRewardDataFromFile from '../../data/rewardStagesData.js';
+import initialRewardDataFromFile from '../../data/rewardStagesData.js'; // Данные о наградах по этапам
 import { useNavigate } from 'react-router-dom';
-import useGameStore from '../../store/useGameStore.js'; // Убедитесь, что путь верный
+import useGameStore from '../../store/useGameStore.js';
 
-// --- Компонент для отображения ОДНОЙ награды --- (без изменений)
+// --- Компонент для отображения ОДНОЙ награды ---
 const RewardItem = React.memo(({ reward, isClaimed, isClaimable, isLocked, onClaim }) => {
-    if (!reward) return <div className="reward-slot empty"></div>;
-    const { type, amount } = reward;
+    if (!reward) return <div className="reward-slot empty"></div>; // Пустой слот, если награды нет
+
+    const { type, amount, name, icon } = reward; // 'name' и 'icon' для предметов
+
     const handleClick = useCallback(() => {
         if (isClaimable && !isLocked) {
             onClaim(reward);
         }
     }, [isClaimable, isLocked, onClaim, reward]);
+
+    let rewardDisplayName = type;
+    if (name) rewardDisplayName = name; // Если есть имя (для предметов), используем его
+    else if (type === 'gold') rewardDisplayName = 'Золото';
+    else if (type === 'diamonds') rewardDisplayName = 'Алмазы';
+    else if (type === 'toncoin_shards') rewardDisplayName = 'Осколки TON';
+    // Добавьте другие типы по необходимости
+
     const slotClasses = `reward-slot reward-type-${type} ${isClaimed ? 'claimed' : ''} ${isClaimable ? 'claimable' : ''} ${isLocked ? 'locked' : ''}`;
+
+    // Определяем путь к иконке (может быть в CSS через type или напрямую в reward.icon)
+    const iconStyle = reward.icon ? { backgroundImage: `url(${reward.icon})` } : {};
+
     return (
-        <div className={slotClasses} onClick={handleClick} title={isLocked ? 'Требуется покупка Фонда' : (isClaimable ? `Забрать ${type} x ${amount}` : '')}>
-            <div className="reward-icon">
+        <div
+            className={slotClasses}
+            onClick={handleClick}
+            title={isLocked ? 'Требуется покупка Фонда' : (isClaimable ? `Забрать ${rewardDisplayName} x ${amount || ''}` : `${rewardDisplayName} ${amount || ''}`)}
+        >
+            <div className="reward-icon" style={iconStyle}> {/* Иконка управляется через reward.icon или CSS */}
                 {amount > 0 && <span className="reward-amount">{amount}</span>}
             </div>
             {isClaimed && <div className="checkmark">✔</div>}
@@ -27,30 +45,49 @@ const RewardItem = React.memo(({ reward, isClaimed, isClaimable, isLocked, onCla
     );
 });
 
+
 // --- Основной компонент ЭКРАНА Наград ---
 const RewardsScreen = () => {
     const navigate = useNavigate();
     const levelsCompletedFromStore = useGameStore(state => state.levelsCompleted);
-    // Получаем action из стора (ИЗ КОД1)
+    const booleanFlags = useGameStore(state => state.booleanFlags);
     const setHasClaimableRewardsIndicator = useGameStore(state => state.setHasClaimableRewardsIndicator);
+    const setBooleanFlag = useGameStore(state => state.setBooleanFlag);
 
-    const processStagesWithCompletion = useCallback((stagesData, completionData) => {
+    // Получаем actions из стора для добавления наград
+    const addGold = useGameStore(state => state.addGold);
+    const addDiamonds = useGameStore(state => state.addDiamonds);
+    const addToncoinShards = useGameStore(state => state.addToncoinShards);
+    const addItemToInventory = useGameStore(state => state.addItemToInventory); // Для предметов
+
+    const processStagesWithCompletion = useCallback((stagesData, gameCompletionData) => {
         const processedStages = {};
+        // Глубокое копирование, чтобы не мутировать исходные данные из файла
         const stagesDataCopy = JSON.parse(JSON.stringify(stagesData));
 
-        for (const stageKey in stagesDataCopy) {
+        for (const stageKey in stagesDataCopy) { // stageKey - это номер этапа наград, например, "1", "2"
             if (stagesDataCopy.hasOwnProperty(stageKey)) {
-                const gameChapterId = parseInt(stageKey);
                 processedStages[stageKey] = stagesDataCopy[stageKey].map(rewardLevel => {
-                    const chapterForLevel = rewardLevel.gameChapterId || gameChapterId;
-                    const levelInChapter = rewardLevel.gameLevelInChapter || rewardLevel.level;
-                    const gameLevelFullId = chapterForLevel * 100 + levelInChapter;
-                    const levelKeyForCompletion = `c${chapterForLevel}_l${gameLevelFullId}`;
-                    const completionRecord = completionData[levelKeyForCompletion];
-                    const newCompletedStatus = !!(completionRecord && completionRecord.normal);
+                    const chapterForCompletion = rewardLevel.gameChapterId;
+                    const levelIdForCompletion = rewardLevel.gameLevelInChapter; // Это должен быть полный ID уровня
+                
+                    let isGameLevelActuallyCompleted = false;
+                    if (typeof chapterForCompletion === 'number' && typeof levelIdForCompletion !== 'undefined') {
+                        const levelKeyInStore = `c${chapterForCompletion}_l${levelIdForCompletion}`;
+                        // !!! ДОБАВЬТЕ CONSOLE.LOG ЗДЕСЬ !!!
+                        console.log(`Checking completion for: Stage ${stageKey}, RewardLevel ${rewardLevel.level}, GameLevelKey: ${levelKeyInStore}`);
+                        const completionRecord = gameCompletionData[levelKeyInStore];
+                        console.log(`CompletionRecord for ${levelKeyInStore}:`, completionRecord);
+                        isGameLevelActuallyCompleted = !!(completionRecord && completionRecord.normal);
+                        console.log(`isGameLevelActuallyCompleted for ${levelKeyInStore}: ${isGameLevelActuallyCompleted}`);
+                    } else {
+                        isGameLevelActuallyCompleted = true; // Награда не привязана к уровню, считаем доступной
+                        console.log(`Reward at stage ${stageKey}, level ${rewardLevel.level} has no game level binding. Defaulting to completed: true.`);
+                    }
+                
                     return {
                         ...rewardLevel,
-                        completed: newCompletedStatus
+                        completed: isGameLevelActuallyCompleted,
                     };
                 });
             }
@@ -58,159 +95,220 @@ const RewardsScreen = () => {
         return processedStages;
     }, []);
 
-    const [stagesProgress, setStagesProgress] = useState(() =>
-        processStagesWithCompletion(initialRewardDataFromFile, levelsCompletedFromStore)
-    );
+    // Инициализация stagesProgress с учетом claimed статусов из localStorage, если они там есть
+    // или из initialRewardDataFromFile, если это первый запуск/нет сохраненных
+    const [stagesProgress, setStagesProgress] = useState(() => {
+        const savedRewardProgress = useGameStore.getState().rewardScreenProgress; // Предполагаем, что вы сохраняете это в стор
+        const initialData = savedRewardProgress || initialRewardDataFromFile;
+        return processStagesWithCompletion(initialData, levelsCompletedFromStore);
+    });
 
-    // Эффект для обновления stagesProgress, если levelsCompletedFromStore изменяется
     useEffect(() => {
-        setStagesProgress(currentStages => {
-            const newProgressBasedOnCompletion = processStagesWithCompletion(initialRewardDataFromFile, levelsCompletedFromStore);
-            const mergedStages = JSON.parse(JSON.stringify(currentStages));
+        console.log("АКТУАЛЬНОЕ СОСТОЯНИЕ levelsCompleted:", JSON.stringify(useGameStore.getState().levelsCompleted));
+    }, [levelsCompletedFromStore]); // Обновится, когда levelsCompletedFromStore изменится
 
-            for (const stageKey in newProgressBasedOnCompletion) {
-                if (newProgressBasedOnCompletion.hasOwnProperty(stageKey)) {
+    // Сохраняем изменения stagesProgress (особенно freeClaimed/paidClaimed) в useGameStore
+    useEffect(() => {
+        // Этот эффект будет вызываться при каждом изменении stagesProgress
+        // Вы можете добавить debounce, если обновлений слишком много
+        useGameStore.setState({ rewardScreenProgress: stagesProgress });
+    }, [stagesProgress]);
+
+
+    // Эффект для обновления 'completed' статуса наград при изменении levelsCompletedFromStore
+    useEffect(() => {
+        setStagesProgress(currentStagesProgress => {
+            // Заново обрабатываем ИСХОДНЫЕ данные о наградах с НОВЫМИ данными о прохождении уровней
+            const progressFromGameLevels = processStagesWithCompletion(initialRewardDataFromFile, levelsCompletedFromStore);
+            const mergedStages = JSON.parse(JSON.stringify(currentStagesProgress)); // Копируем текущее состояние (с claimed статусами)
+
+            for (const stageKey in progressFromGameLevels) {
+                if (progressFromGameLevels.hasOwnProperty(stageKey)) {
                     if (mergedStages.hasOwnProperty(stageKey)) {
-                        mergedStages[stageKey] = mergedStages[stageKey].map(currentLevel => {
-                            const updatedLevelInfo = newProgressBasedOnCompletion[stageKey].find(nl => nl.level === currentLevel.level);
+                        mergedStages[stageKey] = mergedStages[stageKey].map(currentLevelReward => {
+                            const updatedLevelInfo = progressFromGameLevels[stageKey].find(
+                                newInfo => newInfo.level === currentLevelReward.level
+                            );
                             if (updatedLevelInfo) {
                                 return {
-                                    ...currentLevel,
-                                    completed: updatedLevelInfo.completed
+                                    ...currentLevelReward, // Сохраняем freeClaimed, paidClaimed
+                                    completed: updatedLevelInfo.completed, // Обновляем только completed
                                 };
                             }
-                            return currentLevel;
-                        });
-                        newProgressBasedOnCompletion[stageKey].forEach(newLevelFromCompletion => {
-                            if (!mergedStages[stageKey].some(existingLevel => existingLevel.level === newLevelFromCompletion.level)) {
-                                mergedStages[stageKey].push(JSON.parse(JSON.stringify(newLevelFromCompletion)));
-                            }
+                            return currentLevelReward;
                         });
                     } else {
-                        mergedStages[stageKey] = JSON.parse(JSON.stringify(newProgressBasedOnCompletion[stageKey]));
+                        // Если этапа не было в mergedStages, добавляем его (маловероятно при такой логике)
+                        mergedStages[stageKey] = progressFromGameLevels[stageKey];
                     }
-                }
-            }
-            for (const stageKeyInMerged in mergedStages) {
-                if (mergedStages.hasOwnProperty(stageKeyInMerged) && !newProgressBasedOnCompletion.hasOwnProperty(stageKeyInMerged)) {
-                    delete mergedStages[stageKeyInMerged];
                 }
             }
             return mergedStages;
         });
-    }, [levelsCompletedFromStore, processStagesWithCompletion, initialRewardDataFromFile]);
+    }, [levelsCompletedFromStore, processStagesWithCompletion]);
 
 
-    const [currentStage, setCurrentStage] = useState('1');
-    const [isPaidUnlocked, setIsPaidUnlocked] = useState(false);
+    const [currentStage, setCurrentStage] = useState('1'); // Ключ этапа - строка
+    const [isPaidUnlocked, setIsPaidUnlocked] = useState(() => booleanFlags.rewardFundPurchased || false);
 
-    const highestCompletedStage = useMemo(() => {
-        let maxCompleted = 0;
+    const highestCompletedStageNum = useMemo(() => {
+        let maxStage = 0;
         const sortedStageKeys = Object.keys(stagesProgress).map(Number).sort((a, b) => a - b);
         for (const stageNum of sortedStageKeys) {
             const stageLevels = stagesProgress[stageNum.toString()];
-            if (!stageLevels || stageLevels.length === 0) break;
-            if (stageLevels.every(level => level.completed)) {
-                maxCompleted = stageNum;
+            if (stageLevels && stageLevels.every(level => level.completed)) {
+                maxStage = stageNum;
             } else {
-                break;
+                break; // Первый же не полностью завершенный этап останавливает подсчет
             }
         }
-        return maxCompleted;
+        return maxStage;
     }, [stagesProgress]);
 
     const currentStageRewards = useMemo(() => stagesProgress[currentStage] || [], [stagesProgress, currentStage]);
 
-    const handleClaim = useCallback((reward, level, isPaid) => {
+    const applyRewardToStore = useCallback((reward) => {
+        if (!reward || !reward.type || typeof reward.amount === 'undefined') {
+            console.error("Invalid reward object for store:", reward);
+            return;
+        }
+        console.log(`Applying reward to store: ${reward.type} x ${reward.amount}`);
+        switch (reward.type) {
+            case 'gold':
+                addGold(reward.amount);
+                break;
+            case 'diamond':
+                addDiamonds(reward.amount);
+                break;
+            case 'ton_shard':
+                addToncoinShards(reward.amount);
+                break;
+            case 'item':
+                if (reward.itemId) {
+                    addItemToInventory(reward.itemId, reward.amount || 1);
+                } else {
+                    console.warn("Claimed item reward is missing itemId:", reward);
+                }
+                break;
+            default:
+                console.warn(`Unknown reward type to add to store: ${reward.type}`);
+        }
+    }, [addGold, addDiamonds, addToncoinShards, addItemToInventory]);
+
+
+    const handleClaim = useCallback((reward, levelOrderInStage, isPaidTrack) => {
+        applyRewardToStore(reward); // Применяем награду к стору
+
         setStagesProgress(prev => {
-            const updatedStageLevels = (prev[currentStage] || []).map(item =>
-                item.level === level ? { ...item, [isPaid ? 'paidClaimed' : 'freeClaimed']: true } : item
-            );
-            return { ...prev, [currentStage]: updatedStageLevels };
+            const newStages = { ...prev };
+            const stageToUpdate = [...(newStages[currentStage] || [])];
+            const rewardIndex = stageToUpdate.findIndex(item => item.level === levelOrderInStage);
+
+            if (rewardIndex !== -1) {
+                stageToUpdate[rewardIndex] = {
+                    ...stageToUpdate[rewardIndex],
+                    [isPaidTrack ? 'paidClaimed' : 'freeClaimed']: true
+                };
+                newStages[currentStage] = stageToUpdate;
+                return newStages;
+            }
+            return prev; // Если награда не найдена, ничего не меняем
         });
-        alert(`Награда ${reward.type} x ${reward.amount} (типа) получена!`);
-    }, [currentStage]);
+    }, [currentStage, applyRewardToStore]);
+
 
     const handleClaimAll = useCallback(() => {
+        let anythingClaimed = false;
         setStagesProgress(prevData => {
             const updatedData = JSON.parse(JSON.stringify(prevData));
+            const rewardsToApplyBatch = [];
+
             Object.keys(updatedData).forEach(stageKey => {
                 const stageNum = parseInt(stageKey);
-                const isStageAccessibleForClaimAll = stageNum <= (highestCompletedStage + 1);
+                // Можно забирать награды с любого этапа, условие completed для которого выполнено,
+                // но обычно это этапы до highestCompletedStageNum + 1
+                if (stageNum > highestCompletedStageNum + 1 && stageNum > 1) return; // Пропускаем слишком далекие будущие этапы (кроме первого)
 
-                if (!isStageAccessibleForClaimAll) return;
 
                 updatedData[stageKey] = updatedData[stageKey].map(levelData => {
-                    let { freeClaimed, paidClaimed } = levelData;
+                    let newFreeClaimed = levelData.freeClaimed;
+                    let newPaidClaimed = levelData.paidClaimed;
+
                     if (levelData.completed && levelData.freeReward && !levelData.freeClaimed) {
-                        freeClaimed = true;
+                        newFreeClaimed = true;
+                        rewardsToApplyBatch.push(levelData.freeReward);
+                        anythingClaimed = true;
                     }
                     if (levelData.completed && levelData.paidReward && !levelData.paidClaimed && isPaidUnlocked) {
-                        paidClaimed = true;
+                        newPaidClaimed = true;
+                        rewardsToApplyBatch.push(levelData.paidReward);
+                        anythingClaimed = true;
                     }
-                    return { ...levelData, freeClaimed, paidClaimed };
+                    return { ...levelData, freeClaimed: newFreeClaimed, paidClaimed: newPaidClaimed };
                 });
             });
+
+            // Применяем все собранные награды разом
+            rewardsToApplyBatch.forEach(reward => applyRewardToStore(reward));
+
             return updatedData;
         });
-        alert('Все доступные награды (типа) получены!');
-    }, [isPaidUnlocked, highestCompletedStage]); // stagesProgress убран из зависимостей, так как prevData используется в setStagesProgress
+
+        if (anythingClaimed) {
+            console.log('Все доступные награды обработаны!');
+        } else {
+            console.log('Нет доступных наград для сбора.');
+        }
+    }, [isPaidUnlocked, highestCompletedStageNum, applyRewardToStore]);
+
 
     const handlePurchase = useCallback(() => {
+        // Здесь должна быть логика реальной покупки
+        // После успешной покупки:
         setIsPaidUnlocked(true);
-        alert('Платная дорожка (типа) разблокирована!');
-    }, []);
+        setBooleanFlag('rewardFundPurchased', true);
+        // alert('Платная дорожка разблокирована!'); // Заменить на UI уведомление
+    }, [setBooleanFlag]);
 
-    // Логика canClaimAny из КОД2, она уже была более точной
+
     const canClaimAny = useMemo(() => {
         return Object.entries(stagesProgress).some(([stageKey, levels]) => {
             const stageNum = parseInt(stageKey);
-            const isStageAccessibleForClaim = stageNum <= (highestCompletedStage + 1);
-            if (!isStageAccessibleForClaim) return false;
+            if (stageNum > highestCompletedStageNum + 1 && stageNum > 1) return false;
 
             return levels.some(level =>
                 (level.completed && level.freeReward && !level.freeClaimed) ||
                 (level.completed && level.paidReward && isPaidUnlocked && !level.paidClaimed)
             );
         });
-    }, [stagesProgress, isPaidUnlocked, highestCompletedStage]);
+    }, [stagesProgress, isPaidUnlocked, highestCompletedStageNum]);
 
-    // <<< НОВЫЙ useEffect для обновления флага в сторе (ИЗ КОД1) >>>
+
     useEffect(() => {
-        if (typeof setHasClaimableRewardsIndicator === 'function') {
-            setHasClaimableRewardsIndicator(canClaimAny);
-        }
-        // При размонтировании экрана Наград можно сбросить индикатор, если это нужно,
-        // но лучше, чтобы он оставался, пока награды не будут собраны.
-        // return () => {
-        //    setHasClaimableRewardsIndicator(false); // Сбрасывать ли при выходе?
-        // };
+        setHasClaimableRewardsIndicator(canClaimAny);
     }, [canClaimAny, setHasClaimableRewardsIndicator]);
-    // --------------------------------------------------
 
-    const handleGoBack = useCallback(() => {
-        navigate(-1);
-    }, [navigate]);
+    const handleGoBack = useCallback(() => navigate(-1), [navigate]);
 
     return (
         <div className="rewards-screen">
             <button className="popup-close-button" onClick={handleGoBack} aria-label="Закрыть">×</button>
             <div className="rewards-screen-header">
-                <div className="header-placeholder-left"></div>
-                <h1>Награды</h1>
+                <div className="header-placeholder-left"></div> {/* Для выравнивания заголовка по центру, если кнопка абсолютна */}
+                <h1>Награды Фонда</h1>
             </div>
 
             <div className="stage-tabs">
                 {Object.keys(initialRewardDataFromFile).map(stageNumStr => {
                     const stageNum = parseInt(stageNumStr);
-                    const isLocked = stageNum > 1 && stageNum > (highestCompletedStage + 1);
+                    const isLocked = stageNum > 1 && stageNum > (highestCompletedStageNum + 1);
                     return (
                         <button
                             key={stageNumStr}
                             className={`stage-tab ${stageNumStr === currentStage ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
                             onClick={() => !isLocked && setCurrentStage(stageNumStr)}
                             disabled={isLocked}
-                            title={isLocked ? `Завершите Этап ${stageNum - 1}` : `Перейти на Этап ${stageNum}`}
+                            title={isLocked ? `Завершите предыдущие этапы` : `Этап ${stageNumStr}`}
                         >
                             {isLocked && <span className="stage-lock-icon">🔒</span>}
                             Этап {stageNumStr}
@@ -220,9 +318,9 @@ const RewardsScreen = () => {
             </div>
 
             <div className="rewards-track-titles">
-                <div className="title-column title-free">FREE</div>
-                <div className="title-column-spacer"></div>
-                <div className="title-column title-paid">PAID</div>
+                <div className="title-column title-free">БЕСПЛАТНО</div>
+                <div className="title-column-spacer"></div> {/* Разделитель или лейбл уровня */}
+                <div className="title-column title-paid">ФОНД</div>
             </div>
 
             <div className="rewards-track-wrapper">
@@ -231,10 +329,10 @@ const RewardsScreen = () => {
                         <p className="no-rewards-message">Награды для этого этапа скоро появятся!</p>
                     ) : (
                         currentStageRewards.map((levelData) => (
-                            <div key={levelData.level} className={`reward-row ${levelData.completed ? 'row-completed' : ''}`}>
+                            <div key={`${currentStage}-${levelData.level}`} className={`reward-row ${levelData.completed ? 'row-completed' : ''}`}>
                                 <RewardItem
                                     reward={levelData.freeReward}
-                                    isClaimed={levelData.freeClaimed}
+                                    isClaimed={!!levelData.freeClaimed}
                                     isClaimable={levelData.completed && !!levelData.freeReward && !levelData.freeClaimed}
                                     isLocked={false}
                                     onClaim={(reward) => handleClaim(reward, levelData.level, false)}
@@ -246,9 +344,9 @@ const RewardsScreen = () => {
                                 </div>
                                 <RewardItem
                                     reward={levelData.paidReward}
-                                    isClaimed={levelData.paidClaimed}
-                                    isClaimable={levelData.completed && !!levelData.paidReward && !levelData.paidClaimed}
-                                    isLocked={!isPaidUnlocked}
+                                    isClaimed={!!levelData.paidClaimed}
+                                    isClaimable={levelData.completed && !!levelData.paidReward && !levelData.paidClaimed && isPaidUnlocked}
+                                    isLocked={!isPaidUnlocked && !!levelData.paidReward}
                                     onClaim={(reward) => handleClaim(reward, levelData.level, true)}
                                 />
                             </div>
@@ -262,13 +360,13 @@ const RewardsScreen = () => {
                     className="claim-all-button"
                     onClick={handleClaimAll}
                     disabled={!canClaimAny}
-                    title={!canClaimAny ? "Нет доступных наград для сбора" : "Забрать все доступные награды"}
+                    title={!canClaimAny ? "Нет доступных наград" : "Забрать все доступные награды"}
                 >
                     Забрать все
                 </button>
                 {!isPaidUnlocked && (
                     <button className="purchase-button" onClick={handlePurchase}>
-                        Купить Фонд <span className="price">$?.??</span>
+                        Купить Фонд {/* <span className="price">$?.??</span> TODO: Динамическая цена */}
                     </button>
                 )}
                 {isPaidUnlocked && (

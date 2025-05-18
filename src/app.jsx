@@ -47,7 +47,7 @@ const App = () => {
     const appContainerRef = useRef(null);
 
     const {
-        username, gold, diamonds, powerLevel, energyCurrent, energyMax,
+        username, gold, diamonds, toncoinShards, powerLevel, energyCurrent, energyMax,
         lastEnergyRefillTimestamp, refillEnergyOnLoad, consumeEnergy,
         setCurrentChapterInStore,
         currentChapterIdFromStore,
@@ -58,7 +58,7 @@ const App = () => {
         onTransitionOpenCompleteCallback
     } = useGameStore(
         useCallback(state => ({
-            username: state.username, gold: state.gold, diamonds: state.diamonds,
+            username: state.username, gold: state.gold, diamonds: state.diamonds, toncoinShards: state.toncoinShards,
             powerLevel: state.powerLevel, energyCurrent: state.energyCurrent, energyMax: state.energyMax,
             lastEnergyRefillTimestamp: state.lastEnergyRefillTimestamp, refillEnergyOnLoad: state.refillEnergyOnLoad,
             consumeEnergy: state.consumeEnergy, setCurrentChapterInStore: state.setCurrentChapter,
@@ -79,7 +79,6 @@ const App = () => {
     const trackTaskEvent = useGameStore((s) => s.trackTaskEvent);
 
     const avatarUrl = "/assets/default-avatar.png";
-    const tonShards = 0;
 
     const handleChapterNameChange = useCallback((name) => {
         setCurrentChapterNameForHeader(name);
@@ -356,7 +355,7 @@ const App = () => {
     return (
         <div className="app-container" ref={appContainerRef}>
             {shouldShowNewGameHeader && (
-                <GameHeader {...{username, powerLevel, avatarUrl, energyCurrent, energyMax, getEnergyFillColor, shouldShowRefillTimer, refillTimerDisplay, gold, diamonds, tonShards, currentChapterName: currentChapterNameForHeader}} />
+                <GameHeader {...{username, powerLevel, avatarUrl, energyCurrent, energyMax, getEnergyFillColor, shouldShowRefillTimer, refillTimerDisplay, gold, diamonds, tonShards: toncoinShards, currentChapterName: currentChapterNameForHeader}} />
             )}
             {showAnyFixedUIBaseConditions && !shouldShowNewGameHeader && location.pathname !== '/main' && <UsernamePopup />}
             <main className="content-area">

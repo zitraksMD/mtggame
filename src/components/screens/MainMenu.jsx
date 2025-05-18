@@ -15,6 +15,8 @@ import { ALL_ZONES_CONFIG, findZoneIdForChapter } from '../../data/worldMapData.
 import MailPopupContent from '../popups/MailPopupContent.jsx';
 import TreasureChestInfoPopup from '../popups/TreasureChestInfoPopup.jsx';
 import TasksPopup from '../popups/TasksPopup.jsx'; // Импорт TasksPopup
+import TonExchangePopup from '../popups/TonExchangePopup.jsx'; // <--- ДОБАВЬТЕ ЭТОТ ИМПОРТ
+
 
 const popupContentVariants = {
     initial: { opacity: 0, y: 20 },
@@ -516,8 +518,16 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     }, []);
     
     const handleQuestsClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('tasks'); }, [activeView]);
-    const handleExchangeClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('exchange'); }, [activeView]);
-    const handleDailyGrindClick = useCallback(() => { 
+    const handleExchangeClick = useCallback(() => {
+        console.log("[MainMenu] handleExchangeClick вызван. Текущий activeView:", activeView);
+        if (activeView === 'detailed') {
+            setActivePopup('exchange');
+            // Добавим лог сразу после попытки установки, чтобы убедиться, что эта строка выполняется
+            console.log("[MainMenu] setActivePopup('exchange') был вызван. activePopup должен стать 'exchange'.");
+        } else {
+            console.log("[MainMenu] Поп-ап обмена не открыт, т.к. activeView не 'detailed'.");
+        }
+    }, [activeView, setActivePopup]);    const handleDailyGrindClick = useCallback(() => { 
         if (activeView === 'detailed') {
             console.log("Daily Grind clicked - popup to be implemented");
         }
@@ -525,16 +535,16 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
 
     const closePopup = useCallback(() => setActivePopup(null), []);
 
+    useEffect(() => {
+        console.log("[MainMenu] Состояние activePopup изменилось на:", activePopup);
+    }, [activePopup]);
+
     const getPopupContent = (popupType) => {
         switch (popupType) {
             case 'battlepass':
                 return <div>Содержимое Боевого Пропуска... <button onClick={closePopup}>Закрыть</button></div>;
             // case 'tasks': // TasksPopup теперь обрабатывается отдельно
             //     return <TasksPopup onClose={closePopup} />; 
-            case 'exchange':
-                return <div>Содержимое Обмена... <button onClick={closePopup}>Закрыть</button></div>;
-            default:
-                return null;
         }
     };
 
@@ -544,8 +554,6 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                 return "Боевой Пропуск";
             case 'tasks':
                 return "Задания"; 
-            case 'exchange':
-                return "Обмен Валют";
             default:
                 return "";
         }
@@ -841,12 +849,55 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     </motion.div>
 )}
 {/* ========== КОНЕЦ: КАСТОМНЫЙ ПОПАП "ЗАДАНИЯ" ========== */}
+{/* ▼▼▼ КАСТОМНЫЙ ПОПАП "ОБМЕН TON" (Структура как для других кастомных) ▼▼▼ */}
+{activeView === 'detailed' && activePopup === 'exchange' && (
+    <motion.div
+        key="ton-exchange-popup-overlay"
+        className="ton-exchange-popup-backdrop" // Общий класс для фона затемнения
+        variants={mailOverlayVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        onClick={closePopup} // Закрытие по клику на фон
+    >
+        {/* ▼▼▼ НОВАЯ ОБЕРТКА для позиционирования баннера и основного блока ▼▼▼ */}
+        <div 
+            className="ton-exchange-popup-container-for-header-and-box"
+            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике на этот контейнер
+        >
+            {/* 1. ОТДЕЛЬНЫЙ "НАВИСАЮЩИЙ" БАННЕР "Биржа TON" */}
+            <div className="ton-exchange-floating-header"> 
+                TONCHANGE
+            </div>
+
+            {/* 2. ОСНОВНОЙ БЛОК ПОПАПА (с градиентом, отступами и табами внутри) */}
+            <motion.div
+                className="ton-exchange-popup-main-box" // Основное видимое окно
+                variants={mailPopupFrameVariants} // Анимации для этого блока
+                // onClick={(e) => e.stopPropagation()} // Уже есть на родительской обертке
+            >
+                {/* Теперь TonExchangePopup (или его переименованная/внутренняя версия)
+                    НЕ ДОЛЖЕН рендерить свой собственный <div className="exchange-popup-header">.
+                    Он отвечает только за контент ВНУТРИ .ton-exchange-popup-main-box.
+                    Назовем его условно TonExchangePopupInternalContent, 
+                    предполагая, что ты переименуешь или отрефакторишь TonExchangePopup.jsx
+                */}
+                <TonExchangePopup onClose={closePopup} /> 
+                {/* Если TonExchangePopup все еще ожидает onClose для чего-то внутреннего,
+                    оставляем его. Но основная кнопка закрытия теперь в .ton-exchange-floating-header */}
+            </motion.div>
+        </div>
+    </motion.div>
+)}
+{/* ▲▲▲ КОНЕЦ: КАСТОМНЫЙ ПОПАП "ОБМЕН TON" ▲▲▲ */}
+
 
             </AnimatePresence>
 
             <AnimatePresence>
                 {activeView === 'detailed' && 
                   activePopup && 
+                  activePopup !== 'exchange' &&
                   activePopup !== 'mail' &&
                   activePopup !== 'treasure_chest' &&
                   activePopup !== 'tasks' && // 'tasks' теперь исключен
