@@ -3,8 +3,8 @@
 .event-detail-view-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    width: 100vw;
+    height: 100vh; // Занимает всю высоту видимой области
+    width: 100vw;   // Занимает всю ширину видимой области
     background-color: #ffffff;
     color: #000000;
     position: fixed;
@@ -12,17 +12,39 @@
     left: 0;
     z-index: 1000;
     overflow-y: auto;
+  
+    // Добавляем отступы для safe-area
+    // Используем `max()` для подстраховки, если переменная env() не определена или равна 0,
+    // чтобы иметь хотя бы минимальный отступ по умолчанию, если это нужно.
+    // Если минимальный отступ не нужен, можно просто использовать env().
+    padding-top: env(safe-area-inset-top);
+  
+    // Важно! Если вы используете padding для safe-area,
+    // возможно, потребуется изменить box-sizing, чтобы padding не увеличивал общую высоту/ширину.
+    // Однако, для 100vh/100vw и position:fixed это обычно обрабатывается корректно.
+    // Если возникнут проблемы с размерами, можно добавить:
+    // box-sizing: border-box;
   }
   
   .event-detail-view-header {
     display: flex;
     align-items: center;
-    padding: 15px 20px;
+    // padding: 15px 20px; // Старые отступы хедера. Теперь safe-area-inset-top/left/right учтены на контейнере.
+                         // Возможно, понадобятся только внутренние отступы, если элементы не прилегают к краям контейнера.
+    padding-top: 15px;    // Оставляем вертикальный отступ внутри хедера
+    padding-bottom: 15px; // Оставляем вертикальный отступ внутри хедера
+    padding-left: 20px;   // Горизонтальный отступ, если нужен дополнительно к safe-area-inset-left
+    padding-right: 20px;  // Горизонтальный отступ, если нужен дополнительно к safe-area-inset-right
     background-color: #f8f8f8;
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
   
+    // Если хедер должен учитывать safe-area-inset-top сам (например, если он не position: fixed),
+    // то padding-top: env(safe-area-inset-top); можно было бы применить сюда.
+    // Но так как .event-detail-view-container уже имеет отступы, элементы внутри него будут смещены.
+  
     .back-button {
+      // Стили остаются
       background: none;
       border: none;
       color: #007bff;
