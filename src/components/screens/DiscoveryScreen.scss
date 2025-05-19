@@ -258,7 +258,7 @@
 }
 
 .live-event-button {
-  background-color: rgba(0, 0, 0, 0.25); // Темнее фон для кнопок ивентов
+  background: linear-gradient(135deg, #483D8B 0%, #6A5ACD 50%, #9370DB 100%); 
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.1); // Светлая граница
   padding: 15px; // Уменьшим padding
