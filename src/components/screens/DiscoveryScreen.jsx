@@ -2,7 +2,11 @@
 import React, { useState } from 'react';
 import './DiscoveryScreen.scss';
 import TaskCenterModal from './TaskCenterModal';
-import EventDetailModal from './EventDetailModal'; // Импортируем компонент для деталей события
+import EventDetailModal from './EventDetailModal';
+import { useNavigate } from 'react-router-dom';
+
+// Placeholder иконки (в реальном проекте используйте SVG или библиотеку иконок)
+import { FaArrowLeft, FaTasks, FaRobot } from 'react-icons/fa'; // Пример с react-icons
 
 // Компонент TaskItem (без изменений)
 const TaskItem = ({ name, progress, reward, isCompleted, onClaim }) => (
@@ -20,19 +24,28 @@ const TaskItem = ({ name, progress, reward, isCompleted, onClaim }) => (
 );
 
 const DiscoveryScreen = () => {
+  const navigate = useNavigate(); // <--- ADD THIS LINE
+
   const [activeTab, setActiveTab] = useState('Task HUB');
   const [isTasksPopupOpen, setIsTasksPopupOpen] = useState(false);
-
-  // Состояние для отслеживания выбранного события для "полноэкранного" отображения
   const [selectedEventForView, setSelectedEventForView] = useState(null);
+
+  // Плейсхолдеры для данных пользователя (в реальном приложении они будут из стейта/пропсов)
+  const userNickname = "User123";
+  const currentUserXP = 75; // Пример текущего опыта
+  const maxXPForLevel = 100; // Пример максимального опыта для уровня
+  const xpProgressPercent = (currentUserXP / maxXPForLevel) * 100;
+
+
+    // --- НОВЫЕ ДАННЫЕ ДЛЯ УРОВНЕЙ ---
+    const currentLevel = 10;
+    const nextLevel = 11;
 
   const handleTabClick = (tabName) => {
     setActiveTab(tabName);
   };
 
-  const screenTitle = "Discovery";
-
-  // Данные для задач (из код1)
+  // Данные для задач (оставляем как есть)
   const allTasksData = {
     daily: [
       { id: 'd1_login', name: 'Вход в кошелек', progress: '0/1', reward: '20 опыта', isCompleted: false },
@@ -140,10 +153,10 @@ const DiscoveryScreen = () => {
     }
   ];
 
+
   const openTasksPopup = () => setIsTasksPopupOpen(true);
   const closeTasksPopup = () => setIsTasksPopupOpen(false);
 
-  // Функции для "открытия" и "закрытия" вида деталей события
   const openEventDetailView = (eventData) => {
     setSelectedEventForView(eventData);
   };
@@ -151,24 +164,54 @@ const DiscoveryScreen = () => {
     setSelectedEventForView(null);
   };
 
-  // Если выбрано событие для просмотра, показываем только его детали
+  const handleGoBack = () => {
+    // Логика кнопки "Назад"
+    // Если открыты детали события, закрываем их
+    if (selectedEventForView) {
+      closeEventDetailView();
+    } else {
+      // Иначе, например, навигация на предыдущий экран (если DiscoveryScreen не корневой)
+      // Для примера просто выведем в консоль
+      console.log('Back button clicked from Discovery main screen');
+      navigate('/main'); // Пример навигации
+    }
+  };
+
   if (selectedEventForView) {
-    // Предполагается, что EventDetailModal стилизован так, чтобы занимать экран
-    // и имеет кнопку "Назад", вызывающую onClose
     return (
       <EventDetailModal
         event={selectedEventForView}
-        onClose={closeEventDetailView} // Эта функция вернет нас к списку
+        onClose={closeEventDetailView}
       />
     );
   }
 
-  // Обычное отображение DiscoveryScreen
   return (
-    <div className="discovery-screen">
-      <header className="discovery-header">
-        <h1 className="discovery-title">{screenTitle}</h1>
+    <div className="discovery-screen"> {/* Фон будет задан в SCSS */}
+      {/* --- НОВАЯ ШАПКА --- */}
+      <header className="discovery-main-header">
+        <div className="header-left-content">
+          <h1 className="main-title">Discovery</h1>
+          <p className="user-nickname">{userNickname}</p>
+          {/* --- ИЗМЕНЕННЫЙ БЛОК С XP И УРОВНЯМИ --- */}
+          <div className="level-xp-progress-wrapper">
+            <span className="level-badge current-level-badge">Lv. {currentLevel}</span>
+            <div className="xp-bar-container">
+              <div className="xp-bar-fill" style={{ width: `${xpProgressPercent}%` }}></div>
+              {/* Текст на самом прогресс-баре, как на вашем скриншоте */}
+              <span className="xp-bar-text-on-bar">{currentUserXP} / {maxXPForLevel} XP</span>
+            </div>
+            <span className="level-badge next-level-badge">Lv. {nextLevel}</span>
+          </div>
+          {/* --- КОНЕЦ ИЗМЕНЕННОГО БЛОКА --- */}
+        </div>
+        <div className="header-right-content">
+          <button className="back-button" onClick={handleGoBack}>
+            <FaArrowLeft /> {/* Иконка "назад" */}
+          </button>
+        </div>
       </header>
+      {/* --- КОНЕЦ НОВОЙ ШАПКИ --- */}
 
       <nav className="discovery-tabs-container">
         <button
@@ -194,39 +237,48 @@ const DiscoveryScreen = () => {
       <main className="discovery-tab-content">
         {activeTab === 'Task HUB' && (
           <div className="tab-pane" id="task-hub-pane">
-            <section className="activities-button-section">
-              <button className="activities-main-button" onClick={openTasksPopup}>
-                Activities
-              </button>
+            {/* --- НОВЫЕ КНОПКИ ДЛЯ TASK HUB --- */}
+            <section className="hub-actions-section">
+              <div className="action-item" onClick={openTasksPopup}>
+                <div className="action-button-square">
+                  <FaTasks className="action-icon" /> {/* Иконка для Quest Center */}
+                </div>
+                <p className="action-label">Quest Center</p>
+              </div>
+              <div className="action-item" onClick={() => console.log('Bot Zone clicked')}>
+                <div className="action-button-square">
+                  <FaRobot className="action-icon" /> {/* Иконка для Bot Zone */}
+                </div>
+                <p className="action-label">Bot Zone</p>
+              </div>
             </section>
+            {/* --- КОНЕЦ НОВЫХ КНОПОК --- */}
 
             <section className="events-section">
-              <h2 className="section-title">Live Events</h2>
+              {/* Используем "Live Promos:" как вы просили */}
+              <h2 className="section-title">Live Promos:</h2> 
               <div className="live-events-grid">
                 {events.map(event => (
                   <button
                     key={event.id}
                     className="live-event-button"
-                    onClick={() => openEventDetailView(event)} // "Открываем" детали события
+                    onClick={() => openEventDetailView(event)}
                   >
                     {event.title}
                   </button>
                 ))}
-                {events.length === 0 && <p className="no-events-info">There are no live events currently.</p>}
+                {events.length === 0 && <p className="no-events-info">There are no live promos currently.</p>}
               </div>
             </section>
           </div>
         )}
-        {/* ... остальной контент для других вкладок ... */}
-         {activeTab === 'Simplecoin' && (
+        {activeTab === 'Simplecoin' && (
           <div className="tab-pane" id="simplecoin-pane">
-            {/* Содержимое для вкладки Simplecoin */}
             <p>Содержимое вкладки Simplecoin будет здесь.</p>
           </div>
         )}
         {activeTab === 'Character' && (
           <div className="tab-pane" id="character-pane">
-            {/* Содержимое для вкладки Character */}
             <p>Содержимое вкладки Character будет здесь.</p>
           </div>
         )}
@@ -240,8 +292,7 @@ const DiscoveryScreen = () => {
           TaskItemComponent={TaskItem}
         />
       )}
-      {/* Модальное окно для деталей события больше не рендерится здесь как попап,
-          так как оно теперь заменяет основной контент */}
+      {/* EventDetailModal теперь рендерится в начале, если selectedEventForView не null */}
     </div>
   );
 };

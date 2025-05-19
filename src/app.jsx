@@ -340,7 +340,7 @@ const App = () => {
     const showAnyFixedUIBaseConditions = !isInitialLoading && !needsRaceSelection && !isFullScreenMapActive;
 
     // Обновленные условия видимости с учетом ShardPassScreen и других экранов
-    const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading'];
+    const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading', '/discovery'];
     const shouldShowNewGameHeaderUpdated = showAnyFixedUIBaseConditions && 
                                         !screensWithoutHeader.some(p => path.startsWith(p) || path === p) &&
                                         path !== '/global-map';
