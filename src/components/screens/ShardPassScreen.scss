@@ -11,9 +11,9 @@
 
     // Твои переменные для минимальных отступов
     $min-header-content-top-offset-android: 30px; // Минимальный отступ для контента хедера на Android (вместо твоего $min_energy_offset_android)
-    $base-header-content-padding-top: 15px;     // Базовый внутренний отступ для контента от начала "челки" или минимального отступа
+    $base-header-content-padding-top: 13px;     // Базовый внутренний отступ для контента от начала "челки" или минимального отступа
 
-    $back-button-min-static-top-offset: 80px; // Твой "80px"
+    $back-button-min-static-top-offset: 90px; // Твой "80px"
     $back-button-additional-offset: 45px;
 
     // --- Переменные для ShardPass Screen ---
@@ -31,6 +31,13 @@
 $level-banner-border-color: $sp-title-color;
 $level-banner-text-color: $sp-text-color;
 $level-banner-number-color: $sp-title-color;
+
+$back-button-size: 40px; // Размер квадратика кнопки
+$back-button-bg-color: rgba(255, 255, 255, 0.1); // Полупрозрачный белый фон
+$back-button-bg-color-hover: rgba(255, 255, 255, 0.2); // Фон при наведении
+$back-button-border-color: rgba(255, 255, 255, 0.3); // Цвет рамки
+$back-button-icon-color: white; // Цвет иконки (стрелки)
+$back-button-border-radius: 8px;
 
     // Цвета для элементов ShardPass (из код2)
     $sp-level-bg: rgba(255, 255, 255, 0.03);
@@ -158,7 +165,7 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
         letter-spacing: 2px; // Немного увеличить расстояние между буквами
         padding: 5px 10px; // Внутренний отступ от текста до рамки (подбери значения)
     border: 2px solid $sp-title-color; // Цвет и толщина рамки
-    border-radius: 6px; // Скругление углов рамки (опционально)
+    border-radius: 26px; // Скругление углов рамки (опционально)
 
         // Эффект объема/граффити с помощью text-shadow
         // Формат: смещение-x смещение-y радиус-размытия цвет
@@ -184,23 +191,34 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
 }
 
 .shard-pass-back-btn { // Кнопка "назад" теперь справа
-    background: none;
     position: absolute; // Абсолютное позиционирование
-    right: 20px;        // Отступ справа (подбери)
+    right: 10px;        // Отступ справа (подбери)
     top: max(#{$back-button-min-static-top-offset}, calc(var(--safe-area-inset-top) + #{$back-button-additional-offset}));
     transform: translateY(-50%); // Точное вертикальное центрирование
-    border: none;
-    font-size: 1.8em;
-    color: $sp-text-color; // Используем основной цвет текста
+    // Стили для создания вида "квадратика"
+    width: $back-button-size;
+    height: $back-button-size;
+    background-color: $back-button-bg-color;
+    border: 1px solid $back-button-border-color; // Если нужна рамка
+    // border: none; // Если рамка не нужна, а только фон
+
+    border-radius: $back-button-border-radius; // Скругление углов
+    
+    display: flex; // Для центрирования иконки внутри
+    align-items: center;
+    justify-content: center;
+    
     cursor: pointer;
-    padding: 5px; // Уменьшим padding, если она просто иконка
-    line-height: 1;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-    order: 3; // Чтобы гарантированно была справа при flex: space-between
+    padding: 0; // Убираем внутренний padding, если размер задан через width/height
+    line-height: 1; // Для консистентности
+    opacity: 0.9; // Можно сделать чуть менее прозрачной по умолчанию
+    transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+    z-index: 11;
 
     &:hover {
         opacity: 1;
+        background-color: $back-button-bg-color-hover;
+        // transform: scale(1.05); // Легкое увеличение при наведении (опционально)
     }
 }
 
