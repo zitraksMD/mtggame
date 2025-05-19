@@ -15,7 +15,7 @@ const GameHeader = ({
     diamonds,
     tonShards,
     currentChapterName,
-    // onBattlePassClick, // Оставим для будущей кнопки Battle Pass
+    onShardPassClick, // Оставим для будущей кнопки Battle Pass
 }) => {
     return (
         <div className="game-header-container">
@@ -54,8 +54,11 @@ const GameHeader = ({
                             </span>
                         </div>
                     </div>
-                    <button className="header-battle-pass-button" /* onClick={onBattlePassClick} */>
-                        BATTLE PASS
+                    <button 
+                        className="header-battle-pass-button" 
+                        onClick={onShardPassClick} // <-- ИСПОЛЬЗУЕМ ПРОПС
+                    >
+                        Shardpass
                     </button>
                 </div>
                 

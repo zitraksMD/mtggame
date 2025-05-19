@@ -18,7 +18,8 @@ import RewardsScreen from "./components/screens/RewardsScreen";
 import GlobalMap from "./components/GlobalMap";
 import TransitionOverlay from './components/TransitionOverlay';
 import GameHeader from './components/GameHeader';
-import DiscoveryScreen from "./components/screens/DiscoveryScreen"; // <--- НОВЫЙ ИМПОРТ ИЗ КОД1
+import DiscoveryScreen from "./components/screens/DiscoveryScreen";
+import ShardPassScreen from './components/screens/ShardPassScreen'; // ИМПОРТ ДЛЯ НОВОГО SHARDPASS
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
@@ -41,6 +42,7 @@ const App = () => {
     const [refillTimerDisplay, setRefillTimerDisplay] = useState("");
     const [shouldShowRefillTimer, setShouldShowRefillTimer] = useState(false);
     const [currentChapterNameForHeader, setCurrentChapterNameForHeader] = useState(null);
+    // Состояние isBattlePassVisible и функции для него удалены, т.к. ShardPassScreen его заменяет
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -55,7 +57,8 @@ const App = () => {
         isScreenTransitioning,
         transitionAction,
         onTransitionCloseCompleteCallback,
-        onTransitionOpenCompleteCallback
+        onTransitionOpenCompleteCallback,
+        startScreenTransition
     } = useGameStore(
         useCallback(state => ({
             username: state.username, gold: state.gold, diamonds: state.diamonds, toncoinShards: state.toncoinShards,
@@ -66,6 +69,7 @@ const App = () => {
             isScreenTransitioning: state.isScreenTransitioning, transitionAction: state.transitionAction,
             onTransitionCloseCompleteCallback: state.onTransitionCloseCompleteCallback,
             onTransitionOpenCompleteCallback: state.onTransitionOpenCompleteCallback,
+            startScreenTransition: state.startScreenTransition,
         }), [])
     );
 
@@ -79,6 +83,27 @@ const App = () => {
     const trackTaskEvent = useGameStore((s) => s.trackTaskEvent);
 
     const avatarUrl = "/assets/default-avatar.png";
+
+    // Функции для ShardPass (маршрут)
+    const handleOpenShardPass = useCallback(() => {
+        const store = useGameStore.getState();
+        if (store.startScreenTransition) {
+            store.startScreenTransition(() => navigate('/shardpass'));
+        } else {
+            console.warn("startScreenTransition action not found in store for ShardPass. Navigating directly.");
+            navigate('/shardpass');
+        }
+    }, [navigate]);
+
+    const handleCloseShardPass = useCallback(() => {
+        const store = useGameStore.getState();
+        if (store.startScreenTransition) {
+            store.startScreenTransition(() => navigate(-1)); // Или navigate('/main')
+        } else {
+            console.warn("startScreenTransition action not found in store for ShardPass. Navigating directly.");
+            navigate(-1); // Или navigate('/main')
+        }
+    }, [navigate]);
 
     const handleChapterNameChange = useCallback((name) => {
         setCurrentChapterNameForHeader(name);
@@ -116,7 +141,7 @@ const App = () => {
     }, [energyCurrent, energyMax, lastEnergyRefillTimestamp, refillEnergyOnLoad]);
 
     useEffect(() => {
-        console.log("App Mount: Проверка начального состояния (версия 'старый рабочий + логин')...");
+        console.log("App Mount: Проверка начального состояния.");
         let initialUsername = null;
         let chosenRace = null;
         let raceIsChosen = false;
@@ -134,39 +159,22 @@ const App = () => {
         } else {
             if (initializeCharacterStats) {
                 initializeCharacterStats(chosenRace);
-                console.log("App Mount: initializeCharacterStats called (из селектора).");
             }
             if (initialUsername && setUsernameAction) {
                 setUsernameAction(initialUsername);
-                console.log("App Mount: setUsername called (из селектора).");
             }
             setNeedsRaceSelection(false);
         }
 
-        if (checkAndRefreshDailyDeals) {
-            checkAndRefreshDailyDeals(); console.log("App Mount: checkAndRefreshDailyDeals called.");
-        }
-        if (checkAndResetTreasureChestAttempts) {
-            checkAndResetTreasureChestAttempts(); console.log("App Mount: checkAndResetTreasureChestAttempts called.");
-        }
-        if (checkAndResetDailyTasks) {
-            checkAndResetDailyTasks(); console.log("App Mount: checkAndResetDailyTasks called.");
-        }
-        if (checkAndResetWeeklyTasks) {
-            checkAndResetWeeklyTasks(); console.log("App Mount: checkAndResetWeeklyTasks called.");
-        }
-        if (checkAndResetMonthlyTasks) {
-            checkAndResetMonthlyTasks(); console.log("App Mount: checkAndResetMonthlyTasks called.");
-        }
+        if (checkAndRefreshDailyDeals) checkAndRefreshDailyDeals();
+        if (checkAndResetTreasureChestAttempts) checkAndResetTreasureChestAttempts();
+        if (checkAndResetDailyTasks) checkAndResetDailyTasks();
+        if (checkAndResetWeeklyTasks) checkAndResetWeeklyTasks();
+        if (checkAndResetMonthlyTasks) checkAndResetMonthlyTasks();
         
         const currentDailyLoginStatus = useGameStore.getState().dailyLoginToday;
-        if (currentDailyLoginStatus === false) {
-            if (trackTaskEvent) { 
-                trackTaskEvent('login');
-                console.log("App Mount: trackTaskEvent('login') called.");
-            } else {
-                 console.warn("App Mount: trackTaskEvent action not found for login event.");
-            }
+        if (currentDailyLoginStatus === false && trackTaskEvent) { 
+            trackTaskEvent('login');
         }
 
         const loadingDuration = 500;
@@ -181,16 +189,9 @@ const App = () => {
 
         return () => clearTimeout(timer);
     }, [
-        navigate,
-        initializeCharacterStats,
-        setUsernameAction,
-        checkAndRefreshDailyDeals,
-        checkAndResetTreasureChestAttempts,
-        checkAndResetDailyTasks,
-        checkAndResetWeeklyTasks,
-        checkAndResetMonthlyTasks,
-        trackTaskEvent,
-        location.pathname
+        navigate, initializeCharacterStats, setUsernameAction, checkAndRefreshDailyDeals,
+        checkAndResetTreasureChestAttempts, checkAndResetDailyTasks, checkAndResetWeeklyTasks,
+        checkAndResetMonthlyTasks, trackTaskEvent, location.pathname
     ]);
 
     useEffect(() => {
@@ -214,15 +215,12 @@ const App = () => {
 
     const handleLevelComplete = useCallback((levelId, status, difficultyPlayed) => {
         const levelDataForContext = activeLevelData; 
-        
         setActiveLevelData(null); 
         setIsLoadingLevel(false); 
-    
         const store = useGameStore.getState(); 
 
         if (status === 'won') {
             const chapterId = getChapterIdFromLevelId(levelId); 
-            
             if (chapterId !== null) {
                 let chapterContext = undefined;
                 if (levelDataForContext && levelDataForContext.id === parseInt(levelId, 10)) {
@@ -230,24 +228,13 @@ const App = () => {
                         isZoneBossChapter: levelDataForContext.isZoneBossChapter || false,
                         currentZoneIdForThisChapter: levelDataForContext.zoneId,
                     };
-                } else {
-                    console.warn(`handleLevelComplete: levelDataForContext is not available or outdated for levelId: ${levelId}. Chapter context will be undefined. levelDataForContext:`, levelDataForContext);
                 }
-                
                 if (store.completeLevelAction) {
                     store.completeLevelAction(chapterId, levelId, difficultyPlayed, chapterContext);
-                } else {
-                     console.error("handleLevelComplete: store.completeLevelAction action is not found in the game store.");
                 }
-            } else {
-                 console.error(`handleLevelComplete: chapterId is null for levelId: ${levelId}. Cannot complete level action.`);
             }
-
             if (store.trackTaskEvent) { 
                 store.trackTaskEvent('complete_level', 1); 
-                console.log(`App Event: trackTaskEvent('complete_level') called for levelId: ${levelId}`);
-            } else {
-                console.warn("App Event: store.trackTaskEvent action is not found. Cannot track level completion for tasks.");
             }
         }
     
@@ -260,7 +247,6 @@ const App = () => {
                 }
             });
         } else {
-            console.warn("startScreenTransition action not found in store. Navigating directly.");
             if (status === 'won') {
                 navigate("/main", { state: { completedLevelId: levelId, difficulty: difficultyPlayed, showRewards: true } });
             } else {
@@ -269,19 +255,18 @@ const App = () => {
         }
     }, [navigate, activeLevelData]); 
 
-    const path = location.pathname;
-    const showAnyFixedUIBaseConditions = !isInitialLoading && !needsRaceSelection && !isFullScreenMapActive;
-    const shouldShowNewGameHeader = showAnyFixedUIBaseConditions && path === '/main';
-    const shouldShowBottomNav = showAnyFixedUIBaseConditions && !path.startsWith('/level/') && path !== '/rewards';
-
     const handleStartGame = useCallback(async (chapterId, levelId, difficultyToPlay) => {
-        console.log(`[App.jsx handleStartGame] Запрос: Глава ${chapterId}, Уровень ${levelId}, Сложность: ${difficultyToPlay}`);
         const ENERGY_COST = 6;
         if (!consumeEnergy(ENERGY_COST)) { 
             alert("Недостаточно энергии!"); return;
         }
         setActiveLevelData(null); setIsLoadingLevel(true); setLoadingError(null);
-        navigate(`/level/${levelId}`);
+        const store = useGameStore.getState();
+        if (store.startScreenTransition) {
+             store.startScreenTransition(() => navigate(`/level/${levelId}`));
+        } else {
+            navigate(`/level/${levelId}`);
+        }
         try {
             const dataPath = `/data/levels/level${levelId}Data.json`;
             const response = await fetch(dataPath);
@@ -298,8 +283,13 @@ const App = () => {
         } catch (error) {
             console.error(`❌ Ошибка загрузки уровня ${levelId}:`, error);
             setLoadingError(`Не удалось загрузить уровень ${levelId}. ${error.message}`);
-            setActiveLevelData(null); setIsLoadingLevel(false);
-            navigate("/main", { replace: true });
+            setActiveLevelData(null);
+            const errorNavStore = useGameStore.getState(); // Re-get store for this specific call
+            if (errorNavStore.startScreenTransition) {
+                errorNavStore.startScreenTransition(() => navigate("/main", { replace: true }));
+            } else {
+                navigate("/main", { replace: true });
+            }
         }
     }, [navigate, consumeEnergy]);
 
@@ -315,7 +305,6 @@ const App = () => {
         if (store.startScreenTransition) {
             store.startScreenTransition(() => navigate('/main', { replace: true }));
         } else {
-            console.warn("startScreenTransition action not found. Navigating directly.");
             navigate('/main', { replace: true });
         }
     }, [navigate]);
@@ -328,7 +317,6 @@ const App = () => {
                 navigate('/main', { state: { showChaptersMapDirectly: true, focusOnChapterId: startChapterIdForFocus } });
             });
         } else {
-            console.warn("startScreenTransition action not found. Navigating directly.");
             if (setCurrentChapterInStore) setCurrentChapterInStore(startChapterIdForFocus);
             navigate('/main', { state: { showChaptersMapDirectly: true, focusOnChapterId: startChapterIdForFocus } });
         }
@@ -339,7 +327,6 @@ const App = () => {
         if (store.startScreenTransition) {
             store.startScreenTransition(() => navigate('/main', { state: { showChaptersMapDirectly: true, focusOnChapterId: currentChapterIdFromStore || 1 } })); 
         } else {
-            console.warn("startScreenTransition action not found. Navigating directly.");
             navigate('/main', { state: { showChaptersMapDirectly: true, focusOnChapterId: currentChapterIdFromStore || 1 } });
         }
     }, [navigate, currentChapterIdFromStore]);
@@ -349,15 +336,37 @@ const App = () => {
         if (ratio > 0.6) return '#4ade80'; else if (ratio > 0.3) return '#facc15'; else return '#ef4444';
     };
 
+    const path = location.pathname;
+    const showAnyFixedUIBaseConditions = !isInitialLoading && !needsRaceSelection && !isFullScreenMapActive;
+
+    // Обновленные условия видимости с учетом ShardPassScreen и других экранов
+    const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading'];
+    const shouldShowNewGameHeaderUpdated = showAnyFixedUIBaseConditions && 
+                                        !screensWithoutHeader.some(p => path.startsWith(p) || path === p) &&
+                                        path !== '/global-map';
+
+    const screensWithoutBottomNav = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading'];
+    const shouldShowBottomNavUpdated = showAnyFixedUIBaseConditions &&
+                                    !screensWithoutBottomNav.some(p => path.startsWith(p) || path === p) &&
+                                    path !== '/global-map';
+
     if (isInitialLoading) return <LoadingScreen key="loading_initial" message="Загрузка игры..." />;
     if (needsRaceSelection && location.pathname !== '/race-selection') return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
 
     return (
         <div className="app-container" ref={appContainerRef}>
-            {shouldShowNewGameHeader && (
-                <GameHeader {...{username, powerLevel, avatarUrl, energyCurrent, energyMax, getEnergyFillColor, shouldShowRefillTimer, refillTimerDisplay, gold, diamonds, tonShards: toncoinShards, currentChapterName: currentChapterNameForHeader}} />
+            {shouldShowNewGameHeaderUpdated && (
+                <GameHeader 
+                    {...{
+                        username, powerLevel, avatarUrl, energyCurrent, energyMax, 
+                        getEnergyFillColor, shouldShowRefillTimer, refillTimerDisplay, 
+                        gold, diamonds, tonShards: toncoinShards, 
+                        currentChapterName: currentChapterNameForHeader
+                    }}
+                    onShardPassClick={handleOpenShardPass} // Заменено: onBattlePassClick -> onShardPassClick
+                />
             )}
-            {showAnyFixedUIBaseConditions && !shouldShowNewGameHeader && location.pathname !== '/main' && <UsernamePopup />}
+            {showAnyFixedUIBaseConditions && !shouldShowNewGameHeaderUpdated && location.pathname !== '/main' && <UsernamePopup />}
             <main className="content-area">
                 <AnimatePresence mode="wait" initial={false}>
                     <Routes location={location} key={location.pathname}>
@@ -376,17 +385,23 @@ const App = () => {
                         <Route path="/achievements" element={<motion.div key="achievements" {...routeContentVariants}><Achievements /></motion.div>} />
                         <Route path="/rewards" element={<motion.div key="rewards" {...routeContentVariants}><RewardsScreen /></motion.div>} />
                         <Route path="/global-map" element={<motion.div key="globalmap" {...routeContentVariants}><GlobalMap onSelectContinent={handleSelectContinentOnGlobalMap} onGoBackToChapterMap={handleGoBackToMainFromGlobalMap} /></motion.div>} />
-                        
-                        {/* ▼▼▼ НОВЫЙ МАРШРУТ ИЗ КОД1 ▼▼▼ */}
                         <Route path="/discovery" element={<motion.div key="discovery" {...routeContentVariants}><DiscoveryScreen /></motion.div>} />
-                        {/* ▲▲▲---------------------▲▲▲ */}
+
+                        {/* ▼▼▼ НОВЫЙ МАРШРУТ ДЛЯ SHARDPASS ▼▼▼ */}
+                        <Route path="/shardpass" element={
+                            <motion.div key="shardpass" {...routeContentVariants}>
+                                <ShardPassScreen onClose={handleCloseShardPass} />
+                            </motion.div>
+                        } />
+                        {/* ▲▲▲ КОНЕЦ НОВОГО МАРШРУТА ▲▲▲ */}
 
                         <Route path="/main" element={<motion.div key="main" {...routeContentVariants}><MainMenu onStart={handleStartGame} onChapterNameChange={handleChapterNameChange} /></motion.div>} />
                         <Route path="*" element={<motion.div key="mainfallback" {...routeContentVariants}><MainMenu onStart={handleStartGame} onChapterNameChange={handleChapterNameChange} /></motion.div>} />
                     </Routes>
                 </AnimatePresence>
             </main>
-            {shouldShowBottomNav && <BottomNav />}
+            {shouldShowBottomNavUpdated && <BottomNav />}
+            
             <AnimatePresence>
                 {isScreenTransitioning && (
                     <motion.div key="app-global-transition-overlay" initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.05 } }} style={{position: 'fixed', top:0, left:0, width:'100%', height:'100%', zIndex: 99999, pointerEvents: 'none'}}>
@@ -394,6 +409,9 @@ const App = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Логика для BattlePassScreen (модальное окно) удалена */}
+
         </div>
     );
 };
