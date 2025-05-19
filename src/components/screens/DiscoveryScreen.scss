@@ -257,7 +257,7 @@
   justify-content: center; // Центрируем кнопки (из код2)
   gap: 25px; // Расстояние между квадратными кнопками (из код2, в код1 было 15px)
   padding: 10px 0; // Уменьшим отступы (из код2)
-  margin-bottom: 20px; // Отступ снизу (из код1, сохранен)
+  margin-bottom: 0px; // Отступ снизу (из код1, сохранен)
 
   .action-item {
     display: flex;
@@ -303,7 +303,7 @@
 // --- СТИЛИ ДЛЯ СЕКЦИИ LIVE PROMOS ---
 // Стили из код2, так как они более детализированы и тематичны
 .events-section {
-  margin-top: 10px; // (из код1, сохранен)
+  margin-top: 0px; // (из код1, сохранен)
 
   .section-title { // Заголовок "Live Promos:"
     text-align: left;
