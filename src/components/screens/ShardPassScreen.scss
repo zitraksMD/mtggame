@@ -10,11 +10,11 @@
     $header-bottom-margin: 5px;
 
     // Твои переменные для минимальных отступов
-    $min-header-content-top-offset-android: 30px; // Минимальный отступ для контента хедера на Android (вместо твоего $min_energy_offset_android)
-    $base-header-content-padding-top: 13px;     // Базовый внутренний отступ для контента от начала "челки" или минимального отступа
+    $min-header-content-top-offset-android: 90px; // Минимальный отступ для контента хедера на Android (вместо твоего $min_energy_offset_android)
+    $base-header-content-padding-top: 25px;     // Базовый внутренний отступ для контента от начала "челки" или минимального отступа
 
-    $back-button-min-static-top-offset: 90px; // Твой "80px"
-    $back-button-additional-offset: 45px;
+    $back-button-min-static-top-offset: 110px; // Твой "80px"
+    $back-button-additional-offset: 60px;
 
     // --- Переменные для ShardPass Screen ---
     // Общие цветовые переменные (основа из код2)
@@ -224,45 +224,6 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
     }
 }
 
-// Новый "нависающий" баннер с уровнем
-.level-banner-container {
-    position: absolute;
-    bottom: -40px; // Смещаем вниз, чтобы "нависал" (подбери значение)
-    left: 50%;
-    
-    transform: translateX(-50%); // Центрируем по горизонтали
-    z-index: 10; // Чтобы был поверх других элементов, если они есть рядом
-}
-
-.level-banner-badge {
-    background-color: $level-banner-bg;
-    border: 2px solid $level-banner-border-color;
-    border-radius: 50%; // Делаем круглым
-    width: 70px;  // Ширина круга (подбери значение)
-    height: 70px; // Высота круга
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); // Тень для эффекта "нависания"
-    padding: 5px;
-    box-sizing: border-box;
-
-    .level-banner-text {
-        font-size: 0.7em;
-        color: $level-banner-text-color;
-        text-transform: uppercase;
-        line-height: 1.1;
-        margin-bottom: 2px; // Небольшой отступ под "Level"
-    }
-
-    .level-banner-number {
-        font-size: 1.4em; // Номер уровня делаем крупнее
-        color: $level-banner-number-color;
-        font-weight: bold;
-        line-height: 1;
-    }
-}
 
 .overall-progress-bar-section {
     display: flex;
