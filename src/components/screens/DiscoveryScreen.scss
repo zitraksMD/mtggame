@@ -29,7 +29,7 @@
 // --- НОВАЯ ШАПКА ---
 .discovery-main-header {
   display: flex;
-  top: max(
+  margin-top: max(
     80px, // Базовый минимальный отступ
     calc(45px + env(safe-area-inset-top, 0px)) // Отступ с учетом "челки" и шапки Telegram
                                               // env(safe-area-inset-top, 0px) - 0px как fallback, если переменная не доступна
