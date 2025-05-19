@@ -6,8 +6,15 @@ import EventDetailModal from './EventDetailModal';
 import { useNavigate } from 'react-router-dom';
 
 // Обновляем иконки: добавляем FaGift из код1
-import { FaArrowLeft, FaTasks, FaRobot, FaGift } from 'react-icons/fa'; // Пример с react-icons
-// Если понадобятся другие иконки для новых табов, можно будет добавить сюда
+// Обновляем иконки: добавляем FaCalendarAlt
+import {
+  FaArrowLeft,
+  FaTasks,
+  FaRobot,
+  FaGift,
+  FaUserCircle,
+  FaCalendarAlt // Новая иконка календаря
+} from 'react-icons/fa';// Если понадобятся другие иконки для новых табов, можно будет добавить сюда
 
 // Компонент TaskItem (без изменений)
 const TaskItem = ({ name, progress, reward, isCompleted, onClaim }) => (
@@ -44,27 +51,169 @@ const DiscoveryScreen = () => {
   // Данные для задач (оставляем как есть, идентичны в обоих файлах)
   const allTasksData = {
     daily: [
-      { id: 'd1_login', name: 'Вход в кошелек', progress: '0/1', reward: '20 опыта', isCompleted: false },
-      { id: 'd2_balance_check', name: 'Проверка баланса Simplecoin', progress: '0/1', reward: '20 опыта', isCompleted: false },
-      { id: 'd3_market_view', name: 'Минутка на рынке (просмотр курса)', progress: '0/1', reward: '20 опыта', isCompleted: false },
-      { id: 'd4_simplecoin_shop', name: 'Новинки за Simplecoin (проверка магазина)', progress: '0/1', reward: '20 опыта', isCompleted: false },
-      { id: 'd5_weekly_swap_prep', name: 'Подготовка к Викли: 1 крипто-своп ($5-10)', progress: '0/1', reward: '20 опыта', isCompleted: false },
+      {
+        id: 'd1_login',
+        name: 'Вход в кошелек',
+        progressCurrent: 0,
+        progressTarget: 1,
+        progressText: '0/1',
+        isCompleted: true,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 15
+        }
+      },
+      {
+        id: 'd2_swap',
+        name: 'Обмен криптовалюты',
+        progressCurrent: 0,
+        progressTarget: 1,
+        progressText: '0/1',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 15
+        }
+      },
+      {
+        id: 'd3_simplecoin_spend',
+        name: 'Трата Simplecoin',
+        progressCurrent: 870,
+        progressTarget: 1000,
+        progressText: '0/1000',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 15
+        }
+      },
+      {
+        id: 'd4_deposit',
+        name: 'Депозит в кошелек',
+        progressCurrent: 0,
+        progressTarget: 1,
+        progressText: '0/1',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 15
+        }
+      }
     ],
     weekly: [
-      { id: 'w1_login_streak', name: 'Стрик Входов "Викли" (7 дней)', progress: '0/7 дней', reward: '20 опыта', isCompleted: false },
-      { id: 'w2_swaps_volume', name: 'Неделя Свопов (5+ свопов или объем $35-70)', progress: '0/5 свопов', reward: '20 опыта', isCompleted: false },
-      { id: 'w3_financial_activity', name: 'Финансовая Активность (2 операции депозит/вывод от $10)', progress: '0/2 операции', reward: '20 опыта', isCompleted: false },
-      { id: 'w4_simplecoin_spending', name: 'Покупки за Simplecoin (потратить 50-100 SC)', progress: '0/100 SC', reward: '20 опыта', isCompleted: false },
-      { id: 'w5_wallet_features', name: 'Освоение Кошелька (3 разные функции)', progress: '0/3 функции', reward: '20 опыта', isCompleted: false },
+      {
+        id: 'w1_login_streak',
+        name: 'Вход в кошелек',
+        progressCurrent: 0,
+        progressTarget: 5,
+        progressText: '0/5',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 30
+        }
+      },
+      {
+        id: 'w2_swap_volume',
+        name: 'Обмен криптовалюты',
+        progressCurrent: 0,
+        progressTarget: 5,
+        progressText: '0/5',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 30
+        }
+      },
+      {
+        id: 'w3_simplecoin_spending',
+        name: 'Трата Simplecoin',
+        progressCurrent: 0,
+        progressTarget: 10000,
+        progressText: '0/10000',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 30
+        }
+      },
+      {
+        id: 'w4_deposit_activity',
+        name: 'Депозит в кошелек',
+        progressCurrent: 0,
+        progressTarget: 2,
+        progressText: '0/2',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 30
+        }
+      }
     ],
     monthly: [
-      { id: 'm1_login_marathon', name: 'Марафон Входов "Монсли" (28 дней)', progress: '0/28 дней', reward: '20 опыта', isCompleted: false },
-      { id: 'm2_monthly_swaps_volume', name: 'Месячный Объем Свопов (20+ свопов или объем $140-280)', progress: '0/20 свопов', reward: '20 опыта', isCompleted: false },
-      { id: 'm3_large_financial_ops', name: 'Крупные Финансовые Операции (5 операций, общая сумма от $100)', progress: '0/5 операций', reward: '20 опыта', isCompleted: false },
-      { id: 'm4_generous_simplecoin_spending', name: 'Щедрые Траты Simplecoin (300-500 SC / 3-5 покупок)', progress: '0/500 SC', reward: '20 опыта', isCompleted: false },
-      { id: 'm5_advanced_wallet_user', name: 'Продвинутый Пользователь (1 adv. функция / 5 разных функций)', progress: '0/1', reward: '20 опыта', isCompleted: false },
-    ],
+      {
+        id: 'm1_login_marathon',
+        name: 'Вход в кошелек',
+        progressCurrent: 0,
+        progressTarget: 30,
+        progressText: '0/30',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 50
+        }
+      },
+      {
+        id: 'm2_monthly_swaps',
+        name: 'Обмен криптовалюты',
+        progressCurrent: 0,
+        progressTarget: 20,
+        progressText: '0/20',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 25,
+          xp: 50
+        }
+      },
+      {
+        id: 'm3_big_simplecoin_spending',
+        name: 'Трата Simplecoin',
+        progressCurrent: 0,
+        progressTarget: 50000,
+        progressText: '0/50000',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 30,
+          xp: 30
+        }
+      },
+      {
+        id: 'm4_deposit_master',
+        name: 'Депозит в кошелек',
+        progressCurrent: 0,
+        progressTarget: 5,
+        progressText: '0/5',
+        isCompleted: false,
+        isClaimed: false, 
+        rewards: {
+          points: 30,
+          xp: 30
+        }
+      }
+    ]
   };
+  
 
   // Данные для событий events переименованы в eventsData из код1
   const eventsData = [
@@ -177,6 +326,12 @@ const DiscoveryScreen = () => {
     // setIsLevelRewardsModalOpen(true);
   };
 
+   // Новая функция для клика по Activities Calendar
+   const handleCalendarClick = () => {
+    console.log('Activities Calendar clicked');
+    // TODO: Добавить логику для календаря активностей
+  };
+  
   if (selectedEventForView) {
     return (
       <EventDetailModal
@@ -234,6 +389,13 @@ const DiscoveryScreen = () => {
         {activeTab === 'Task HUB' && (
           <div className="tab-pane" id="task-hub-pane">
             <section className="hub-actions-section">
+              {/* Новый элемент "Activities Calendar" */}
+              <div className="action-item" onClick={handleCalendarClick}>
+                <div className="action-button-square">
+                  <FaCalendarAlt className="action-icon" />
+                </div>
+                <p className="action-label">Calendar</p>
+              </div>
               <div className="action-item" onClick={openTasksPopup}>
                 <div className="action-button-square">
                   <FaTasks className="action-icon" />

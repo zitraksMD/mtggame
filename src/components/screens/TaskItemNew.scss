@@ -1,0 +1,172 @@
+/* src/components/items/TaskItemNew.scss */
+
+// Используем переменные из TaskCenterModal.scss или определим их заново/импортируем
+$modal-bg: #2c2a4a;
+$primary-text-color: #e0e1dd;
+$secondary-text-color: #a0a0c0;
+$accent-color: #8a79f7;
+$border-color: #4a4872;
+$item-bg: rgba($modal-bg, 0.7);
+$item-hover-bg: rgba($modal-bg, 1);
+$xp-color: #76d7c4; // Цвет для XP иконки/текста
+$points-color: #f7dc6f; // Цвет для Points иконки/текста
+$success-color: #28a745; // Добавим переменную для цвета успеха (например, зеленый)
+                         // или используйте $accent-color, $points-color, или $secondary-text-color из комментариев код1
+
+.task-item-new {
+  background-color: $item-bg;
+  padding: 10px 15px; // Немного увеличил padding для лучшего вида
+  border-radius: 8px;
+  border: 1px solid $border-color;
+  transition: background-color 0.2s ease, opacity 0.2s ease; // Добавил opacity в transition
+
+  &:hover {
+    background-color: $item-hover-bg;
+  }
+
+  .task-item-main-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .task-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-grow: 1;
+
+    .task-item-name {
+      font-weight: 600;
+      font-size: 1em;
+      color: $primary-text-color;
+      margin-bottom: 2px;
+    }
+
+    .task-item-progress-bar-container {
+      width: 100%;
+      max-width: 180px;
+      height: 6px;
+      background-color: darken($modal-bg, 10%);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .task-item-progress-bar-fill {
+      height: 100%;
+      background-color: $accent-color;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .task-item-progress-text {
+        font-size: 0.85em;
+        color: $secondary-text-color;
+        text-align: center; // <--- ИЗМЕНЕНИЕ 4: Центрируем текст прогресса
+        width: 100%;        // Для корректной работы text-align: center
+      }
+  }
+
+  .task-item-rewards-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+
+    .rewards-label {
+      font-size: 0.8em;
+      color: $secondary-text-color;
+      text-align: right;
+      margin-bottom: 2px;
+    }
+
+    .rewards-icons-container {
+      display: flex;
+      gap: 10px;
+
+      .reward-icon-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+
+        .reward-icon {
+          font-size: 1.5em;
+          line-height: 1;
+
+          &.points {
+            color: $points-color;
+          }
+          &.xp {
+            color: $xp-color;
+          }
+        }
+
+        .reward-amount {
+          font-size: 0.8em;
+          font-weight: 600;
+          color: $primary-text-color;
+        }
+      }
+      .no-specific-reward-text {
+        font-size: 0.9em;
+        color: $secondary-text-color;
+        align-self: center;
+        padding-top: 0.5em;
+      }
+    }
+
+    .task-item-claim-button {
+      background-color: $accent-color;
+      color: #ffffff;
+      border: none;
+      padding: 6px 12px;
+      font-size: 0.85em;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-top: 4px;
+
+      &:hover {
+        background-color: lighten($accent-color, 10%);
+      }
+    }
+
+    // Стили для индикатора "Забрано" из код1
+    .task-item-claimed-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.85em;
+      color: $success-color; // Используем определенную $success-color
+      margin-top: 4px;      // Такой же отступ как у кнопки
+      padding: 6px 12px;    // Такой же отступ как у кнопки (чтобы занимал место кнопки)
+      // background-color: rgba($success-color, 0.1); // Раскомментируйте для фона
+      // border-radius: 6px; // Раскомментируйте для скругления если есть фон
+    }
+  }
+
+  // Стили для состояния .completed (из код2, немного изменено)
+  // &.completed {
+    // Этот блок может быть не нужен, если completed задачи без claimed не имеют особого стиля,
+    // или если completed всегда подразумевает возможность claim, а claimed уже затемняет.
+    // .task-item-name,
+    // .task-item-progress-text {
+    //   // text-decoration: line-through; // Можно вернуть, если нравится
+    // }
+  // }
+
+  // Стили для состояния .claimed (из код1, размещены на верхнем уровне модификатора .task-item-new)
+  &.claimed {
+    opacity: 1  ; // Приглушаем полностью заклеймленные задания
+
+    // Если кнопка "Забрать" должна менять вид, когда она .claimed (хотя она скрывается через JSX):
+    // .task-item-claim-button {
+    //   background-color: desaturate($accent-color, 50%);
+    //   cursor: default;
+    //   display: none; // Это уже делается в JSX, но можно и тут если нужно переопределить
+    // }
+  }
+}

@@ -7,7 +7,7 @@
         --safe-area-inset-left: env(safe-area-inset-left, 0px);
       }
 
-    $header-bottom-margin: 35px;
+    $header-bottom-margin: 5px;
 
     // Твои переменные для минимальных отступов
     $min-header-content-top-offset-android: 30px; // Минимальный отступ для контента хедера на Android (вместо твоего $min_energy_offset_android)
@@ -137,6 +137,8 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
     align-items: center;
     position: relative;
     flex-shrink: 0;
+    border-bottom: 1px solid $sp-header-border-color;
+
     
     // Общий padding-top для всего хедера, чтобы он начинался НИЖЕ статус-бара/челки
     // Он будет либо $min-header-content-top-offset-android, либо больше, если челка большая.
@@ -145,7 +147,7 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
     // Боковые отступы также с учетом safe area
     padding-left: calc(20px + var(--safe-area-inset-left));   // 20px - твой базовый боковой отступ
     padding-right: calc(20px + var(--safe-area-inset-right));
-    padding-bottom: 15px; // Нижний отступ хедера (например)
+    padding-bottom: 5px; // Нижний отступ хедера (например)
 
     // min-height теперь не так критичен, так как padding-top динамический,
     // но можно оставить для контента, если он фиксированной высоты.
@@ -261,6 +263,56 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
         line-height: 1;
     }
 }
+
+.overall-progress-bar-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    // Горизонтальные отступы как у хедера, вертикальные по вкусу
+    padding: 10px calc(20px + var(--safe-area-inset-left)) 10px calc(20px + var(--safe-area-inset-right));
+    box-sizing: border-box;
+    width: 100%;
+
+    // Отступ сверху, чтобы не налезать на "повисший" level-banner-container.
+    // level-banner-container имеет `bottom: -40px`, значит его нижняя точка на 40px ниже .shard-pass-header.
+    // Добавим еще отступ для воздуха.
+    margin-top: calc(40px + 20px); // 40px от баннера + 20px дополнительного пространства
+    margin-bottom: 25px; // Отступ перед секцией с наградами
+
+    .level-text {
+        color: $sp-text-color; // Используем существующую переменную
+        font-size: 0.9em;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0; // Чтобы текст не сжимался
+
+        &.current-level-text {
+            margin-right: 10px;
+        }
+        &.next-level-text {
+            margin-left: 10px;
+        }
+    }
+
+    .progress-bar-container {
+        flex-grow: 1;
+        height: 12px;
+        background-color: $sp-progress-track-bg; // Используем существующую переменную
+        border-radius: 6px;
+        overflow: hidden; // Для скругления внутреннего .progress-bar-fill
+        position: relative;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background-color: $sp-progress-fill-bg; // Используем существующую переменную
+        border-radius: 6px; // Должен совпадать или быть чуть меньше родительского
+        transition: width 0.3s ease-in-out;
+        box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4); // Как у других прогресс-баров
+    }
+}
+
+
     // --- Секция наград (стили из код1 с адаптацией) ---
     .shard-pass-rewards-section { // из код1
         flex-grow: 1;
