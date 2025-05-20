@@ -201,7 +201,7 @@
   // Используем max() для отступа сверху, учитывая безопасную зону Telegram
   // var(--safe-area-inset-top, 0px) - это фолбэк на случай, если переменная не определена
   // Значения 100px и 60px - это "большие значения", как вы просили (можно настроить)
-  top: max(180px, calc(156px + var(--safe-area-inset-top, 0px)));  
+  top: max(180px, calc(150px + var(--safe-area-inset-top, 0px)));  
   z-index: 1050; // Выше большинства элементов, но ниже полноэкранных модальных окон
 
   display: flex;
@@ -316,7 +316,7 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute;
-  top: max(260px, calc(140px + var(--safe-area-inset-top, 0px))); 
+  top: max(250px, calc(180px + var(--safe-area-inset-top, 0px))); 
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
@@ -353,7 +353,7 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: max(240px, calc(120px + var(--safe-area-inset-top, 0px))); 
+  top: max(250px, calc(120px + var(--safe-area-inset-top, 0px))); 
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
   right: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
