@@ -55,18 +55,15 @@ const ShardPassScreen = ({ onClose }) => {
         animate: { opacity: 1, x: 0, transition: { duration: 0.3, ease: "easeOut", delay: 0.15 } }
     };
 
-    // Для ПОЯВЛЕНИЯ/ИСЧЕЗАНИЯ ВСЕГО СПИСКА ЗАДАЧ разом (без ступенек)
-    // или для области, где будет сообщение "нет задач" (из код1)
     const taskListAreaVariant = {
         initial: { opacity: 0 },
-        animate: { opacity: 1, transition: { duration: 0.3, delay: 0.3 } }, // Задержка после табов (0.15 + 0.15 = 0.3)
+        animate: { opacity: 1, transition: { duration: 0.3, delay: 0.3 } },
         exit: { opacity: 0, transition: { duration: 0.2 } }
     };
 
-    // Для ОВЕРЛЕЯ БЛОКИРОВКИ (простой fade) (из код1)
     const lockOverlayAppearVariant = {
         initial: { opacity: 0 },
-        animate: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } }, // Появляется почти сразу
+        animate: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } },
         exit: { opacity: 0, transition: { duration: 0.2 } }
     };
     // --- КОНЕЦ ВАРИАНТОВ АНИМАЦИИ ---
@@ -105,7 +102,7 @@ const ShardPassScreen = ({ onClose }) => {
 
         if (!isTasksViewVisible) {
             calculatePositions();
-            const timerId = setTimeout(calculatePositions, 450); // Задержка для учета анимации появления секции
+            const timerId = setTimeout(calculatePositions, 450);
             window.addEventListener('resize', calculatePositions);
             return () => {
                 clearTimeout(timerId);
@@ -148,8 +145,8 @@ const ShardPassScreen = ({ onClose }) => {
         ? shardPassData.currentLevel + 1
         : shardPassData.maxLevel;
 
-    const handleBuyPremium = () => {
-        console.log("Buy Premium button clicked!");
+    const handleBuyPremium = () => { // Эта функция вызывается из попапа для фактической "покупки"
+        console.log("Processing premium purchase...");
         setShardPassData(prevData => ({
             ...prevData,
             isPremium: true,
@@ -164,8 +161,8 @@ const ShardPassScreen = ({ onClose }) => {
     const closeBuyPremiumPopup = () => setIsBuyPremiumPopupVisible(false);
 
     const handleConfirmBuyPremiumFromPopup = () => {
-        handleBuyPremium();
-        closeBuyPremiumPopup();
+        handleBuyPremium(); // "Покупаем"
+        closeBuyPremiumPopup(); // Закрываем попап
     };
 
     const handleClaimTaskReward = (weekKey, taskId) => {
@@ -173,7 +170,7 @@ const ShardPassScreen = ({ onClose }) => {
         
         const isPremiumTaskAndLocked = taskToClaim && taskToClaim.isPremium && !shardPassData.isPremium;
         if (isPremiumTaskAndLocked) {
-            openBuyPremiumPopup();
+            openBuyPremiumPopup(); // Открываем попап для премиум заданий
             return;
         }
 
@@ -236,6 +233,51 @@ const ShardPassScreen = ({ onClose }) => {
             });
         }, animationDuration);
     };
+
+    // Обработчик клика на карточку награды
+    const handleRewardCardClick = (levelData, isPremiumRewardItem) => {
+        if (isPremiumRewardItem) {
+            const shouldShowPopupForPremiumReward = !shardPassData.isPremium && !levelData.premiumReward.claimed;
+
+            if (shouldShowPopupForPremiumReward) {
+                openBuyPremiumPopup();
+            } else if (shardPassData.isPremium && levelData.level <= shardPassData.currentLevel && !levelData.premiumReward.claimed) {
+                console.log("Попытка получить доступную премиум награду:", levelData.premiumReward.name);
+                // TODO: Добавить логику получения премиум награды (например, взаимодействие с бэкендом)
+                // После успешного получения от бэкенда или если логика чисто клиентская:
+                setShardPassData(prevData => {
+                   const newLevels = prevData.levels.map(lvl => {
+                       if (lvl.level === levelData.level) {
+                           return { ...lvl, premiumReward: { ...lvl.premiumReward, claimed: true } };
+                       }
+                       return lvl;
+                   });
+                   return { ...prevData, levels: newLevels };
+                });
+            }
+        } else { // Это бесплатная награда
+            if (levelData.level <= shardPassData.currentLevel && !levelData.freeReward.claimed) {
+                console.log("Попытка получить доступную бесплатную награду:", levelData.freeReward.name);
+                // TODO: Добавить логику получения бесплатной награды (например, взаимодействие с бэкендом)
+                // После успешного получения от бэкенда или если логика чисто клиентская:
+                // ***** НАЧАЛО ИЗМЕНЕНИЯ *****
+                setShardPassData(prevData => {
+                   const newLevels = prevData.levels.map(lvl => {
+                       if (lvl.level === levelData.level) {
+                           // Убедимся, что freeReward существует, прежде чем изменять его
+                           const updatedFreeReward = lvl.freeReward ? { ...lvl.freeReward, claimed: true } : { name: "Unknown Free Reward", icon: "", claimed: true };
+                           return { ...lvl, freeReward: updatedFreeReward };
+                       }
+                       return lvl;
+                   });
+                   return { ...prevData, levels: newLevels };
+                });
+                // ***** КОНЕЦ ИЗМЕНЕНИЯ *****
+            }
+        }
+    };
+
+
 
     return (
         <motion.div
@@ -313,7 +355,7 @@ const ShardPassScreen = ({ onClose }) => {
                             <div className="sticky-labels-and-grid-wrapper">
                                 <div className="sticky-labels-layer" ref={stickyLabelsLayerRef}>
                                     <div className="side-label sticky free-side-label" style={stickyLabelStyles.free}>FREE</div>
-                                    <div className="side-label sticky premium-side-label" style={stickyLabelStyles.paid}>PAID</div>
+                                    <div className="side-label sticky premium-side-label" style={stickyLabelStyles.paid}>PREMIUM</div>
                                 </div>
                                 <div className="rewards-grid-container" ref={rewardsGridContainerRef}>
                                     {/* Free Rewards Track */}
@@ -328,18 +370,19 @@ const ShardPassScreen = ({ onClose }) => {
                                                         ${levelData.level > shardPassData.currentLevel ? 'future' : ''}
                                                         ${(levelData.level <= shardPassData.currentLevel && !levelData.freeReward.claimed) ? 'available' : ''}
                                                     `}
+                                                    onClick={() => handleRewardCardClick(levelData, false)} // Добавлен onClick
                                                 >
                                                     {levelData.freeReward.icon && <img src={levelData.freeReward.icon} alt={levelData.freeReward.name} className="reward-icon"/>}
                                                     <span className="reward-name">{levelData.freeReward.name}</span>
-                                                    {levelData.freeReward.claimed && <div className="claimed-overlay">ПОЛУЧЕНО</div>}
+                                                    {levelData.freeReward.claimed && <div className="claimed-overlay">CLAIMED</div>}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    {/* Levels and Progress Track */}
                                     <div className="levels-and-progress-track">
                                         {shardPassData.levels.map((levelData, index) => {
+                                            // ... (логика отображения уровней остается прежней)
                                             const isCurrentLevelNode = levelData.level === shardPassData.currentLevel;
                                             const isNextLevelNode = levelData.level === (shardPassData.currentLevel + 1);
 
@@ -390,7 +433,7 @@ const ShardPassScreen = ({ onClose }) => {
                                     <div className="rewards-track premium-rewards-track" ref={premiumTrackRef}>
                                         {shardPassData.levels.map(levelData => (
                                             <div key={`premium-${levelData.level}`} className="reward-cell">
-                                                <div
+                                                <div // ИЗМЕНЕНИЕ ЗДЕСЬ: добавлен onClick
                                                     className={`
                                                         reward-card
                                                         premium-reward
@@ -399,6 +442,7 @@ const ShardPassScreen = ({ onClose }) => {
                                                         ${(!shardPassData.isPremium && levelData.level <= shardPassData.currentLevel && !levelData.premiumReward.claimed) ? 'premium-locked-highlight' : ''}
                                                         ${(shardPassData.isPremium && levelData.level <= shardPassData.currentLevel && !levelData.premiumReward.claimed) ? 'available' : ''}
                                                     `}
+                                                    onClick={() => handleRewardCardClick(levelData, true)} // Добавлен onClick
                                                 >
                                                     {levelData.premiumReward.icon && <img src={levelData.premiumReward.icon} alt={levelData.premiumReward.name} className="reward-icon"/>}
                                                     <span className="reward-name">{levelData.premiumReward.name}</span>
@@ -408,7 +452,7 @@ const ShardPassScreen = ({ onClose }) => {
                                                         </div>
                                                     )}
                                                     {levelData.premiumReward.claimed && shardPassData.isPremium && (
-                                                        <div className="claimed-overlay">ПОЛУЧЕНО</div>
+                                                        <div className="claimed-overlay">CLAIMED</div>
                                                     )}
                                                 </div>
                                             </div>
@@ -418,7 +462,7 @@ const ShardPassScreen = ({ onClose }) => {
                             </div>
                         </div>
                     </motion.div>
-                ) : (
+                ) : ( // Tasks View
                     <motion.div
                         key="tasksOverlay"
                         className="shard-pass-tasks-overlay"
@@ -439,23 +483,21 @@ const ShardPassScreen = ({ onClose }) => {
                                     className={`task-tab-button ${activeTaskWeek === weekNum ? 'active' : ''}`}
                                     onClick={() => setActiveTaskWeek(weekNum)}
                                 >
-                                    Неделя {weekNum}
+                                    Week {weekNum}
                                 </button>
                             ))}
                         </motion.div>
 
-                        {/* ИЗМЕНЕННАЯ СТРУКТУРА ДЛЯ СООТВЕТСТВИЯ АНИМАЦИЯМ И ЛОГИКЕ КОД1 */}
-                        <div className="tasks-content-viewport"> {/* Обертка для позиционирования оверлея, как в код1 */}
-                            <AnimatePresence mode="out-in"> {/* Для смены содержимого списка при смене недели */}
+                        <div className="tasks-content-viewport">
+                            <AnimatePresence mode="out-in">
                                 <motion.div
-                                    key={activeTaskWeek} // Ключ по неделе, как в код1
-                                    className="tasks-list-scroll-container" // Контейнер для списка задач или сообщения "нет задач"
-                                    variants={taskListAreaVariant} // Анимация из код1
+                                    key={activeTaskWeek}
+                                    className="tasks-list-scroll-container"
+                                    variants={taskListAreaVariant}
                                     initial="initial"
                                     animate="animate"
                                     exit="exit"
                                 >
-                                    {/* Рендерим список задач или "нет задач", ТОЛЬКО ЕСЛИ НЕДЕЛЯ НЕ ЗАБЛОКИРОВАНА */}
                                     {!isCurrentWeekLocked && (
                                         (tasksByWeek[activeTaskWeek] && tasksByWeek[activeTaskWeek].length > 0) ? (
                                             tasksByWeek[activeTaskWeek].map(task => {
@@ -471,7 +513,7 @@ const ShardPassScreen = ({ onClose }) => {
                                                             task-item
                                                             ${task.isClaimed ? 'claimed' : (isCompleted ? 'completed' : 'not-completed')}
                                                             ${animatingClaimTasks[task.id] ? 'is-claiming-animation' : ''}
-                                                            ${isCurrentWeekLocked ? 'task-view-when-locked' : ''} // Этот класс может быть не нужен здесь, если оверлей блокировки покрывает все
+                                                            ${isCurrentWeekLocked ? 'task-view-when-locked' : ''}
                                                             ${isPremiumTaskAndLocked ? 'premium-task-locked-styling' : ''}
                                                         `}
                                                         onClick={isPremiumTaskAndLocked ? openBuyPremiumPopup : undefined}
@@ -552,32 +594,27 @@ const ShardPassScreen = ({ onClose }) => {
                                                 );
                                             })
                                         ) : (
-                                            // Сообщение "нет задач", если неделя не заблокирована, но задач нет
                                             <div className={`no-tasks-message`}> 
                                                 Заданий на эту неделю нет.
                                             </div>
                                         )
                                     )}
-                                    {/* Если неделя заблокирована, этот блок будет пуст или скроется из-за exit анимации,
-                                        а оверлей блокировки появится поверх */}
                                 </motion.div>
                             </AnimatePresence>
 
-                            {/* Оверлей блокировки (как в код1) */}
                             <AnimatePresence>
                                 {isCurrentWeekLocked && (
                                     <motion.div
-                                        key={`lock-overlay-${activeTaskWeek}`} // Уникальный ключ для анимации при смене недели
-                                        className="tasks-week-lock-overlay" // Класс из код1, убедитесь, что стили для него есть (position: absolute, etc.)
-                                        variants={lockOverlayAppearVariant} // Анимация из код1
+                                        key={`lock-overlay-${activeTaskWeek}`}
+                                        className="tasks-week-lock-overlay"
+                                        variants={lockOverlayAppearVariant}
                                         initial="initial"
                                         animate="animate"
                                         exit="exit"
                                     >
-                                        {/* Содержимое из tasks-locked-container-wrapper код2 */}
                                         <div className="tasks-locked-container">
                                             <div className="locked-message-content">
-                                                Задания для Недели {activeTaskWeek} откроются через:
+                                                Tasks for Week {activeTaskWeek} will be available in:
                                                 <div className="locked-countdown-timer">{timeRemainingForWeek}</div>
                                             </div>
                                         </div>
@@ -585,7 +622,6 @@ const ShardPassScreen = ({ onClose }) => {
                                 )}
                             </AnimatePresence>
                         </div>
-                         {/* КОНЕЦ ИЗМЕНЕННОЙ СТРУКТУРЫ */}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -603,7 +639,7 @@ const ShardPassScreen = ({ onClose }) => {
                 {!shardPassData.isPremium && (
                     <button
                         className="shard-pass-action-button buy-shardpass-btn"
-                        onClick={openBuyPremiumPopup} // Изменено на открытие попапа, как было в код1 для аналогичных случаев
+                        onClick={openBuyPremiumPopup} // Эта кнопка уже правильно вызывает попап
                     >
                         Buy Premium
                     </button>
@@ -626,8 +662,9 @@ const ShardPassScreen = ({ onClose }) => {
                             exit={{ scale: 0.8, opacity: 0, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <h3>Премиум Задание!</h3>
-                            <p>Купите ShardPass Premium, чтобы разблокировать это задание и его награды.</p>
+                            {/* Можно сделать текст в попапе более универсальным или передавать его как prop */}
+                            <h3>Разблокировать Premium?</h3> 
+                            <p>Купите ShardPass Premium, чтобы получить доступ ко всем премиум наградам и заданиям.</p>
                             <div className="popup-buttons">
                                 <button onClick={handleConfirmBuyPremiumFromPopup} className="popup-buy-btn">Купить Premium</button>
                                 <button onClick={closeBuyPremiumPopup} className="popup-close-btn">Закрыть</button>

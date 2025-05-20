@@ -19,7 +19,7 @@ const generateWeeklyTasks = (weekNumber) => {
     const tasks = [
         {
             id: `w${weekNumber}t1`,
-            name: 'Входить в игру 7 дней',
+            name: 'Log in for 7 days', // Было: 'Входить в игру 7 дней'
             currentProgress: 0,
             targetProgress: 7,
             rewardXP: 250,
@@ -28,7 +28,7 @@ const generateWeeklyTasks = (weekNumber) => {
         },
         {
             id: `w${weekNumber}t2`,
-            name: 'Пройти 10 любых уровней на сложности Normal',
+            name: 'Complete 10 any levels on Normal difficulty', // Было: 'Пройти 10 любых уровней на сложности Normal'
             currentProgress: 0,
             targetProgress: 10,
             rewardXP: 250,
@@ -37,7 +37,7 @@ const generateWeeklyTasks = (weekNumber) => {
         },
         {
             id: `w${weekNumber}t3`,
-            name: 'Открыть 25 любых сундуков',
+            name: 'Open 25 any chests', // Было: 'Открыть 25 любых сундуков'
             currentProgress: 0,
             targetProgress: 25,
             rewardXP: 250,
@@ -46,7 +46,7 @@ const generateWeeklyTasks = (weekNumber) => {
         },
         {
             id: `w${weekNumber}t4`,
-            name: 'Улучшить любое снаряжение 10 раз',
+            name: 'Upgrade any equipment 10 times', // Было: 'Улучшить любое снаряжение 10 раз'
             currentProgress: 0,
             targetProgress: 10,
             rewardXP: 400,
@@ -55,7 +55,7 @@ const generateWeeklyTasks = (weekNumber) => {
         },
         {
             id: `w${weekNumber}t5`,
-            name: 'Улучшить артефакт 3 раза',
+            name: 'Upgrade an artifact 3 times', // Было: 'Улучшить артефакт 3 раза'
             currentProgress: 0,
             targetProgress: 3,
             rewardXP: 500,
@@ -64,7 +64,7 @@ const generateWeeklyTasks = (weekNumber) => {
         },
         {
             id: `w${weekNumber}t6`,
-            name: 'Пройти 3 любых уровня на сложности Hard',
+            name: 'Complete 3 any levels on Hard difficulty', // Было: 'Пройти 3 любых уровня на сложности Hard'
             currentProgress: 0,
             targetProgress: 3,
             rewardXP: 600,
