@@ -22,13 +22,12 @@ $level-banner-border-color: $sp-title-color;
 $level-banner-text-color: $sp-text-color;
 $level-banner-number-color: $sp-title-color;
 
-
 // === ПЕРЕМЕННЫЕ ДЛЯ СТИЛИЗАЦИИ РОМБОВ ===
-$diamond-fill-color: #a855f7;   // Светло-фиолетовый для заливки
-$diamond-border-color: $sp-title-color;           // Рамка в цвет основного акцента
+$diamond-fill-color: #a855f7; // Светло-фиолетовый для заливки
+$diamond-border-color: $sp-title-color; // Рамка в цвет основного акцента
 // $diamond-border-color: darken($sp-title-color, 10%); // Альтернатива: рамка чуть темнее заливки
 $diamond-border-width: 1.5px;
-$diamond-highlight-color: rgba(255, 255, 255, 0.6);   // Белый полупрозрачный для блика
+$diamond-highlight-color: rgba(255, 255, 255, 0.6); // Белый полупрозрачный для блика
 
 $back-button-size: 40px;
 $back-button-bg-color: rgba(255, 255, 255, 0.1);
@@ -70,9 +69,11 @@ $side-label-width: 38px;
 $side-label-padding-x: 5px;
 $side-label-padding-y: 10px;
 
-$track-reward-height: 130px;
-$track-levels-progress-height: 40px;
-$main-tracks-gap: 10px;
+// --- Переменные из код1, интегрированные или обновленные ---
+$track-reward-height-base: 160px; // Базовая высота дорожек с наградами (из код1, заменяет $track-reward-height)
+$track-levels-progress-height-base: 40px; // Базовая высота дорожки уровней (из код1, заменяет $track-levels-progress-height)
+$new-reward-card-height-base: 140px; // Базовая высота карточки (из код1)
+$main-tracks-gap-base: 10px; // Базовый отступ (из код1, заменяет $main-tracks-gap)
 
 $reward-card-width: 90px;
 $reward-cards-gap: 25px;
@@ -91,7 +92,7 @@ $season-banner-padding-x: 12px;
 $season-banner-radius: 12px;
 
 $season-ends-info-bg: darken($sp-bg-start, 10%);
-$season-ends-info-border-color: rgba($sp-title-color, 0.4); // Used for consistency if border is applied
+$season-ends-info-border-color: rgba($sp-title-color, 0.4);
 $season-ends-info-text-color: #FFFFFF;
 $season-ends-info-font-size: 0.75em;
 $season-ends-info-padding-y: 3px;
@@ -100,19 +101,11 @@ $season-ends-info-radius: 10px;
 
 $hanging-group-top-offset: -5px;
 $hanging-banner-gap: 3px;
-    
-// Переменные из код1 для расчета отступа прогресс-бара и линии
-$est-height-season-banner-approx: 5px; // Включая padding и border
-$est-height-ends-info-approx: 10px;    // Включая padding и border
-$line-actual-height: 1px;               // Высота линии между баннерами
-$final-gap-before-progress-bar: 20px;   // Дополнительный зазор перед прогресс-баром
 
-// Старые переменные для padding-bottom хедера и линии удалены или закомментированы,
-// так как логика изменилась согласно код1.
-// $total-hanging-content-height-approx: 15px; 
-// $gap-before-line: 15px; 
-// $line-height: 1px; 
-// $header-actual-padding-bottom: calc(#{$total-hanging-content-height-approx} + #{$hanging-group-top-offset} + #{$gap-before-line} + #{$line-height});
+$est-height-season-banner-approx: 5px;
+$est-height-ends-info-approx: 10px;
+$line-actual-height: 1px;
+$final-gap-before-progress-bar: 20px;
 
 $tasks-button-bg: linear-gradient(45deg, #6d28d9, #8b5cf6);
 $tasks-button-text-color: #ffffff;
@@ -129,21 +122,18 @@ $glow-aura-thickness: 3px;
 
 @keyframes headerDiamondBorderPulse {
     0% {
-        // Статическая тень для объема + начальное состояние свечения
-        box-shadow: 0 1px 2px rgba(0,0,0,0.2), 
-                    0 0 4px rgba($diamond-border-color, 0.3), 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2),
+                    0 0 4px rgba($diamond-border-color, 0.3),
                     0 0 6px rgba($diamond-highlight-color, 0.2);
     }
     50% {
-        // Статическая тень для объема + пиковое состояние свечения
-        box-shadow: 0 1px 2px rgba(0,0,0,0.2), 
-                    0 0 8px rgba($diamond-border-color, 0.6), 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2),
+                    0 0 8px rgba($diamond-border-color, 0.6),
                     0 0 12px rgba($diamond-highlight-color, 0.4);
     }
     100% {
-        // Статическая тень для объема + возврат к начальному состоянию свечения
-        box-shadow: 0 1px 2px rgba(0,0,0,0.2), 
-                    0 0 4px rgba($diamond-border-color, 0.3), 
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2),
+                    0 0 4px rgba($diamond-border-color, 0.3),
                     0 0 6px rgba($diamond-highlight-color, 0.2);
     }
 }
@@ -160,9 +150,9 @@ $glow-aura-thickness: 3px;
     }
 }
 
-$progress-diamond-shimmer-base: $diamond-fill-color; // Используем основной цвет заливки
-$progress-diamond-shimmer-highlight: lighten($diamond-fill-color, 18%); // Яркий акцент для переливания
-$progress-diamond-shimmer-duration: 3s; // Длительность анимации
+$progress-diamond-shimmer-base: $diamond-fill-color;
+$progress-diamond-shimmer-highlight: lighten($diamond-fill-color, 18%);
+$progress-diamond-shimmer-duration: 3s;
 
 $shimmer-base-purple: $sp-title-color;
 $shimmer-light-purple: lighten($shimmer-base-purple, 15%);
@@ -179,7 +169,7 @@ $shimmer-animation-duration: 3.5s;
         background-position: 0% 50%;
     }
 }
-
+    
 .shard-pass-screen-wrapper {
     width: 100%;
     height: 100%;
@@ -197,69 +187,62 @@ $shimmer-animation-duration: 3.5s;
 // --- Внутренний хедер экрана ShardPass ---
 .shard-pass-header {
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between;
     align-items: center;
-    position: relative; 
+    position: relative;
     flex-shrink: 0;
-    
+
     padding-top: max(
         80px,
         calc(45px + var(--safe-area-inset-top))
     );
-    padding-left: calc(15px + var(--safe-area-inset-left)); 
-    padding-right: calc(15px + var(--safe-area-inset-right)); 
-    
-    padding-bottom: 10px; // Из код1: Оставляем небольшой padding для базового контента шапки
-    margin-bottom: 0;     // Из код1
+    padding-left: calc(15px + var(--safe-area-inset-left));
+    padding-right: calc(15px + var(--safe-area-inset-right));
+
+    padding-bottom: 10px;
+    margin-bottom: 0;
 
     .header-level-badge {
-        width: $header-level-diamond-size; 
+        width: $header-level-diamond-size;
         height: $header-level-diamond-size;
-        background-color: $diamond-fill-color; 
-        border: $diamond-border-width solid $diamond-border-color; // Оставляем рамку
-        
-        // Применяем анимацию подсветки рамки
+        background-color: $diamond-fill-color;
+        border: $diamond-border-width solid $diamond-border-color;
         animation: headerDiamondBorderPulse 2.5s infinite ease-in-out;
-        // Убираем или оставляем предыдущий box-shadow, если анимация его полностью заменяет.
-        // В данном случае анимация включает базовую тень, так что предыдущий box-shadow можно убрать или закомментировать.
-        // box-shadow: 0 2px 3px rgba(0,0,0,0.15); // Можно удалить, так как включено в анимацию
-    
         transform: rotate(45deg);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        margin-right: 12px; 
-        position: relative; 
+        margin-right: 12px;
+        position: relative;
         overflow: hidden;
-    
-        // Существующий блик (можно оставить, если не конфликтует с новой подсветкой рамки)
+
         &::before {
             content: "";
             position: absolute;
-            top: 1px; 
-            left: -30%; 
-            width: 60%; 
-            height: calc(100% - 2px); 
-            background: $diamond-highlight-color; // Используем $diamond-highlight-color
-            transform: skewX(-20deg); 
-            opacity: 0.7; 
-            border-radius: 3px; 
+            top: 1px;
+            left: -30%;
+            width: 60%;
+            height: calc(100% - 2px);
+            background: $diamond-highlight-color;
+            transform: skewX(-20deg);
+            opacity: 0.7;
+            border-radius: 3px;
         }
-    
+
         .header-level-badge-inner-content {
             transform: rotate(-45deg);
             display: flex;
-            flex-direction: column; 
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 1px;
-            line-height: 1; 
-            z-index: 1; 
-            position: relative; 
+            line-height: 1;
+            z-index: 1;
+            position: relative;
         }
-    
+
         .header-level-text {
             font-size: 0.55em;
             color: $header-level-diamond-text-color;
@@ -267,7 +250,7 @@ $shimmer-animation-duration: 3.5s;
             font-weight: 500;
             margin-bottom: 1px;
         }
-    
+
         .header-level-number {
             font-size: 1.5em;
             color: $header-level-diamond-number-color;
@@ -291,7 +274,7 @@ $shimmer-animation-duration: 3.5s;
             padding: 5px 15px;
             border: 1.5px solid $sp-title-color;
             border-radius: 22px;
-            text-shadow: 
+            text-shadow:
                 1px 1px 0px darken($sp-title-color, 30%),
                 2px 2px 0px darken($sp-title-color, 35%),
                 3px 3px 3px rgba(0,0,0,0.2);
@@ -322,91 +305,77 @@ $shimmer-animation-duration: 3.5s;
         }
     }
 
-    // &::after из код2 (линия внизу хедера) удалена или закомментирована,
-    // так как линия теперь будет частью .header-hanging-info-container (как .inter-banner-decorative-line)
-    // &::after { display: none; content: none; } 
-
-    .header-hanging-info-container { // Стили из код1
+    .header-hanging-info-container {
         position: absolute;
-        top: 100%;  
+        top: 100%;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
         flex-direction: column;
-        align-items: center; 
-        margin-top: $hanging-group-top-offset; 
-        z-index: 3;  
-        
-        width: 100%; // Из код1. Подберите значение, чтобы соответствовать ширине заголовка "SHARDPASS"
+        align-items: center;
+        margin-top: $hanging-group-top-offset;
+        z-index: 3;
+        width: 100%;
 
         .season-banner-display {
             background-color: $season-banner-bg;
             border: 1px solid $season-banner-border-color;
             color: $season-banner-text-color;
-            font-size: $season-banner-font-size * 0.9; 
+            font-size: $season-banner-font-size * 0.9;
             font-weight: 600;
-            padding: ($season-banner-padding-y * 0.8) ($season-banner-padding-x * 0.9); 
-            border-radius: $season-banner-radius * 0.8; 
+            padding: ($season-banner-padding-y * 0.8) ($season-banner-padding-x * 0.9);
+            border-radius: $season-banner-radius * 0.8;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             white-space: nowrap;
-            width: fit-content; // Из код1
-            margin-left: auto;  // Из код1 (для центрирования, если сам баннер уже родителя)
-            margin-right: auto; // Из код1
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .inter-banner-decorative-line { // Новый элемент из код1
-            width: 100%; // Займет всю ширину .header-hanging-info-container (которая ограничена min-width)
+        .inter-banner-decorative-line {
+            width: 100%;
             height: $line-actual-height;
-            background-color: $sp-border-color; // Используем существующую переменную цвета рамки
-            margin-top: $hanging-banner-gap;    // Отступ над линией
-            margin-bottom: $hanging-banner-gap; // Отступ под линией
+            background-color: $sp-border-color;
+            margin-top: $hanging-banner-gap;
+            margin-bottom: $hanging-banner-gap;
         }
-    
+
         .season-ends-info-display {
-            border: 1px solid $season-ends-info-border-color; // Добавлено для консистентности с season-banner-display
+            border: 1px solid $season-ends-info-border-color;
             color: $season-ends-info-text-color;
-            font-size: $season-ends-info-font-size * 0.9; 
-            padding: ($season-ends-info-padding-y * 0.8) ($season-ends-info-padding-x * 0.9); 
-            border-radius: $season-ends-info-radius * 0.8; 
+            font-size: $season-ends-info-font-size * 0.9;
+            padding: ($season-ends-info-padding-y * 0.8) ($season-ends-info-padding-x * 0.9);
+            border-radius: $season-ends-info-radius * 0.8;
             box-shadow: 0 1px 3px rgba(0,0,0,0.15);
             white-space: nowrap;
-            width: fit-content; // Из код1
-            margin-left: auto;  // Из код1
-            margin-right: auto; // Из код1
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
     }
 }
 
-.level-indicator-diamond { 
-    width: $progress-level-diamond-size; 
+.level-indicator-diamond {
+    width: $progress-level-diamond-size;
     height: $progress-level-diamond-size;
-    
-    // --- ИЗМЕНЕНИЯ ДЛЯ ПЕРЕЛИВАНИЯ ---
-    // background-color: $diamond-solid-fill-color; // Убираем простую заливку
     background-image: linear-gradient(
-        110deg, // Угол градиента для эффекта волны
+        110deg,
         $progress-diamond-shimmer-base 20%,
         $progress-diamond-shimmer-highlight 50%,
         $progress-diamond-shimmer-base 80%
     );
-    background-size: 250% 100%; // Увеличиваем размер фона для анимации движения
+    background-size: 250% 100%;
     animation: iridescentCardShimmer $progress-diamond-shimmer-duration ease-in-out infinite;
-    // ---------------------------------
-
-    border: $diamond-border-width solid $diamond-border-color; 
+    border: $diamond-border-width solid $diamond-border-color;
     box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-
     transform: rotate(45deg);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    position: relative; 
-    // overflow: hidden; // Оставляем, если хотим четкие края для градиента внутри ромба
-
+    position: relative;
     z-index: 1;
 
-    // Убираем статический блик, чтобы не мешал анимации переливания
     &::before {
         display: none;
         content: none;
@@ -415,12 +384,12 @@ $shimmer-animation-duration: 3.5s;
     .level-indicator-diamond-inner-content {
         transform: rotate(-45deg);
         display: flex;
-        align-items: baseline;  
+        align-items: baseline;
         justify-content: center;
         text-align: center;
         padding: 1px;
-        line-height: 1.1; 
-        z-index: 1; 
+        line-height: 1.1;
+        z-index: 1;
         position: relative;
     }
 
@@ -431,73 +400,67 @@ $shimmer-animation-duration: 3.5s;
     }
 }
 
-
 .overall-progress-bar-section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px calc(15px + var(--safe-area-inset-left)) 0px calc(15px + var(--safe-area-inset-right)); // Используем 15px из код1
+    padding: 10px calc(15px + var(--safe-area-inset-left)) 0px calc(15px + var(--safe-area-inset-right));
     box-sizing: border-box;
     width: 100%;
-    
-    // Рассчитываем margin-top из код1
     margin-top: calc(
-        #{$hanging-group-top-offset} +          // Пример: -15px
-        #{$est-height-season-banner-approx} +  // Пример: 28px
-        #{$hanging-banner-gap} +              // Пример: 5px
-        #{$line-actual-height} +              // Пример: 1px
-        #{$hanging-banner-gap} +              // Пример: 5px
-        #{$est-height-ends-info-approx} +     // Пример: 24px
-        #{$final-gap-before-progress-bar}      // Пример: 20px
-    ); // Итого: -15 + 28 + 5 + 1 + 5 + 24 + 20 = 68px
-
+        #{$hanging-group-top-offset} +
+        #{$est-height-season-banner-approx} +
+        #{$hanging-banner-gap} +
+        #{$line-actual-height} +
+        #{$hanging-banner-gap} +
+        #{$est-height-ends-info-approx} +
+        #{$final-gap-before-progress-bar}
+    );
     margin-bottom: 15px;
 
     .progress-bar-container {
         flex-grow: 1;
-        height: 16px; // Или твоя текущая высота
-        background-color: $sp-progress-track-bg; 
-        border-radius: 8px; // Или твоя текущая высота / 2
-        // overflow: hidden; // Убираем, если текст должен быть поверх и может не помещаться
-        position: relative; // Важно для абсолютного позиционирования текста внутри
-        margin: 0 7px; // Отступы от ромбов
+        height: 16px;
+        background-color: $sp-progress-track-bg;
+        border-radius: 8px;
+        position: relative;
+        margin: 0 7px;
 
         .progress-bar-fill {
             height: 100%;
-            background-color: $sp-progress-fill-bg; 
-            border-radius: 8px; 
-            // или border-radius: 6px; 
+            background-color: $sp-progress-fill-bg;
+            border-radius: 8px;
             transition: width 0.3s ease-in-out;
-            // box-shadow: 0 0 4px rgba($sp-progress-fill-bg, 0.3); // Можно оставить
-            display: flex; // Для возможного выравнивания, если текст будет внутри fill
+            display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        // Стили для текста XP на прогресс-баре
         .progress-bar-text {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 0.7em; // Маленький шрифт, чтобы поместился
-            color: #ffffff;   // Белый цвет для хорошей читаемости на фиолетовом фоне
-            // text-shadow: 0 0 2px rgba(0,0,0,0.7); // Тень для лучшей читаемости, если фон сложный
+            font-size: 0.7em;
+            color: #ffffff;
             font-weight: 600;
-            white-space: nowrap; // Чтобы текст не переносился
-            z-index: 1; // Чтобы текст был поверх .progress-bar-fill
+            white-space: nowrap;
+            z-index: 1;
         }
     }
 }
 
+// --- Секция с наградами ---
 .shard-pass-rewards-section {
     flex-grow: 1;
-    border-top: 1px solid $sp-header-border-color; // Эта линия теперь не здесь, а как .inter-banner-decorative-line
     display: flex;
+    flex-direction: column;
     overflow: hidden;
+    min-height: 200px;
 }
 
 .shard-pass-rewards-horizontal-scroll {
+    flex-grow: 1;
     overflow-x: auto;
     overflow-y: hidden;
 
@@ -508,25 +471,25 @@ $shimmer-animation-duration: 3.5s;
 
 .sticky-labels-and-grid-wrapper {
     position: relative;
-    display: inline-block; 
+    display: inline-block;
     padding-left: $side-label-area-width + $side-label-initial-offset;
-    min-height: 100%; 
+    min-height: 100%;
     box-sizing: border-box;
 }
 
 .sticky-labels-layer {
-    position: sticky; 
-    left: $side-label-initial-offset; 
-    top: 0; 
-    width: $side-label-area-width; 
-    height: 100%; 
-    z-index: 10; 
-    pointer-events: none; 
+    position: sticky;
+    left: $side-label-initial-offset;
+    top: 0;
+    width: $side-label-area-width;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
 
     .side-label.sticky {
-        pointer-events: all; 
-        position: absolute; 
-        left: 0; 
+        pointer-events: all;
+        position: absolute;
+        left: 0;
         width: $side-label-width;
         writing-mode: vertical-lr;
         text-orientation: mixed;
@@ -543,8 +506,8 @@ $shimmer-animation-duration: 3.5s;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
-        transition: top 0.1s linear; 
-        min-height: 80px; 
+        transition: top 0.1s linear;
+        min-height: 100px;
 
         &.free-side-label {
             // top и transform устанавливаются из JS
@@ -558,40 +521,41 @@ $shimmer-animation-duration: 3.5s;
 }
 
 .rewards-grid-container {
-    display: flex; 
+    display: flex;
     flex-direction: column;
-    min-width: min-content; 
-    padding: 10px 0; 
-    gap: $main-tracks-gap; 
-    position: relative; 
-    z-index: 1;
-    box-sizing: border-box;
+    min-width: min-content;
+    padding: 10px 0;
+    gap: $main-tracks-gap-base;
+    flex-grow: 1;
+    // justify-content: space-around; // Из код2, можно раскомментировать при необходимости
+    overflow-y: auto;
+    min-height: fit-content;
 }
 
 .rewards-track {
     display: flex;
-    flex-direction: row; 
-    min-height: $track-reward-height; 
-    align-items: center; 
-    padding: 0; 
+    flex-direction: row;
+    min-height: $track-reward-height-base;
+    align-items: center;
+    padding: 0;
     box-sizing: border-box;
-    margin-left: 30px; 
+    margin-left: 30px;
 }
 
 .reward-cell {
-    min-width: $reward-card-width + $reward-cards-gap; 
-    padding: 0 ($reward-cards-gap / 2); 
-    height: 100%; 
-    flex-shrink: 0; 
+    min-width: $reward-card-width + $reward-cards-gap;
+    padding: 0 ($reward-cards-gap / 2);
+    height: 100%;
+    flex-shrink: 0;
     display: flex;
-    justify-content: center; 
-    align-items: center; 
+    justify-content: center;
+    align-items: center;
     box-sizing: border-box;
 }
 
 .reward-card {
     width: $reward-card-width;
-    height: 120px; 
+    height: $new-reward-card-height-base;
     background-color: $sp-level-bg;
     border: 1px solid $sp-level-border;
     border-radius: 8px;
@@ -599,13 +563,13 @@ $shimmer-animation-duration: 3.5s;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-around; 
+    justify-content: space-around;
     text-align: center;
-    position: relative; 
+    position: relative;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
-    overflow: hidden; 
+    overflow: hidden;
 
     &:hover {
         transform: translateY(-3px);
@@ -613,8 +577,7 @@ $shimmer-animation-duration: 3.5s;
     }
 
     .reward-icon {
-        width: 40px;
-        height: 40px;
+        width: 40px; height: 40px;
         object-fit: contain;
         margin-bottom: 5px;
     }
@@ -626,16 +589,16 @@ $shimmer-animation-duration: 3.5s;
         max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: normal; 
-        display: -webkit-box; 
-        -webkit-line-clamp: 2; 
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
     }
 
     &.claimed {
         opacity: 0.6;
-        &::before { 
-            display: none; 
+        &::before {
+            display: none;
         }
         .claimed-overlay {
             position: absolute;
@@ -647,31 +610,31 @@ $shimmer-animation-duration: 3.5s;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: inherit; 
+            border-radius: inherit;
             text-transform: uppercase;
             z-index: 1;
         }
     }
 
-    &.future { 
+    &.future {
         opacity: 0.5;
         &::before {
             display: none;
         }
     }
-    &.premium-reward.premium-locked { 
+    &.premium-reward.premium-locked {
         .premium-lock-icon {
             position: absolute;
             top: 5px; right: 5px;
-            font-size: 1.2em; 
+            font-size: 1.2em;
             color: $sp-premium-lock-color;
             opacity: 0.8;
-            z-index: 1; 
+            z-index: 1;
         }
     }
-    &.available { 
-        &::before { 
-            display: none; 
+    &.available {
+        &::before {
+            display: none;
             content: none;
         }
         background-image: linear-gradient(
@@ -680,7 +643,7 @@ $shimmer-animation-duration: 3.5s;
             $shimmer-light-purple,
             $shimmer-base-purple
         );
-        background-size: 300% 100%; 
+        background-size: 300% 100%;
         animation: iridescentCardShimmer $shimmer-animation-duration ease-in-out infinite;
     }
 }
@@ -688,94 +651,94 @@ $shimmer-animation-duration: 3.5s;
 .levels-and-progress-track {
     display: flex;
     flex-direction: row;
-    height: $track-levels-progress-height;
+    height: $track-levels-progress-height-base;
     align-items: center;
-    position: relative; 
-    padding: 0; 
+    position: relative;
+    padding: 0;
     box-sizing: border-box;
-    padding-left: 30px; 
+    padding-left: 30px;
 }
 
 .level-progress-node {
-    min-width: $reward-card-width + $reward-cards-gap; 
+    min-width: $reward-card-width + $reward-cards-gap;
     height: 100%;
     flex-shrink: 0;
     display: flex;
-    align-items: center; 
-    position: relative; 
-    
+    align-items: center;
+    position: relative;
+
     &:first-child {
         .progress-line.before {
-            position: relative; 
+            position: relative;
             &::before {
                 content: "";
                 position: absolute;
-                right: 100%; 
+                right: 100%;
                 top: 0;
-                width: $progress-line-short-length; 
-                height: 100%; 
-                background-color: $sp-progress-track-bg; 
+                width: $progress-line-short-length;
+                height: 100%;
+                background-color: $sp-progress-track-bg;
             }
             &.filled::before {
-                background-color: $sp-progress-fill-bg; 
+                background-color: $sp-progress-fill-bg;
             }
         }
     }
 }
 
-.level-indicator-badge { 
+.level-indicator-badge {
     font-size: 0.8em;
     font-weight: bold;
     color: $sp-text-color;
-    background-color: $sp-progress-track-bg; 
+    background-color: $sp-progress-track-bg;
     border: 1px solid rgba($sp-title-color, 0.4);
     padding: $level-indicator-padding-y $level-indicator-padding-x;
-    border-radius: $badge-current-border-radius; 
+    border-radius: $badge-current-border-radius;
     line-height: 1;
-    white-space: nowrap; 
-    z-index: 2; 
-    position: relative; 
+    white-space: nowrap;
+    z-index: 2;
+    position: relative;
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    margin: 0 3px; 
-    flex-shrink: 0; 
+    margin: 0 3px;
+    flex-shrink: 0;
 
-    &.achieved { 
-        background-color: $glow-badge-achieved-bg; 
-        color: darken($sp-bg-start, 10%); 
-        border-color: darken($glow-badge-achieved-bg, 10%); 
+    &.achieved {
+        background-color: $glow-badge-achieved-bg;
+        color: darken($sp-bg-start, 10%);
+        border-color: darken($glow-badge-achieved-bg, 10%);
 
-        &::before { 
+        &::before {
             content: "";
             position: absolute;
-            left: -$glow-aura-thickness; 
+            left: -$glow-aura-thickness;
             top: -$glow-aura-thickness;
             right: -$glow-aura-thickness;
             bottom: -$glow-aura-thickness;
-            border-radius: $badge-current-border-radius + $glow-aura-thickness; 
+            border-radius: $badge-current-border-radius + $glow-aura-thickness;
             background: conic-gradient(
                 from var(--badge-glow-angle),
                 transparent 0%,
-                transparent 65%, 
+                transparent 65%,
                 $glow-light-effect-color 80%,
                 transparent 95%
             );
             animation: rotateBadgeGlow $glow-animation-duration linear infinite;
-            z-index: -1; 
+            z-index: -1;
         }
     }
 }
 
-.progress-line { 
+.progress-line {
     height: $progress-line-height;
-    background-color: $sp-progress-track-bg; 
-    flex-grow: 1; 
-    min-width: $progress-line-short-length / 2; 
-    flex-shrink: 0; 
-    position: relative; 
+    background-color: $sp-progress-track-bg;
+    flex-grow: 1;
+    min-width: $progress-line-short-length / 2;
+    flex-shrink: 0;
+    position: relative;
 
-    &.filled { 
+    &.filled {
         background-color: $sp-progress-fill-bg;
-        box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4); 
+        box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
     }
 }
 
@@ -785,11 +748,10 @@ $shimmer-animation-duration: 3.5s;
     top: 0;
     height: 100%;
     background-color: $sp-progress-fill-bg;
-    border-radius: ($progress-line-height / 2); 
+    border-radius: ($progress-line-height / 2);
     box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
-    z-index: 1; 
+    z-index: 1;
 }
-
 
 .shard-pass-tasks-section {
     padding: 0 calc(15px + var(--safe-area-inset-left)) $tasks-button-margin-y calc(15px + var(--safe-area-inset-right));
@@ -819,15 +781,15 @@ $shimmer-animation-duration: 3.5s;
 .shard-pass-footer {
     display: flex;
     gap: 15px;
-    padding: 25px calc(15px + var(--safe-area-inset-left)) 25px calc(15px + var(--safe-area-inset-right)); 
-    background-color: $sp-header-bg; 
-    backdrop-filter: blur(5px); 
-    border-top: 1px solid $sp-border-color; 
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.2); 
-    flex-shrink: 0; 
+    padding: 25px calc(15px + var(--safe-area-inset-left)) 25px calc(15px + var(--safe-area-inset-right));
+    background-color: $sp-header-bg;
+    backdrop-filter: blur(5px);
+    border-top: 1px solid $sp-border-color;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+    flex-shrink: 0;
 
     .shard-pass-action-button {
-        flex-grow: 1; 
+        flex-grow: 1;
         padding: 12px 15px;
         border: none;
         border-radius: 8px;
@@ -843,5 +805,93 @@ $shimmer-animation-duration: 3.5s;
         &:active { transform: scale(0.98); }
         &.claim-all-btn { background: $sp-button-claim-bg; }
         &.buy-shardpass-btn { background: $sp-button-buy-bg; }
+    }
+}
+
+// --- АДАПТАЦИЯ ДЛЯ НИЗКИХ ЭКРАНОВ (из код1) ---
+@media (max-height: 700px) {
+    $track-reward-height-small: 120px;
+    $track-levels-progress-height-small: 30px;
+    $new-reward-card-height-small: 100px;
+    $main-tracks-gap-small: 5px;
+
+    .rewards-grid-container {
+        gap: $main-tracks-gap-small;
+        padding: 5px 0;
+    }
+
+    .rewards-track {
+        min-height: $track-reward-height-small;
+    }
+    .reward-card {
+        height: $new-reward-card-height-small;
+        padding: 5px;
+        .reward-icon {
+            width: 30px; height: 30px;
+        }
+        .reward-name {
+            font-size: 0.65em;
+            -webkit-line-clamp: 1;
+        }
+    }
+    .levels-and-progress-track {
+        height: $track-levels-progress-height-small;
+    }
+    .level-indicator-badge {
+        font-size: 0.7em;
+        padding: 3px 4px;
+    }
+    .progress-line {
+        height: 4px;
+    }
+
+    .sticky-labels-layer {
+        .side-label.sticky {
+            min-height: 70px;
+            font-size: 0.7em;
+            padding: 8px 4px;
+        }
+    }
+}
+
+@media (max-height: 600px) {
+    $track-reward-height-xsmall: 100px;
+    $track-levels-progress-height-xsmall: 25px;
+    $new-reward-card-height-xsmall: 80px;
+    $main-tracks-gap-xsmall: 3px;
+
+    .rewards-grid-container {
+        gap: $main-tracks-gap-xsmall;
+        padding: 3px 0;
+    }
+    .rewards-track {
+        min-height: $track-reward-height-xsmall;
+    }
+    .reward-card {
+        height: $new-reward-card-height-xsmall;
+        padding: 3px;
+        .reward-icon {
+            width: 25px; height: 25px;
+        }
+        .reward-name {
+            font-size: 0.6em;
+        }
+    }
+    .levels-and-progress-track {
+        height: $track-levels-progress-height-xsmall;
+    }
+    .level-indicator-badge {
+        font-size: 0.65em;
+        padding: 2px 3px;
+    }
+    .progress-line {
+        height: 3px;
+    }
+    .sticky-labels-layer {
+        .side-label.sticky {
+            min-height: 60px;
+            font-size: 0.65em;
+            padding: 6px 3px;
+        }
     }
 }
