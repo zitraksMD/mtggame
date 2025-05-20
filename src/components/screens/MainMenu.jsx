@@ -709,21 +709,34 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
 
                                 {/* --- Существующие боковые колонки с кнопками --- */}
                                 <div className="main-menu-left-column">
-                                    <button className="main-menu-button icon-button mail-button" onClick={handleMailClick} title="Почта"><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
-                                    <button className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`} onClick={handleRewardsChestClick} title="Награды" >
-                                        <img src="/assets/icons/gift-icon.png" alt="Награды" />
-                                    </button>
-                                    <button className="main-menu-button icon-button" onClick={handleTreasureChestClick} title="Руны Древних">
-                                        <img src="/assets/icons/runes-icon.png" alt="Руны" />
-                                    </button>
-                                </div>
-                                <div className="main-menu-right-column">
-                                    <button className="main-menu-button icon-button world-map-button" onClick={handleOpenMapSystemClick} title="Карта Мира">
-                                        <img src="/assets/icons/map-icon.png" alt="Карта Мира" />
-                                    </button>
-                                    <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick} title="Задания"><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
-                                    <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick} title="Обмен"><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
-                                </div>
+                <button className="main-menu-button icon-label-button mail-button" onClick={handleMailClick} title="Почта">
+                    <img src="/assets/icons/mail-icon.png" alt="Почта" className="button-icon-img" />
+                    <span className="button-label">Mail</span>
+                </button>
+                <button className={`main-menu-button icon-label-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`} onClick={handleRewardsChestClick} title="Награды">
+                    <img src="/assets/icons/gift-icon.png" alt="Награды" className="button-icon-img" />
+                    <span className="button-label">Rewards</span>
+                </button>
+                <button className="main-menu-button icon-label-button runes-button" onClick={handleTreasureChestClick} title="Руны Древних">
+                    <img src="/assets/icons/runes-icon.png" alt="Руны" className="button-icon-img" />
+                    <span className="button-label">Ancient<br/>runes</span>
+                </button>
+            </div>
+
+            <div className="main-menu-right-column">
+                <button className="main-menu-button icon-label-button world-map-button" onClick={handleOpenMapSystemClick} title="Карта Мира">
+                    <img src="/assets/icons/map-icon.png" alt="Карта Мира" className="button-icon-img" />
+                    <span className="button-label">Map</span>
+                </button>
+                <button className="main-menu-button icon-label-button quests-button" onClick={handleQuestsClick} title="Задания">
+                    <img src="/assets/icons/quests-icon.png" alt="Задания" className="button-icon-img" />
+                    <span className="button-label">Task<br/>Center</span>
+                </button>
+                <button className="main-menu-button icon-label-button exchange-button" onClick={handleExchangeClick} title="Обмен">
+                    <img src="/assets/icons/exchange-icon.png" alt="Обмен" className="button-icon-img" />
+                    <span className="button-label">Tonchange</span>
+                </button>
+            </div>
  {/* ▼▼▼ КНОПКА SHARDPASS (для activeView === 'detailed') ▼▼▼ */}
  {activeView === 'detailed' && !isOverlayActive && ( // Показываем кнопку только в detailed виде и когда нет других оверлеев
                 <button

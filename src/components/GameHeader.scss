@@ -5,19 +5,19 @@ $safe-area-inset-top: env(safe-area-inset-top, 0px); // Отступ для "ч�
 $energy-bar-area-height: 35px;
 $energy_bar_placement_padding_top: 6px; // Внутренний padding-top для самого блока энергии
 
+
 // --- Минимальный отступ для энергетического бара на Android ---
 // (когда $safe-area-inset-top равен 0)
 $min_energy_offset_android: 30px; // Можете настроить это значение
 
 // --- Рассчитываем отступ сверху для крыльев по вашей формуле ---
-// (Эта логика остается пока прежней)
 $wing_top_offset_value: max(
   80px, // Базовый минимальный отступ для крыльев
   calc(45px + #{$safe-area-inset-top}) // Отступ крыльев с учетом "челки"
 );
 
 // --- Переменные для расчета высот ---
-$wing-content-visual-height: 78px;
+$wing-content-visual-height: 78px; // Высота контентной части "крыльев"
 $game-header-body-content-height: $wing-content-visual-height;
 $game-header-body_effective_top_padding_for_height_calc: $wing_top_offset_value;
 $game-header-body-bottom-padding: 10px;
@@ -28,7 +28,8 @@ $game-header-body-total-height: calc(
   #{$game-header-body-bottom-padding}
 );
 
-$chapter-banner-height: 30px;
+// $chapter-banner-height: 30px; // Эта переменная больше не нужна для старого баннера
+
 
 // --- СТИЛИ ---
 .game-header-container {
@@ -36,7 +37,7 @@ $chapter-banner-height: 30px;
   top: 0;
   left: 0;
   width: 100%;
-  height: $game-header-body-total-height;
+  height: $game-header-body-total-height; // Общая высота хедера остается прежней
   z-index: 1000;
   pointer-events: none;
   & > * { pointer-events: auto; }
@@ -60,7 +61,7 @@ $chapter-banner-height: 30px;
   box-sizing: border-box;
 }
 
-.game-header-energy-bar { /* Стили из код2 */
+.game-header-energy-bar { /* Стили из код2, код1 указывает "без изменений" */
   display: flex; align-items: center; gap: 5px; background-color: rgba(10, 10, 20, 0.9);
   padding: 4px 7px; border-radius: 12px; backdrop-filter: blur(6px);
   min-width: 110px; max-width: 180px;  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -69,7 +70,7 @@ $chapter-banner-height: 30px;
   .energy-fill { position: absolute; left: 0; top: 0; bottom: 0; height: 100%; border-radius: 4px; transition: width 0.3s ease, background-color 0.3s ease; }
   .energy-text { font-size: 0.8em; font-weight: 700; color: white; white-space: nowrap; position: relative; text-shadow: 0 0 2px rgba(0,0,0,0.6); }
 }
-.energy-refill-timer-header { /* Стили из код2 */
+.energy-refill-timer-header { /* Стили из код2, код1 указывает "без изменений" */
   font-size: 0.6em; color: #b0b0c0; text-align: center; margin-top: 2px; padding: 1px 4px; background-color: rgba(0,0,0,0.35); border-radius: 3px; line-height: 1.1;
 }
 
@@ -78,6 +79,7 @@ $chapter-banner-height: 30px;
   top: 0;
   left: 0;
   width: 100%;
+  // Важно, чтобы высота этого блока не увеличивалась из-за контента (из код1)
   height: $game-header-body-total-height;
   background: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);  backdrop-filter: blur(10px);
   display: flex;
@@ -96,84 +98,141 @@ $chapter-banner-height: 30px;
   flex-direction: column;
   box-sizing: border-box;
   position: relative;
-  top: $wing_top_offset_value; // Этот отступ пока не изменен
-  height: $wing-content-visual-height;
+  top: $wing_top_offset_value;
+  height: $wing-content-visual-height; // Контент внутри крыла должен умещаться в эту высоту
 }
 
-    .header-left-wing {
-    align-items: flex-start;
+.header-left-wing {
+  align-items: flex-start;
+  gap: 10px; // ИЗМЕНЕНО: Отступ между блоком игрока и блоком главы (было 8px)
+  width: 45%; // Можно сделать более гибким, например, через flex-basis или min-width
+  margin-left: 10px;
+  min-width: 180px;
+
+  .player-identification-block {
+    display: flex;
+    align-items: center; // ИЗМЕНЕНО: или flex-start, если нужно выравнивание по верху
     gap: 8px;
-    width: 45%;
-    margin-left: 10px;
-    min-width: 180px;
-
-    .player-identification-block { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
-    .header-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.7); flex-shrink:0; }
-    .header-player-details {
-        display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; min-width: 0;
-        .header-player-name { font-size: 0.9em; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
-        .header-player-power { font-size: 0.8em; color: #c8d0e0; .power-icon { margin-right: 3px; } }
-    }
-    .header-battle-pass-button {
-        background: linear-gradient(to bottom, #f9a825, #f57f17); color: white; border: none;
-        padding: 6px 12px; border-radius: 6px; font-size: 0.75em; font-weight: bold;
-        cursor: pointer; text-shadow: 0 1px 1px rgba(0,0,0,0.3); text-align: center;
-        width: auto; min-width: 90px; height: auto; min-height: 36px; align-self: flex-start;
-        transition: transform 0.1s ease, filter 0.1s ease;
-        &:hover { filter: brightness(1.15); }
-        &:active { transform: scale(0.96); }
-    }
-    }
-
-    .header-center-spacer {
+    margin-bottom: 0;
+    width: 100%;
+  }
+  .header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.7);
+    flex-shrink:0;
+  }
+  .header-player-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2; // Существующий стиль
+    min-width: 0;
     flex-grow: 1;
+    gap: 3px; // <<< НОВЫЙ: Отступ между никнеймом и строкой Power
+
+    // Стили для рамки
+    &.framed-box {
+      padding: 5px 8px; // Внутренние отступы для рамки
+      background-color: rgba(0, 0, 0, 0.25); // Полупрозрачный темный фон
+      border: 1px solid rgba(255, 255, 255, 0.1); // Тонкая светлая обводка
+      border-radius: 6px; // Скругление углов
+      min-width: 100px; // Минимальная ширина, чтобы выглядело аккуратно
     }
 
-    .header-right-wing {
-    align-items: flex-end;
-    gap: 6px;
-    width: 40%;
-    margin-right: 10px;
-    min-width: 100px;
-
-    .header-resource-item {
-        display: flex; align-items: center; gap: 5px; font-size: 0.9em; background-color: rgba(0,0,0,0.4);
-        padding: 3px 7px; border-radius: 7px; color: #fff; min-width: 80px; justify-content: flex-end;
-        .header-resource-icon { width: 17px; height: 17px; }
-        span { font-weight: 600; }
+    .header-player-name {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 110px; // Можно сделать 100% от родителя, если родитель ограничен
+      width: 100%;
     }
+    .header-player-power {
+      font-size: 0.85em; // ИЗМЕНЕНО: Общий размер для строки Power
+      color: #c8d0e0;    // Цвет для значения мощи (числа)
+      display: flex;     // Для выравнивания "Power:" и значения
+      align-items: center; // По базовой линии или по центру
+      // .power-icon { margin-right: 3px; } // Старая иконка, если не нужна, можно удалить
+
+      .power-label {
+        color: #FFD700; // Яркий золотой цвет для "Power:"
+        font-weight: bold;
+        margin-right: 4px; // Отступ после "Power:"
+        // Эффект "объемных букв" (простой вариант с тенью)
+        text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5),
+                     1px 0px 0px rgba(218, 165, 32, 0.4);
+      }
+      .power-value {
+        font-weight: 900; // Можно сделать значение мощи тоже жирным
+      }
     }
+  }
 
-.chapter-name-banner {
-  position: absolute;
-  top: $game-header-body-total-height;
-  margin-top: -15px;
-  left: 51.7%;
-  transform: translateX(-50%);
-  width: 140px;
-  height: $chapter-banner-height;
-  padding: 5px 0px;
-  background: #daa520;
-  border: 1px solid rgba(120, 100, 150, 0.6);
-  border-top: none;
-  border-radius: 10px;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  .header-chapter-info-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    // Возможно, также понадобится настроить его вертикальное положение или отступ,
+    // если рамка у .header-player-details изменила общую компоновку
+  }
 
-  .header-chapter-name {
-    font-size: 0.85em;
-    font-weight: bold;
-    color: #e8e8ff;
-    margin: 0;
-    padding: 0;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-    white-space: normal;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    line-height: 1.2;
+  .chapter-info-label {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #a0a0b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .chapter-info-name-banner {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 3px 7px;
+    background-color: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 5px;
+    color: #e0e0e0;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
   }
 }
+
+.header-center-spacer {
+  flex-grow: 1;
+}
+
+.header-right-wing {
+  align-items: flex-end;
+  gap: 6px;
+  width: 40%;
+  margin-right: 10px;
+  min-width: 100px;
+
+  .header-resource-item {
+    display: flex; align-items: center; gap: 5px; font-size: 0.9em; background-color: rgba(0,0,0,0.4);
+    padding: 3px 7px; border-radius: 7px; color: #fff; min-width: 80px; justify-content: flex-end;
+    .header-resource-icon { width: 17px; height: 17px; }
+    span {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+}
+
+// СТИЛИ ДЛЯ СТАРОГО НАВИСАЮЩЕГО БАННЕРА ГЛАВЫ УДАЛЕНЫ согласно код1
+/*
+.chapter-name-banner {
+  // ...
+}
+*/

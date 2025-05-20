@@ -2,6 +2,31 @@
 import React from 'react';
 import './GameHeader.scss'; // Стили для этого компонента
 
+// Функция formatPower (определена здесь или может быть импортирована из другого файла)
+const formatPower = (power) => {
+  if (power == null || isNaN(power)) return '...'; // Обработка null, undefined, NaN
+
+  if (power < 1000) {
+    // Для чисел меньше 1000 можно использовать toLocaleString, если нужны разделители тысяч,
+    // или просто power.toString(), если нет.
+    // Для примера "600" просто вернем строку.
+    return power.toString();
+  }
+
+  // Форматирование в "K" с одним знаком после запятой (округление вниз)
+  const valueInK = power / 1000;
+  // Округляем до одного знака после запятой вниз (1150 -> 1.1, 55500 -> 55.5)
+  const truncatedToOneDecimal = Math.floor(valueInK * 10) / 10;
+
+  // Преобразуем в строку с одним знаком после запятой (например, 1.0, а не 1)
+  let formattedNumber = truncatedToOneDecimal.toFixed(1);
+
+  // Заменяем точку на запятую для отображения "1,1K"
+  formattedNumber = formattedNumber.replace('.', ',');
+
+  return `${formattedNumber}K`;
+};
+
 const GameHeader = ({
     username,
     powerLevel,
@@ -15,11 +40,11 @@ const GameHeader = ({
     diamonds,
     tonShards,
     currentChapterName,
-    onShardPassClick, // Оставим для будущей кнопки Battle Pass
+    // onShardPassClick, // Проп оставляем, но он временно не используется активным элементом
 }) => {
     return (
         <div className="game-header-container">
-            {/* Полоса энергии остается наверху (код из код2 сохранен) */}
+            {/* Полоса энергии остается наверху */}
             <div className="game-header-energy-bar-placement">
                 <div className="game-header-energy-bar">
                     <img src="/assets/energy-icon.png" alt="" className="energy-icon" />
@@ -41,32 +66,44 @@ const GameHeader = ({
                 )}
             </div>
 
-            {/* Основное тело шапки (структура из код1) */}
+            {/* Основное тело шапки */}
             <div className="game-header-body">
+                {/* header-left-wing обновлен согласно изменениям */}
                 <div className="header-left-wing">
-                    {/* Аватар, Ник/Уровень, Battle Pass (код из код2 сохранен) */}
+                    {/* Блок идентификации игрока */}
                     <div className="player-identification-block">
                         <img src={avatarUrl} alt="Аватар" className="header-avatar" />
-                        <div className="header-player-details">
+                        {/* Этот div теперь будет иметь рамку и обновленный формат powerLevel */}
+                        <div className="header-player-details framed-box">
                             <span className="header-player-name">{username || "Гость"}</span>
                             <span className="header-player-power">
-                                <span className="power-icon">⚡</span>{powerLevel?.toLocaleString() ?? '...'}
+                                <span className="power-label">Power: </span>
+                                <span className="power-value">{formatPower(powerLevel)}</span>
                             </span>
                         </div>
                     </div>
-                    <button 
-                        className="header-battle-pass-button" 
-                        onClick={onShardPassClick} // <-- ИСПОЛЬЗУЕМ ПРОПС
-                    >
-                        Shardpass
-                    </button>
+
+                    {/* Информация о главе */}
+                    <div className="header-chapter-info-wrapper">
+                        <span className="chapter-info-label">Глава:</span>
+                        {currentChapterName ? (
+                            <div className="chapter-info-name-banner" title={currentChapterName}> {/* title для всплывающей подсказки полного имени */}
+                                <span className="chapter-info-name-text">{currentChapterName}</span>
+                            </div>
+                        ) : (
+                            <div className="chapter-info-name-banner">
+                                <span className="chapter-info-name-text">---</span> {/* Плейсхолдер, если имя главы не передано */}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                
-                {/* Центральная часть .game-header-body теперь для фона/формы или пустая (из код1) */}
-                <div className="header-center-spacer"></div>
-                
+
+                <div className="header-center-spacer">
+                    {/* Этот блок остается для центрирования или будущего использования */}
+                </div>
+
                 <div className="header-right-wing">
-                    {/* Ресурсы (код из код2 сохранен) */}
+                    {/* Ресурсы */}
                     <div className="header-resource-item">
                         <img src="/assets/coin-icon.png" alt="Золото" className="header-resource-icon" />
                         <span>{gold?.toLocaleString() ?? '0'}</span>
@@ -81,13 +118,6 @@ const GameHeader = ({
                     </div>
                 </div>
             </div>
-
-            {/* Нависающий баннер с названием главы (из код1) */}
-            {currentChapterName && (
-                <div className="chapter-name-banner">
-                    <h2 className="header-chapter-name">{currentChapterName}</h2>
-                </div>
-            )}
         </div>
     );
 };

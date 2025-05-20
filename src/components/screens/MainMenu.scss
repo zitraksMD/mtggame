@@ -313,80 +313,105 @@
   }
 }
 
-// Левая колонка (Почта и Сундук)
-.main-menu-left-column {
-  position: absolute;
-  top: max(250px, calc(220px + var(--safe-area-inset-top, 0px))); 
-  /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
-  left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
+
+// ----------------------------------------------------
+// 1. Общий стиль для кнопок с иконкой и подписью
+// ----------------------------------------------------
+.main-menu-button.icon-label-button {
+  // ВАЖНО: Убедитесь, что здесь НЕТ position: absolute;
+  // Кнопки должны быть 'static' (по умолчанию) или 'relative', чтобы участвовать во flex-раскладке колонки.
+  position: relative; // Или оставьте static (по умолчанию), если нет других причин для relative.
+
   display: flex;
-  flex-direction: column;
-  gap: 10px;        // Пространство между Почтой и Сундуком
-  z-index: 5;
+  flex-direction: column; 
+  align-items: center;    
+  justify-content: flex-start; 
+  gap: 3px;               
+  
+  width: 68px;     
+  height: 72px;    
+  padding: 8px 4px 6px 4px; 
+  box-sizing: border-box; 
+  
+  background-color: rgba(30, 30, 45, 0.75); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 10px; 
+  
+  color: #e0e0e0; 
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  user-select: none; 
 
-  .main-menu-button { // Это общие стили для кнопок в колонке, они остаются
-    position: relative; // Важно! Сбросить absolute
-    top: auto;
-    left: auto;
-    transform: none;
+  appearance: none;
+  outline: none;
 
-    // Стили для иконочных кнопок внутри колонки
-    // Убедимся, что этот блок не конфликтует с глобальным .icon-button
-    // и применяется именно к кнопкам ВНУТРИ .main-menu-left-column
-    &.icon-button {
-      padding: 8px; // Меньшие падинги
-      border-radius: 12px;
-      width: 44px;  // Пример: Задать фиксированную ширину/высоту для квадратности
-      height: 44px; // width/height = (иконка 40px + padding 8px*2)
-      box-sizing: border-box; // Чтобы padding был включен в width/height
+  &:hover {
+    background-color: rgba(45, 45, 65, 0.85); 
+  }
 
-      img {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        display: block;
-      }
-    }
+  &:active {
+    transform: scale(0.96); 
+  }
+
+  .button-icon-img {
+    width: 38px;  
+    height: 38px; 
+    object-fit: contain; 
+  }
+
+  .button-label {
+    font-size: 10px; 
+    font-weight: 500;
+    color: #c0c0d8;   
+    line-height: 1.15; 
   }
 }
 
-// Правая колонка
+// ----------------------------------------------------
+// 2. Стили для левой колонки
+// ----------------------------------------------------
+.main-menu-left-column {
+  position: absolute;
+  top: max(250px, calc(220px + var(--safe-area-inset-top, 0px))); 
+  left: calc(env(safe-area-inset-left, 0px) + 10px); 
+  z-index: 5;             
+
+  // Размеры колонки
+  width: auto;        // Позволит ширине адаптироваться под min-width или контент
+  min-width: 68px;    // Минимальная ширина, равная ширине кнопок
+  height: auto;       // Высота будет определяться содержимым (кнопками и отступами)
+  // min-height: 240px; // Можно установить, если хотите гарантировать мин. высоту 
+                        // (3 кнопки * 72px + 2 отступа * 12px = 216 + 24 = 240px)
+                        // Но обычно height: auto достаточно, если flex работает.
+
+  // Flex-контейнер для кнопок
+  display: flex;
+  flex-direction: column; // Располагает дочерние элементы (кнопки) в столбец
+  align-items: center;    // Центрирует кнопки по горизонтали внутри колонки
+  gap: 12px;              // Вертикальный отступ между кнопками
+}
+
+// ----------------------------------------------------
+// 3. Стили для правой колонки
+// ----------------------------------------------------
 .main-menu-right-column {
   position: absolute;
-  top: max(250px, calc(210px + var(--safe-area-inset-top, 0px))); 
-  /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
-  right: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
+  top: max(250px, calc(220px + var(--safe-area-inset-top, 0px))); 
+  right: calc(env(safe-area-inset-right, 0px) + 10px); 
+  z-index: 5;  
+
+  // Размеры колонки
+  width: auto;
+  min-width: 68px;
+  height: auto;
+  // min-height: 240px; // Аналогично левой колонке
+
+  // Flex-контейнер для кнопок
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  z-index: 5; // Выше карты
-
-  
-  // Кнопки внутри колонки НЕ ДОЛЖНЫ быть absolute
-  .main-menu-button { // Это общие стили для кнопок в колонке, они остаются
-    position: relative; // Важно! Сбросить absolute
-    top: auto;
-    left: auto;
-    transform: none;
-
-    // Стили для иконочных кнопок внутри колонки
-    // Убедимся, что этот блок не конфликтует с глобальным .icon-button
-    // и применяется именно к кнопкам ВНУТРИ .main-menu-left-column
-    &.icon-button {
-      padding: 8px; // Меньшие падинги
-      border-radius: 12px;
-      width: 44px;  // Пример: Задать фиксированную ширину/высоту для квадратности
-      height: 44px; // width/height = (иконка 40px + padding 8px*2)
-      box-sizing: border-box; // Чтобы padding был включен в width/height
-
-      img {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        display: block;
-      }
-    }
-  }
+  align-items: center;
+  gap: 12px;
 }
 
 // Название главы (Как было, но можно поднять z-index)
@@ -457,7 +482,7 @@
 .reset-button {
   position: absolute; // Позиционируем относительно .main-menu (если у него position: relative) или viewport
   // Отступы от нижнего левого угла, УЧИТЫВАЯ безопасные зоны
-  left: calc(env(safe-area-inset-left, 0px) + 165px);   // 15px от левого края + safe area
+  left: calc(env(safe-area-inset-left, 0px) + 200px);   // 15px от левого края + safe area
   top: calc(env(safe-area-inset-bottom, 0px) + 70px); // 15px от нижнего края + safe area
   
   // Если у тебя есть навбар внизу фиксированной высоты (например, 60px),

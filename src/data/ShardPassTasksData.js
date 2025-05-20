@@ -20,7 +20,7 @@ const generateWeeklyTasks = (weekNumber) => {
     const tasks = [
         {
             id: `w${weekNumber}_task_login_days`, // ID для задачи на логины
-            name: 'Log in on 7 different days this week',
+            name: 'Log in 7 different days',
             targetProgress: 7,
             rewardXP: 250,
             isPremium: false,
