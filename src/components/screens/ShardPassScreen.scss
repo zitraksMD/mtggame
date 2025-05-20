@@ -7,14 +7,11 @@
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
 }
 
-// $header-bottom-margin: 5px; // Заменено на margin-bottom: 0; в .shard-pass-header
-
-// Твои переменные для минимальных отступов
-$min-header-content-top-offset-android: 90px;
-$base-header-content-padding-top: 25px;
-
-$back-button-min-static-top-offset: 110px;
-$back-button-additional-offset: 60px;
+// Старые переменные для отступов хедера удалены, как ты и просил.
+// $min-header-content-top-offset-android: 90px;
+// $base-header-content-padding-top: 25px;
+// $back-button-min-static-top-offset: 110px;
+// $back-button-additional-offset: 60px;
 
 // --- Переменные для ShardPass Screen ---
 $sp-bg-start: #2a0a4a;
@@ -148,14 +145,23 @@ $shimmer-animation-duration: 3.5s;
     z-index: 1000;
 }
 
+// --- Внутренний хедер экрана ShardPass ---
 .shard-pass-header {
     display: flex;
+    justify-content: space-between; // Для расположения: [ромб] [титул] [кнопка]
     align-items: center;
-    justify-content: space-between;
     position: relative;
     flex-shrink: 0;
     
-    padding-top: max(#{$min-header-content-top-offset-android}, calc(var(--safe-area-inset-top) + #{$base-header-content-padding-top}));
+    // --- НОВАЯ ЛОГИКА ДЛЯ ВЕРХНЕГО ОТСТУПА ---
+    // Используем твое предложение. Применяем как padding-top.
+    // var(--safe-area-inset-top) уже определен в :root через env().
+    padding-top: max(
+        80px,
+        calc(45px + var(--safe-area-inset-top))
+    );
+    // -----------------------------------------
+    
     padding-left: calc(15px + var(--safe-area-inset-left));
     padding-right: calc(15px + var(--safe-area-inset-right));
     padding-bottom: 10px;
@@ -287,8 +293,11 @@ $shimmer-animation-duration: 3.5s;
     padding: 10px calc(20px + var(--safe-area-inset-left)) 10px calc(20px + var(--safe-area-inset-right));
     box-sizing: border-box;
     width: 100%;
-    margin-top: 35px; // ВРЕМЕННОЕ ЗНАЧЕНИЕ, НУЖНО ПОДОБРАТЬ! (из код1)
-    margin-bottom: 5px;
+    // Это значение по-прежнему нужно будет точно подбирать
+    // в зависимости от высоты .shard-pass-header (с его новым padding-top) 
+    // и высоты .header-hanging-info-container
+    margin-top: 75px; // Примерное значение, требует проверки
+    margin-bottom: 25px;
 
     .level-text {
         color: $sp-text-color;
