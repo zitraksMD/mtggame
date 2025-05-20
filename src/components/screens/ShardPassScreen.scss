@@ -84,7 +84,7 @@ $progress-line-short-length: 30px;
 
 $season-banner-bg: darken($sp-bg-start, 8%);
 $season-banner-border-color: rgba($sp-title-color, 0.6);
-$season-banner-text-color: lighten($sp-text-color, 5%);
+$season-banner-text-color: $sp-title-color;
 $season-banner-font-size: 0.9em;
 $season-banner-padding-y: 5px;
 $season-banner-padding-x: 12px;
@@ -92,7 +92,7 @@ $season-banner-radius: 12px;
 
 $season-ends-info-bg: darken($sp-bg-start, 10%);
 $season-ends-info-border-color: rgba($sp-title-color, 0.4); // Used for consistency if border is applied
-$season-ends-info-text-color: lighten($sp-text-color, 15%);
+$season-ends-info-text-color: #FFFFFF;
 $season-ends-info-font-size: 0.75em;
 $season-ends-info-padding-y: 3px;
 $season-ends-info-padding-x: 10px;
@@ -455,20 +455,38 @@ $shimmer-animation-duration: 3.5s;
 
     .progress-bar-container {
         flex-grow: 1;
-        height: 12px;
-        background-color: $sp-progress-track-bg;
-        border-radius: 6px;
-        overflow: hidden;
-        margin: 0 5px; 
-        position: relative;
-    }
+        height: 16px; // Или твоя текущая высота
+        background-color: $sp-progress-track-bg; 
+        border-radius: 8px; // Или твоя текущая высота / 2
+        // overflow: hidden; // Убираем, если текст должен быть поверх и может не помещаться
+        position: relative; // Важно для абсолютного позиционирования текста внутри
+        margin: 0 10px; // Отступы от ромбов
 
-    .progress-bar-fill {
-        height: 100%;
-        background-color: $sp-progress-fill-bg;
-        border-radius: 6px;
-        transition: width 0.3s ease-in-out;
-        box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
+        .progress-bar-fill {
+            height: 100%;
+            background-color: $sp-progress-fill-bg; 
+            border-radius: इन्херит; // Наследует от родителя, чтобы углы совпадали
+            // или border-radius: 6px; 
+            transition: width 0.3s ease-in-out;
+            // box-shadow: 0 0 4px rgba($sp-progress-fill-bg, 0.3); // Можно оставить
+            display: flex; // Для возможного выравнивания, если текст будет внутри fill
+            align-items: center;
+            justify-content: center;
+        }
+
+        // Стили для текста XP на прогресс-баре
+        .progress-bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7em; // Маленький шрифт, чтобы поместился
+            color: #ffffff;   // Белый цвет для хорошей читаемости на фиолетовом фоне
+            // text-shadow: 0 0 2px rgba(0,0,0,0.7); // Тень для лучшей читаемости, если фон сложный
+            font-weight: 600;
+            white-space: nowrap; // Чтобы текст не переносился
+            z-index: 1; // Чтобы текст был поверх .progress-bar-fill
+        }
     }
 }
 

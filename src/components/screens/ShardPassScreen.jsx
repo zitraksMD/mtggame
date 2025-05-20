@@ -17,8 +17,11 @@ const ShardPassScreen = ({ onClose }) => {
 
     // Используем данные из shardPassData, которые были добавлены в MOCK_SHARD_PASS_DATA_FULL
     // Фоллбэки на случай, если данные по какой-то причине отсутствуют.
-    const seasonNumber = shardPassData.seasonNumber || 1;
-    const daysRemaining = shardPassData.daysRemaining === undefined ? 45 : shardPassData.daysRemaining; // Используем undefined для проверки, т.к. 0 дней - валидное значение
+   // ЗАГЛУШКИ/ДЕФОЛТЫ, если данные не пришли:
+   const seasonNumber = shardPassData.seasonNumber || 1;
+   const daysRemaining = shardPassData.daysRemaining === undefined ? 45 : shardPassData.daysRemaining;
+   const currentLevelXp = shardPassData.currentLevelXp || 0; // XP на текущем уровне
+   const xpPerLevel = shardPassData.xpPerLevel || 1000;    // XP для одного уровн
 
 
     const screenVariants = {
@@ -65,19 +68,12 @@ const ShardPassScreen = ({ onClose }) => {
     }, [shardPassData]);
 
 
+    // currentProgress теперь можно рассчитать, если его нет, или использовать существующий
+    const overallCurrentProgress = (xpPerLevel > 0) ? (currentLevelXp / xpPerLevel) * 100 : 0;
+
     const nextLevel = shardPassData.currentLevel < shardPassData.maxLevel
         ? shardPassData.currentLevel + 1
         : shardPassData.maxLevel;
-
-    // Определяем прогресс для текущего уровня.
-    // Если это максимальный уровень и он достигнут (100%), то currentProgress может быть 100.
-    // Если currentLevel < maxLevel, то currentProgress - это прогресс к следующему уровню.
-    // Если currentLevel === maxLevel, то currentProgress может показывать "заполненность" этого уровня,
-    // или всегда быть 100, если дополнительных очков сверх максимума не бывает.
-    // MOCK_SHARD_PASS_DATA_FULL.currentProgress должен быть прогрессом к следующему уровню.
-    const overallCurrentProgress = (shardPassData.currentLevel === shardPassData.maxLevel && shardPassData.currentProgress === 100)
-                                    ? 100 // Если макс. уровень и 100% прогресс, показываем полный бар
-                                    : shardPassData.currentProgress;
 
 
     return (
@@ -139,6 +135,10 @@ const ShardPassScreen = ({ onClose }) => {
                         role="progressbar"
                         aria-label={`Прогресс к следующему уровню: ${overallCurrentProgress}%`}
                     ></div>
+                    {/* НОВЫЙ ТЕКСТ С XP ВНУТРИ ПРОГРЕСС-БАРА */}
+                    <span className="progress-bar-text">
+                        {currentLevelXp}/{xpPerLevel} 
+                    </span>
                 </div>
                 <div className="level-indicator-diamond next-level-diamond">
                      <div className="level-indicator-diamond-inner-content">

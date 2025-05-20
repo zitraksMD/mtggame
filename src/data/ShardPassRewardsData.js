@@ -334,15 +334,14 @@ const shardPassLevelsData = [
 ];
 
 export const MOCK_SHARD_PASS_DATA_FULL = {
-    currentLevel: 1,        // Начальный уровень для примера
-    currentProgress: 0,     // Начальный прогресс для примера
+    currentLevel: 1,
+    currentProgress: 670, // Процент прогресса (0-100)
+    currentLevelXp: 670,  // Текущее количество XP на данном уровне (0-xpPerLevel)
+    xpPerLevel: 1000,   // XP необходимое для одного уровня
     maxLevel: 50,
-    isPremium: false,       // Пользователь не имеет премиум по умолчанию
-    
-    // --- НОВЫЕ ПОЛЯ ---
-    seasonNumber: 1,        // Номер текущего сезона
-    daysRemaining: 45,      // Сколько дней осталось до конца сезона
-    // ------------------
+    isPremium: false,
+    seasonNumber: 1,
+    daysRemaining: 45,
 
     levels: shardPassLevelsData.map(level => ({
         ...level,
