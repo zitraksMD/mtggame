@@ -59,6 +59,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         setIsFullScreenMapActive,
         startScreenTransition, // Убедимся, что он есть (был и в код2)
         ensureScreenIsOpening,
+        shardPassCurrentLevel,
         isZoneUnlocked,
         treasureChestAttempts,
         useTreasureChestAttempt: consumeChestAttempt,
@@ -76,6 +77,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         isZoneUnlocked: state.isZoneUnlocked,
         treasureChestAttempts: state.treasureChestAttempts,
         useTreasureChestAttempt: state.useTreasureChestAttempt,
+        hardPassCurrentLevel: state.shardPassCurrentLevel,
     }));
 
     const [activeView, setActiveView] = useState('detailed');
@@ -722,17 +724,23 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                                     <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick} title="Задания"><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
                                     <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick} title="Обмен"><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
                                 </div>
-
-                                {/* ▼▼▼ НОВАЯ КНОПКА SHARDPASS (BATTLE PASS) ▼▼▼ */}
-                                <button
-                                    className="mainmenu-shardpass-button" // Новый класс для стилей
-                                    onClick={handleShardPassButtonClick}
-                                    title="ShardPass"
-                                >
-                                    {/* <img src={shardPassIcon} alt="" />  // Если есть иконка */}
-                                    ShardPass
-                                </button>
-                                {/* ▲▲▲ КОНЕЦ НОВОЙ КНОПКИ SHARDPASS ▲▲▲ */}
+ {/* ▼▼▼ КНОПКА SHARDPASS (для activeView === 'detailed') ▼▼▼ */}
+ {activeView === 'detailed' && !isOverlayActive && ( // Показываем кнопку только в detailed виде и когда нет других оверлеев
+                <button
+                    className="mainmenu-shardpass-button" // Класс для новых стилей
+                    onClick={handleShardPassButtonClick}
+                    title="ShardPass"
+                >
+                    <span className="shardpass-button-text">ShardPass</span>
+                    <div className="shardpass-level-rhombus">
+                        {/* Отображаем уровень из стора, по умолчанию 1, если еще не загружен */}
+                        <span className="shardpass-level-number">{shardPassCurrentLevel ?? 1}</span>
+                    </div>
+                    {/* Элемент для эффекта переливания, если не используется псевдо-элемент */}
+                    <div className="shardpass-button-shimmer-overlay"></div>
+                </button>
+            )}
+            {/* ▲▲▲ КОНЕЦ КНОПКИ SHARDPASS ▲▲▲ */}
 
 
                                 <AnimatePresence>

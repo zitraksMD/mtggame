@@ -195,55 +195,130 @@
 
 // Battle Pass (Снова позиционируется абсолютно)
 .mainmenu-shardpass-button {
-  position: fixed; // Фиксированное позиционирование относительно окна просмотра
+  position: absolute; // Фиксированное позиционирование относительно окна просмотра
   left: 10px;      // Отступ слева (можно настроить)
   
   // Используем max() для отступа сверху, учитывая безопасную зону Telegram
   // var(--safe-area-inset-top, 0px) - это фолбэк на случай, если переменная не определена
   // Значения 100px и 60px - это "большие значения", как вы просили (можно настроить)
-  top: max(190px, calc(80px + var(--safe-area-inset-top, 0px))); 
+  top: max(180px, calc(80px + var(--safe-area-inset-top, 0px))); 
   
-  z-index: 1030; // Должен быть выше карты, но ниже полноэкранных модальных окон
+  z-index: 1050; // Выше большинства элементов, но ниже полноэкранных модальных окон
 
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #7f00ff, #e100ff); // Яркий градиент для ShardPass
-  color: white;
-  border: none;
-  border-radius: 25px; // Скругленная кнопка
-  font-size: 1rem; // Размер шрифта (16px по умолчанию)
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0,0,0,0.15);
-  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease;
+  padding: 10px 16px 10px 20px; // Немного ассиметричный для текста и ромбика
+  border: none;
+  border-radius: 28px; // Сильно скругленные края (pill shape)
+  font-weight: 700; // Жирный шрифт
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  overflow: hidden; // Важно для эффекта переливания и чтобы дочерние элементы не вылезали
+  transition: transform 0.2s ease-out, box-shadow 0.3s ease-in-out;
+  user-select: none; // Чтобы текст не выделялся при клике
 
-  img { // Если будете использовать иконку
-    width: 22px;
-    height: 22px;
-    margin-right: 8px;
+  // Градиентный фон (фиолетовый с переходом в более светлый/розовый)
+  // Пример градиента, похожего на тот, что часто используется для "космических" тем
+  background: linear-gradient(130deg, #6a11cb 0%, #ab47bc 40%, #f06292 75%, #ff80ab 100%);
+  // Или более простой фиолетово-белый, как вы описали:
+  // background: linear-gradient(130deg, #8a2be2 0%, #c599ff 70%, #f3e6ff 100%);
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  
+  // Эффект свечения через box-shadow
+  box-shadow: 0 0 8px rgba(220, 150, 255, 0.5), 
+              0 0 16px rgba(200, 100, 255, 0.4),
+              0 0 24px rgba(160, 50, 220, 0.3);
+  animation: pulse-glow-shardpass 2.5s infinite alternate ease-in-out;
+
+  .shardpass-button-text {
+    margin-right: 10px;
+    font-size: 15px; // Размер текста "ShardPass"
+  }
+
+  .shardpass-level-rhombus {
+    width: 28px;  // Размер ромбика
+    height: 28px;
+    background-color: rgba(255, 255, 255, 0.2); // Полупрозрачный фон для ромбика
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(45deg); // Поворачиваем квадрат для получения ромба
+    border-radius: 4px;       // Небольшое скругление углов повернутого квадрата
+    flex-shrink: 0; // Чтобы ромбик не сжимался
+
+    .shardpass-level-number {
+      transform: rotate(-45deg); // Возвращаем текст уровня в нормальное положение
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      line-height: 1; // Убираем лишние отступы у цифр
+    }
+  }
+
+  // Эффект переливания (shimmer)
+  .shardpass-button-shimmer-overlay {
+    position: absolute;
+    top: -50%; // Чтобы покрыть всю высоту с учетом наклона
+    left: -50%; // Начинаем за пределами кнопки
+    width: 200%; // Шире кнопки, чтобы переливание было плавным
+    height: 200%;
+    background: linear-gradient(
+      110deg, // Угол переливания
+      rgba(255, 255, 255, 0) 35%,
+      rgba(255, 255, 255, 0.35) 50%, // Более яркая линия переливания
+      rgba(255, 255, 255, 0) 65%
+    );
+    transform: translateX(-100%) skewX(-20deg); // Начальное положение и наклон
+    animation: shimmer-effect 3.5s infinite linear;
+    pointer-events: none; // Чтобы не мешал кликам
   }
 
   &:hover {
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35), 0 2px 5px rgba(0,0,0,0.2);
+    transform: scale(1.05); // Немного увеличиваем при наведении
+    box-shadow: 0 0 12px rgba(220, 150, 255, 0.7), 
+                0 0 24px rgba(200, 100, 255, 0.6),
+                0 0 36px rgba(160, 50, 220, 0.5);
   }
 
   &:active {
-    transform: translateY(0px) scale(1);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transform: scale(0.98); // Немного уменьшаем при клике
+  }
+}
+
+// Анимация для свечения
+@keyframes pulse-glow-shardpass {
+  from {
+    box-shadow: 0 0 8px rgba(220, 150, 255, 0.5), 
+                0 0 16px rgba(200, 100, 255, 0.4),
+                0 0 24px rgba(160, 50, 220, 0.3);
+  }
+  to {
+    box-shadow: 0 0 14px rgba(220, 150, 255, 0.7), 
+                0 0 28px rgba(200, 100, 255, 0.6),
+                0 0 40px rgba(160, 50, 220, 0.5);
+  }
+}
+
+// Анимация для эффекта переливания
+@keyframes shimmer-effect {
+  0% {
+    transform: translateX(-120%) skewX(-20deg); // За пределами слева
+  }
+  40%, 60% { // Задержка блика на кнопке
+    transform: translateX(20%) skewX(-20deg); // Перемещение вправо (блик проходит по кнопке)
+  }
+  100% {
+    transform: translateX(120%) skewX(-20deg); // За пределами справа
   }
 }
 
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
-  position: fixed;
-  top: max(230px, calc(120px + var(--safe-area-inset-top, 0px))); 
+  position: absolute;
+  top: max(240px, calc(120px + var(--safe-area-inset-top, 0px))); 
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
-  top: max(50px, top);
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
   flex-direction: column;
@@ -279,7 +354,7 @@
 // Правая колонка
 .main-menu-right-column {
   position: absolute;
-  top: max(230px, calc(120px + var(--safe-area-inset-top, 0px))); 
+  top: max(240px, calc(120px + var(--safe-area-inset-top, 0px))); 
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
   right: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
