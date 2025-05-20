@@ -102,25 +102,33 @@ const ShardPassScreen = ({ onClose }) => {
                 </button>
 
                 {/* Обновленные нависающие элементы из код1 (заменяют level-banner-container) */}
-                <div className="header-hanging-info-container">
-                    <div className="season-banner-display">
-                        <span className="season-banner-text">Season {seasonNumber}</span>
-                    </div>
-                    {daysRemaining !== null && daysRemaining !== undefined && ( // Показываем, только если есть данные
-                        <div className="season-ends-info-display">
-                            <span className="season-ends-text">
-                                {daysRemaining > 0 ? `Season will end in ${daysRemaining} days` : "Season has ended"}
-                            </span>
-                        </div>
-                    )}
-                </div>
+                <div className="header-hanging-info-container"> {/* Для центрированных баннеров */}
+        <div className="season-banner-display">
+            <span className="season-banner-text">Season {seasonNumber}</span>
+        </div>
+        
+        {/* Вот здесь линия */}
+        <div className="inter-banner-decorative-line"></div>
+
+        {daysRemaining !== null && daysRemaining !== undefined && (
+            <div className="season-ends-info-display">
+                <span className="season-ends-text">
+                    {daysRemaining > 0 ? `Season will end in ${daysRemaining} days` : "Season has ended"}
+                </span>
             </div>
+        )}
+    </div>
+    {/* <div className="full-width-decorative-line"></div> УДАЛЯЕМ ЭТУ ЛИНИЮ, ЕСЛИ ОНА БЫЛА ОТДЕЛЬНЫМ ЭЛЕМЕНТОМ */}
+</div>
             
             {/* Раздел с общим прогресс-баром (содержимое идентично в код1 и код2) */}
             <div className="overall-progress-bar-section">
-                <span className="level-text current-level-text">
-                    Ур. {shardPassData.currentLevel}
-                </span>
+                {/* Текущий уровень в ромбе */}
+                <div className="level-indicator-diamond current-level-diamond">
+                    <div className="level-indicator-diamond-inner-content">
+                        <span className="level-indicator-diamond-number">{shardPassData.currentLevel}</span>
+                    </div>
+                </div>
                 <div className="progress-bar-container">
                     <div 
                         className="progress-bar-fill" 
@@ -132,9 +140,11 @@ const ShardPassScreen = ({ onClose }) => {
                         aria-label={`Прогресс к следующему уровню: ${overallCurrentProgress}%`}
                     ></div>
                 </div>
-                <span className="level-text next-level-text">
-                    Ур. {nextLevel}
-                </span>
+                <div className="level-indicator-diamond next-level-diamond">
+                     <div className="level-indicator-diamond-inner-content">
+                        <span className="level-indicator-diamond-number">{nextLevel}</span>
+                    </div>
+                </div>
             </div>
 
             <div className="shard-pass-rewards-section"> {/* Содержимое сохранено из код2 */}
@@ -224,11 +234,11 @@ const ShardPassScreen = ({ onClose }) => {
 
             <div className="shard-pass-footer"> {/* Содержимое сохранено из код2 */}
                 <button className="shard-pass-action-button claim-all-btn">
-                    Забрать все ({/* счетчик */})
+                    Claim all ({/* счетчик */})
                 </button>
                 {!shardPassData.isPremium && (
                     <button className="shard-pass-action-button buy-shardpass-btn">
-                        Купить Premium 
+                        Buy Premium 
                     </button>
                 )}
             </div>
