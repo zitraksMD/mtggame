@@ -172,7 +172,7 @@ $task-claim-button-claimed-bg: darken($task-claim-button-disabled-bg, 15%); // �
 $task-claimed-overlay-bg: rgba(0, 0, 0, 0.8); // НОВЫЙ: Полупрозрачный черный
 $task-checkmark-icon-color: #34D399;              // Цвет галочки
 $task-checkmark-icon-font-size: 2.8em;
-$task-checkmark-text-color: #E5E7EB;               // Цвет текста "Completed"
+$task-checkmark-text-color: $sp-text-color;
 $task-checkmark-text-font-size: 0.9em;
 
 // --- Общие для .task-item ---
@@ -1124,20 +1124,19 @@ $shimmer-animation-duration: 3.5s;
         // Анимация будет применяться через .is-claiming-animation или .claimed
 
         .checkmark-icon {
-            font-size: $task-checkmark-icon-font-size;
-            color: $task-checkmark-icon-color;
+            font-size: $task-checkmark-icon-font-size; 
+            color: $task-checkmark-icon-color; // Применит зеленый цвет
             line-height: 1;
         }
 
         .claimed-text {
             font-size: $task-checkmark-text-font-size;
             font-weight: bold;
-            color: $task-checkmark-text-color;
+            color: $task-checkmark-text-color; // Применит золотой цвет
             margin-top: 5px;
             text-transform: uppercase;
         }
     }
-
     // --- СОСТОЯНИЯ ---
     &.not-completed {
         background: $task-item-not-completed-bg;
