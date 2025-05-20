@@ -328,8 +328,8 @@
   justify-content: flex-start; 
   gap: 3px;               
   
-  width: 68px;     
-  height: 72px;    
+  width: 50px;     
+  height: 62px;    
   padding: 8px 4px 6px 4px; 
   box-sizing: border-box; 
   
@@ -374,7 +374,7 @@
 .main-menu-left-column {
   position: absolute;
   top: max(250px, calc(220px + var(--safe-area-inset-top, 0px))); 
-  left: calc(env(safe-area-inset-left, 0px) + 10px); 
+  left: calc(env(safe-area-inset-left, 0px) + 3px); 
   z-index: 5;             
 
   // Размеры колонки
@@ -398,7 +398,7 @@
 .main-menu-right-column {
   position: absolute;
   top: max(250px, calc(220px + var(--safe-area-inset-top, 0px))); 
-  right: calc(env(safe-area-inset-right, 0px) + 10px); 
+  right: calc(env(safe-area-inset-right, 0px) + 3px); 
   z-index: 5;  
 
   // Размеры колонки

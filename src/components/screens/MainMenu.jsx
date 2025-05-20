@@ -719,7 +719,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                 </button>
                 <button className="main-menu-button icon-label-button runes-button" onClick={handleTreasureChestClick} title="Руны Древних">
                     <img src="/assets/icons/runes-icon.png" alt="Руны" className="button-icon-img" />
-                    <span className="button-label">Ancient<br/>runes</span>
+                    <span className="button-label">Runes</span>
                 </button>
             </div>
 
@@ -730,7 +730,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                 </button>
                 <button className="main-menu-button icon-label-button quests-button" onClick={handleQuestsClick} title="Задания">
                     <img src="/assets/icons/quests-icon.png" alt="Задания" className="button-icon-img" />
-                    <span className="button-label">Task<br/>Center</span>
+                    <span className="button-label">Task</span>
                 </button>
                 <button className="main-menu-button icon-label-button exchange-button" onClick={handleExchangeClick} title="Обмен">
                     <img src="/assets/icons/exchange-icon.png" alt="Обмен" className="button-icon-img" />
