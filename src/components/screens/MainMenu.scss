@@ -317,7 +317,7 @@
 // Левая колонка (Почта и Сундук)
 .main-menu-left-column {
   position: absolute;
-  top: max(240px, calc(120px + var(--safe-area-inset-top, 0px))); 
+  top: max(260px, calc(120px + var(--safe-area-inset-top, 0px))); 
   /* Убедимся, что не уходим слишком высоко, если safe-area-inset-top маленькая */
   left: calc(env(safe-area-inset-left, 0px) + 10px); /* Отступ слева с учетом безопасной зоны */
   display: flex;
