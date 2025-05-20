@@ -69,11 +69,11 @@ $side-label-width: 38px;
 $side-label-padding-x: 5px;
 $side-label-padding-y: 10px;
 
-// --- Переменные из код1, интегрированные или обновленные ---
-$track-reward-height-base: 160px; // Базовая высота дорожек с наградами (из код1, заменяет $track-reward-height)
-$track-levels-progress-height-base: 40px; // Базовая высота дорожки уровней (из код1, заменяет $track-levels-progress-height)
-$new-reward-card-height-base: 140px; // Базовая высота карточки (из код1)
-$main-tracks-gap-base: 10px; // Базовый отступ (из код1, заменяет $main-tracks-gap)
+// Базовые размеры, УВЕЛИЧЕННЫЕ
+$track-reward-height-base: 185px; // Значительно увеличили
+$track-levels-progress-height-base: 45px; // Немного увеличили
+$new-reward-card-height-base: 165px;    // Значительно увеличили
+$main-tracks-gap-base: 12px;            // Слегка увеличили
 
 $reward-card-width: 90px;
 $reward-cards-gap: 25px;
