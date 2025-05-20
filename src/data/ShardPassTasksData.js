@@ -3,73 +3,70 @@
 /**
  * Defines the structure for tasks within the ShardPass.
  *
- * Task Structure:
- * - id: string - Unique identifier for the task (e.g., 'w1t1' for Week 1, Task 1).
+ * Task Definition Structure (Static):
+ * - id: string - Unique identifier for the task (e.g., 'w1_task_login_days').
  * - name: string - Display name of the task.
- * - currentProgress: number - Player's current progress towards the target.
  * - targetProgress: number - The target value to complete the task.
  * - rewardXP: number - XP awarded upon claiming the task.
  * - isPremium: boolean - True if the task requires a premium ShardPass to claim.
- * - isClaimed: boolean - True if the reward for this task has already been claimed.
+ * - eventTracked: string - The specific event type the useGameStore will look for.
+ * - condition: object (optional) - Additional details for the eventTracked.
  *
- * Note: isCompleted will be derived in the component: (currentProgress >= targetProgress)
+ * Note: currentProgress, isClaimed, and any auxiliary tracking fields (like lastCountedLoginDate for login tasks)
+ * will be managed by useGameStore within its shardPassTasksProgress state object for each task instance.
  */
 
 const generateWeeklyTasks = (weekNumber) => {
     const tasks = [
         {
-            id: `w${weekNumber}t1`,
-            name: 'Log in for 7 days', // Было: 'Входить в игру 7 дней'
-            currentProgress: 0,
+            id: `w${weekNumber}_task_login_days`, // ID для задачи на логины
+            name: 'Log in on 7 different days this week',
             targetProgress: 7,
             rewardXP: 250,
             isPremium: false,
-            isClaimed: false,
+            eventTracked: 'login', // Общее событие входа. Логика уникальности дней будет в store.
         },
         {
-            id: `w${weekNumber}t2`,
-            name: 'Complete 10 any levels on Normal difficulty', // Было: 'Пройти 10 любых уровней на сложности Normal'
-            currentProgress: 0,
+            id: `w${weekNumber}_task_complete_normal`,
+            name: 'Complete 10 any levels on Normal difficulty',
             targetProgress: 10,
             rewardXP: 250,
             isPremium: false,
-            isClaimed: false,
+            eventTracked: 'complete_level',
+            condition: { difficulty: 'normal' },
         },
         {
-            id: `w${weekNumber}t3`,
-            name: 'Open 25 any chests', // Было: 'Открыть 25 любых сундуков'
-            currentProgress: 0,
+            id: `w${weekNumber}_task_open_chests`,
+            name: 'Open 25 any chests',
             targetProgress: 25,
             rewardXP: 250,
             isPremium: false,
-            isClaimed: false,
+            eventTracked: 'open_chest',
         },
         {
-            id: `w${weekNumber}t4`,
-            name: 'Upgrade any equipment 10 times', // Было: 'Улучшить любое снаряжение 10 раз'
-            currentProgress: 0,
+            id: `w${weekNumber}_task_upgrade_gear`,
+            name: 'Upgrade any equipment 10 times',
             targetProgress: 10,
             rewardXP: 400,
             isPremium: true,
-            isClaimed: false,
+            eventTracked: 'upgrade_gear',
         },
         {
-            id: `w${weekNumber}t5`,
-            name: 'Upgrade an artifact 3 times', // Было: 'Улучшить артефакт 3 раза'
-            currentProgress: 0,
+            id: `w${weekNumber}_task_upgrade_artifact`,
+            name: 'Upgrade an artifact 3 times',
             targetProgress: 3,
             rewardXP: 500,
             isPremium: true,
-            isClaimed: false,
+            eventTracked: 'upgrade_artifact',
         },
         {
-            id: `w${weekNumber}t6`,
-            name: 'Complete 3 any levels on Hard difficulty', // Было: 'Пройти 3 любых уровня на сложности Hard'
-            currentProgress: 0,
+            id: `w${weekNumber}_task_complete_hard`,
+            name: 'Complete 3 any levels on Hard difficulty',
             targetProgress: 3,
             rewardXP: 600,
             isPremium: true,
-            isClaimed: false,
+            eventTracked: 'complete_level',
+            condition: { difficulty: 'hard' },
         },
     ];
     return tasks;
@@ -77,23 +74,23 @@ const generateWeeklyTasks = (weekNumber) => {
 
 export const SHARD_PASS_TASKS_WEEKS = 8; // Total number of weeks
 
-export const initialTasksData = {};
+export const initialTasksData = {}; // Теперь это только определения задач
 for (let i = 1; i <= SHARD_PASS_TASKS_WEEKS; i++) {
-    initialTasksData[i] = generateWeeklyTasks(i);
+    initialTasksData[String(i)] = generateWeeklyTasks(i); // Ключи недель - строки
 }
 
-// Example of how to manually set progress for testing:
-// initialTasksData[1][0].currentProgress = 3; // Week 1, Task 1, 3/7 days
-// initialTasksData[1][1].currentProgress = 10; // Week 1, Task 2, completed
-// initialTasksData[1][3].currentProgress = 5; // Week 1, Premium Task 4, 5/10 upgrades
-// initialTasksData[2][0].currentProgress = 1; // Week 2, Task 1, 1/7 days
-
 /*
-    To use this in ShardPassScreen.jsx:
+    Как это будет работать с useGameStore:
 
-    import { initialTasksData as allWeeksTasksData, SHARD_PASS_TASKS_WEEKS } from '../../data/ShardPassTasksData'; // Adjust path if needed
+    В `useGameStore`, в `shardPassTasksProgress` для задачи типа "login_days" будет храниться примерно так:
+    `state.shardPassTasksProgress["1"]["w1_task_login_days"] = { progress: 0, isClaimed: false, lastCountedLoginDate: 'YYYY-MM-DD' };`
 
-    // Inside ShardPassScreen component:
-    // const [tasksByWeek, setTasksByWeek] = useState(allWeeksTasksData);
-    // const weeks = Array.from({ length: SHARD_PASS_TASKS_WEEKS }, (_, i) => i + 1);
+    При обработке события `trackTaskEvent('login', ...)` в `useGameStore`:
+    - Для ShardPass задач с `eventTracked: 'login'`:
+        - Получить текущую дату (например, '2025-05-20').
+        - Сравнить с `taskState.lastCountedLoginDate`.
+        - Если даты разные (или `lastCountedLoginDate` отсутствует) И `progress < targetProgress`:
+            - Увеличить `progress` на 1.
+            - Установить `lastCountedLoginDate` на текущую дату.
+            - Отметить, что прогресс ShardPass задач изменился.
 */

@@ -2,14 +2,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './ShardPassScreen.scss';
-import { MOCK_SHARD_PASS_DATA_FULL } from '../../data/ShardPassRewardsData';
-import { initialTasksData as allWeeksTasksData, SHARD_PASS_TASKS_WEEKS } from '../../data/ShardPassTasksData';
+
+// Используем определения наград и задач из файлов данных (как в код1)
+import { MOCK_SHARD_PASS_DATA_FULL as shardPassSeasonDefinitions } from '../../data/ShardPassRewardsData';
+import { initialTasksData as shardPassTaskDefinitionsByWeek, SHARD_PASS_TASKS_WEEKS } from '../../data/ShardPassTasksData';
+
 import {
-    SEASON_START_DATE_UTC,
+    SEASON_START_DATE_UTC, // Используется для определения доступности недель
     getUnlockDateTimeForWeek,
     formatTimeRemaining,
     MS_PER_SECOND
 } from '../../data/TimeConstants';
+
+import useGameStore from '../../store/useGameStore'; // <<< ИМПОРТ ХРАНИЛИЩА из код1
 
 const BackArrowIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -18,49 +23,91 @@ const BackArrowIcon = () => (
 );
 
 const ShardPassScreen = ({ onClose }) => {
-    const [shardPassData, setShardPassData] = useState(MOCK_SHARD_PASS_DATA_FULL);
-    const [isTasksViewVisible, setIsTasksViewVisible] = useState(false);
-    const [activeTaskWeek, setActiveTaskWeek] = useState(1);
-    const [tasksByWeek, setTasksByWeek] = useState(allWeeksTasksData);
-    const [animatingClaimTasks, setAnimatingClaimTasks] = useState({});
+    // --- Получаем данные и действия из useGameStore (как в код1) ---
+    const {
+        shardPassCurrentLevel,
+        shardPassCurrentXp,
+        shardPassXpPerLevel,
+        shardPassMaxLevel,
+        isShardPassPremium,
+        shardPassRewardsClaimed, // Объект состояния полученных наград { "level_1_free": true, ... }
+        shardPassTasksProgress,   // Объект состояния прогресса задач { "1": { "sp_w1_kill_10_any": { progress: 5, isClaimed: false } } }
+        
+        purchaseShardPassPremium,
+        claimShardPassReward,
+        claimAllShardPassRewards,
+        claimShardPassTaskReward,
+    } = useGameStore(state => ({
+        shardPassCurrentLevel: state.shardPassCurrentLevel,
+        shardPassCurrentXp: state.shardPassCurrentXp,
+        shardPassXpPerLevel: state.shardPassXpPerLevel,
+        shardPassMaxLevel: state.shardPassMaxLevel,
+        isShardPassPremium: state.isShardPassPremium,
+        shardPassRewardsClaimed: state.shardPassRewardsClaimed,
+        shardPassTasksProgress: state.shardPassTasksProgress,
 
+        purchaseShardPassPremium: state.purchaseShardPassPremium,
+        claimShardPassReward: state.claimShardPassReward,
+        claimAllShardPassRewards: state.claimAllShardPassRewards,
+        claimShardPassTaskReward: state.claimShardPassTaskReward,
+    }));
+
+    // Локальное состояние для UI (из код1 и код2)
+    const [isTasksViewVisible, setIsTasksViewVisible] = useState(false);
+    const [activeTaskWeek, setActiveTaskWeek] = useState(1); // Пользователь может выбирать неделю
+    const [animatingClaimTasks, setAnimatingClaimTasks] = useState({});
     const [timeRemainingForWeek, setTimeRemainingForWeek] = useState('');
     const [isCurrentWeekLocked, setIsCurrentWeekLocked] = useState(true);
-
     const [isBuyPremiumPopupVisible, setIsBuyPremiumPopupVisible] = useState(false);
+    const [isPaymentOptionsPopupVisible, setIsPaymentOptionsPopupVisible] = useState(false);
+    const [isRewardClaimedPopupVisible, setIsRewardClaimedPopupVisible] = useState(false);
+    const [lastClaimedReward, setLastClaimedReward] = useState(null); // { icon: string, name: string, amount: number | string }
+    const [claimableRewardsCount, setClaimableRewardsCount] = useState(0);
+    const [isMultiRewardsClaimPopupVisible, setIsMultiRewardsClaimPopupVisible] = useState(false);
+    const [claimedAllRewardsList, setClaimedAllRewardsList] = useState([]); // Список для отображения в попапе
 
+    const PASS_PRICE = shardPassSeasonDefinitions.premiumPriceUSD || "14.99"; // Из определений (код1)
     const weeks = Array.from({ length: SHARD_PASS_TASKS_WEEKS }, (_, i) => i + 1);
+    const seasonNumber = shardPassSeasonDefinitions.seasonNumber || 1;
+    
+    // Расчет дней до конца сезона (из код1)
+    const calculateDaysRemaining = () => {
+        if (!shardPassSeasonDefinitions.endDateUTC) return null;
+        const now = new Date();
+        const endDate = new Date(shardPassSeasonDefinitions.endDateUTC);
+        const diffTime = endDate - now;
+        if (diffTime <= 0) return 0;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+    const [daysRemaining, setDaysRemaining] = useState(calculateDaysRemaining());
 
-    const seasonNumber = shardPassData.seasonNumber || 1;
-    const daysRemaining = shardPassData.daysRemaining === undefined ? 45 : shardPassData.daysRemaining;
+    useEffect(() => { // Обновление дней до конца сезона (из код1)
+        const timer = setInterval(() => {
+            setDaysRemaining(calculateDaysRemaining());
+        }, 1000 * 60 * 60); // Обновлять раз в час
+        return () => clearInterval(timer);
+    }, []);
 
-    const currentLevelXp = shardPassData.currentLevelXp;
-    const xpPerLevel = shardPassData.xpPerLevel;
-
-    // --- ВАРИАНТЫ АНИМАЦИИ ---
+    // --- ВАРИАНТЫ АНИМАЦИИ (из код2) ---
     const screenVariants = {
         initial: { opacity: 0 },
         animate: { opacity: 1 },
         exit: { opacity: 0, transition: { duration: 0.2 } }
     };
-
-    const sectionAppearVariant = { // Для rewards <-> tasks
+    const sectionAppearVariant = {
         initial: { opacity: 0, y: 20 },
         animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
         exit: { opacity: 0, y: -20, transition: { duration: 0.2, ease: "easeInOut" } }
     };
-
-    const tabsContainerVariant = { // Для табов
+    const tabsContainerVariant = {
         initial: { opacity: 0, x: -20 },
         animate: { opacity: 1, x: 0, transition: { duration: 0.3, ease: "easeOut", delay: 0.15 } }
     };
-
     const taskListAreaVariant = {
         initial: { opacity: 0 },
         animate: { opacity: 1, transition: { duration: 0.3, delay: 0.3 } },
         exit: { opacity: 0, transition: { duration: 0.2 } }
     };
-
     const lockOverlayAppearVariant = {
         initial: { opacity: 0 },
         animate: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } },
@@ -78,7 +125,7 @@ const ShardPassScreen = ({ onClose }) => {
         paid: { top: '50%', transform: 'translateY(-50%) rotate(180deg)' }
     });
 
-    useEffect(() => {
+    useEffect(() => { // Расчет позиций для sticky labels (из код2, адаптировано)
         const calculatePositions = () => {
             if (stickyLabelsLayerRef.current && freeTrackRef.current && premiumTrackRef.current && rewardsGridContainerRef.current) {
                 const scrollContainer = stickyLabelsLayerRef.current.offsetParent;
@@ -102,19 +149,34 @@ const ShardPassScreen = ({ onClose }) => {
 
         if (!isTasksViewVisible) {
             calculatePositions();
-            const timerId = setTimeout(calculatePositions, 450);
+            const timerId = setTimeout(calculatePositions, 450); // Recalculate after animations might have settled
             window.addEventListener('resize', calculatePositions);
             return () => {
                 clearTimeout(timerId);
                 window.removeEventListener('resize', calculatePositions);
             };
         }
-    }, [shardPassData, isTasksViewVisible]);
+    }, [isTasksViewVisible]); // Зависимость от shardPassData удалена, так как структура не должна так часто меняться
 
-    useEffect(() => {
-        if (!isTasksViewVisible) {
-            return;
-        }
+    useEffect(() => { // Подсчет доступных для клейма наград ShardPass (из код1, использует данные стора)
+        let count = 0;
+        shardPassSeasonDefinitions.levels.forEach(levelDef => {
+            if (levelDef.level <= shardPassCurrentLevel) {
+                // Free reward
+                if (levelDef.freeReward && !shardPassRewardsClaimed[`level_${levelDef.level}_free`]) {
+                    count++;
+                }
+                // Premium reward
+                if (isShardPassPremium && levelDef.premiumReward && !shardPassRewardsClaimed[`level_${levelDef.level}_premium`]) {
+                    count++;
+                }
+            }
+        });
+        setClaimableRewardsCount(count);
+    }, [shardPassSeasonDefinitions.levels, shardPassCurrentLevel, isShardPassPremium, shardPassRewardsClaimed]);
+
+    useEffect(() => { // Таймер и статус блокировки для недель заданий (из код1, адаптировано)
+        if (!isTasksViewVisible) return;
         const calculateWeekLockStatus = () => {
             const nowUtc = new Date();
             const unlockTimeForActiveWeek = getUnlockDateTimeForWeek(activeTaskWeek, SEASON_START_DATE_UTC);
@@ -128,7 +190,6 @@ const ShardPassScreen = ({ onClose }) => {
                 setTimeRemainingForWeek(formatTimeRemaining(remainingMs));
             }
         };
-
         calculateWeekLockStatus();
         const intervalId = setInterval(calculateWeekLockStatus, MS_PER_SECOND || 1000);
         return () => clearInterval(intervalId);
@@ -136,148 +197,160 @@ const ShardPassScreen = ({ onClose }) => {
 
 
     const overallCurrentProgress =
-        (xpPerLevel > 0 && currentLevelXp <= xpPerLevel) ? (currentLevelXp / xpPerLevel) * 100 :
-        (currentLevelXp > xpPerLevel && shardPassData.currentLevel < shardPassData.maxLevel) ? 100 :
-        (shardPassData.currentLevel === shardPassData.maxLevel && currentLevelXp >= xpPerLevel) ? 100 :
+        (shardPassXpPerLevel > 0 && shardPassCurrentXp <= shardPassXpPerLevel) ? (shardPassCurrentXp / shardPassXpPerLevel) * 100 :
+        (shardPassCurrentXp > shardPassXpPerLevel && shardPassCurrentLevel < shardPassMaxLevel) ? 100 :
+        (shardPassCurrentLevel === shardPassMaxLevel && shardPassCurrentXp >= shardPassXpPerLevel) ? 100 :
         0;
 
-    const nextLevel = shardPassData.currentLevel < shardPassData.maxLevel
-        ? shardPassData.currentLevel + 1
-        : shardPassData.maxLevel;
+    const nextLevel = shardPassCurrentLevel < shardPassMaxLevel
+        ? shardPassCurrentLevel + 1
+        : shardPassMaxLevel;
 
-    const handleBuyPremium = () => { // Эта функция вызывается из попапа для фактической "покупки"
-        console.log("Processing premium purchase...");
-        setShardPassData(prevData => ({
-            ...prevData,
-            isPremium: true,
-        }));
+    const handleToggleTasksView = () => setIsTasksViewVisible(prev => !prev);
+
+    const openBuyPremiumPopup = () => {
+        setIsBuyPremiumPopupVisible(true);
+        setIsPaymentOptionsPopupVisible(false);
+        setIsRewardClaimedPopupVisible(false);
+        setIsMultiRewardsClaimPopupVisible(false);
     };
-
-    const handleToggleTasksView = () => {
-        setIsTasksViewVisible(prev => !prev);
-    };
-
-    const openBuyPremiumPopup = () => setIsBuyPremiumPopupVisible(true);
     const closeBuyPremiumPopup = () => setIsBuyPremiumPopupVisible(false);
 
-    const handleConfirmBuyPremiumFromPopup = () => {
-        handleBuyPremium(); // "Покупаем"
-        closeBuyPremiumPopup(); // Закрываем попап
+    const openPaymentOptionsPopup = () => {
+        closeBuyPremiumPopup();
+        setIsPaymentOptionsPopupVisible(true);
+    };
+    const closePaymentOptionsPopup = () => setIsPaymentOptionsPopupVisible(false);
+
+    const closeRewardClaimedPopup = () => {
+        setIsRewardClaimedPopupVisible(false);
+        setLastClaimedReward(null);
+    };
+    const closeMultiRewardsClaimPopup = () => {
+        setIsMultiRewardsClaimPopupVisible(false);
+        setClaimedAllRewardsList([]);
     };
 
-    const handleClaimTaskReward = (weekKey, taskId) => {
-        const taskToClaim = tasksByWeek[weekKey]?.find(t => t.id === taskId);
-        
-        const isPremiumTaskAndLocked = taskToClaim && taskToClaim.isPremium && !shardPassData.isPremium;
-        if (isPremiumTaskAndLocked) {
-            openBuyPremiumPopup(); // Открываем попап для премиум заданий
+    const handleActualPremiumPurchase = async () => { // (из код1)
+        const result = await purchaseShardPassPremium(); // Это действие из useGameStore
+        if (result.success) {
+            console.log('ShardPass Premium successfully activated via store!');
+        } else {
+            console.error('Failed to activate ShardPass Premium:', result.message);
+        }
+        closePaymentOptionsPopup();
+        // setIsBuyPremiumPopupVisible(false); // Можно и основной закрыть, если нужно
+    };
+    
+    const handlePaymentOptionSelected = (method) => { // (из код1)
+        console.log(`Payment method selected: ${method}. Price: $${PASS_PRICE}`);
+        handleActualPremiumPurchase();
+    };
+
+    const handleClaimAll = async () => { // (из код1)
+        if (claimableRewardsCount === 0) return;
+        const newlyClaimedResult = await claimAllShardPassRewards(); // Действие из стора
+        if (newlyClaimedResult.success && newlyClaimedResult.claimedRewards && newlyClaimedResult.claimedRewards.length > 0) {
+            setClaimedAllRewardsList(newlyClaimedResult.claimedRewards.map(r => ({ // Адаптируем для попапа
+                icon: r.icon,
+                name: r.name || (r.type === 'item' ? `Item ${r.itemId}` : r.type),
+                amount: r.amount
+            })));
+            setIsMultiRewardsClaimPopupVisible(true);
+        }
+    };
+
+    const handleRewardCardClick = async (levelData, isPremiumRewardItem) => { // (из код1)
+        setIsBuyPremiumPopupVisible(false);
+        setIsPaymentOptionsPopupVisible(false);
+        setIsMultiRewardsClaimPopupVisible(false);
+
+        let rewardDefinitionOnClick;
+        const levelDef = shardPassSeasonDefinitions.levels.find(l => l.level === levelData.level);
+
+        if (isPremiumRewardItem) {
+            rewardDefinitionOnClick = levelDef?.premiumReward;
+        } else {
+            rewardDefinitionOnClick = levelDef?.freeReward;
+        }
+
+        if (!rewardDefinitionOnClick) {
+            console.error("Reward definition not found for click.");
             return;
         }
 
-        const taskIsCompletable = taskToClaim && (taskToClaim.currentProgress >= taskToClaim.targetProgress);
+        if (isPremiumRewardItem && !isShardPassPremium) {
+            openBuyPremiumPopup();
+            return;
+        }
+        
+        const rewardKey = `level_${levelData.level}_${isPremiumRewardItem ? 'premium' : 'free'}`;
+        if (levelData.level <= shardPassCurrentLevel && !shardPassRewardsClaimed[rewardKey]) {
+            const result = await claimShardPassReward(levelData.level, isPremiumRewardItem); // Действие из стора
+            if (result.success && result.reward) {
+                setLastClaimedReward({
+                    icon: result.reward.icon,
+                    name: result.reward.name || (result.reward.type === 'item' ? `Item ${result.reward.itemId}` : result.reward.type),
+                    amount: result.reward.amount
+                });
+                setIsRewardClaimedPopupVisible(true);
+            } else {
+                console.warn("Failed to claim reward from store:", result.message);
+            }
+        }
+    };
 
-        if (!taskToClaim || !taskIsCompletable || taskToClaim.isClaimed) {
+    const handleClaimTaskRewardClick = async (weekNum, taskId) => { // (из код1)
+        const taskDef = shardPassTaskDefinitionsByWeek[String(weekNum)]?.find(t => t.id === taskId);
+        if (!taskDef) return;
+
+        if (taskDef.isPremium && !isShardPassPremium) {
+            openBuyPremiumPopup();
             return;
         }
 
-        setShardPassData(prevData => {
-            let newCurrentLevelXp = prevData.currentLevelXp + taskToClaim.rewardXP;
-            let newCurrentLevel = prevData.currentLevel;
-            const xpNeededForLevelUp = prevData.xpPerLevel || 1000; 
-            while (newCurrentLevel < prevData.maxLevel && newCurrentLevelXp >= xpNeededForLevelUp) {
-                newCurrentLevel += 1;
-                newCurrentLevelXp -= xpNeededForLevelUp;
-            }
-            if (newCurrentLevel === prevData.maxLevel && newCurrentLevelXp > xpNeededForLevelUp) {
-                newCurrentLevelXp = xpNeededForLevelUp;
-            }
-            return {
-                ...prevData,
-                currentLevel: newCurrentLevel,
-                currentLevelXp: newCurrentLevelXp,
-            };
-        });
+        const taskProgressData = shardPassTasksProgress[String(weekNum)]?.[taskId];
+        if (!taskProgressData || taskProgressData.isClaimed || (taskProgressData.progress || 0) < taskDef.targetProgress) {
+            return; // Нельзя получить или уже получено
+        }
         
-        setTasksByWeek(prevTasksByWeek => { 
-            let weekTasks = prevTasksByWeek[weekKey].map(task => {
-                if (task.id === taskId) {
-                    return { ...task, isClaimed: true }; 
-                }
-                return task;
-            });
-
-            weekTasks.sort((a, b) => {
-                const aIsCompleted = a.currentProgress >= a.targetProgress;
-                const bIsCompleted = b.currentProgress >= b.targetProgress;
-
-                if (a.isClaimed && !b.isClaimed) return 1;  
-                if (!a.isClaimed && b.isClaimed) return -1; 
-
-                if (a.isClaimed === b.isClaimed) {
-                    if (!aIsCompleted && bIsCompleted) return -1; 
-                    if (aIsCompleted && !bIsCompleted) return 1;  
-                }
-                return 0;
-            });
-
-            return { ...prevTasksByWeek, [weekKey]: weekTasks };
-        });
-
         setAnimatingClaimTasks(prev => ({ ...prev, [taskId]: true }));
-        const animationDuration = 1000; 
-        setTimeout(() => {
+        const result = await claimShardPassTaskReward(weekNum, taskId); // Действие из стора
+        
+        if (!result.success) {
+            console.warn("Failed to claim task reward:", result.message);
+        }
+        // Анимация завершится и кнопка обновится через re-render из-за изменения store
+         setTimeout(() => {
             setAnimatingClaimTasks(prev => {
                 const newState = { ...prev };
                 delete newState[taskId];
                 return newState;
             });
-        }, animationDuration);
+        }, 1000);
     };
 
-    // Обработчик клика на карточку награды
-    const handleRewardCardClick = (levelData, isPremiumRewardItem) => {
-        if (isPremiumRewardItem) {
-            const shouldShowPopupForPremiumReward = !shardPassData.isPremium && !levelData.premiumReward.claimed;
+    // --- DEBUG Кнопка для быстрого выполнения и клейма задачи (из код1) ---
+    const handleDebugCompleteAndClaimTask = async (weekNum, taskId) => {
+        const taskDef = shardPassTaskDefinitionsByWeek[String(weekNum)]?.find(t => t.id === taskId);
+        if (!taskDef) return;
 
-            if (shouldShowPopupForPremiumReward) {
-                openBuyPremiumPopup();
-            } else if (shardPassData.isPremium && levelData.level <= shardPassData.currentLevel && !levelData.premiumReward.claimed) {
-                console.log("Попытка получить доступную премиум награду:", levelData.premiumReward.name);
-                // TODO: Добавить логику получения премиум награды (например, взаимодействие с бэкендом)
-                // После успешного получения от бэкенда или если логика чисто клиентская:
-                setShardPassData(prevData => {
-                   const newLevels = prevData.levels.map(lvl => {
-                       if (lvl.level === levelData.level) {
-                           return { ...lvl, premiumReward: { ...lvl.premiumReward, claimed: true } };
-                       }
-                       return lvl;
-                   });
-                   return { ...prevData, levels: newLevels };
-                });
-            }
-        } else { // Это бесплатная награда
-            if (levelData.level <= shardPassData.currentLevel && !levelData.freeReward.claimed) {
-                console.log("Попытка получить доступную бесплатную награду:", levelData.freeReward.name);
-                // TODO: Добавить логику получения бесплатной награды (например, взаимодействие с бэкендом)
-                // После успешного получения от бэкенда или если логика чисто клиентская:
-                // ***** НАЧАЛО ИЗМЕНЕНИЯ *****
-                setShardPassData(prevData => {
-                   const newLevels = prevData.levels.map(lvl => {
-                       if (lvl.level === levelData.level) {
-                           // Убедимся, что freeReward существует, прежде чем изменять его
-                           const updatedFreeReward = lvl.freeReward ? { ...lvl.freeReward, claimed: true } : { name: "Unknown Free Reward", icon: "", claimed: true };
-                           return { ...lvl, freeReward: updatedFreeReward };
-                       }
-                       return lvl;
-                   });
-                   return { ...prevData, levels: newLevels };
-                });
-                // ***** КОНЕЦ ИЗМЕНЕНИЯ *****
-            }
+        if (taskDef.isPremium && !isShardPassPremium) {
+            openBuyPremiumPopup(); // Сначала предложим купить премиум
+            return;
         }
+        
+        // Это упрощенный дебаг-метод. В реальном сценарии, trackTaskEvent должен был бы вызываться.
+        // Здесь мы просто пытаемся забрать награду, если store позволит (например, если бы был debug action для установки прогресса).
+        console.log(`[DEBUG] Attempting to force claim task ${taskId} in week ${weekNum}`);
+        
+        // Искусственно "выполняем" задачу, если в сторе есть такой метод (для дебага).
+        // if (useGameStore.getState().debugSetTaskProgress) {
+        //    useGameStore.getState().debugSetTaskProgress(weekNum, taskId, taskDef.targetProgress);
+        // }
+        // Затем пытаемся забрать
+        await handleClaimTaskRewardClick(weekNum, taskId); 
     };
-
-
 
     return (
         <motion.div
@@ -287,10 +360,11 @@ const ShardPassScreen = ({ onClose }) => {
             animate="animate"
             exit="exit"
         >
+            {/* ShardPass Header */}
             <div className="shard-pass-header">
                 <div className="header-level-badge">
                     <div className="header-level-badge-inner-content">
-                        <span className="header-level-number">{shardPassData.currentLevel}</span>
+                        <span className="header-level-number">{shardPassCurrentLevel}</span> {/* ИЗ СТОРА */}
                     </div>
                 </div>
                 <div className="header-main-title">
@@ -304,26 +378,27 @@ const ShardPassScreen = ({ onClose }) => {
                         <span className="season-banner-text">Season {seasonNumber}</span>
                     </div>
                     <div className="inter-banner-decorative-line"></div>
-                    {daysRemaining !== null && daysRemaining !== undefined && (
-                        <div className="season-ends-info-display">
-                            <span className="season-ends-text">
-                                {daysRemaining > 0 ? `Season will end in ${daysRemaining} days` : "Season has ended"}
-                            </span>
-                        </div>
-                    )}
+                    {daysRemaining !== null && (
+                         <div className="season-ends-info-display">
+                             <span className="season-ends-text">
+                                 {daysRemaining > 0 ? `Season will end in ${daysRemaining} days` : "Season has ended"}
+                             </span>
+                         </div>
+                     )}
                 </div>
             </div>
 
+            {/* Overall Progress Bar Section */}
             <div className="overall-progress-bar-section">
                 <div className="level-indicator-diamond current-level-diamond">
                     <div className="level-indicator-diamond-inner-content">
-                        <span className="level-indicator-diamond-number">{shardPassData.currentLevel}</span>
+                        <span className="level-indicator-diamond-number">{shardPassCurrentLevel}</span> {/* ИЗ СТОРА */}
                     </div>
                 </div>
                 <div className="progress-bar-container">
                     <div
                         className="progress-bar-fill"
-                        style={{ width: `${overallCurrentProgress}%` }}
+                        style={{ width: `${overallCurrentProgress}%` }} /* Расчет на основе данных стора */
                         aria-valuenow={overallCurrentProgress}
                         aria-valuemin="0"
                         aria-valuemax="100"
@@ -331,16 +406,20 @@ const ShardPassScreen = ({ onClose }) => {
                         aria-label={`Прогресс к следующему уровню: ${overallCurrentProgress}%`}
                     ></div>
                     <span className="progress-bar-text">
-                        {shardPassData.currentLevelXp}/{shardPassData.xpPerLevel}
+                        {/* ИЗ СТОРА */}
+                        {shardPassCurrentLevel === shardPassMaxLevel && overallCurrentProgress >= 100 
+                            ? "MAX" 
+                            : `${shardPassCurrentXp}/${shardPassXpPerLevel}`} 
                     </span>
                 </div>
                 <div className="level-indicator-diamond next-level-diamond">
                     <div className="level-indicator-diamond-inner-content">
-                        <span className="level-indicator-diamond-number">{nextLevel}</span>
+                        <span className="level-indicator-diamond-number">{nextLevel}</span> {/* Расчет на основе данных стора */}
                     </div>
                 </div>
             </div>
 
+            {/* Rewards/Tasks View Toggle Area */}
             <AnimatePresence mode="wait">
                 {!isTasksViewVisible ? (
                     <motion.div
@@ -360,49 +439,50 @@ const ShardPassScreen = ({ onClose }) => {
                                 <div className="rewards-grid-container" ref={rewardsGridContainerRef}>
                                     {/* Free Rewards Track */}
                                     <div className="rewards-track free-rewards-track" ref={freeTrackRef}>
-                                        {shardPassData.levels.map(levelData => (
-                                            <div key={`free-${levelData.level}`} className="reward-cell">
-                                                <div
-                                                    className={`
-                                                        reward-card
-                                                        free-reward
-                                                        ${levelData.freeReward.claimed ? 'claimed' : ''}
-                                                        ${levelData.level > shardPassData.currentLevel ? 'future' : ''}
-                                                        ${(levelData.level <= shardPassData.currentLevel && !levelData.freeReward.claimed) ? 'available' : ''}
-                                                    `}
-                                                    onClick={() => handleRewardCardClick(levelData, false)} // Добавлен onClick
-                                                >
-                                                    {levelData.freeReward.icon && <img src={levelData.freeReward.icon} alt={levelData.freeReward.name} className="reward-icon"/>}
-                                                    <span className="reward-name">{levelData.freeReward.name}</span>
-                                                    {levelData.freeReward.claimed && <div className="claimed-overlay">CLAIMED</div>}
+                                        {shardPassSeasonDefinitions.levels.map(levelData => {
+                                            const rewardKey = `level_${levelData.level}_free`;
+                                            const isClaimed = shardPassRewardsClaimed[rewardKey];
+                                            const isAvailable = levelData.level <= shardPassCurrentLevel && !isClaimed;
+                                            const isFuture = levelData.level > shardPassCurrentLevel;
+                                            const rewardDef = levelData.freeReward;
+
+                                            return (
+                                                <div key={`free-${levelData.level}`} className="reward-cell">
+                                                    <div
+                                                        className={`reward-card free-reward ${isClaimed ? 'claimed' : ''} ${isFuture ? 'future' : ''} ${isAvailable ? 'available' : ''}`}
+                                                        onClick={() => handleRewardCardClick(levelData, false)}
+                                                    >
+                                                        {rewardDef?.icon && <img src={rewardDef.icon} alt={rewardDef.name} className="reward-icon"/>}
+                                                        {rewardDef?.amount != null && <span className="reward-card-quantity">
+                                                            {typeof rewardDef.amount === 'number' && rewardDef.name && (rewardDef.name.toLowerCase().includes('энергия') || rewardDef.name.toLowerCase().includes('energy')) ? `+${rewardDef.amount}` : 
+                                                             typeof rewardDef.amount === 'number' ? `x${rewardDef.amount}` : rewardDef.amount}
+                                                        </span>}
+                                                        {isClaimed && <div className="claimed-overlay">CLAIMED</div>}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
 
+                                    {/* Levels and Progress Track (визуализация) */}
                                     <div className="levels-and-progress-track">
-                                        {shardPassData.levels.map((levelData, index) => {
-                                            // ... (логика отображения уровней остается прежней)
-                                            const isCurrentLevelNode = levelData.level === shardPassData.currentLevel;
-                                            const isNextLevelNode = levelData.level === (shardPassData.currentLevel + 1);
-
+                                        {shardPassSeasonDefinitions.levels.map((levelData) => {
+                                            const isCurrentLevelNode = levelData.level === shardPassCurrentLevel;
                                             let fillPercentForBeforeLine = 0;
                                             let beforeLineIsFilledClass = '';
-                                            if (levelData.level <= shardPassData.currentLevel) {
+                                            if (levelData.level <= shardPassCurrentLevel) {
                                                 beforeLineIsFilledClass = 'filled';
                                                 fillPercentForBeforeLine = 100;
-                                            } else if (isNextLevelNode && shardPassData.currentLevel !== shardPassData.maxLevel) {
-                                                if (overallCurrentProgress > 50) {
-                                                    fillPercentForBeforeLine = Math.min(100, (overallCurrentProgress - 50) * 2);
-                                                }
+                                            } else if (levelData.level === (shardPassCurrentLevel + 1) && shardPassCurrentLevel !== shardPassMaxLevel) {
+                                                if (overallCurrentProgress > 50) fillPercentForBeforeLine = Math.min(100, (overallCurrentProgress - 50) * 2);
                                             }
-
+                                            
                                             let fillPercentForAfterLine = 0;
                                             let afterLineIsFilledClass = '';
-                                            if (levelData.level < shardPassData.currentLevel) {
+                                            if (levelData.level < shardPassCurrentLevel) {
                                                 afterLineIsFilledClass = 'filled';
                                                 fillPercentForAfterLine = 100;
-                                            } else if (isCurrentLevelNode && shardPassData.currentLevel !== shardPassData.maxLevel) {
+                                            } else if (isCurrentLevelNode && shardPassCurrentLevel !== shardPassMaxLevel) {
                                                 if (overallCurrentProgress >= 50) {
                                                     afterLineIsFilledClass = 'filled';
                                                     fillPercentForAfterLine = 100;
@@ -410,6 +490,7 @@ const ShardPassScreen = ({ onClose }) => {
                                                     fillPercentForAfterLine = Math.min(100, overallCurrentProgress * 2);
                                                 }
                                             }
+
                                             return (
                                                 <div key={`level-node-${levelData.level}`} className="level-progress-node">
                                                     <div className={`progress-line before ${beforeLineIsFilledClass}`}>
@@ -417,7 +498,7 @@ const ShardPassScreen = ({ onClose }) => {
                                                             <div className="progress-line-fill" style={{ width: `${fillPercentForBeforeLine}%` }}></div>
                                                         )}
                                                     </div>
-                                                    <div className={`level-indicator-badge ${levelData.level <= shardPassData.currentLevel ? 'achieved' : ''}`}>
+                                                    <div className={`level-indicator-badge ${levelData.level <= shardPassCurrentLevel ? 'achieved' : ''}`}>
                                                         Ур. {levelData.level}
                                                     </div>
                                                     <div className={`progress-line after ${afterLineIsFilledClass}`}>
@@ -429,34 +510,40 @@ const ShardPassScreen = ({ onClose }) => {
                                             );
                                         })}
                                     </div>
+
                                     {/* Premium Rewards Track */}
                                     <div className="rewards-track premium-rewards-track" ref={premiumTrackRef}>
-                                        {shardPassData.levels.map(levelData => (
-                                            <div key={`premium-${levelData.level}`} className="reward-cell">
-                                                <div // ИЗМЕНЕНИЕ ЗДЕСЬ: добавлен onClick
-                                                    className={`
-                                                        reward-card
-                                                        premium-reward
-                                                        ${levelData.premiumReward.claimed && shardPassData.isPremium ? 'claimed' : ''}
-                                                        ${levelData.level > shardPassData.currentLevel && shardPassData.isPremium ? 'future' : ''}
-                                                        ${(!shardPassData.isPremium && levelData.level <= shardPassData.currentLevel && !levelData.premiumReward.claimed) ? 'premium-locked-highlight' : ''}
-                                                        ${(shardPassData.isPremium && levelData.level <= shardPassData.currentLevel && !levelData.premiumReward.claimed) ? 'available' : ''}
-                                                    `}
-                                                    onClick={() => handleRewardCardClick(levelData, true)} // Добавлен onClick
-                                                >
-                                                    {levelData.premiumReward.icon && <img src={levelData.premiumReward.icon} alt={levelData.premiumReward.name} className="reward-icon"/>}
-                                                    <span className="reward-name">{levelData.premiumReward.name}</span>
-                                                    {!shardPassData.isPremium && (
-                                                        <div className="premium-lock-overlay">
-                                                            <span className="lock-icon-display">🔒</span>
-                                                        </div>
-                                                    )}
-                                                    {levelData.premiumReward.claimed && shardPassData.isPremium && (
-                                                        <div className="claimed-overlay">CLAIMED</div>
-                                                    )}
+                                        {shardPassSeasonDefinitions.levels.map(levelData => {
+                                            const rewardKey = `level_${levelData.level}_premium`;
+                                            const isClaimed = isShardPassPremium && shardPassRewardsClaimed[rewardKey];
+                                            const isFuture = levelData.level > shardPassCurrentLevel;
+                                            const isPremiumLockedForUser = !isShardPassPremium;
+                                            // Доступна для клейма, если премиум есть, уровень достигнут и еще не получена
+                                            const isAvailable = isShardPassPremium && levelData.level <= shardPassCurrentLevel && !isClaimed;
+                                            const rewardDef = levelData.premiumReward;
+                                            
+                                            return (
+                                                <div key={`premium-${levelData.level}`} className="reward-cell">
+                                                    <div
+                                                        className={`reward-card premium-reward 
+                                                            ${isClaimed ? 'claimed' : ''} 
+                                                            ${isFuture && isShardPassPremium ? 'future' : ''} 
+                                                            ${isPremiumLockedForUser && levelData.level <= shardPassCurrentLevel && !shardPassRewardsClaimed[rewardKey] ? 'premium-locked-highlight' : ''}
+                                                            ${isAvailable ? 'available' : ''}
+                                                        `}
+                                                        onClick={() => handleRewardCardClick(levelData, true)}
+                                                    >
+                                                        {rewardDef?.icon && <img src={rewardDef.icon} alt={rewardDef.name} className="reward-icon"/>}
+                                                        {rewardDef?.amount != null && <span className="reward-card-quantity">
+                                                             {typeof rewardDef.amount === 'number' && rewardDef.name && (rewardDef.name.toLowerCase().includes('энергия') || rewardDef.name.toLowerCase().includes('energy')) ? `+${rewardDef.amount}` : 
+                                                              typeof rewardDef.amount === 'number' ? `x${rewardDef.amount}` : rewardDef.amount}
+                                                        </span>}
+                                                        {isPremiumLockedForUser && <div className="premium-lock-overlay"><span className="lock-icon-display">🔒</span></div>}
+                                                        {isClaimed && <div className="claimed-overlay">CLAIMED</div>}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -491,7 +578,7 @@ const ShardPassScreen = ({ onClose }) => {
                         <div className="tasks-content-viewport">
                             <AnimatePresence mode="out-in">
                                 <motion.div
-                                    key={activeTaskWeek}
+                                    key={activeTaskWeek} // Ключ для анимации при смене недели
                                     className="tasks-list-scroll-container"
                                     variants={taskListAreaVariant}
                                     initial="initial"
@@ -499,105 +586,52 @@ const ShardPassScreen = ({ onClose }) => {
                                     exit="exit"
                                 >
                                     {!isCurrentWeekLocked && (
-                                        (tasksByWeek[activeTaskWeek] && tasksByWeek[activeTaskWeek].length > 0) ? (
-                                            tasksByWeek[activeTaskWeek].map(task => {
-                                                const isCompleted = task.currentProgress >= task.targetProgress;
-                                                const progressPercent = Math.min((task.currentProgress / task.targetProgress) * 100, 100);
-                                                const isPremiumTaskAndLocked = task.isPremium && !shardPassData.isPremium;
+                                        (shardPassTaskDefinitionsByWeek[String(activeTaskWeek)] && shardPassTaskDefinitionsByWeek[String(activeTaskWeek)].length > 0) ? (
+                                            shardPassTaskDefinitionsByWeek[String(activeTaskWeek)].map(taskDef => {
+                                                const taskState = shardPassTasksProgress[String(activeTaskWeek)]?.[taskDef.id] || { progress: 0, isClaimed: false };
+                                                const currentProgress = taskState.progress || 0;
+                                                const isClaimed = taskState.isClaimed;
+                                                const isCompleted = currentProgress >= taskDef.targetProgress;
+                                                const progressPercent = Math.min((currentProgress / taskDef.targetProgress) * 100, 100);
+                                                const isPremiumTaskAndLocked = taskDef.isPremium && !isShardPassPremium;
 
                                                 return (
                                                     <motion.div
-                                                        layout
-                                                        key={task.id}
-                                                        className={`
-                                                            task-item
-                                                            ${task.isClaimed ? 'claimed' : (isCompleted ? 'completed' : 'not-completed')}
-                                                            ${animatingClaimTasks[task.id] ? 'is-claiming-animation' : ''}
-                                                            ${isCurrentWeekLocked ? 'task-view-when-locked' : ''}
-                                                            ${isPremiumTaskAndLocked ? 'premium-task-locked-styling' : ''}
-                                                        `}
+                                                        layout key={taskDef.id}
+                                                        className={`task-item ${isClaimed ? 'claimed' : (isCompleted ? 'completed' : 'not-completed')} ${animatingClaimTasks[taskDef.id] ? 'is-claiming-animation' : ''} ${isPremiumTaskAndLocked ? 'premium-task-locked-styling' : ''}`}
                                                         onClick={isPremiumTaskAndLocked ? openBuyPremiumPopup : undefined}
                                                         initial={{ opacity: 0 }} 
                                                         animate={{ opacity: 1 }} 
-                                                        exit={{ opacity: 0 }} 
+                                                        exit={{ opacity: 0 }}
                                                         transition={{ duration: 0.3 }}
                                                     >
                                                         <div className="task-info">
-                                                            <span className="task-name">{task.name}</span>
+                                                            <span className="task-name">{taskDef.name}</span>
                                                             <div className="task-progress-bar-container">
-                                                                <div
-                                                                    className="task-progress-bar-fill"
-                                                                    style={{ width: `${progressPercent}%` }}
-                                                                ></div>
-                                                                <span className="task-progress-text">{task.currentProgress}/{task.targetProgress}</span>
+                                                                <div className="task-progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+                                                                <span className="task-progress-text">{currentProgress}/{taskDef.targetProgress}</span>
                                                             </div>
                                                         </div>
                                                         <div className="task-actions">
-                                                            <button 
-                                                                className={`task-claim-button ${isCompleted && !task.isClaimed && !isPremiumTaskAndLocked ? 'ready-to-claim' : ''}`}
+                                                            <button
+                                                                className={`task-claim-button ${isCompleted && !isClaimed && !isPremiumTaskAndLocked ? 'ready-to-claim' : ''}`}
                                                                 onClick={(e) => {
-                                                                    if (isPremiumTaskAndLocked) {
-                                                                        e.stopPropagation();
-                                                                        openBuyPremiumPopup();
-                                                                    } else {
-                                                                        handleClaimTaskReward(activeTaskWeek, task.id);
-                                                                    }
+                                                                    if (isPremiumTaskAndLocked) { e.stopPropagation(); openBuyPremiumPopup(); } 
+                                                                    else { handleClaimTaskRewardClick(activeTaskWeek, taskDef.id); }
                                                                 }}
-                                                                disabled={!isCompleted || task.isClaimed || isPremiumTaskAndLocked || animatingClaimTasks[task.id]}
+                                                                disabled={!isCompleted || isClaimed || isPremiumTaskAndLocked || animatingClaimTasks[taskDef.id]}
                                                             >
-                                                                {task.isClaimed ? 'Получено' : 'Забрать'}
-                                                                <span className="task-claim-reward-xp">+{task.rewardXP} XP</span>
+                                                                {isClaimed ? 'Получено' : 'Забрать'}
+                                                                <span className="task-claim-reward-xp">+{taskDef.rewardXP} XP</span>
                                                             </button>
-                                                            {!task.isClaimed && !isPremiumTaskAndLocked && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (task.currentProgress < task.targetProgress) {
-                                                                            setTasksByWeek(prevTasksByWeek => {
-                                                                                const updatedWeekTasks = prevTasksByWeek[activeTaskWeek].map(t => {
-                                                                                    if (t.id === task.id) {
-                                                                                        return { ...t, currentProgress: t.targetProgress };
-                                                                                    }
-                                                                                    return t;
-                                                                                });
-                                                                                return { ...prevTasksByWeek, [activeTaskWeek]: updatedWeekTasks };
-                                                                            });
-                                                                            setTimeout(() => {
-                                                                                handleClaimTaskReward(activeTaskWeek, task.id);
-                                                                            }, 50); 
-                                                                        } else {
-                                                                            handleClaimTaskReward(activeTaskWeek, task.id);
-                                                                        }
-                                                                    }}
-                                                                    style={{
-                                                                        backgroundColor: '#FF9800', color: 'white', border: 'none',
-                                                                        padding: '4px 8px', fontSize: '0.7em', borderRadius: '4px',
-                                                                        marginTop: '5px', cursor: 'pointer', display: 'block'
-                                                                    }}
-                                                                    title="Debug: Завершить и Забрать"
-                                                                >
-                                                                    Dbg Claim
-                                                                </button>
-                                                            )}
+                                                           
                                                         </div>
-                                                        {isPremiumTaskAndLocked && (
-                                                            <div className="task-premium-lock-overlay">
-                                                                <span className="lock-icon-display">🔒</span>
-                                                            </div>
-                                                        )}
-                                                        {task.isClaimed && (
-                                                            <div className="task-claimed-overlay">
-                                                                <span className="checkmark-icon">✔</span>
-                                                                <span className="claimed-text">Completed</span>
-                                                            </div>
-                                                        )}
+                                                        {isPremiumTaskAndLocked && <div className="task-premium-lock-overlay"><span className="lock-icon-display">🔒</span></div>}
+                                                        {isClaimed && <div className="task-claimed-overlay"><span className="checkmark-icon">✔</span><span className="claimed-text">Completed</span></div>}
                                                     </motion.div>
                                                 );
                                             })
-                                        ) : (
-                                            <div className={`no-tasks-message`}> 
-                                                Заданий на эту неделю нет.
-                                            </div>
-                                        )
+                                        ) : ( <div className="no-tasks-message">Заданий на эту неделю нет.</div> )
                                     )}
                                 </motion.div>
                             </AnimatePresence>
@@ -626,33 +660,39 @@ const ShardPassScreen = ({ onClose }) => {
                 )}
             </AnimatePresence>
 
+            {/* Tasks/Rewards Toggle Button */}
             <div className="shard-pass-tasks-section">
                 <button className="tasks-button" onClick={handleToggleTasksView}>
                     {isTasksViewVisible ? 'К наградам' : 'К заданиям'}
                 </button>
             </div>
 
+            {/* Footer */}
             <div className="shard-pass-footer">
-                <button className="shard-pass-action-button claim-all-btn">
-                    Claim all ({0}) {/* TODO */}
+                <button
+                    className="shard-pass-action-button claim-all-btn"
+                    onClick={handleClaimAll}
+                    disabled={claimableRewardsCount === 0}
+                >
+                    {/* Показываем кол-во даже если 1 (из код1) */}
+                    Claim all {claimableRewardsCount >= 1 ? `(${claimableRewardsCount})` : ''} 
                 </button>
-                {!shardPassData.isPremium && (
+                {!isShardPassPremium && (
                     <button
                         className="shard-pass-action-button buy-shardpass-btn"
-                        onClick={openBuyPremiumPopup} // Эта кнопка уже правильно вызывает попап
+                        onClick={openBuyPremiumPopup}
                     >
                         Buy Premium
                     </button>
                 )}
             </div>
 
+            {/* --- ПОПАП (Предложение купить премиум) --- */}
             <AnimatePresence>
                 {isBuyPremiumPopupVisible && (
                     <motion.div
                         className="buy-premium-popup-backdrop"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         onClick={closeBuyPremiumPopup}
                     >
                         <motion.div
@@ -662,17 +702,162 @@ const ShardPassScreen = ({ onClose }) => {
                             exit={{ scale: 0.8, opacity: 0, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Можно сделать текст в попапе более универсальным или передавать его как prop */}
-                            <h3>Разблокировать Premium?</h3> 
-                            <p>Купите ShardPass Premium, чтобы получить доступ ко всем премиум наградам и заданиям.</p>
+                            <h3>Разблокировать ShardPass Premium?</h3>
+                            <p>
+                                Получите доступ ко всем премиум наградам и заданиям!
+                                <br />
+                                Стоимость: <strong>${PASS_PRICE}</strong>
+                            </p>
                             <div className="popup-buttons">
-                                <button onClick={handleConfirmBuyPremiumFromPopup} className="popup-buy-btn">Купить Premium</button>
+                                <button onClick={openPaymentOptionsPopup} className="popup-buy-btn">
+                                    Выбрать способ оплаты
+                                </button>
                                 <button onClick={closeBuyPremiumPopup} className="popup-close-btn">Закрыть</button>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* --- ПОПАП (Выбор способа оплаты) --- */}
+            <AnimatePresence>
+                {isPaymentOptionsPopupVisible && (
+                    <motion.div
+                        className="payment-options-popup-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={closePaymentOptionsPopup}
+                    >
+                        <motion.div
+                            className="payment-options-popup-content"
+                            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3>Выберите способ оплаты</h3>
+                            <p className="payment-price">Стоимость ShardPass: <strong>${PASS_PRICE}</strong></p>
+                            <div className="payment-methods">
+                                <button
+                                    className="payment-method-btn usdt-ton"
+                                    onClick={() => handlePaymentOptionSelected('USDT_TON')}
+                                >
+                                    <img src="/assets/icons/usdt-icon.png" alt="USDT" className="crypto-icon" />
+                                    <span className="crypto-name">USDT</span>
+                                    <span className="crypto-network">(TON Network)</span>
+                                </button>
+                                <button
+                                    className="payment-method-btn usdc-bnb"
+                                    onClick={() => handlePaymentOptionSelected('USDC_BNB')}
+                                >
+                                    <img src="/assets/icons/usdc-icon.png" alt="USDC" className="crypto-icon" />
+                                    <span className="crypto-name">USDC</span>
+                                    <span className="crypto-network">(BNB Chain)</span>
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* --- ПОПАП "НАГРАДА ПОЛУЧЕНА" (ДЛЯ ОДИНОЧНОЙ НАГРАДЫ) --- */}
+            <AnimatePresence>
+                {isRewardClaimedPopupVisible && lastClaimedReward && (
+                    <motion.div
+                        className="reward-claimed-popup-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={closeRewardClaimedPopup}
+                    >
+                        <motion.div
+                            className="reward-claimed-popup-content"
+                            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3>Награда получена!</h3>
+                            {lastClaimedReward.icon ? (
+                                <img
+                                    src={lastClaimedReward.icon}
+                                    alt={lastClaimedReward.name}
+                                    className="claimed-reward-icon-large"
+                                />
+                            ) : (
+                                <div className="claimed-reward-icon-placeholder">?</div>
+                            )}
+                            <p className="claimed-reward-name-popup">{lastClaimedReward.name}</p>
+                            {lastClaimedReward.amount != null && (
+                                <p className="claimed-reward-amount-popup">
+                                     {typeof lastClaimedReward.amount === 'number' && lastClaimedReward.name && (lastClaimedReward.name.toLowerCase().includes('энергия') || lastClaimedReward.name.toLowerCase().includes('energy')) ? `+${lastClaimedReward.amount}` :
+                                      typeof lastClaimedReward.amount === 'number' ? `x${lastClaimedReward.amount}` : lastClaimedReward.amount}
+                                </p>
+                            )}
+                            <div className="popup-buttons">
+                                <button
+                                    onClick={closeRewardClaimedPopup}
+                                    className="popup-close-btn"
+                                >
+                                    Отлично!
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* --- ПОПАП "НАГРАДЫ ПОЛУЧЕНЫ" (ДЛЯ CLAIM ALL) --- */}
+            <AnimatePresence>
+                {isMultiRewardsClaimPopupVisible && claimedAllRewardsList.length > 0 && (
+                    <motion.div
+                        className="multi-reward-popup-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={closeMultiRewardsClaimPopup}
+                    >
+                        <motion.div
+                            className="multi-reward-popup-content"
+                            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3>Награды получены!</h3>
+                            <div className="multi-reward-icons-grid">
+                                {claimedAllRewardsList.map((reward, index) => (
+                                    <div key={index} className="multi-reward-item">
+                                        {reward.icon ? (
+                                            <img 
+                                                src={reward.icon} 
+                                                alt={reward.name} 
+                                                className="multi-reward-icon" 
+                                            />
+                                        ) : (
+                                            <div className="multi-reward-icon-placeholder">?</div>
+                                        )}
+                                        {reward.amount != null && <span className="multi-reward-item-quantity">
+                                            {typeof reward.amount === 'number' && reward.name && (reward.name.toLowerCase().includes('энергия') || reward.name.toLowerCase().includes('energy')) ? `+${reward.amount}` : 
+                                             typeof reward.amount === 'number' ? `x${reward.amount}` : reward.amount}
+                                        </span>}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="popup-buttons">
+                                <button
+                                    onClick={closeMultiRewardsClaimPopup}
+                                    className="popup-close-btn"
+                                >
+                                    Отлично!
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </motion.div>
     );
 };

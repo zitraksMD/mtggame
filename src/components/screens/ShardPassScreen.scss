@@ -133,6 +133,8 @@ $badge-current-border-radius: 12px;
 $glow-aura-thickness: 3px;
 
 
+
+
 // === Переменные для секции ЗАДАНИЙ ===
 
 // --- Фоны для элементов списка заданий (.task-item) ---
@@ -215,6 +217,18 @@ $tab-container-padding-x: 10px;           // Горизонтальный paddin
 $tab-transition-duration: 0.25s;
 
 // === КОНЕЦ ПЕРЕМЕННЫХ ДЛЯ СЕКЦИИ ЗАДАНИЙ ===
+
+// --- Переменные для попапов 
+$popup-backdrop-bg: rgba(0, 0, 0, 0.7);
+$popup-content-bg: #2c1a3e;
+$popup-content-border: 1px solid rgba($sp-title-color, 0.3);
+$popup-content-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+$base-border-radius: 8px;
+$popup-title-color: $sp-title-color;
+$popup-text-color: #e0e0e0;
+$payment-block-width: 150px; // Ширина каждого блока оплаты
+$payment-block-height: 130px; // Высота каждого блока оплаты
+$payment-block-gap: 20px; 
 
 @keyframes headerDiamondBorderPulse {
     0% {
@@ -686,13 +700,13 @@ $shimmer-animation-duration: 3.5s;
     }
 
     .reward-icon {
-        width: 40px; height: 40px;
+        width: 70px; // Значительно увеличиваем размер иконки
+        height: 70px;
         object-fit: contain;
-        margin-bottom: 5px;
+        margin-bottom: 0; // Так как имени под ней больше нет
         position: relative; 
-        z-index: 1;         // Чтобы быть под оверлеями
+        z-index: 1;
     }
-
     .reward-name {
         font-size: 0.7em;
         line-height: 1.2;
@@ -1421,71 +1435,352 @@ $shimmer-animation-duration: 3.5s;
     }
   }
 
-.buy-premium-popup-backdrop {
-    position: fixed; // Или absolute, если ShardPassScreenWrapper - корневой для viewport
+// --- Общие стили для подложек попапов ---
+.buy-premium-popup-backdrop,
+.payment-options-popup-backdrop { // <--- ВАЖНО: оба класса здесь
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: $popup-backdrop-bg; // Используйте вашу переменную для фона
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; // Должен быть достаточно высоким, чтобы перекрывать все
+  padding: 20px; // Отступы для содержимого на маленьких экранах
+  box-sizing: border-box;
+}
+
+// --- Общие стили для контентной части попапов ---
+.buy-premium-popup-content,
+.payment-options-popup-content { // <--- ВАЖНО: оба класса здесь для общих стилей
+  background-color: $popup-content-bg; // Используйте вашу переменную
+  padding: 25px 30px;
+  border-radius: 12px; // Или $base-border-radius + 4px, как было
+  border: $popup-content-border; // Используйте вашу переменную
+  box-shadow: $popup-content-shadow; // Используйте вашу переменную
+  width: 100%;
+  max-width: 380px; // Или 400px для payment-options, если нужно
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  color: lighten($sp-title-color, 20%); // Основной цвет текста параграфов
+
+  h3 {
+    color: $popup-title-color; // Используйте вашу переменную
+    font-size: 1.4em; // Или 1.6em / 1.3em как было
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+
+  p { // Общий стиль для параграфов в попапах
+    margin-bottom: 20px;
+    line-height: 1.6;
+    font-size: 0.95em;
+    strong {
+      color: $sp-text-color; // Используйте вашу переменную для акцента (цена)
+      font-weight: 700;
+    }
+  }
+
+  // Стили для кнопок (общие для всех попапов)
+  .popup-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    width: 100%;
+
+    button {
+      flex-grow: 1;
+      padding: 12px 15px;
+      border: none;
+      border-radius: $tasks-button-radius; // 8px
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease, opacity 0.2s ease;
+
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+
+    // Кнопка основного действия (Купить/Выбрать способ)
+    .popup-buy-btn {
+      background: $sp-button-buy-bg; // Ваш градиент для кнопки "Buy Premium"
+      color: #fff; // или $sp-button-text-color
+      &:hover {
+         filter: brightness(1.1); // Пример ховер-эффекта для градиента
+      }
+    }
+
+    // Кнопка закрытия/отмены
+    .popup-close-btn {
+      background-color: lighten($sp-level-bg, 5%); // Используйте ваши переменные
+      color: lighten($sp-title-color, 10%);
+      border: 1px solid $sp-border-color;
+      &:hover {
+        background-color: lighten($sp-level-bg, 10%);
+      }
+    }
+  }
+}
+
+// --- Специфичные стили для контента попапа выбора способа оплаты ---
+.payment-options-popup-content {
+  // max-width: 400px; // Если нужно сделать его чуть шире первого
+
+  .payment-price {
+    font-size: 1em; // Можно оставить как у обычного <p>
+    color: lighten($sp-title-color, 15%);
+    margin-bottom: 25px;
+    // strong уже стилизован общими стилями для p strong
+  }
+
+  .payment-methods {
+    display: flex;
+    flex-direction: row; // Теперь элементы в ряд
+    justify-content: center; // Центрируем блоки в контейнере
+    align-items: stretch; // Если высота блоков разная, они растянутся
+    gap: $payment-block-gap; // Расстояние между блоками
+    margin-bottom: 25px;
+    width: 100%;
+  }
+
+  .payment-method-btn {
+    display: flex;
+    flex-direction: column; // Контент внутри блока теперь вертикально
+    align-items: center;    // Центрируем контент по горизонтали
+    justify-content: center; // Центрируем контент по вертикали
+    
+    width: $payment-block-width;  // Задаем ширину блока
+    min-height: $payment-block-height; // Задаем высоту блока
+    padding: 15px 10px;      // Внутренние отступы
+    
+    background-color: lighten($sp-level-bg, 8%); 
+    border: 1px solid rgba($sp-border-color, 0.7);
+    border-radius: $tasks-button-radius; // 8px или ваш $base-border-radius
+    color: lighten($sp-title-color, 25%); 
+    font-size: 0.95em; // Базовый размер шрифта для кнопки (можно настроить)
+    font-weight: 500;
+    text-align: center; // Текст внутри блока будет по центру
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+      background-color: lighten($sp-level-bg, 12%);
+      border-color: $sp-title-color;
+      transform: translateY(-2px); // Небольшой эффект приподнятия
+    }
+
+    .crypto-icon {
+      width: 36px; // Увеличим немного иконку
+      height: 36px;
+      margin-bottom: 10px; // Отступ от иконки до названия
+      object-fit: contain;
+      // margin-right: 0; // Убираем, так как теперь вертикальный layout
+    }
+
+    .crypto-name {
+      font-size: 1.1em; // Размер для названия валюты (USDT, USDC)
+      font-weight: 600;
+      color: lighten($sp-title-color, 30%); // Можно сделать чуть ярче основного текста кнопки
+      margin-bottom: 5px; // Отступ от названия до сети
+    }
+
+    .crypto-network {
+      font-size: 0.8em; // Меньший шрифт для названия сети
+      color: rgba(lighten($sp-title-color, 25%), 0.7); 
+      // margin-left: 0; // Убираем, так как теперь вертикальный layout
+    }
+  }
+  
+  // Для кнопки "Отмена" в этом попапе, если она одна
+  .popup-buttons {
+    justify-content: center; // Центрируем кнопку "Отмена"
+     button {
+       flex-grow: 0; // Чтобы кнопка не растягивалась на всю ширину
+       min-width: 140px; // Задаем минимальную ширину для кнопки "Отмена"
+     }
+  }
+}
+
+.reward-claimed-popup-backdrop
+ { position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.65); // Затемняющий фон
+    background-color: $popup-backdrop-bg; // Используйте вашу переменную для фона
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000; // Очень высокий z-index, чтобы быть поверх всего
-    padding: 20px; // Отступы, чтобы попап не прилипал к краям на маленьких экранах
+    z-index: 1000; // Должен быть достаточно высоким, чтобы перекрывать все
+    padding: 20px; // Отступы для содержимого на маленьких экранах
     box-sizing: border-box;
-}
-
-.buy-premium-popup-content {
-    background-color: darken($sp-bg-start, 3%); // Темный фон попапа
+  }
+.reward-claimed-popup-content {
+    // Базовые стили, похожие на .buy-premium-popup-content или .payment-options-popup-content
+    background-color: $popup-content-bg; // Используйте вашу переменную
     padding: 25px 30px;
     border-radius: 12px;
-    border: 1px solid $sp-border-color;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.4);
-    text-align: center;
-    color: $sp-text-color; 
+    border: $popup-content-border;
+    box-shadow: $popup-content-shadow;
     width: 100%;
-    max-width: 380px; // Максимальная ширина попапа
-
+    max-width: 360px; // Немного меньше, т.к. контента меньше
+    display: flex;
+    flex-direction: column;
+    align-items: center; // Центрируем все по горизонтали
+    text-align: center;
+    color: lighten($sp-title-color, 20%);
+  
     h3 {
-        color: $sp-title-color; 
-        margin-top: 0;
-        margin-bottom: 15px;
-        font-size: 1.3em;
+      color: $sp-title-color; 
+      font-size: 1.5em; // Размер заголовка
+      margin-top: 0;
+      margin-bottom: 20px;
     }
-    p {
-        font-size: 0.9em;
-        line-height: 1.5;
-        color: lighten($sp-title-color, 20%); 
-        margin-bottom: 25px;
+  
+    .claimed-reward-icon-large {
+      width: 100px; // Большая иконка
+      height: 100px;
+      object-fit: contain;
+      margin-bottom: 15px;
+      border-radius: 8px; // Опционально, если у иконок есть фон
+      // background-color: rgba(255,255,255,0.05); // Легкий фон, если нужно
     }
+    .claimed-reward-icon-placeholder {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      background-color: rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3em;
+      color: $sp-title-color;
+      margin-bottom: 15px;
+    }
+  
+    .claimed-reward-name-popup {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: $sp-text-color; // Акцентный цвет для названия награды
+      margin-bottom: 25px;
+    }
+  
     .popup-buttons {
-        display: flex;
-        justify-content: center; // Центрируем кнопки, если одна, или space-around если две
-        gap: 15px;
+      width: 100%;
+      justify-content: center; // Центрируем одну кнопку
+      .popup-close-btn { // Можно использовать существующий стиль
+        min-width: 150px; // Чтобы кнопка "Отлично!" не была слишком узкой
+        flex-grow: 0; // Не растягивать
+      }
     }
+  }
+.multi-reward-popup-backdrop
+{ position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: $popup-backdrop-bg; // Используйте вашу переменную для фона
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; // Должен быть достаточно высоким, чтобы перекрывать все
+    padding: 20px; // Отступы для содержимого на маленьких экранах
+    box-sizing: border-box;
+  }
 
-    .popup-buy-btn, .popup-close-btn {
-        padding: 10px 15px;
-        border: none;
-        border-radius: $tasks-button-radius; 
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.2s ease, transform 0.1s ease;
-        // flex-grow: 1; // Если кнопки должны делить пространство
-        min-width: 120px; // Минимальная ширина кнопок
-
-        &:active {
-            transform: scale(0.97);
-        }
+  .multi-reward-popup-content {
+    // Базовые стили, похожие на .buy-premium-popup-content или .payment-options-popup-content
+    background-color: $popup-content-bg;
+    padding: 25px; // Можно 25px 20px если контента много
+    border-radius: 12px;
+    border: $popup-content-border;
+    box-shadow: $popup-content-shadow;
+    width: 100%;
+    max-width: 480px; // Чуть шире, чтобы поместились иконки в ряд
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: lighten($sp-title-color, 20%);
+  
+    h3 {
+      color: $sp-title-color; 
+      font-size: 1.5em;
+      margin-top: 0;
+      margin-bottom: 20px;
     }
-    .popup-buy-btn {
-        background: $sp-button-buy-bg; // Используем градиент кнопки "Buy Premium"
-        color: #fff;
+  
+    .multi-reward-icons-grid {
+      display: flex;
+      flex-wrap: wrap; // Позволяет переносить иконки на следующую строку
+      justify-content: center; // Центрирует иконки в строке
+      gap: 15px; // Расстояние между иконками
+      margin-bottom: 25px;
+      width: 100%;
+      max-height: 300px; // Ограничение высоты, если много наград + скролл
+      overflow-y: auto;  // Добавляем скролл, если наград очень много
+      padding: 5px;      // Небольшой внутренний отступ для скроллбара
+  
+      // Стилизация скроллбара (опционально, для Webkit)
+      &::-webkit-scrollbar { width: 6px; }
+      &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+      &::-webkit-scrollbar-thumb { background-color: darken($sp-title-color, 15%); border-radius: 3px; }
     }
-    .popup-close-btn {
-        background-color: lighten($sp-level-bg, 5%); 
-        color: lighten($sp-title-color, 10%);
-        border: 1px solid $sp-border-color;
+  
+    .multi-reward-item {
+      // Каждый элемент сетки (иконка)
+      // Ширина рассчитывается так, чтобы поместилось до 4 в ряд.
+      // (100% / 4) - (gap * 3 / 4)
+      // Проще задать фиксированную или flex-basis
+      width: 70px;  // Ширина для иконки и возможной подписи
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px; // Отступ между иконкой и названием, если оно будет
     }
-}
+  
+    .multi-reward-icon {
+      width: 60px; // Размер иконки в сетке
+      height: 60px;
+      object-fit: contain;
+      background-color: rgba(0,0,0,0.15); // Легкий фон для иконки
+      border-radius: 8px;
+      padding: 5px; // Небольшой отступ внутри фона
+      box-sizing: border-box;
+    }
+    .multi-reward-icon-placeholder {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      background-color: rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      color: $sp-title-color;
+    }
+  
+    // .multi-reward-item-name { // Если решите добавить название под иконкой
+    //   font-size: 0.7em;
+    //   color: lighten($sp-title-color, 25%);
+    //   max-width: 100%;
+    //   white-space: nowrap;
+    //   overflow: hidden;
+    //   text-overflow: ellipsis;
+    // }
+  
+    .popup-buttons {
+      width: 100%;
+      justify-content: center;
+      .popup-close-btn {
+        min-width: 150px;
+        flex-grow: 0;
+      }
+    }
+  }
