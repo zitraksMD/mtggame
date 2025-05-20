@@ -27,9 +27,7 @@ const ShardPassScreen = ({ onClose }) => {
     const [timeRemainingForWeek, setTimeRemainingForWeek] = useState('');
     const [isCurrentWeekLocked, setIsCurrentWeekLocked] = useState(true);
 
-    // === НОВЫЙ СТЕЙТ ДЛЯ ПОПАПА (из код1) ===
     const [isBuyPremiumPopupVisible, setIsBuyPremiumPopupVisible] = useState(false);
-    // ======================================
 
     const weeks = Array.from({ length: SHARD_PASS_TASKS_WEEKS }, (_, i) => i + 1);
 
@@ -46,21 +44,30 @@ const ShardPassScreen = ({ onClose }) => {
         exit: { opacity: 0, transition: { duration: 0.2 } }
     };
 
-    const sectionAppearVariant = {
+    const sectionAppearVariant = { // Для rewards <-> tasks
         initial: { opacity: 0, y: 20 },
         animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
         exit: { opacity: 0, y: -20, transition: { duration: 0.2, ease: "easeInOut" } }
     };
 
-    const tabsContainerVariant = {
+    const tabsContainerVariant = { // Для табов
         initial: { opacity: 0, x: -20 },
         animate: { opacity: 1, x: 0, transition: { duration: 0.3, ease: "easeOut", delay: 0.15 } }
     };
 
-    const taskContentSwitchVariant = {
-        initial: { opacity: 0, y: 10 },
-        animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut", delay: 0.25 } },
-        exit: { opacity: 0, y: -10, transition: { duration: 0.2, ease: "easeIn" } }
+    // Для ПОЯВЛЕНИЯ/ИСЧЕЗАНИЯ ВСЕГО СПИСКА ЗАДАЧ разом (без ступенек)
+    // или для области, где будет сообщение "нет задач" (из код1)
+    const taskListAreaVariant = {
+        initial: { opacity: 0 },
+        animate: { opacity: 1, transition: { duration: 0.3, delay: 0.3 } }, // Задержка после табов (0.15 + 0.15 = 0.3)
+        exit: { opacity: 0, transition: { duration: 0.2 } }
+    };
+
+    // Для ОВЕРЛЕЯ БЛОКИРОВКИ (простой fade) (из код1)
+    const lockOverlayAppearVariant = {
+        initial: { opacity: 0 },
+        animate: { opacity: 1, transition: { duration: 0.3, delay: 0.1 } }, // Появляется почти сразу
+        exit: { opacity: 0, transition: { duration: 0.2 } }
     };
     // --- КОНЕЦ ВАРИАНТОВ АНИМАЦИИ ---
 
@@ -98,7 +105,7 @@ const ShardPassScreen = ({ onClose }) => {
 
         if (!isTasksViewVisible) {
             calculatePositions();
-            const timerId = setTimeout(calculatePositions, 450);
+            const timerId = setTimeout(calculatePositions, 450); // Задержка для учета анимации появления секции
             window.addEventListener('resize', calculatePositions);
             return () => {
                 clearTimeout(timerId);
@@ -141,8 +148,8 @@ const ShardPassScreen = ({ onClose }) => {
         ? shardPassData.currentLevel + 1
         : shardPassData.maxLevel;
 
-    const handleBuyPremium = () => { // Существующая функция, обновленная в код1 для фактической покупки
-        console.log("Buy Premium button clicked!"); // Оставим для дебага или удалим, если не нужно
+    const handleBuyPremium = () => {
+        console.log("Buy Premium button clicked!");
         setShardPassData(prevData => ({
             ...prevData,
             isPremium: true,
@@ -153,26 +160,22 @@ const ShardPassScreen = ({ onClose }) => {
         setIsTasksViewVisible(prev => !prev);
     };
 
-    // --- НОВЫЕ ФУНКЦИИ ДЛЯ ПОПАПА (из код1) ---
     const openBuyPremiumPopup = () => setIsBuyPremiumPopupVisible(true);
     const closeBuyPremiumPopup = () => setIsBuyPremiumPopupVisible(false);
 
     const handleConfirmBuyPremiumFromPopup = () => {
-        handleBuyPremium(); // Вызываем основную функцию покупки
-        closeBuyPremiumPopup(); // Закрываем попап
+        handleBuyPremium();
+        closeBuyPremiumPopup();
     };
-    // ----------------------------------------
 
     const handleClaimTaskReward = (weekKey, taskId) => {
         const taskToClaim = tasksByWeek[weekKey]?.find(t => t.id === taskId);
         
-        // === Добавлено условие из код1 для премиум задач ===
         const isPremiumTaskAndLocked = taskToClaim && taskToClaim.isPremium && !shardPassData.isPremium;
         if (isPremiumTaskAndLocked) {
-            openBuyPremiumPopup(); // Если премиум задание заблокировано, открываем попап
+            openBuyPremiumPopup();
             return;
         }
-        // ================================================
 
         const taskIsCompletable = taskToClaim && (taskToClaim.currentProgress >= taskToClaim.targetProgress);
 
@@ -180,7 +183,6 @@ const ShardPassScreen = ({ onClose }) => {
             return;
         }
 
-        // 1. Обновляем XP и Уровень
         setShardPassData(prevData => {
             let newCurrentLevelXp = prevData.currentLevelXp + taskToClaim.rewardXP;
             let newCurrentLevel = prevData.currentLevel;
@@ -199,7 +201,6 @@ const ShardPassScreen = ({ onClose }) => {
             };
         });
         
-        // 2. Помечаем задание как полученное и СОРТИРУЕМ список задач
         setTasksByWeek(prevTasksByWeek => { 
             let weekTasks = prevTasksByWeek[weekKey].map(task => {
                 if (task.id === taskId) {
@@ -225,7 +226,6 @@ const ShardPassScreen = ({ onClose }) => {
             return { ...prevTasksByWeek, [weekKey]: weekTasks };
         });
 
-        // 3. Запускаем анимацию для элемента задания
         setAnimatingClaimTasks(prev => ({ ...prev, [taskId]: true }));
         const animationDuration = 1000; 
         setTimeout(() => {
@@ -246,7 +246,6 @@ const ShardPassScreen = ({ onClose }) => {
             exit="exit"
         >
             <div className="shard-pass-header">
-                {/* ... (существующая разметка шапки) ... */}
                 <div className="header-level-badge">
                     <div className="header-level-badge-inner-content">
                         <span className="header-level-number">{shardPassData.currentLevel}</span>
@@ -274,8 +273,7 @@ const ShardPassScreen = ({ onClose }) => {
             </div>
 
             <div className="overall-progress-bar-section">
-                {/* ... (существующая разметка прогресс-бара) ... */}
-                 <div className="level-indicator-diamond current-level-diamond">
+                <div className="level-indicator-diamond current-level-diamond">
                     <div className="level-indicator-diamond-inner-content">
                         <span className="level-indicator-diamond-number">{shardPassData.currentLevel}</span>
                     </div>
@@ -311,7 +309,6 @@ const ShardPassScreen = ({ onClose }) => {
                         animate="animate"
                         exit="exit"
                     >
-                        {/* ... (существующая разметка секции наград, без изменений из код1) ... */}
                         <div className="shard-pass-rewards-horizontal-scroll">
                             <div className="sticky-labels-and-grid-wrapper">
                                 <div className="sticky-labels-layer" ref={stickyLabelsLayerRef}>
@@ -447,36 +444,24 @@ const ShardPassScreen = ({ onClose }) => {
                             ))}
                         </motion.div>
 
-                        <AnimatePresence mode="out-in">
-                            <motion.div
-                                key={activeTaskWeek + (isCurrentWeekLocked ? '-locked' : '-unlocked')}
-                                className="tasks-content-viewport" // Класс из код2, в код1 'tasks-list-scroll-container' был внутри этого
-                                variants={taskContentSwitchVariant}
-                                initial="initial"
-                                animate="animate"
-                                exit="exit"
-                            >
-                                {isCurrentWeekLocked ? (
-                                    <div className="tasks-locked-container-wrapper"> {/* Разметка из код2 */}
-                                        <div className="tasks-locked-container">
-                                            <div className="locked-message-content">
-                                                Задания для Недели {activeTaskWeek} откроются через:
-                                                <div className="locked-countdown-timer">{timeRemainingForWeek}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    // В код1 здесь был motion.div key={`unlocked-week-${activeTaskWeek}`}
-                                    // В код2 tasks-list-scroll-container является прямым потомком
-                                    <div className="tasks-list-scroll-container"> {/* Разметка из код2 */}
-                                        {(tasksByWeek[activeTaskWeek] && tasksByWeek[activeTaskWeek].length > 0) ? (
+                        {/* ИЗМЕНЕННАЯ СТРУКТУРА ДЛЯ СООТВЕТСТВИЯ АНИМАЦИЯМ И ЛОГИКЕ КОД1 */}
+                        <div className="tasks-content-viewport"> {/* Обертка для позиционирования оверлея, как в код1 */}
+                            <AnimatePresence mode="out-in"> {/* Для смены содержимого списка при смене недели */}
+                                <motion.div
+                                    key={activeTaskWeek} // Ключ по неделе, как в код1
+                                    className="tasks-list-scroll-container" // Контейнер для списка задач или сообщения "нет задач"
+                                    variants={taskListAreaVariant} // Анимация из код1
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                >
+                                    {/* Рендерим список задач или "нет задач", ТОЛЬКО ЕСЛИ НЕДЕЛЯ НЕ ЗАБЛОКИРОВАНА */}
+                                    {!isCurrentWeekLocked && (
+                                        (tasksByWeek[activeTaskWeek] && tasksByWeek[activeTaskWeek].length > 0) ? (
                                             tasksByWeek[activeTaskWeek].map(task => {
                                                 const isCompleted = task.currentProgress >= task.targetProgress;
                                                 const progressPercent = Math.min((task.currentProgress / task.targetProgress) * 100, 100);
-                                                
-                                                // === НОВОЕ УСЛОВИЕ ДЛЯ ПРЕМИУМ ЗАДАНИЙ (из код1) ===
                                                 const isPremiumTaskAndLocked = task.isPremium && !shardPassData.isPremium;
-                                                // ==================================================
 
                                                 return (
                                                     <motion.div
@@ -486,10 +471,10 @@ const ShardPassScreen = ({ onClose }) => {
                                                             task-item
                                                             ${task.isClaimed ? 'claimed' : (isCompleted ? 'completed' : 'not-completed')}
                                                             ${animatingClaimTasks[task.id] ? 'is-claiming-animation' : ''}
-                                                            ${isCurrentWeekLocked ? 'task-view-when-locked' : ''}
-                                                            ${isPremiumTaskAndLocked ? 'premium-task-locked-styling' : ''} // Класс для "тусклости" (из код1)
+                                                            ${isCurrentWeekLocked ? 'task-view-when-locked' : ''} // Этот класс может быть не нужен здесь, если оверлей блокировки покрывает все
+                                                            ${isPremiumTaskAndLocked ? 'premium-task-locked-styling' : ''}
                                                         `}
-                                                        onClick={isPremiumTaskAndLocked ? openBuyPremiumPopup : undefined} // Открыть попап (из код1)
+                                                        onClick={isPremiumTaskAndLocked ? openBuyPremiumPopup : undefined}
                                                         initial={{ opacity: 0 }} 
                                                         animate={{ opacity: 1 }} 
                                                         exit={{ opacity: 0 }} 
@@ -507,22 +492,21 @@ const ShardPassScreen = ({ onClose }) => {
                                                         </div>
                                                         <div className="task-actions">
                                                             <button 
-                                                                className={`task-claim-button ${isCompleted && !task.isClaimed && !isPremiumTaskAndLocked ? 'ready-to-claim' : ''}`} // Обновлен className (из код1)
-                                                                onClick={(e) => { // Обновлен onClick (из код1)
+                                                                className={`task-claim-button ${isCompleted && !task.isClaimed && !isPremiumTaskAndLocked ? 'ready-to-claim' : ''}`}
+                                                                onClick={(e) => {
                                                                     if (isPremiumTaskAndLocked) {
-                                                                        e.stopPropagation(); // Остановить всплытие
+                                                                        e.stopPropagation();
                                                                         openBuyPremiumPopup();
                                                                     } else {
                                                                         handleClaimTaskReward(activeTaskWeek, task.id);
                                                                     }
                                                                 }}
-                                                                disabled={!isCompleted || task.isClaimed || isPremiumTaskAndLocked || animatingClaimTasks[task.id]} // Обновлен disabled (из код1)
+                                                                disabled={!isCompleted || task.isClaimed || isPremiumTaskAndLocked || animatingClaimTasks[task.id]}
                                                             >
                                                                 {task.isClaimed ? 'Получено' : 'Забрать'}
                                                                 <span className="task-claim-reward-xp">+{task.rewardXP} XP</span>
                                                             </button>
-                                                            {/* Временная кнопка для дебага из код2 - оставляем, если нужна */}
-                                                            {!task.isClaimed && !isPremiumTaskAndLocked && ( // Добавлено !isPremiumTaskAndLocked
+                                                            {!task.isClaimed && !isPremiumTaskAndLocked && (
                                                                 <button
                                                                     onClick={() => {
                                                                         if (task.currentProgress < task.targetProgress) {
@@ -553,15 +537,12 @@ const ShardPassScreen = ({ onClose }) => {
                                                                 </button>
                                                             )}
                                                         </div>
-
-                                                        {/* Оверлей с замком для премиум-заданий (из код1) */}
                                                         {isPremiumTaskAndLocked && (
                                                             <div className="task-premium-lock-overlay">
                                                                 <span className="lock-icon-display">🔒</span>
                                                             </div>
                                                         )}
-
-                                                        {task.isClaimed && ( // Оверлей из код2, в код1 был похожий
+                                                        {task.isClaimed && (
                                                             <div className="task-claimed-overlay">
                                                                 <span className="checkmark-icon">✔</span>
                                                                 <span className="claimed-text">Completed</span>
@@ -571,40 +552,64 @@ const ShardPassScreen = ({ onClose }) => {
                                                 );
                                             })
                                         ) : (
-                                            <div className={`no-tasks-message ${isCurrentWeekLocked ? 'task-view-when-locked' : ''}`}> {/* Разметка из код2 */}
+                                            // Сообщение "нет задач", если неделя не заблокирована, но задач нет
+                                            <div className={`no-tasks-message`}> 
                                                 Заданий на эту неделю нет.
                                             </div>
-                                        )}
-                                    </div>
+                                        )
+                                    )}
+                                    {/* Если неделя заблокирована, этот блок будет пуст или скроется из-за exit анимации,
+                                        а оверлей блокировки появится поверх */}
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* Оверлей блокировки (как в код1) */}
+                            <AnimatePresence>
+                                {isCurrentWeekLocked && (
+                                    <motion.div
+                                        key={`lock-overlay-${activeTaskWeek}`} // Уникальный ключ для анимации при смене недели
+                                        className="tasks-week-lock-overlay" // Класс из код1, убедитесь, что стили для него есть (position: absolute, etc.)
+                                        variants={lockOverlayAppearVariant} // Анимация из код1
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                    >
+                                        {/* Содержимое из tasks-locked-container-wrapper код2 */}
+                                        <div className="tasks-locked-container">
+                                            <div className="locked-message-content">
+                                                Задания для Недели {activeTaskWeek} откроются через:
+                                                <div className="locked-countdown-timer">{timeRemainingForWeek}</div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 )}
-                            </motion.div>
-                        </AnimatePresence>
-                        {/* В код1 здесь был AnimatePresence для tasks-week-lock-overlay, но в код2 логика блокировки недели встроена выше */}
+                            </AnimatePresence>
+                        </div>
+                         {/* КОНЕЦ ИЗМЕНЕННОЙ СТРУКТУРЫ */}
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="shard-pass-tasks-section"> {/* Разметка из код2 */}
+            <div className="shard-pass-tasks-section">
                 <button className="tasks-button" onClick={handleToggleTasksView}>
                     {isTasksViewVisible ? 'К наградам' : 'К заданиям'}
                 </button>
             </div>
 
-            <div className="shard-pass-footer"> {/* Разметка из код2 */}
+            <div className="shard-pass-footer">
                 <button className="shard-pass-action-button claim-all-btn">
                     Claim all ({0}) {/* TODO */}
                 </button>
                 {!shardPassData.isPremium && (
                     <button
                         className="shard-pass-action-button buy-shardpass-btn"
-                        onClick={handleBuyPremium} // В код1 здесь был openBuyPremiumPopup, но прямой вызов handleBuyPremium тоже логичен для этой кнопки
+                        onClick={openBuyPremiumPopup} // Изменено на открытие попапа, как было в код1 для аналогичных случаев
                     >
                         Buy Premium
                     </button>
                 )}
             </div>
 
-            {/* === НОВЫЙ JSX ДЛЯ ПОПАПА ПОКУПКИ ПРЕМИУМА (из код1) === */}
             <AnimatePresence>
                 {isBuyPremiumPopupVisible && (
                     <motion.div
@@ -612,14 +617,14 @@ const ShardPassScreen = ({ onClose }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={closeBuyPremiumPopup} // Закрытие по клику на фон
+                        onClick={closeBuyPremiumPopup}
                     >
                         <motion.div
                             className="buy-premium-popup-content"
                             initial={{ scale: 0.8, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.8, opacity: 0, y: 20 }}
-                            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике на сам попап
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <h3>Премиум Задание!</h3>
                             <p>Купите ShardPass Premium, чтобы разблокировать это задание и его награды.</p>
@@ -631,7 +636,6 @@ const ShardPassScreen = ({ onClose }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* ======================================================= */}
         </motion.div>
     );
 };
