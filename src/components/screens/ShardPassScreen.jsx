@@ -663,7 +663,7 @@ const ShardPassScreen = ({ onClose }) => {
             {/* Tasks/Rewards Toggle Button */}
             <div className="shard-pass-tasks-section">
                 <button className="tasks-button" onClick={handleToggleTasksView}>
-                    {isTasksViewVisible ? 'К наградам' : 'К заданиям'}
+                    {isTasksViewVisible ? 'Rewards' : 'Challenges'}
                 </button>
             </div>
 

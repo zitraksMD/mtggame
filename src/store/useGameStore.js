@@ -1264,73 +1264,150 @@ const useGameStore = create((set, get) => ({
         }
         get().setHasClaimableRewardsIndicator(hasUnclaimed || get().checkIfAnyTaskOrAchievementIsClaimable()); // Ensure tasks are also checked
     },
-    generateDailyDeals: () => { // из КОД2
+    generateDailyDeals: () => {
+        console.log("[Shop_GenerateDeals] Starting generation...");
+        console.log("[Shop_GenerateDeals] itemsDatabase sample (first 3):", itemsDatabase.slice(0, 3));
+        console.log("[Shop_GenerateDeals] ALL_ARTIFACTS_ARRAY sample (first 3):", ALL_ARTIFACTS_ARRAY.slice(0, 3));
+        console.log("[Shop_GenerateDeals] DAILY_DEAL_RARITY_WEIGHTS:", DAILY_DEAL_RARITY_WEIGHTS);
+    
         const itemPool = itemsDatabase
-            .filter(item => item && DAILY_DEAL_RARITY_WEIGHTS[item.rarity.toLowerCase()] !== undefined)
+            .filter(item => {
+                if (!item) return false;
+                const rarityKey = String(item.rarity || '').toLowerCase();
+                const hasWeight = DAILY_DEAL_RARITY_WEIGHTS[rarityKey] !== undefined;
+                // if (!hasWeight) console.log(`[Shop_GenerateDeals] Item filtered out (no weight for rarity '${rarityKey}'):`, item.name);
+                return hasWeight;
+            })
             .map(item => ({ type: 'item', data: item, rarity: item.rarity }));
+    
+        console.log(`[Shop_GenerateDeals] itemPool created. Count: ${itemPool.length}`);
+        if (itemPool.length > 0) console.log("[Shop_GenerateDeals] itemPool sample (first item):", itemPool[0]);
+    
+    
         const artifactsForShards = ALL_ARTIFACTS_ARRAY
-            .filter(art => art && DAILY_DEAL_RARITY_WEIGHTS[art.rarity.toLowerCase()] !== undefined);
+            .filter(art => {
+                if (!art) return false;
+                const rarityKey = String(art.rarity || '').toLowerCase();
+                const hasWeight = DAILY_DEAL_RARITY_WEIGHTS[rarityKey] !== undefined;
+                // if (!hasWeight) console.log(`[Shop_GenerateDeals] Artifact filtered out (no weight for rarity '${rarityKey}'):`, art.name);
+                return hasWeight;
+            });
         const shardPool = artifactsForShards
             .map(artifact => ({ type: 'artifact_shard', data: artifact, rarity: artifact.rarity }));
+    
+        console.log(`[Shop_GenerateDeals] shardPool created. Count: ${shardPool.length}`);
+        if (shardPool.length > 0) console.log("[Shop_GenerateDeals] shardPool sample (first item):", shardPool[0]);
+    
         const combinedPool = [...itemPool, ...shardPool];
+        console.log(`[Shop_GenerateDeals] combinedPool created. Total items for deals: ${combinedPool.length}`);
+    
         if (combinedPool.length === 0) {
-            console.error("Пул для ежедневных предложений пуст!");
+            console.error("[Shop_GenerateDeals] Пул для ежедневных предложений пуст! Проверьте itemsDatabase, ALL_ARTIFACTS_ARRAY и DAILY_DEAL_RARITY_WEIGHTS. Убедитесь, что у предметов/артефактов есть свойство 'rarity' и оно соответствует ключам в DAILY_DEAL_RARITY_WEIGHTS (с учетом .toLowerCase()).");
             set({ dailyDeals: [], dailyDealsLastGenerated: Date.now(), dailyShopPurchases: {} });
             return;
         }
+    
         const weightedPool = combinedPool.map(entry => {
             if (!entry || !entry.rarity || !entry.data) {
-                console.warn("Некорректный entry в combinedPool:", entry);
+                console.warn("[Shop_GenerateDeals] Некорректный entry в combinedPool, пропускаем:", entry);
                 return null;
             }
-            return {
-                item: entry,
-                weight: DAILY_DEAL_RARITY_WEIGHTS[entry.rarity.toLowerCase()] || 1
-            };
+            const rarityKey = String(entry.rarity).toLowerCase();
+            const weight = DAILY_DEAL_RARITY_WEIGHTS[rarityKey];
+    
+            if (weight === undefined || typeof weight !== 'number' || weight <= 0) {
+                console.warn(`[Shop_GenerateDeals] Невалидный или нулевой вес для редкости '${rarityKey}' (оригинал: '${entry.rarity}') у элемента:`, entry.data.name, ". Пропускаем.");
+                return null;
+            }
+            return { item: entry, weight: weight };
         }).filter(Boolean);
+    
+        console.log(`[Shop_GenerateDeals] weightedPool created. Count: ${weightedPool.length}`);
+        if (weightedPool.length === 0 && combinedPool.length > 0) {
+             console.error("[Shop_GenerateDeals] Weighted pool пуст, хотя combinedPool не был пуст. Вероятно, все предметы были отфильтрованы из-за невалидных весов редкости.");
+        }
+    
+    
         if (weightedPool.length === 0) {
-            console.error("Weighted pool for daily deals is empty after filtering!");
+            console.error("[Shop_GenerateDeals] Weighted pool for daily deals is empty after filtering! Проверьте веса редкостей и доступные предметы/артефакты.");
             set({ dailyDeals: [], dailyDealsLastGenerated: Date.now(), dailyShopPurchases: {} });
             return;
         }
+    
         const numberOfDeals = 6;
         const generatedDeals = [];
         const selectedItemIds = new Set();
         let currentWeightedPool = [...weightedPool];
         let iterations = 0;
-        while (generatedDeals.length < numberOfDeals && currentWeightedPool.length > 0 && iterations < 1000) {
+        const MAX_ITERATIONS = 1000; // Предохранитель от бесконечного цикла
+    
+        console.log(`[Shop_GenerateDeals] Starting selection loop for ${numberOfDeals} deals. Initial pool size: ${currentWeightedPool.length}`);
+    
+        while (generatedDeals.length < numberOfDeals && currentWeightedPool.length > 0 && iterations < MAX_ITERATIONS) {
             iterations++;
-            const selectedEntryWrapper = weightedRandom(currentWeightedPool);
-             if (!selectedEntryWrapper || !selectedEntryWrapper.item || !selectedEntryWrapper.item.data) {
-                const problemIndex = currentWeightedPool.findIndex(poolEntry => poolEntry === selectedEntryWrapper);
-                if (problemIndex !== -1) {
-                    currentWeightedPool.splice(problemIndex, 1);
-                } else if (currentWeightedPool.length > 0) {
-                    currentWeightedPool.splice(Math.floor(Math.random() * currentWeightedPool.length), 1);
+            // weightedRandom возвращает непосредственно сам элемент {type, data, rarity}
+            const selectedDataEntry = weightedRandom(currentWeightedPool); // currentWeightedPool - это массив { item: {type, data, rarity}, weight: X }
+                                                                        // weightedRandom должен вернуть .item из этого объекта
+    
+            // ИЗМЕНЕННАЯ ПРОВЕРКА:
+            // selectedDataEntry теперь должно быть объектом вида {type, data, rarity}
+            if (!selectedDataEntry || typeof selectedDataEntry.data !== 'object' || selectedDataEntry.data === null) {
+                console.warn(`[Shop_GenerateDeals] weightedRandom вернул невалидный элемент (или элемент без data) на итерации ${iterations}. Pool size: ${currentWeightedPool.length}. Selected:`, selectedDataEntry);
+                
+                // Попытка удалить проблемный элемент из currentWeightedPool, чтобы избежать бесконечного цикла
+                // Эта логика может потребовать доработки в зависимости от того, как именно weightedRandom работает с currentWeightedPool
+                // и что он возвращает в случае ошибки. Пока что простой сдвиг, если что-то пошло не так.
+                if (currentWeightedPool.length > 0) {
+                     // Ищем элемент в currentWeightedPool, чей .item соответствует selectedDataEntry, который вернул weightedRandom
+                    const problemIndex = currentWeightedPool.findIndex(poolEntry => poolEntry.item === selectedDataEntry);
+                    if (problemIndex !== -1) {
+                        currentWeightedPool.splice(problemIndex, 1);
+                    } else {
+                        // Если не нашли точный объект (маловероятно, если weightedRandom возвращает ссылку на .item),
+                        // удаляем первый элемент, чтобы цикл мог продолжиться.
+                        currentWeightedPool.shift();
+                         console.warn(`[Shop_GenerateDeals] Fallback: removed first element from currentWeightedPool as problematic entry was not found by reference.`);
+                    }
                 }
                 continue;
             }
-            const selectedEntry = selectedEntryWrapper.item;
-            const selectedIndexInPool = currentWeightedPool.findIndex(poolEntry => poolEntry.item === selectedEntry);
+    
+            // Теперь selectedDataEntry - это и есть наш выбранный элемент {type, data, rarity}
+            const selectedEntry = selectedDataEntry; 
+    
             const uniqueKey = `${selectedEntry.type}_${selectedEntry.data.id}`;
+    
+            // Поиск индекса обертки в currentWeightedPool, соответствующей выбранному selectedEntry (который является .item)
+            const selectedIndexInPool = currentWeightedPool.findIndex(poolEntry => poolEntry.item === selectedEntry);
+    
             if (!selectedItemIds.has(uniqueKey)) {
                 selectedItemIds.add(uniqueKey);
+                
                 let quantity = 1;
                 let currency = (Math.random() < 0.7) ? 'gold' : 'diamonds';
-                let price = 100;
-                const rarityMultiplier = { common: 1, uncommon: 3, rare: 10, legendary: 30, mythic: 100 };
-                if (selectedEntry.type === 'item') {
-                    price = (selectedEntry.data.basePrice || 100) * (rarityMultiplier[selectedEntry.rarity.toLowerCase()] || 1);
-                    quantity = 1;
-                } else if (selectedEntry.type === 'artifact_shard') {
-                    price = (selectedEntry.data.baseShardCost || 50) * (rarityMultiplier[selectedEntry.rarity.toLowerCase()] || 1);
-                    quantity = Math.random() < 0.5 ? 3 : 5;
-                    if (selectedEntry.rarity.toLowerCase() === 'rare' || selectedEntry.rarity.toLowerCase() === 'legendary' || selectedEntry.rarity.toLowerCase() === 'mythic') {
+                let price = 100; // Базовая цена по умолчанию
+                const rarityMultiplier = { common: 1, uncommon: 3, rare: 5, epic: 10, legendary: 25, mythic: 50 }; // Примерные множители, можно настроить
+    
+                // Используем basePrice из данных предмета, если оно есть
+                const itemBasePrice = selectedEntry.data.basePrice || (selectedEntry.type === 'artifact_shard' ? 50 : 100); // Базовая цена для осколков или предметов
+    
+                price = itemBasePrice * (rarityMultiplier[String(selectedEntry.rarity).toLowerCase()] || 1);
+    
+                if (selectedEntry.type === 'artifact_shard') {
+                    quantity = Math.random() < 0.5 ? 3 : 5; // Осколки продаются пачками
+                    // Для дорогих осколков можно сделать валюту алмазы
+                    const lowerRarity = String(selectedEntry.rarity).toLowerCase();
+                    if (lowerRarity === 'rare' || lowerRarity === 'epic' || lowerRarity === 'legendary' || lowerRarity === 'mythic') {
                         currency = 'diamonds';
                     }
-                    price = Math.round(price * quantity / (currency === 'diamonds' ? 10 : 1));
+                    // Корректируем цену за пачку и если валюта - алмазы (алмазы "дороже" золота)
+                    price = price * quantity / (currency === 'diamonds' ? 10 : 1); // Примерное соотношение стоимости
+                } else { // type === 'item'
+                    quantity = 1;
                 }
-                price = Math.max(currency === 'diamonds' ? 1 : 10, Math.round(price * (0.8 + Math.random() * 0.4)));
+                
+                price = Math.max(currency === 'diamonds' ? 1 : 10, Math.round(price * (0.8 + Math.random() * 0.4))); // Колебание цены 80-120%
+    
                 const dealId = `daily_${uniqueKey}_${Date.now()}_${generatedDeals.length}`;
                 const newDealObject = {
                     id: dealId, type: selectedEntry.type, itemId: selectedEntry.data.id,
@@ -1340,24 +1417,40 @@ const useGameStore = create((set, get) => ({
                 };
                 generatedDeals.push(newDealObject);
             }
+    
+            // Удаляем выбранный элемент (точнее, его обертку) из пула
             if (selectedIndexInPool !== -1) {
                 currentWeightedPool.splice(selectedIndexInPool, 1);
             } else {
-                if (currentWeightedPool.length > 0) currentWeightedPool.shift();
+                // Если элемент был добавлен в deals (т.е. он новый и прошел selectedItemIds.has(uniqueKey)),
+                // но мы не нашли его индекс в currentWeightedPool, это может указывать на проблему
+                // с тем, как weightedRandom возвращает элементы (например, копии, а не ссылки).
+                // Однако, если selectedItemIds.has(uniqueKey) был true (элемент не новый), то selectedIndexInPool мог быть -1,
+                // потому что элемент уже удален. В этом случае ничего делать не нужно.
+                // Если же он был новый, но индекс -1, это проблема.
+                if (!selectedItemIds.has(uniqueKey) && currentWeightedPool.length > 0) {
+                     console.warn(`[Shop_GenerateDeals] Item was new but not found in currentWeightedPool by findIndex. This might indicate an issue if pool doesn't shrink. Selected:`, selectedEntry);
+                     // В качестве крайней меры, чтобы избежать бесконечного цикла, если selectedEntry был уникальным, но не найден по индексу для удаления:
+                     // currentWeightedPool.shift(); // Это рискованно, т.к. удалит не тот элемент.
+                }
             }
-             if (currentWeightedPool.length === 0 && generatedDeals.length < numberOfDeals) {
+    
+            if (currentWeightedPool.length === 0 && generatedDeals.length < numberOfDeals) {
+                console.warn("[Shop_GenerateDeals] Ran out of unique items for daily deals before filling all slots.");
                 break;
             }
         }
-         if (iterations >= 999) {
-            console.error("[generateDailyDeals] Превышено максимальное количество итераций!");
+         if (iterations >= MAX_ITERATIONS) {
+            console.error("[Shop_GenerateDeals] Превышено максимальное количество итераций в цикле выбора товаров!");
         }
+    
+        console.log(`[Shop_GenerateDeals] Finished generation. ${generatedDeals.length} deals created.`);
         set({
             dailyDeals: generatedDeals,
             dailyDealsLastGenerated: Date.now(),
             dailyShopPurchases: {}
         });
-    },
+    },  
     checkAndRefreshDailyDeals: () => { // из КОД2
         const state = get();
         const lastGeneratedTs = state.dailyDealsLastGenerated;

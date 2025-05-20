@@ -4,7 +4,7 @@ import useGameStore from '../../store/useGameStore.js';
 import ZoneMap from "../ZoneMap.jsx";
 import GlobalMap from "../GlobalMap.jsx";
 import TransitionOverlay from "../TransitionOverlay.jsx";
-import Popup from '../popups/Popup.jsx'; 
+import Popup from '../popups/Popup.jsx';
 import "./MainMenu.scss";
 import { useNavigate, useLocation } from 'react-router-dom';
 import LevelDetailsPopup from '../popups/LevelDetailsPopup.jsx';
@@ -17,6 +17,8 @@ import TreasureChestInfoPopup from '../popups/TreasureChestInfoPopup.jsx';
 import TasksPopup from '../popups/TasksPopup.jsx'; // Импорт TasksPopup
 import TonExchangePopup from '../popups/TonExchangePopup.jsx'; // <--- ДОБАВЬТЕ ЭТОТ ИМПОРТ
 
+// Иконка для ShardPass (пример, если есть)
+// import shardPassIcon from '/assets/icons/shardpass-icon.png';
 
 const popupContentVariants = {
     initial: { opacity: 0, y: 20 },
@@ -55,11 +57,11 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         resetGame,
         hasClaimableRewardsIndicator,
         setIsFullScreenMapActive,
-        startScreenTransition,
+        startScreenTransition, // Убедимся, что он есть (был и в код2)
         ensureScreenIsOpening,
         isZoneUnlocked,
-        treasureChestAttempts, 
-        useTreasureChestAttempt: consumeChestAttempt, 
+        treasureChestAttempts,
+        useTreasureChestAttempt: consumeChestAttempt,
     } = useGameStore(state => ({
         currentChapterIdFromStore: state.currentChapterId,
         setCurrentChapterInStore: state.setCurrentChapter,
@@ -69,11 +71,11 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         resetGame: state.resetGame,
         hasClaimableRewardsIndicator: state.hasClaimableRewardsIndicator,
         setIsFullScreenMapActive: state.setIsFullScreenMapActive,
-        startScreenTransition: state.startScreenTransition,
+        startScreenTransition: state.startScreenTransition, // Важно для перехода (был и в код2)
         ensureScreenIsOpening: state.ensureScreenIsOpening,
         isZoneUnlocked: state.isZoneUnlocked,
-        treasureChestAttempts: state.treasureChestAttempts, 
-        useTreasureChestAttempt: state.useTreasureChestAttempt, 
+        treasureChestAttempts: state.treasureChestAttempts,
+        useTreasureChestAttempt: state.useTreasureChestAttempt,
     }));
 
     const [activeView, setActiveView] = useState('detailed');
@@ -100,8 +102,8 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
     const [chapterData, setChapterData] = useState(null);
     const [isLoadingChapter, setIsLoadingChapter] = useState(true);
     const [activePopup, setActivePopup] = useState(null);
-    
-    const [treasureChestState, setTreasureChestState] = useState('info'); 
+
+    const [treasureChestState, setTreasureChestState] = useState('info');
     const [lastChestRewards, setLastChestRewards] = useState(null);
 
     const mapContainerRef = useRef(null);
@@ -136,10 +138,10 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
 
         nextViewAfterOverlayRef.current = { view: targetView, focus: focusData || {} };
         setIsOverlayActive(true);
-        setTriggerOpenOverlay(false); 
+        setTriggerOpenOverlay(false);
         setTriggerCloseOverlay(true);
     }, [activeView, isOverlayActive, triggerCloseOverlay, triggerOpenOverlay, currentChapterId, currentZoneId]);
-    
+
     useEffect(() => {
         if (activeView !== 'detailed' && onChapterNameChange) {
             onChapterNameChange(null);
@@ -186,7 +188,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             console.log(`MainMenu: useEffect[location.state] - Requesting view change to '${viewToOpen}' with chapterId: ${finalChapterId}, zoneId: ${finalZoneId}`);
             performViewChange(viewToOpen, {
                 zoneId: finalZoneId || derivedZoneIdFromChapter,
-                chapterId: finalChapterId 
+                chapterId: finalChapterId
             });
             stateNeedsClearing = true;
         }
@@ -218,12 +220,12 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             console.log(`[MainMenu] Attempting to load CHAPTER data for chapter ${chapterIdToLoad} in zone ${zoneIdForPath}...`);
             setIsLoadingChapter(true);
             setChapterData(null);
-            if (onChapterNameChange) onChapterNameChange(null); 
+            if (onChapterNameChange) onChapterNameChange(null);
             setPosition({ x: 0, y: 0 });
 
             try {
                 const modulePath = `../../data/zones/${zoneIdForPath}/chapter${chapterIdToLoad}Data.js`;
-                
+
                 if (chapterDataModules[modulePath]) {
                     const chapterModule = await chapterDataModules[modulePath]();
                     if (isMounted) {
@@ -251,7 +253,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                 }
             } finally {
                 if (isMounted) {
-                    if (currentChapterId === chapterIdToLoad) { 
+                    if (currentChapterId === chapterIdToLoad) {
                         setIsLoadingChapter(false);
                     } else {
                         console.log(`[MainMenu] Chapter ID changed during load (from ${chapterIdToLoad} to ${currentChapterId}). Not setting isLoadingChapter for ${chapterIdToLoad}.`);
@@ -271,10 +273,10 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         } else if (activeView !== 'detailed') {
             if (onChapterNameChange) onChapterNameChange(null);
         }
-        
+
         return () => { isMounted = false; };
     }, [currentChapterId, activeView, setCurrentChapterInStore, currentChapterIdFromStore, onChapterNameChange, resetTrigger]);
-    
+
     useEffect(() => {
         let isMounted = true;
         if (activeView === 'zone' && currentZoneId) {
@@ -329,7 +331,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         let initialX = chapterData.initialView?.x ?? clamp(containerWidth / 2 - mapWidth / 2, containerWidth - mapWidth, 0);
         let initialY = chapterData.initialView?.y ?? clamp(containerHeight / 2 - mapHeight / 2, containerHeight - mapHeight, 0);
         setPosition({ x: initialX, y: initialY });
-        hasStarted.current = false; 
+        hasStarted.current = false;
         setIsLoadingLevel(false);
     }, [chapterData, isLoadingChapter, activeView]);
 
@@ -349,7 +351,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             if (focus.chapterId !== currentChapterIdFromStore) {
                 setCurrentChapterInStore(focus.chapterId);
             }
-            if (!focus.zoneId) { 
+            if (!focus.zoneId) {
                 const newZoneIdForChapter = findZoneIdForChapter(focus.chapterId);
                 if (newZoneIdForChapter && newZoneIdForChapter !== finalZoneId) {
                     finalZoneId = newZoneIdForChapter;
@@ -365,12 +367,12 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             if (currentChapterIdFromStore !== defaultChapterId) setCurrentChapterInStore(defaultChapterId);
             const zoneForDefaultChapter = findZoneIdForChapter(defaultChapterId);
             if (zoneForDefaultChapter && zoneForDefaultChapter !== currentZoneId) {
-                 setCurrentZoneId(zoneForDefaultChapter);
+                setCurrentZoneId(zoneForDefaultChapter);
             }
         }
         else if (targetView === 'zone' && !finalZoneId) {
-             const fallbackZoneId = ALL_ZONES_CONFIG[0]?.id || null;
-             setCurrentZoneId(fallbackZoneId);
+            const fallbackZoneId = ALL_ZONES_CONFIG[0]?.id || null;
+            setCurrentZoneId(fallbackZoneId);
         }
         setActiveView(targetView);
         setTriggerCloseOverlay(false);
@@ -450,7 +452,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             alert("Уровень пока заблокирован. Пройдите предыдущие!"); return;
         }
         const levelData = chapterData?.levels?.find(l => l.id === levelUniqueId);
-        if (levelData) { setSelectedLevelId(levelUniqueId); setShowLevelPopup(true); } 
+        if (levelData) { setSelectedLevelId(levelUniqueId); setShowLevelPopup(true); }
     }, [chapterData, currentChapterId, isLevelUnlocked, activeView]);
 
     const handleCloseLevelPopup = useCallback(() => { setShowLevelPopup(false); setSelectedLevelId(null); }, []);
@@ -482,8 +484,16 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         }
     }, [resetGame, performViewChange, setCurrentChapterInStore, onChapterNameChange]);
 
-    const handleBattlePassClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('battlepass'); }, [activeView]);
-    
+    // Удаляем handleBattlePassClick, так как кнопка теперь ведет на отдельный экран
+    // const handleBattlePassClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('battlepass'); }, [activeView]);
+
+    // ОБРАБОТЧИК ДЛЯ НОВОЙ КНОПКИ SHARDPASS
+    const handleShardPassButtonClick = useCallback(() => {
+        console.log("ShardPass button clicked, navigating to /shardpass");
+        // Используем startScreenTransition для анимации перехода
+        startScreenTransition(() => navigate('/shardpass'));
+    }, [navigate, startScreenTransition]);
+
     const handleMailClick = useCallback(() => {
         console.log("handleMailClick called. activeView:", activeView);
         if (activeView === 'detailed') {
@@ -493,17 +503,17 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             console.log("Mail popup not opened because activeView is not 'detailed'.");
         }
     }, [activeView]);
-    
+
     const handleTreasureChestClick = useCallback(() => {
         if (activeView === 'detailed') {
             useGameStore.getState().checkAndResetTreasureChestAttempts();
-            setTreasureChestState('info'); 
-            setActivePopup('treasure_chest'); 
+            setTreasureChestState('info');
+            setActivePopup('treasure_chest');
         }
     }, [activeView]);
 
     const handleStartChestGame = useCallback(() => {
-        consumeChestAttempt(); 
+        consumeChestAttempt();
         setTreasureChestState('game');
     }, [consumeChestAttempt]);
 
@@ -512,22 +522,22 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         setTreasureChestState('results');
     }, []);
 
-    const handleCloseTreasureChest = useCallback(() => { 
+    const handleCloseTreasureChest = useCallback(() => {
         setLastChestRewards(null);
-        setActivePopup(null); 
+        setActivePopup(null);
     }, []);
-    
+
     const handleQuestsClick = useCallback(() => { if (activeView === 'detailed') setActivePopup('tasks'); }, [activeView]);
     const handleExchangeClick = useCallback(() => {
         console.log("[MainMenu] handleExchangeClick вызван. Текущий activeView:", activeView);
         if (activeView === 'detailed') {
             setActivePopup('exchange');
-            // Добавим лог сразу после попытки установки, чтобы убедиться, что эта строка выполняется
             console.log("[MainMenu] setActivePopup('exchange') был вызван. activePopup должен стать 'exchange'.");
         } else {
             console.log("[MainMenu] Поп-ап обмена не открыт, т.к. activeView не 'detailed'.");
         }
-    }, [activeView, setActivePopup]);    const handleDailyGrindClick = useCallback(() => { 
+    }, [activeView, setActivePopup]);
+    const handleDailyGrindClick = useCallback(() => {
         if (activeView === 'detailed') {
             console.log("Daily Grind clicked - popup to be implemented");
         }
@@ -539,21 +549,26 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         console.log("[MainMenu] Состояние activePopup изменилось на:", activePopup);
     }, [activePopup]);
 
+    // Удаляем 'battlepass' из getPopupContent, так как теперь это отдельный экран
     const getPopupContent = (popupType) => {
         switch (popupType) {
-            case 'battlepass':
-                return <div>Содержимое Боевого Пропуска... <button onClick={closePopup}>Закрыть</button></div>;
+            // case 'battlepass': // Больше не нужен здесь
+            //     return <div>Содержимое Боевого Пропуска... <button onClick={closePopup}>Закрыть</button></div>;
             // case 'tasks': // TasksPopup теперь обрабатывается отдельно
-            //     return <TasksPopup onClose={closePopup} />; 
+            //     return <TasksPopup onClose={closePopup} />;
+            default:
+                // Можно оставить для других общих попапов, если они будут
+                return <div>Неизвестный тип попапа: {popupType}</div>;
         }
     };
 
+    // Удаляем 'battlepass' из getPopupTitle, так как теперь это отдельный экран
     const getPopupTitle = (popupType) => {
         switch (popupType) {
-            case 'battlepass':
-                return "Боевой Пропуск";
+            // case 'battlepass': // Больше не нужен здесь
+            //     return "Боевой Пропуск";
             case 'tasks':
-                return "Задания"; 
+                return "Задания";
             default:
                 return "";
         }
@@ -689,13 +704,15 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                                         })}
                                     </div>
                                 </div>
+
+                                {/* --- Существующие боковые колонки с кнопками --- */}
                                 <div className="main-menu-left-column">
                                     <button className="main-menu-button icon-button mail-button" onClick={handleMailClick} title="Почта"><img src="/assets/icons/mail-icon.png" alt="Почта" /></button>
                                     <button className={`main-menu-button icon-button rewards-chest-button ${hasClaimableRewardsIndicator ? 'has-indicator' : ''}`} onClick={handleRewardsChestClick} title="Награды" >
                                         <img src="/assets/icons/gift-icon.png" alt="Награды" />
                                     </button>
                                     <button className="main-menu-button icon-button" onClick={handleTreasureChestClick} title="Руны Древних">
-                                       <img src="/assets/icons/runes-icon.png" alt="Руны" />
+                                        <img src="/assets/icons/runes-icon.png" alt="Руны" />
                                     </button>
                                 </div>
                                 <div className="main-menu-right-column">
@@ -705,6 +722,19 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                                     <button className="main-menu-button icon-button quests-button" onClick={handleQuestsClick} title="Задания"><img src="/assets/icons/quests-icon.png" alt="Задания" /></button>
                                     <button className="main-menu-button icon-button exchange-button" onClick={handleExchangeClick} title="Обмен"><img src="/assets/icons/exchange-icon.png" alt="Обмен" /></button>
                                 </div>
+
+                                {/* ▼▼▼ НОВАЯ КНОПКА SHARDPASS (BATTLE PASS) ▼▼▼ */}
+                                <button
+                                    className="mainmenu-shardpass-button" // Новый класс для стилей
+                                    onClick={handleShardPassButtonClick}
+                                    title="ShardPass"
+                                >
+                                    {/* <img src={shardPassIcon} alt="" />  // Если есть иконка */}
+                                    ShardPass
+                                </button>
+                                {/* ▲▲▲ КОНЕЦ НОВОЙ КНОПКИ SHARDPASS ▲▲▲ */}
+
+
                                 <AnimatePresence>
                                     {showLevelPopup && selectedLevelData && (
                                         <LevelDetailsPopup key="levelDetailsPopup" ref={levelDetailsPopupRef} level={selectedLevelData} chapterId={currentChapterId}
@@ -726,10 +756,10 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                 {activeView === 'detailed' && activePopup === 'mail' && (
                     <motion.div
                         key="mail-popup-overlay"
-                        className="popup-overlay-for-mail" 
+                        className="popup-overlay-for-mail"
                         variants={mailOverlayVariants}
                         initial="hidden" animate="visible" exit="exit"
-                        onClick={closePopup} 
+                        onClick={closePopup}
                     >
                         <motion.div
                             className="mail-popup-outer-frame"
@@ -750,14 +780,14 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                     <motion.div
                         key="treasure-chest-overlay"
                         className="treasure-chest-backdrop"
-                        variants={mailOverlayVariants} 
+                        variants={mailOverlayVariants}
                         initial="hidden" animate="visible" exit="exit"
-                        onClick={handleCloseTreasureChest} 
+                        onClick={handleCloseTreasureChest}
                     >
                         <motion.div
                             className="treasure-chest-popup-box"
-                            variants={mailPopupFrameVariants} 
-                            onClick={(e) => e.stopPropagation()} 
+                            variants={mailPopupFrameVariants}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <div className="treasure-chest-title-banner">
                                 {treasureChestState === 'info' && "Древние Руны"}
@@ -778,17 +808,17 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                                 )}
                                 {treasureChestState === 'game' && (
                                     <motion.div
-                                        key="runes-game" 
+                                        key="runes-game"
                                         variants={popupContentVariants} initial="initial" animate="animate" exit="exit"
                                         className="popup-content-area-wrapper" // Убедитесь, что этот класс имеет нужные отступы
                                     >
-                                         {/* Замените на ваш компонент игры */}
+                                        {/* Замените на ваш компонент игры */}
                                         <ShardboundRunesGamePopup onGameEnd={handleChestGameEnd} />
                                     </motion.div>
                                 )}
                                 {treasureChestState === 'results' && lastChestRewards && (
                                     <motion.div
-                                        key="runes-results" 
+                                        key="runes-results"
                                         variants={popupContentVariants} initial="initial" animate="animate" exit="exit"
                                         className="popup-content-area-wrapper" // Убедитесь, что этот класс имеет нужные отступы
                                     >
@@ -801,125 +831,117 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                     </motion.div>
                 )}
 
-{activeView === 'detailed' && activePopup === 'tasks' && (
-    <motion.div
-        key="tasks-popup-overlay"
-        className="tasks-popup-backdrop" // Фон
-        variants={mailOverlayVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        onClick={closePopup} // Закрытие по клику на фон
-    >
-        <motion.div
-            className="tasks-popup-box" // Основной контейнер попапа (с фиксированной высотой 380px)
-            variants={mailPopupFrameVariants}
-            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике внутри окна
-        >
-            {/* Заголовок-баннер для Заданий */}
-            <div className="tasks-title-banner">
-                {getPopupTitle('tasks')}
-            </div>
+                {activeView === 'detailed' && activePopup === 'tasks' && (
+                    <motion.div
+                        key="tasks-popup-overlay"
+                        className="tasks-popup-backdrop" // Фон
+                        variants={mailOverlayVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        onClick={closePopup} // Закрытие по клику на фон
+                    >
+                        <motion.div
+                            className="tasks-popup-box" // Основной контейнер попапа (с фиксированной высотой 380px)
+                            variants={mailPopupFrameVariants}
+                            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике внутри окна
+                        >
+                            {/* Заголовок-баннер для Заданий */}
+                            <div className="tasks-title-banner">
+                                {getPopupTitle('tasks')}
+                            </div>
 
-            {/* Кнопка закрытия */}
-            <button
-                onClick={closePopup}
-                className="tasks-close-button"
-                aria-label="Закрыть задания"
-            >
-                &times;
-            </button>
+                            {/* Кнопка закрытия */}
+                            <button
+                                onClick={closePopup}
+                                className="tasks-close-button"
+                                aria-label="Закрыть задания"
+                            >
+                                &times;
+                            </button>
 
-            {/* Контейнер для контента TasksPopup, обеспечивающий отступ от баннера */}
-            <div className="tasks-inner-scroll-container">
-                {/* motion.div для анимации содержимого TasksPopup */}
-                {/* Важно: этот div должен быть flex-контейнером, чтобы TasksPopup мог расти */}
-                <motion.div
-                    key="tasks-popup-motion-wrapper"
-                    style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, width: '100%' }}
-                    variants={popupContentVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                >
-                    <TasksPopup onClose={closePopup} />
-                </motion.div>
-            </div>
-        </motion.div>
-    </motion.div>
-)}
-{/* ========== КОНЕЦ: КАСТОМНЫЙ ПОПАП "ЗАДАНИЯ" ========== */}
-{/* ▼▼▼ КАСТОМНЫЙ ПОПАП "ОБМЕН TON" (Структура как для других кастомных) ▼▼▼ */}
-{activeView === 'detailed' && activePopup === 'exchange' && (
-    <motion.div
-        key="ton-exchange-popup-overlay"
-        className="ton-exchange-popup-backdrop" // Общий класс для фона затемнения
-        variants={mailOverlayVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        onClick={closePopup} // Закрытие по клику на фон
-    >
-        {/* ▼▼▼ НОВАЯ ОБЕРТКА для позиционирования баннера и основного блока ▼▼▼ */}
-        <div 
-            className="ton-exchange-popup-container-for-header-and-box"
-            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике на этот контейнер
-        >
-            {/* 1. ОТДЕЛЬНЫЙ "НАВИСАЮЩИЙ" БАННЕР "Биржа TON" */}
-            <div className="ton-exchange-floating-header"> 
-                TONCHANGE
-            </div>
+                            {/* Контейнер для контента TasksPopup, обеспечивающий отступ от баннера */}
+                            <div className="tasks-inner-scroll-container">
+                                {/* motion.div для анимации содержимого TasksPopup */}
+                                {/* Важно: этот div должен быть flex-контейнером, чтобы TasksPopup мог расти */}
+                                <motion.div
+                                    key="tasks-popup-motion-wrapper"
+                                    style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, width: '100%' }}
+                                    variants={popupContentVariants}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                >
+                                    <TasksPopup onClose={closePopup} />
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+                {/* ========== КОНЕЦ: КАСТОМНЫЙ ПОПАП "ЗАДАНИЯ" ========== */}
+                {/* ▼▼▼ КАСТОМНЫЙ ПОПАП "ОБМЕН TON" (Структура как для других кастомных) ▼▼▼ */}
+                {activeView === 'detailed' && activePopup === 'exchange' && (
+                    <motion.div
+                        key="ton-exchange-popup-overlay"
+                        className="ton-exchange-popup-backdrop" // Общий класс для фона затемнения
+                        variants={mailOverlayVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        onClick={closePopup} // Закрытие по клику на фон
+                    >
+                        {/* ▼▼▼ НОВАЯ ОБЕРТКА для позиционирования баннера и основного блока ▼▼▼ */}
+                        <div
+                            className="ton-exchange-popup-container-for-header-and-box"
+                            onClick={(e) => e.stopPropagation()} // Предотвратить закрытие при клике на этот контейнер
+                        >
+                            {/* 1. ОТДЕЛЬНЫЙ "НАВИСАЮЩИЙ" БАННЕР "Биржа TON" */}
+                            <div className="ton-exchange-floating-header">
+                                TONCHANGE
+                            </div>
 
-            {/* 2. ОСНОВНОЙ БЛОК ПОПАПА (с градиентом, отступами и табами внутри) */}
-            <motion.div
-                className="ton-exchange-popup-main-box" // Основное видимое окно
-                variants={mailPopupFrameVariants} // Анимации для этого блока
-                // onClick={(e) => e.stopPropagation()} // Уже есть на родительской обертке
-            >
-                {/* Теперь TonExchangePopup (или его переименованная/внутренняя версия)
-                    НЕ ДОЛЖЕН рендерить свой собственный <div className="exchange-popup-header">.
-                    Он отвечает только за контент ВНУТРИ .ton-exchange-popup-main-box.
-                    Назовем его условно TonExchangePopupInternalContent, 
-                    предполагая, что ты переименуешь или отрефакторишь TonExchangePopup.jsx
-                */}
-                <TonExchangePopup onClose={closePopup} /> 
-                {/* Если TonExchangePopup все еще ожидает onClose для чего-то внутреннего,
-                    оставляем его. Но основная кнопка закрытия теперь в .ton-exchange-floating-header */}
-            </motion.div>
-        </div>
-    </motion.div>
-)}
-{/* ▲▲▲ КОНЕЦ: КАСТОМНЫЙ ПОПАП "ОБМЕН TON" ▲▲▲ */}
+                            {/* 2. ОСНОВНОЙ БЛОК ПОПАПА (с градиентом, отступами и табами внутри) */}
+                            <motion.div
+                                className="ton-exchange-popup-main-box" // Основное видимое окно
+                                variants={mailPopupFrameVariants} // Анимации для этого блока
+                            >
+                                <TonExchangePopup onClose={closePopup} />
+                            </motion.div>
+                        </div>
+                    </motion.div>
+                )}
+                {/* ▲▲▲ КОНЕЦ: КАСТОМНЫЙ ПОПАП "ОБМЕН TON" ▲▲▲ */}
 
 
             </AnimatePresence>
 
             <AnimatePresence>
-                {activeView === 'detailed' && 
-                  activePopup && 
-                  activePopup !== 'exchange' &&
-                  activePopup !== 'mail' &&
-                  activePopup !== 'treasure_chest' &&
-                  activePopup !== 'tasks' && // 'tasks' теперь исключен
-                  activePopup !== 'rewards' && 
-                  (
-                    <motion.div 
-                        key={activePopup} // Ключ по типу попапа
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20, transition: {duration: 0.2} }}
-                        style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.5)'}}
-                        onClick={closePopup} // Закрытие по клику на оверлей
-                    >
-                        {/* Используем общий Popup для остальных */}
-                        <Popup
-                            title={getPopupTitle(activePopup)}
-                            onClose={closePopup}
+                {activeView === 'detailed' &&
+                    activePopup &&
+                    activePopup !== 'exchange' &&
+                    activePopup !== 'mail' &&
+                    activePopup !== 'treasure_chest' &&
+                    activePopup !== 'tasks' && // 'tasks' теперь исключен
+                    activePopup !== 'rewards' && // 'rewards' также кастомный, здесь не обрабатывается
+                    activePopup !== 'battlepass' && // Battlepass/Shardpass теперь отдельный экран
+                    (
+                        <motion.div
+                            key={activePopup} // Ключ по типу попапа
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20, transition: {duration: 0.2} }}
+                            style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.5)'}}
+                            onClick={closePopup} // Закрытие по клику на оверлей
                         >
-                            {getPopupContent(activePopup)} 
-                        </Popup>
-                    </motion.div>
-                  )}
+                            {/* Используем общий Popup для остальных */}
+                            <Popup
+                                title={getPopupTitle(activePopup)}
+                                onClose={closePopup}
+                            >
+                                {getPopupContent(activePopup)}
+                            </Popup>
+                        </motion.div>
+                    )}
             </AnimatePresence>
 
             {!isOverlayActive && (
