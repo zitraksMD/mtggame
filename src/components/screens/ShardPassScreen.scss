@@ -498,7 +498,6 @@ $shimmer-animation-duration: 3.5s;
 }
 
 .shard-pass-rewards-horizontal-scroll {
-    height: 350px; 
     overflow-x: auto;
     overflow-y: hidden;
 
@@ -820,7 +819,7 @@ $shimmer-animation-duration: 3.5s;
 .shard-pass-footer {
     display: flex;
     gap: 15px;
-    padding: 15px calc(15px + var(--safe-area-inset-left)) 15px calc(15px + var(--safe-area-inset-right)); 
+    padding: 25px calc(15px + var(--safe-area-inset-left)) 25px calc(15px + var(--safe-area-inset-right)); 
     background-color: $sp-header-bg; 
     backdrop-filter: blur(5px); 
     border-top: 1px solid $sp-border-color; 
