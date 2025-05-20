@@ -17,12 +17,12 @@ export const REWARD_TYPES = {
 // Иконки для каждого типа награды
 // Вводим иконки только один раз здесь!
 export const REWARD_ICONS = {
-    [REWARD_TYPES.ENERGY]: '/assets/energy-icon.png',
-    [REWARD_TYPES.GOLD]: '/assets/coin-icon.png',
-    [REWARD_TYPES.DIAMONDS]: '/assets/diamond-image.png',
+    [REWARD_TYPES.ENERGY]: '/assets/energy-icon.png',          // Путь обновлен
+    [REWARD_TYPES.GOLD]: '/assets/coin-icon.png',              // Путь обновлен
+    [REWARD_TYPES.DIAMONDS]: '/assets/diamond-image.png',      // Путь обновлен
     [REWARD_TYPES.RARE_CHEST_KEY]: '/assets/icons/rare_key.png',
     [REWARD_TYPES.EPIC_CHEST_KEY]: '/assets/icons/epic_key.png',
-    [REWARD_TYPES.TONCOIN_SHARDS]: '/assets/toncoin-icon.png',
+    [REWARD_TYPES.TONCOIN_SHARDS]: '/assets/toncoin-icon.png', // Путь обновлен
     [REWARD_TYPES.RARE_ARTIFACT]: '/assets/icons/rare_artifact.png',
     [REWARD_TYPES.EPIC_ARTIFACT]: '/assets/icons/epic_artifact.png',
     [REWARD_TYPES.EPIC_GEAR_CHEST]: '/assets/icons/epic_gear_chest.png',
@@ -334,10 +334,16 @@ const shardPassLevelsData = [
 ];
 
 export const MOCK_SHARD_PASS_DATA_FULL = {
-    currentLevel: 1, // Начальный уровень для примера
-    currentProgress: 0, // Начальный прогресс для примера
+    currentLevel: 1,        // Начальный уровень для примера
+    currentProgress: 0,     // Начальный прогресс для примера
     maxLevel: 50,
-    isPremium: false, // Пользователь не имеет премиум по умолчанию
+    isPremium: false,       // Пользователь не имеет премиум по умолчанию
+    
+    // --- НОВЫЕ ПОЛЯ ---
+    seasonNumber: 1,        // Номер текущего сезона
+    daysRemaining: 45,      // Сколько дней осталось до конца сезона
+    // ------------------
+
     levels: shardPassLevelsData.map(level => ({
         ...level,
         // Добавляем иконку и состояние 'claimed' для каждой награды

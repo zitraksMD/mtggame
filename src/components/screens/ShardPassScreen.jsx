@@ -15,6 +15,12 @@ const BackArrowIcon = () => (
 const ShardPassScreen = ({ onClose }) => {
     const [shardPassData, setShardPassData] = useState(MOCK_SHARD_PASS_DATA_FULL);
 
+    // Используем данные из shardPassData, которые были добавлены в MOCK_SHARD_PASS_DATA_FULL
+    // Фоллбэки на случай, если данные по какой-то причине отсутствуют.
+    const seasonNumber = shardPassData.seasonNumber || 1;
+    const daysRemaining = shardPassData.daysRemaining === undefined ? 45 : shardPassData.daysRemaining; // Используем undefined для проверки, т.к. 0 дней - валидное значение
+
+
     const screenVariants = {
         initial: { opacity: 0 },
         animate: { opacity: 1 },
@@ -68,10 +74,10 @@ const ShardPassScreen = ({ onClose }) => {
     // Если currentLevel < maxLevel, то currentProgress - это прогресс к следующему уровню.
     // Если currentLevel === maxLevel, то currentProgress может показывать "заполненность" этого уровня,
     // или всегда быть 100, если дополнительных очков сверх максимума не бывает.
-    // Для простоты, MOCK_SHARD_PASS_DATA_FULL.currentProgress должен быть прогрессом к следующему уровню.
+    // MOCK_SHARD_PASS_DATA_FULL.currentProgress должен быть прогрессом к следующему уровню.
     const overallCurrentProgress = (shardPassData.currentLevel === shardPassData.maxLevel && shardPassData.currentProgress === 100)
-                                   ? 100 // Если макс. уровень и 100% прогресс, показываем полный бар
-                                   : shardPassData.currentProgress;
+                                    ? 100 // Если макс. уровень и 100% прогресс, показываем полный бар
+                                    : shardPassData.currentProgress;
 
 
     return (
@@ -83,17 +89,34 @@ const ShardPassScreen = ({ onClose }) => {
             exit="exit"
         >
             <div className="shard-pass-header">
+            <div className="header-level-badge"> {/* Внешний контейнер, который станет ромбом */}
+  <div className="header-level-badge-inner-content"> {/* Новый внутренний контейнер для контента */}
+    <span className="header-level-number">{shardPassData.currentLevel}</span>
+  </div>
+</div>
                 <div className="header-main-title">
                     <h2>ShardPass</h2>
                 </div>
                 <button onClick={onClose} className="shard-pass-back-btn" aria-label="Назад">
                     <BackArrowIcon />
                 </button>
-                <div className="level-banner-container">
+
+                {/* Обновленные нависающие элементы из код1 (заменяют level-banner-container) */}
+                <div className="header-hanging-info-container">
+                    <div className="season-banner-display">
+                        <span className="season-banner-text">Season {seasonNumber}</span>
+                    </div>
+                    {daysRemaining !== null && daysRemaining !== undefined && ( // Показываем, только если есть данные
+                        <div className="season-ends-info-display">
+                            <span className="season-ends-text">
+                                {daysRemaining > 0 ? `Season will end in ${daysRemaining} days` : "Season has ended"}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
             
-            {/* НОВЫЙ РАЗДЕЛ С ОБЩИМ ПРОГРЕСС-БАРОМ */}
+            {/* Раздел с общим прогресс-баром (содержимое идентично в код1 и код2) */}
             <div className="overall-progress-bar-section">
                 <span className="level-text current-level-text">
                     Ур. {shardPassData.currentLevel}
@@ -114,7 +137,7 @@ const ShardPassScreen = ({ onClose }) => {
                 </span>
             </div>
 
-            <div className="shard-pass-rewards-section">
+            <div className="shard-pass-rewards-section"> {/* Содержимое сохранено из код2 */}
                 <div className="shard-pass-rewards-horizontal-scroll">
                     <div className="sticky-labels-and-grid-wrapper"> 
                         <div className="sticky-labels-layer" ref={stickyLabelsLayerRef}> 
@@ -158,8 +181,8 @@ const ShardPassScreen = ({ onClose }) => {
 
                                         <div
                                             className={`progress-line after ${levelData.level < shardPassData.currentLevel ? 'filled' : 
-                                                        (levelData.level === shardPassData.currentLevel && shardPassData.currentProgress > 0 ? 'partially-filled' : '')
-                                                    }`}
+                                                            (levelData.level === shardPassData.currentLevel && shardPassData.currentProgress > 0 ? 'partially-filled' : '')
+                                                        }`}
                                         >
                                             {levelData.level === shardPassData.currentLevel && shardPassData.currentProgress > 0 && shardPassData.currentLevel !== shardPassData.maxLevel && (
                                                 <div
@@ -192,7 +215,14 @@ const ShardPassScreen = ({ onClose }) => {
                 </div>
             </div>
 
-            <div className="shard-pass-footer">
+            {/* НОВАЯ КНОПКА ЗАДАНИЙ (из код1) */}
+            <div className="shard-pass-tasks-section">
+                <button className="tasks-button">
+                    View Tasks {/* Или "Задания" */}
+                </button>
+            </div>
+
+            <div className="shard-pass-footer"> {/* Содержимое сохранено из код2 */}
                 <button className="shard-pass-action-button claim-all-btn">
                     Забрать все ({/* счетчик */})
                 </button>

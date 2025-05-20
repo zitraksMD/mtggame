@@ -1,251 +1,301 @@
-    // src/components/screens/ShardPassScreen.scss
+// src/components/screens/ShardPassScreen.scss
 
-    :root {
-        // Фолбэк 0px, так как твоя логика с max() обеспечит минимальный отступ
-        --safe-area-inset-top: env(safe-area-inset-top, 0px);
-        --safe-area-inset-right: env(safe-area-inset-right, 0px);
-        --safe-area-inset-left: env(safe-area-inset-left, 0px);
-      }
+:root {
+    // Фолбэк 0px, так как твоя логика с max() обеспечит минимальный отступ
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
 
-    $header-bottom-margin: 5px;
+// $header-bottom-margin: 5px; // Заменено на margin-bottom: 0; в .shard-pass-header
 
-    // Твои переменные для минимальных отступов
-    $min-header-content-top-offset-android: 90px; // Минимальный отступ для контента хедера на Android (вместо твоего $min_energy_offset_android)
-    $base-header-content-padding-top: 25px;     // Базовый внутренний отступ для контента от начала "челки" или минимального отступа
+// Твои переменные для минимальных отступов
+$min-header-content-top-offset-android: 90px;
+$base-header-content-padding-top: 25px;
 
-    $back-button-min-static-top-offset: 110px; // Твой "80px"
-    $back-button-additional-offset: 60px;
+$back-button-min-static-top-offset: 110px;
+$back-button-additional-offset: 60px;
 
-    // --- Переменные для ShardPass Screen ---
-    // Общие цветовые переменные (основа из код2)
-    $sp-bg-start: #2a0a4a;
-    $sp-bg-end: #4a1a6a;
-    $sp-text-color: #FCC200;
-    $sp-title-color: #d8b4fe; // Используется как основной акцентный цвет
-    $sp-header-bg: rgba(26, 0, 51, 0.5);
-    $sp-border-color: rgba(216, 180, 254, 0.3);
-    $sp-accent-glow-color: rgba($sp-title-color, 0.6);
+// --- Переменные для ShardPass Screen ---
+$sp-bg-start: #2a0a4a;
+$sp-bg-end: #4a1a6a;
+$sp-text-color: #FCC200;
+$sp-title-color: #d8b4fe;
+$sp-header-bg: rgba(26, 0, 51, 0.5);
+$sp-border-color: rgba(216, 180, 254, 0.3);
+$sp-accent-glow-color: rgba($sp-title-color, 0.6);
 
-    $sp-header-border-color: $sp-border-color; // Граница хедера, если нужна
-    $level-banner-bg: darken($sp-bg-start, 5%); // Фон для нависающего баннера (например, темнее основного фона)
+$sp-header-border-color: $sp-border-color;
+$level-banner-bg: darken($sp-bg-start, 5%);
 $level-banner-border-color: $sp-title-color;
 $level-banner-text-color: $sp-text-color;
 $level-banner-number-color: $sp-title-color;
 
-$back-button-size: 40px; // Размер квадратика кнопки
-$back-button-bg-color: rgba(255, 255, 255, 0.1); // Полупрозрачный белый фон
-$back-button-bg-color-hover: rgba(255, 255, 255, 0.2); // Фон при наведении
-$back-button-border-color: rgba(255, 255, 255, 0.3); // Цвет рамки
-$back-button-icon-color: white; // Цвет иконки (стрелки)
+$back-button-size: 40px;
+$back-button-bg-color: rgba(255, 255, 255, 0.1);
+$back-button-bg-color-hover: rgba(255, 255, 255, 0.2);
+$back-button-border-color: rgba(255, 255, 255, 0.3);
+$back-button-icon-color: white;
 $back-button-border-radius: 8px;
 
-    // Цвета для элементов ShardPass (из код2)
-    $sp-level-bg: rgba(255, 255, 255, 0.03);
-    $sp-level-border: rgba(216, 180, 254, 0.2);
-    $sp-reward-claimed-overlay-bg: rgba(30, 0, 50, 0.7);
-    $sp-premium-lock-color: $sp-title-color;
-    $sp-progress-track-bg: rgba(50, 20, 80, 0.7);
-    $sp-progress-fill-bg: $sp-title-color;
+$sp-level-bg: rgba(255, 255, 255, 0.03);
+$sp-level-border: rgba(216, 180, 254, 0.2);
+$sp-reward-claimed-overlay-bg: rgba(30, 0, 50, 0.7);
+$sp-premium-lock-color: $sp-title-color;
+$sp-progress-track-bg: rgba(50, 20, 80, 0.7);
+$sp-progress-fill-bg: $sp-title-color;
 
-    // Переменные для кнопок футера (из код2)
-    $sp-button-claim-bg: linear-gradient(45deg, #a855f7, #d8b4fe);
-    $sp-button-buy-bg: linear-gradient(45deg, #7e22ce, #a855f7);
-    $sp-button-text-color: #ffffff;
+$header-level-diamond-size: 36px;
+$header-level-diamond-bg: $sp-level-bg;
+$header-level-diamond-border-color: $sp-title-color;
+$header-level-diamond-border-width: 1.5px;
+$header-level-diamond-text-color: $sp-text-color;
+$header-level-diamond-number-color: $sp-title-color;
 
-    // --- Размеры и отступы (объединены и обновлены с приоритетом из код1) ---
-    $side-label-area-width: 5px;     // из код1: Ширина "липкой" зоны для меток
-    $side-label-initial-offset: 0px; // из код1: Начальный отступ зоны меток от левого края
-    $side-label-width: 38px;          // из код1: Фактическая ширина плашки с текстом метки
-    $side-label-padding-x: 5px;       // из код1
-    $side-label-padding-y: 10px;      // из код1 (и код2)
+$sp-button-claim-bg: linear-gradient(45deg, #a855f7, #d8b4fe);
+$sp-button-buy-bg: linear-gradient(45deg, #7e22ce, #a855f7);
+$sp-button-text-color: #ffffff;
 
+$side-label-area-width: 5px;
+$side-label-initial-offset: 0px;
+$side-label-width: 38px;
+$side-label-padding-x: 5px;
+$side-label-padding-y: 10px;
 
-    $track-reward-height: 130px;               // из код1 (и код2)
-    $track-levels-progress-height: 40px;       // из код1 (и код2)
-    $main-tracks-gap: 10px;                    // из код1 (и код2): Вертикальный отступ между free, progress, premium дорожками
+$track-reward-height: 130px;
+$track-levels-progress-height: 40px;
+$main-tracks-gap: 10px;
 
-    $reward-card-width: 90px;                  // из код1 (и код2)
-    $reward-cards-gap: 25px;                   // из код1: Отступ между центрами уровней/карточек
+$reward-card-width: 90px;
+$reward-cards-gap: 25px;
 
-    $level-indicator-padding-x: 5px;           // из код2 (в код1 не было явной переменной, но был padding)
-    $level-indicator-padding-y: 4px;           // из код2
-    $progress-line-height: 6px;                // из код1 (и код2)
-    $progress-line-short-length: 30px;         // из код1: Длина коротких линий между индикаторами
+$level-indicator-padding-x: 5px;
+$level-indicator-padding-y: 4px;
+$progress-line-height: 6px;
+$progress-line-short-length: 30px;
 
-    // Переменные для анимации свечения
-$glow-badge-achieved-bg: $sp-progress-fill-bg; // Фон достигнутого уровня
-$glow-light-effect-color: lighten($glow-badge-achieved-bg, 20%); // Цвет самого яркого участка свечения
-$glow-animation-duration: 2.5s; // Длительность одного оборота свечения
-$badge-current-border-radius: 12px; // Текущий border-radius у .level-indicator-badge
-$glow-aura-thickness: 3px; // Насколько свечение будет выступать за пределы значка
+$season-banner-bg: darken($sp-bg-start, 8%);
+$season-banner-border-color: rgba($sp-title-color, 0.6);
+$season-banner-text-color: lighten($sp-text-color, 5%);
+$season-banner-font-size: 0.9em;
+$season-banner-padding-y: 5px;
+$season-banner-padding-x: 12px;
+$season-banner-radius: 12px;
 
-// Регистрируем кастомное свойство для угла (для лучшей производительности анимации)
+$season-ends-info-bg: darken($sp-bg-start, 10%);
+$season-ends-info-border-color: rgba($sp-title-color, 0.4);
+$season-ends-info-text-color: lighten($sp-text-color, 15%);
+$season-ends-info-font-size: 0.75em;
+$season-ends-info-padding-y: 3px;
+$season-ends-info-padding-x: 10px;
+$season-ends-info-radius: 10px;
+
+$hanging-group-top-offset: -15px;
+$hanging-banner-gap: 5px;
+
+$tasks-button-bg: linear-gradient(45deg, #6d28d9, #8b5cf6);
+$tasks-button-text-color: #ffffff;
+$tasks-button-padding-y: 12px;
+$tasks-button-padding-x: 20px;
+$tasks-button-radius: 8px;
+$tasks-button-margin-y: 15px;
+
+$glow-badge-achieved-bg: $sp-progress-fill-bg;
+$glow-light-effect-color: lighten($glow-badge-achieved-bg, 20%);
+$glow-animation-duration: 2.5s;
+$badge-current-border-radius: 12px;
+$glow-aura-thickness: 3px;
+
 @property --badge-glow-angle {
     syntax: '<angle>';
     initial-value: 0deg;
     inherits: false;
-  }
-  
-  // Анимация вращения для свечения
-  @keyframes rotateBadgeGlow {
-    to {
-      --badge-glow-angle: 360deg;
-    }
-  }
-
-// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ПЕРЕЛИВАЮЩЕГОСЯ ФОНА КАРТОЧКИ ---
-// Используем основной фиолетовый (например, твой $sp-title-color или другой подходящий)
-// и его более светлый оттенок.
-$shimmer-base-purple: $sp-title-color; // #d8b4fe (или выбери другой основной фиолетовый, например #8A2BE2)
-$shimmer-light-purple: lighten($shimmer-base-purple, 15%); // Делаем его светлее на 15-20%
-
-$shimmer-animation-duration: 3.5s; // Длительность анимации
-
-// --- @keyframes (остаются теми же, если название устраивает, или можно переименовать) ---
-@keyframes iridescentCardShimmer { // Можно назвать shimmerEffect или purpleShimmer
-  0% {
-    background-position: 0% 50%; // Начальная позиция (слева)
-  }
-  50% {
-    background-position: 100% 50%; // Сдвигается вправо
-  }
-  100% {
-    background-position: 0% 50%; // Возвращается для цикла
-  }
 }
 
-    // --- Корневой элемент экрана ShardPass ---
-    .shard-pass-screen-wrapper { // из код2
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(ellipse at center, $sp-bg-start 0%, darken($sp-bg-end, 10%) 100%);
-        color: $sp-text-color;
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        overflow: hidden;
-        box-sizing: border-box;
-        z-index: 1000;
+@keyframes rotateBadgeGlow {
+    to {
+        --badge-glow-angle: 360deg;
     }
+}
 
-    // --- Внутренний хедер экрана ShardPass ---
- // --- Внутренний хедер экрана ShardPass ---
- .shard-pass-header {
+$shimmer-base-purple: $sp-title-color;
+$shimmer-light-purple: lighten($shimmer-base-purple, 15%);
+$shimmer-animation-duration: 3.5s;
+
+@keyframes iridescentCardShimmer {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.shard-pass-screen-wrapper {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, $sp-bg-start 0%, darken($sp-bg-end, 10%) 100%);
+    color: $sp-text-color;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    z-index: 1000;
+}
+
+.shard-pass-header {
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     position: relative;
     flex-shrink: 0;
-    border-bottom: 1px solid $sp-header-border-color;
-
     
-    // Общий padding-top для всего хедера, чтобы он начинался НИЖЕ статус-бара/челки
-    // Он будет либо $min-header-content-top-offset-android, либо больше, если челка большая.
     padding-top: max(#{$min-header-content-top-offset-android}, calc(var(--safe-area-inset-top) + #{$base-header-content-padding-top}));
+    padding-left: calc(15px + var(--safe-area-inset-left));
+    padding-right: calc(15px + var(--safe-area-inset-right));
+    padding-bottom: 10px;
+    margin-bottom: 0;
+
+    .header-level-badge {
+        width: $header-level-diamond-size;
+        height: $header-level-diamond-size;
+        background-color: $header-level-diamond-bg;
+        border: $header-level-diamond-border-width solid $header-level-diamond-border-color;
+        transform: rotate(45deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .header-level-badge-inner-content {
+            transform: rotate(-45deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1px;
+            line-height: 1;
+        }
     
-    // Боковые отступы также с учетом safe area
-    padding-left: calc(20px + var(--safe-area-inset-left));   // 20px - твой базовый боковой отступ
-    padding-right: calc(20px + var(--safe-area-inset-right));
-    padding-bottom: 5px; // Нижний отступ хедера (например)
+        .header-level-text {
+            font-size: 0.55em;
+            color: $header-level-diamond-text-color;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 1px;
+        }
+    
+        .header-level-number {
+            font-size: 1.5em;
+            color: $header-level-diamond-number-color;
+            font-weight: bold;
+        }
+    }
 
-    // min-height теперь не так критичен, так как padding-top динамический,
-    // но можно оставить для контента, если он фиксированной высоты.
-    // min-height: 60px; // Высота самого контента хедера без учета верхнего padding
-                         // Фактическая высота хедера будет больше из-за padding-top.
+    .header-main-title {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
 
-    margin-bottom: $header-bottom-margin;
-}
+        h2 {
+            margin: 0;
+            font-size: 1.8em;
+            color: $sp-title-color;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 5px 15px;
+            border: 1.5px solid $sp-title-color;
+            border-radius: 22px;
+            text-shadow: 
+                1px 1px 0px darken($sp-title-color, 30%),
+                2px 2px 0px darken($sp-title-color, 35%),
+                3px 3px 3px rgba(0,0,0,0.2);
+        }
+    }
 
-.header-main-title {
-    h2 {
-        margin: 0;
-        font-size: 1.9em; // Можно сделать покрупнее для эффекта
-        color: $sp-title-color; // Основной цвет текста (например, светло-фиолетовый)
-        font-weight: bold; // Или даже 900 для "массивности"
-        text-transform: uppercase;
-        letter-spacing: 2px; // Немного увеличить расстояние между буквами
-        padding: 5px 10px; // Внутренний отступ от текста до рамки (подбери значения)
-    border: 2px solid $sp-title-color; // Цвет и толщина рамки
-    border-radius: 26px; // Скругление углов рамки (опционально)
+    .shard-pass-back-btn {
+        position: static;
+        transform: none;
+        width: $back-button-size;
+        height: $back-button-size;
+        background-color: $back-button-bg-color;
+        border: 1px solid $back-button-border-color;
+        border-radius: $back-button-border-radius;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.9;
+        transition: background-color 0.2s ease, opacity 0.2s ease;
+        z-index: 2;
 
-        // Эффект объема/граффити с помощью text-shadow
-        // Формат: смещение-x смещение-y радиус-размытия цвет
-        text-shadow:
-            // Ближняя темная тень для отделения от фона (эффект "вдавленности" или контура)
-            1px 1px 0px darken($sp-title-color, 30%), // Чуть темнее основного
-            2px 2px 0px darken($sp-title-color, 35%),
-            3px 3px 0px darken($sp-title-color, 40%), // Самая дальняя и темная часть "объема"
-
-            // Можно добавить светлый блик сверху для псевдо-3D
-            // -1px -1px 1px rgba(255, 255, 255, 0.3), // Легкий светлый блик сверху-слева
-
-            // Основная тень для "отрыва" от фона (если фон хедера не сильно контрастный)
-            4px 4px 5px rgba(0, 0, 0, 0.3);
-        
-        // Если хочешь более "мультяшный" или "стикерный" эффект без размытия:
-        // text-shadow:
-        //   2px 2px 0 #000, /* Черный контур/тень */
-        //   -2px -2px 0 #000,
-        //   2px -2px 0 #000,
-        //   -2px 2px 0 #000;
+        &:hover {
+            opacity: 1;
+            background-color: $back-button-bg-color-hover;
+        }
     }
 }
 
-.shard-pass-back-btn { // Кнопка "назад" теперь справа
-    position: absolute; // Абсолютное позиционирование
-    right: 10px;        // Отступ справа (подбери)
-    top: max(#{$back-button-min-static-top-offset}, calc(var(--safe-area-inset-top) + #{$back-button-additional-offset}));
-    transform: translateY(-50%); // Точное вертикальное центрирование
-    // Стили для создания вида "квадратика"
-    width: $back-button-size;
-    height: $back-button-size;
-    background-color: $back-button-bg-color;
-    border: 1px solid $back-button-border-color; // Если нужна рамка
-    // border: none; // Если рамка не нужна, а только фон
-
-    border-radius: $back-button-border-radius; // Скругление углов
-    
-    display: flex; // Для центрирования иконки внутри
+.header-hanging-info-container {
+    position: absolute;
+    top: calc(100% + #{$hanging-group-top-offset});
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    
-    cursor: pointer;
-    padding: 0; // Убираем внутренний padding, если размер задан через width/height
-    line-height: 1; // Для консистентности
-    opacity: 0.9; // Можно сделать чуть менее прозрачной по умолчанию
-    transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
-    z-index: 11;
+    width: auto;
+    z-index: 3;
 
-    &:hover {
-        opacity: 1;
-        background-color: $back-button-bg-color-hover;
-        // transform: scale(1.05); // Легкое увеличение при наведении (опционально)
+    .season-banner-display {
+        background-color: $season-banner-bg;
+        border: 1px solid $season-banner-border-color;
+        color: $season-banner-text-color;
+        font-size: $season-banner-font-size * 0.9;
+        font-weight: 600;
+        padding: ($season-banner-padding-y * 0.8) ($season-banner-padding-x * 0.9);
+        border-radius: $season-banner-radius * 0.8;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        margin-bottom: $hanging-banner-gap;
+        white-space: nowrap;
+    }
+
+    .season-ends-info-display {
+        color: $season-ends-info-text-color;
+        font-size: $season-ends-info-font-size * 0.9;
+        padding: ($season-ends-info-padding-y * 0.8) ($season-ends-info-padding-x * 0.9);
+        border-radius: $season-ends-info-radius * 0.8;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        white-space: nowrap;
     }
 }
-
 
 .overall-progress-bar-section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    // Горизонтальные отступы как у хедера, вертикальные по вкусу
     padding: 10px calc(20px + var(--safe-area-inset-left)) 10px calc(20px + var(--safe-area-inset-right));
     box-sizing: border-box;
     width: 100%;
-
-    // Отступ сверху, чтобы не налезать на "повисший" level-banner-container.
-    // level-banner-container имеет `bottom: -40px`, значит его нижняя точка на 40px ниже .shard-pass-header.
-    // Добавим еще отступ для воздуха.
-    margin-top: calc(40px + 20px); // 40px от баннера + 20px дополнительного пространства
-    margin-bottom: 25px; // Отступ перед секцией с наградами
+    margin-top: 35px; // ВРЕМЕННОЕ ЗНАЧЕНИЕ, НУЖНО ПОДОБРАТЬ! (из код1)
+    margin-bottom: 5px;
 
     .level-text {
-        color: $sp-text-color; // Используем существующую переменную
+        color: $sp-text-color;
         font-size: 0.9em;
         font-weight: 600;
         white-space: nowrap;
-        flex-shrink: 0; // Чтобы текст не сжимался
+        flex-shrink: 0;
 
         &.current-level-text {
             margin-right: 10px;
@@ -258,140 +308,124 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
     .progress-bar-container {
         flex-grow: 1;
         height: 12px;
-        background-color: $sp-progress-track-bg; // Используем существующую переменную
+        background-color: $sp-progress-track-bg;
         border-radius: 6px;
-        overflow: hidden; // Для скругления внутреннего .progress-bar-fill
+        overflow: hidden;
         position: relative;
     }
 
     .progress-bar-fill {
         height: 100%;
-        background-color: $sp-progress-fill-bg; // Используем существующую переменную
-        border-radius: 6px; // Должен совпадать или быть чуть меньше родительского
+        background-color: $sp-progress-fill-bg;
+        border-radius: 6px;
         transition: width 0.3s ease-in-out;
-        box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4); // Как у других прогресс-баров
+        box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
     }
 }
 
+.shard-pass-rewards-section {
+    flex-grow: 1;
+    border-top: 1px solid $sp-header-border-color;
+    display: flex;
+    overflow: hidden;
+}
 
-    // --- Секция наград (стили из код1 с адаптацией) ---
-    .shard-pass-rewards-section { // из код1
-        flex-grow: 1;
-        border-top: 1px solid $sp-header-border-color;
+.shard-pass-rewards-horizontal-scroll {
+    height: 350px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    &::-webkit-scrollbar { height: 8px; width: 8px; }
+    &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+    &::-webkit-scrollbar-thumb { background-color: darken($sp-title-color, 20%); border-radius: 4px; &:hover { background-color: darken($sp-title-color, 10%); } }
+}
 
+.sticky-labels-and-grid-wrapper {
+    position: relative;
+    display: inline-block;
+    padding-left: $side-label-area-width + $side-label-initial-offset;
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+.sticky-labels-layer {
+    position: sticky;
+    left: $side-label-initial-offset;
+    top: 0;
+    width: $side-label-area-width;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+
+    .side-label.sticky {
+        pointer-events: all;
+        position: absolute;
+        left: 0;
+        width: $side-label-width;
+        writing-mode: vertical-lr;
+        text-orientation: mixed;
+        font-size: 0.75em;
+        font-weight: bold;
+        text-transform: uppercase;
+        padding: $side-label-padding-y $side-label-padding-x;
+        border: 1px solid rgba($sp-title-color, 0.3);
+        border-radius: 6px;
+        background-color: darken($sp-bg-start, 5%);
+        color: $sp-text-color;
+        text-align: center;
         display: flex;
-        overflow: hidden; // Важно для корректной работы sticky внутри
-    }
-
-    .shard-pass-rewards-horizontal-scroll { // из код1, с дополнением скроллбара из код2
-        height: 350px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        // position: relative; // Не обязательно здесь, т.к. wrapper будет relative (из код1)
-
-        // Стили скроллбара из код2
-        &::-webkit-scrollbar { height: 8px; width: 8px; }
-        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
-        &::-webkit-scrollbar-thumb { background-color: darken($sp-title-color, 20%); border-radius: 4px; &:hover { background-color: darken($sp-title-color, 10%); } }
-    }
-
-    .sticky-labels-and-grid-wrapper { // из код1
-        position: relative; // Для позиционирования .sticky-labels-layer
-        display: inline-block; // Для корректной ширины по содержимому грида
-        padding-left: $side-label-area-width + $side-label-initial-offset; // Начальный отступ для контента
-        min-height: 100%;
+        align-items: center;
+        justify-content: center;
         box-sizing: border-box;
-    }
+        transition: top 0.1s linear;
+        min-height: 80px;
 
-    .sticky-labels-layer { // из код1
-        position: sticky;   // "Прилипает"
-        left: $side-label-initial-offset; // Прилипает с начальным отступом от края скролл-контейнера
-        top: 0; // Обязательно для sticky
-        width: $side-label-area-width; // Ширина области, где находятся метки
-        height: 100%; // Растягивается на всю высоту родителя (grid-wrapper), чтобы JS мог вычислить top
-                    // (в код2 было height: 0, но для JS-расчетов из код1 лучше 100%)
-        z-index: 10; // Выше контента дорожек
-        pointer-events: none; // Слой не перехватывает клики
-
-        .side-label.sticky { // из код1
-            pointer-events: all; // Сами метки кликабельны
-            position: absolute; // Позиционируются абсолютно внутри .sticky-labels-layer
-            left: 0; // Вдоль левого края .sticky-labels-layer (или небольшой отступ, если $side-label-area-width > $side-label-width)
-                    // Если left: ($side-label-area-width - $side-label-width) / 2; для центрирования метки в зоне
-            width: $side-label-width; // Фактическая ширина метки
-            
-            writing-mode: vertical-lr; // Читается СВЕРХУ ВНИЗ, буквы вертикально (из код1)
-                                    // (в код2 было vertical-rl, JS настроен на vertical-lr (rotate(0deg)))
-            text-orientation: mixed; // или upright, если нужно
-            font-size: 0.75em;
-            font-weight: bold;
-            text-transform: uppercase;
-            padding: $side-label-padding-y $side-label-padding-x;
-            border: 1px solid rgba($sp-title-color, 0.3);
-            border-radius: 6px;
-            background-color: darken($sp-bg-start, 5%);
-            color: $sp-text-color; // Общий цвет, будет переопределен для premium
-            text-align: center;
-            display: flex;
-            align-items: center; // Центрирует текст по поперечной оси (горизонтали для vertical-lr)
-            justify-content: center; // Центрирует текст по основной оси (вертикали для vertical-lr)
-            box-sizing: border-box;
-            transition: top 0.1s linear; // Плавное изменение позиции
-            min-height: 80px;
-            // Вертикальное центрирование через JS (top и transform: translateY(-50%))
-            // transform: translateY(-50%); // Это будет задаваться JS через style, не нужно здесь
-
-            &.free-side-label {
-                // top и transform устанавливаются из JS
-            }
-            &.premium-side-label {
-                color: $sp-title-color;
-                border-color: rgba($sp-title-color, 0.5);
-                // top и transform устанавливаются из JS
-            }
+        &.free-side-label {
+            // top и transform устанавливаются из JS
+        }
+        &.premium-side-label {
+            color: $sp-title-color;
+            border-color: rgba($sp-title-color, 0.5);
+            // top и transform устанавливаются из JS
         }
     }
+}
 
-    // Контейнер для ВСЕХ дорожек
-    .rewards-grid-container { // из код1
-        display: flex;
-        flex-direction: column;
-        min-width: min-content; // Чтобы не сжимался меньше содержимого
-        padding: 10px 0; // Вертикальные отступы для всего грида
-        gap: $main-tracks-gap; // Вертикальный отступ между дорожками
-        position: relative; // Чтобы z-index работал корректно с метками
-        z-index: 1;         // Ниже слоя с метками
-        box-sizing: border-box;
-    }
+.rewards-grid-container {
+    display: flex;
+    flex-direction: column;
+    min-width: min-content;
+    padding: 10px 0;
+    gap: $main-tracks-gap;
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+}
 
-    // --- Дорожки наград (Free/Premium) ---
-    .rewards-track { // из код1
-        display: flex;
-        flex-direction: row;
-        min-height: $track-reward-height;
-        align-items: center;
-        padding: 0; // Отступы через ячейки
-        box-sizing: border-box;
-        margin-left: 30px;
-    }
+.rewards-track {
+    display: flex;
+    flex-direction: row;
+    min-height: $track-reward-height;
+    align-items: center;
+    padding: 0;
+    box-sizing: border-box;
+    margin-left: 30px;
+}
 
-    // Ячейка для одного элемента на дорожке наград
-    .reward-cell { // из код1
-        min-width: $reward-card-width + $reward-cards-gap; // ОБЩАЯ ШИРИНА "СЛОТА" (карточка + межкарточный промежуток)
-        padding: 0 ($reward-cards-gap / 2); // Горизонтальный padding для центрирования карточки внутри слота
-        height: 100%;
-        flex-shrink: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-sizing: border-box;
-    }
+.reward-cell {
+    min-width: $reward-card-width + $reward-cards-gap;
+    padding: 0 ($reward-cards-gap / 2);
+    height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
 
-// --- СТИЛИ ДЛЯ КАРТОЧКИ НАГРАДЫ (обновленные) ---
 .reward-card {
     width: $reward-card-width;
     height: 120px;
-    background-color: $sp-level-bg; // Базовый фон для карточек не .available
+    background-color: $sp-level-bg;
     border: 1px solid $sp-level-border;
     border-radius: 8px;
     padding: 10px;
@@ -404,7 +438,7 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
-    overflow: hidden; // Важно, чтобы градиент не вылезал за скругленные углы, если он больше
+    overflow: hidden;
 
     &:hover {
         transform: translateY(-3px);
@@ -433,13 +467,9 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
 
     &.claimed {
         opacity: 0.6;
-        // Анимацию свечения для .claimed можно убрать, если она не нужна
-        // Если ты хочешь, чтобы у полученных наград не было свечения, убедись,
-        // что класс .available удаляется при получении награды.
         &::before {
-            display: none; // Скрываем свечение для уже полученных наград
+            display: none; 
         }
-
         .claimed-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -452,224 +482,197 @@ $shimmer-animation-duration: 3.5s; // Длительность анимации
             justify-content: center;
             border-radius: inherit;
             text-transform: uppercase;
-            z-index: 1; // Должен быть выше ::before, если ::before не display:none
+            z-index: 1;
         }
     }
 
     &.future {
         opacity: 0.5;
-        // Также можно скрыть свечение для будущих наград
         &::before {
             display: none;
         }
     }
-        &.future { opacity: 0.5; }
-        &.premium-reward.premium-locked {
-            .premium-lock-icon {
+    &.premium-reward.premium-locked {
+        .premium-lock-icon {
+            position: absolute;
+            top: 5px; right: 5px;
+            font-size: 1.2em;
+            color: $sp-premium-lock-color;
+            opacity: 0.8;
+            z-index: 1;
+        }
+    }
+    &.available {
+        &::before {
+            display: none; 
+            content: none;
+        }
+        background-image: linear-gradient(
+            120deg,
+            $shimmer-base-purple,
+            $shimmer-light-purple,
+            $shimmer-base-purple
+        );
+        background-size: 300% 100%;
+        animation: iridescentCardShimmer $shimmer-animation-duration ease-in-out infinite;
+    }
+}
+
+.levels-and-progress-track {
+    display: flex;
+    flex-direction: row;
+    height: $track-levels-progress-height;
+    align-items: center;
+    position: relative;
+    padding: 0;
+    box-sizing: border-box;
+    padding-left: 30px;
+}
+
+.level-progress-node {
+    min-width: $reward-card-width + $reward-cards-gap;
+    height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    position: relative;
+    
+    &:first-child {
+        .progress-line.before {
+            position: relative;
+            &::before {
+                content: "";
                 position: absolute;
-                top: 5px; right: 5px;
-                font-size: 1.2em;
-                color: $sp-premium-lock-color;
-                opacity: 0.8;
-                z-index: 1;
+                right: 100%; 
+                top: 0;
+                width: 30px;
+                height: 100%;
+                background-color: $sp-progress-track-bg;
+            }
+            &.filled::before {
+                background-color: $sp-progress-fill-bg;
             }
         }
-        // --- СТИЛИ ДЛЯ ПЕРЕЛИВАЮЩЕГОСЯ ФОНА ДОСТУПНОЙ КАРТОЧКИ ---
-        &.available {
-            // Убираем предыдущий эффект свечения через ::before, если он был
-            &::before {
-                display: none; 
-                content: none;
-            }
-    
-            // Градиент создает эффект "волны" светло-фиолетового на темно-фиолетовом фоне.
-            // Основной цвет карточки будет $shimmer-base-purple, а по нему будет двигаться $shimmer-light-purple.
-            background-image: linear-gradient(
-                120deg, // Угол наклона "волны"
-                $shimmer-base-purple,      // Край волны (совпадает с фоном)
-                $shimmer-light-purple,     // Пик волны (светлый)
-                $shimmer-base-purple       // Другой край волны (снова совпадает с фоном)
+    }
+}
+
+.level-indicator-badge {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: $sp-text-color;
+    background-color: $sp-progress-track-bg;
+    border: 1px solid rgba($sp-title-color, 0.4);
+    padding: $level-indicator-padding-y $level-indicator-padding-x;
+    border-radius: $badge-current-border-radius;
+    line-height: 1;
+    white-space: nowrap;
+    z-index: 2;
+    position: relative;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    margin: 0 3px;
+    flex-shrink: 0;
+
+    &.achieved {
+        background-color: $glow-badge-achieved-bg;
+        color: darken($sp-bg-start, 10%);
+        border-color: darken($glow-badge-achieved-bg, 10%);
+        &::before {
+            content: "";
+            position: absolute;
+            left: -$glow-aura-thickness;
+            top: -$glow-aura-thickness;
+            right: -$glow-aura-thickness;
+            bottom: -$glow-aura-thickness;
+            border-radius: $badge-current-border-radius + $glow-aura-thickness;
+            background: conic-gradient(
+                from var(--badge-glow-angle),
+                transparent 0%,
+                transparent 65%,
+                $glow-light-effect-color 80%,
+                transparent 95%
             );
-            background-size: 300% 100%; // Ширина фона в 3 раза больше карточки, высота равна высоте карточки.
-                                        // Это для горизонтального движения "волны".
-            
-            animation: iridescentCardShimmer $shimmer-animation-duration ease-in-out infinite;
+            animation: rotateBadgeGlow $glow-animation-duration linear infinite;
+            z-index: -1; 
         }
     }
+}
 
-    // --- Дорожка Уровней и Прогресс-бара ---
-    .levels-and-progress-track { // из код1
-        display: flex;
-        flex-direction: row;
-        height: $track-levels-progress-height;
-        align-items: center;
-        position: relative;
-        padding: 0; // Отступы через ячейки/ноды
-        box-sizing: border-box;
-        padding-left: 30px;
-    }
+.progress-line {
+    height: $progress-line-height;
+    background-color: $sp-progress-track-bg;
+    flex-grow: 1;
+    min-width: $progress-line-short-length / 2;
+    flex-shrink: 0;
+    position: relative;
 
-    .level-progress-node {
-        min-width: $reward-card-width + $reward-cards-gap;
-        height: 100%;
-        flex-shrink: 0;
-        display: flex;
-        // justify-content: center; // Попробуй закомментировать или изменить на space-between/space-around, чтобы посмотреть эффект
-        align-items: center;
-        position: relative;
-        
-        // Для отладки:
-        // border: 1px dashed lime;
-        &:first-child { // Стили для первого элемента .level-progress-node
-            .progress-line.before {
-                position: relative; // Необходимо для абсолютного позиционирования псевдоэлемента ::before
-    
-                // Сам элемент .progress-line.before будет отрисован внутри контентной области
-                // .levels-and-progress-track (то есть, с учетом padding-left: 30px).
-                // Его псевдоэлемент ::before "дорисует" часть линии в области этого padding.
-                &::before {
-                    content: "";
-                    position: absolute;
-                    // Позиционируем левый край псевдоэлемента относительно левого края родителя (.progress-line.before)
-                    // right: 100% означает, что правый край ::before будет у левого края .progress-line.before.
-                    right: 100%; 
-                    top: 0;
-                    width: 30px; // Ширина равна величине padding-left контейнера
-                    height: 100%; // Высота как у основной линии
-                    
-                    // Цвет фона должен соответствовать состоянию основной линии (заполнена или нет)
-                    // background-color: inherit; // Унаследует background-color от .progress-line.before
-                                                // Это сработает, если .filled меняет сам background-color линии.
-                    
-                    // Более надежно, если класс .filled применяется к .progress-line.before:
-                    background-color: $sp-progress-track-bg; // Цвет по умолчанию для линии
-                }
-    
-                // Если первая линия должна быть закрашена (например, currentLevel >= 1)
-                &.filled::before {
-                    background-color: $sp-progress-fill-bg; // Цвет для закрашенной линии
-                    // Если есть box-shadow на .filled, его тоже можно добавить сюда
-                    // box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
-                }
-            }
-        }
-    }
-
-    .level-indicator-badge { // из код1
-        font-size: 0.8em;
-        font-weight: bold;
-        color: $sp-text-color;
-        background-color: $sp-progress-track-bg;
-        border: 1px solid rgba($sp-title-color, 0.4);
-        padding: $level-indicator-padding-y $level-indicator-padding-x;
-        border-radius: $badge-current-border-radius;
-        line-height: 1;
-        white-space: nowrap;
-        z-index: 2; // Выше линий
-        position: relative; // Для z-index
-        transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-        margin: 0 3px; // НЕБОЛЬШОЙ ОТСТУП ОТ ЛИНИЙ (из код1, в код2 было 4px) - выбрано 3px из код1
-        flex-shrink: 0; // Важно, чтобы margin не сжимал сам индикатор
-
-        &.achieved {
-            // Существующие стили для .achieved остаются (background-color, color, border-color)
-            background-color: $glow-badge-achieved-bg; // Уже должно быть из ваших стилей
-            color: darken($sp-bg-start, 10%);      // Уже должно быть
-            border-color: darken($glow-badge-achieved-bg, 10%); // Уже должно быть
-        
-            // Псевдоэлемент для создания эффекта вращающегося свечения
-            &::before {
-              content: "";
-              position: absolute;
-              // Располагаем псевдоэлемент так, чтобы он был немного больше значка,
-              // создавая эффект свечения вокруг него.
-              left: -$glow_aura_thickness;
-              top: -$glow_aura_thickness;
-              right: -$glow_aura_thickness;
-              bottom: -$glow_aura_thickness;
-              // width и height не нужны, если используем left/top/right/bottom
-        
-              // border-radius для псевдоэлемента должен быть равен радиусу значка + толщина ауры
-              border-radius: $badge-current-border-radius + $glow_aura_thickness; // например, 12px + 3px = 15px
-        
-              // Конический градиент, который будет вращаться
-              // Он создает эффект "луча света" или "кометы"
-              background: conic-gradient(
-                from var(--badge-glow-angle), // Угол вращения, анимируется
-                transparent 0%,               // Начало полностью прозрачное
-                transparent 65%,              // Большая часть круга прозрачная (это "темная" часть)
-                $glow-light-effect-color 80%,  // Свечение начинает появляться (короткий яркий сегмент)
-                transparent 95%                // Свечение быстро затухает
-              );
-              
-              animation: rotateBadgeGlow $glow-animation-duration linear infinite;
-              
-              // Помещаем псевдоэлемент позади основного содержимого значка
-              z-index: -1; 
-              // Это важно: фон и граница самого .level-indicator-badge.achieved
-              // будут перекрывать центр этого градиента, оставляя видимым только "свечение" по краям.
-            }
-          }
-        }
-
-    .progress-line {
-        height: $progress-line-height;
-        background-color: $sp-progress-track-bg;
-        flex-grow: 1;
-        // Можно попробовать установить одинаковую базовую ширину для всех линий,
-        // а flex-grow будет её увеличивать.
-        // flex-basis: $progress-line-short-length; // Например
-        min-width: $progress-line-short-length / 2; // Оставляем, чтобы не исчезали
-        flex-shrink: 0; // Важно, чтобы линии не сжимались, если контент шире
-        position: relative;
-
-        &.filled {
-            background-color: $sp-progress-fill-bg;
-            box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
-        }
-        // &.after { position: relative; } // Уже есть у .progress-line
-    }
-
-    .progress-line-fill { // из код2
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
+    &.filled {
         background-color: $sp-progress-fill-bg;
-        border-radius: ($progress-line-height / 2);
         box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
-        z-index: 1; // Под индикатором, но над основной линией (если основная линия не filled)
-        // width задается инлайн-стилем в JSX
     }
+}
 
+.progress-line-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background-color: $sp-progress-fill-bg;
+    border-radius: ($progress-line-height / 2);
+    box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
+    z-index: 1;
+}
 
-    // --- Футер с кнопками ---
-    .shard-pass-footer { // из код2
-        display: flex;
-        gap: 15px;
-        padding: 15px;
-        background-color: $sp-header-bg;
-        backdrop-filter: blur(5px);
-        border-top: 1px solid $sp-border-color;
-        box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
-        flex-shrink: 0;
+.shard-pass-tasks-section {
+    padding: 0 calc(15px + var(--safe-area-inset-left)) $tasks-button-margin-y calc(15px + var(--safe-area-inset-right));
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: $tasks-button-margin-y;
 
-        .shard-pass-action-button {
-            flex-grow: 1;
-            padding: 12px 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            color: $sp-button-text-color;
-            cursor: pointer;
-            text-align: center;
-            transition: transform 0.1s ease, filter 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    .tasks-button {
+        width: 100%;
+        background: $tasks-button-bg;
+        color: $tasks-button-text-color;
+        border: none;
+        padding: $tasks-button-padding-y $tasks-button-padding-x;
+        border-radius: $tasks-button-radius;
+        font-size: 1em;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: transform 0.1s ease, filter 0.2s ease;
 
-            &:hover { filter: brightness(1.15); }
-            &:active { transform: scale(0.98); }
-            &.claim-all-btn { background: $sp-button-claim-bg; }
-            &.buy-shardpass-btn { background: $sp-button-buy-bg; }
-        }
+        &:hover { filter: brightness(1.15); }
+        &:active { transform: scale(0.98); }
     }
+}
+
+.shard-pass-footer {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background-color: $sp-header-bg;
+    backdrop-filter: blur(5px);
+    border-top: 1px solid $sp-border-color;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+
+    .shard-pass-action-button {
+        flex-grow: 1;
+        padding: 12px 15px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        color: $sp-button-text-color;
+        cursor: pointer;
+        text-align: center;
+        transition: transform 0.1s ease, filter 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+
+        &:hover { filter: brightness(1.15); }
+        &:active { transform: scale(0.98); }
+        &.claim-all-btn { background: $sp-button-claim-bg; }
+        &.buy-shardpass-btn { background: $sp-button-buy-bg; }
+    }
+}
