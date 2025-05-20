@@ -63,6 +63,10 @@ $progress-level-diamond-number-color: $header-level-diamond-number-color;
 $progress-level-diamond-text-font-size: 0.6em; // Размеры шрифтов для ромбов у прогресс-бара
 $progress-level-diamond-number-font-size: 1em;
 
+$lock-overlay-background: rgba(26, 0, 51, 0.75); // Темно-фиолетовый, полупрозрачный
+$lock-icon-font-size: 3.5em;                     // Размер для эмодзи-замка или SVG
+$lock-icon-color: rgba(255, 255, 255, 0.6);  
+
 $side-label-area-width: 5px;
 $side-label-initial-offset: 0px;
 $side-label-width: 38px;
@@ -567,11 +571,11 @@ $shimmer-animation-duration: 3.5s;
     align-items: center;
     justify-content: center;
     text-align: center;
-    position: relative;
+    position: relative; // Оставляем, важно для оверлеев
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: hidden; // Оставляем
 
     &:hover {
         transform: translateY(-3px);
@@ -582,6 +586,8 @@ $shimmer-animation-duration: 3.5s;
         width: 40px; height: 40px;
         object-fit: contain;
         margin-bottom: 5px;
+        position: relative; // Добавляем, чтобы z-index сработал
+        z-index: 1;         // Чтобы быть под оверлеями
     }
 
     .reward-name {
@@ -595,13 +601,16 @@ $shimmer-animation-duration: 3.5s;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
+        position: relative; // Добавляем, чтобы z-index сработал
+        z-index: 1;         // Чтобы быть под оверлеями
     }
 
+    // Состояние "ПОЛУЧЕНО"
     &.claimed {
         opacity: 0.6;
-        &::before {
-            display: none;
-        }
+        // &::before { // Если у тебя был общий ::before для reward-card, который нужно скрыть
+        //  display: none; 
+        // }
         .claimed-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -614,39 +623,68 @@ $shimmer-animation-duration: 3.5s;
             justify-content: center;
             border-radius: inherit;
             text-transform: uppercase;
-            z-index: 1;
+            z-index: 5; // Должен быть выше контента и, возможно, других оверлеев, если премиум куплен
         }
     }
 
+    // Состояние "БУДУЩАЯ НАГРАДА"
     &.future {
         opacity: 0.5;
-        &::before {
-            display: none;
-        }
+        // &::before { // Если у тебя был общий ::before для reward-card
+        //  display: none;
+        // }
     }
-    &.premium-reward.premium-locked {
-        .premium-lock-icon {
-            position: absolute;
-            top: 5px; right: 5px;
-            font-size: 1.2em;
-            color: $sp-premium-lock-color;
-            opacity: 0.8;
-            z-index: 1;
-        }
-    }
+
+    // УДАЛЯЕМ СТАРЫЙ БЛОК ДЛЯ МАЛЕНЬКОГО ЗАМКА (короны)
+    // &.premium-reward.premium-locked {
+    //   .premium-lock-icon {
+    //     // ... старые стили ...
+    //   }
+    // }
+
+    // Состояние "ДОСТУПНО" (для переливания)
+    // Этот стиль будет применяться и к бесплатным, и к премиум наградам, если у них есть класс .available
     &.available {
-        &::before {
-            display: none;
-            content: none;
-        }
+        // &::before { // Если у тебя был общий ::before для reward-card
+        //   display: none; 
+        //   content: none;
+        // }
         background-image: linear-gradient(
             120deg,
-            $shimmer-base-purple,
-            $shimmer-light-purple,
+            $shimmer-base-purple,   // Убедись, что эти переменные определены
+            $shimmer-light-purple,  // ($sp-title-color и lighten($sp-title-color, 15%) в предыдущих версиях)
             $shimmer-base-purple
         );
         background-size: 300% 100%;
-        animation: iridescentCardShimmer $shimmer-animation-duration ease-in-out infinite;
+        animation: iridescentCardShimmer $shimmer-animation-duration ease-in-out infinite; // Убедись, что $shimmer-animation-duration определена
+
+        // Если это доступная премиум-награда, оверлей замка не должен показываться (JSX это контролирует)
+        .premium-lock-overlay {
+            display: none; 
+        }
+    }
+
+    // === НОВЫЙ ОВЕРЛЕЙ С БОЛЬШИМ ЗАМКОМ ===
+    // Он будет рендериться в JSX только если !shardPassData.isPremium
+    .premium-lock-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: $lock-overlay-background; // Используем новую переменную
+        border-radius: inherit; // Наследует скругление углов от .reward-card
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 4; // Выше контента карточки, но ниже "claimed-overlay" если вдруг что
+        cursor: default; // Или 'pointer', если клик по нему будет предлагать купить премиум
+
+        .lock-icon-display { // Класс для твоего <span class="lock-icon-display">🔒</span>
+            font-size: $lock-icon-font-size; // Используем новую переменную
+            color: $lock-icon-color;         // Используем новую переменную
+            // Для SVG иконки здесь могут быть стили fill, width, height
+        }
     }
 }
 
@@ -691,7 +729,7 @@ $shimmer-animation-duration: 3.5s;
 .level-indicator-badge {
     font-size: 0.8em;
     font-weight: bold;
-    color: $sp-text-color;
+    color: $sp-title-color;
     background-color: $sp-progress-track-bg;
     border: 1px solid rgba($sp-title-color, 0.4);
     padding: $level-indicator-padding-y $level-indicator-padding-x;
@@ -750,7 +788,6 @@ $shimmer-animation-duration: 3.5s;
     top: 0;
     height: 100%;
     background-color: $sp-progress-fill-bg;
-    border-radius: ($progress-line-height / 2);
     box-shadow: 0 0 5px rgba($sp-progress-fill-bg, 0.4);
     z-index: 1;
 }
