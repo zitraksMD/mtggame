@@ -41,7 +41,7 @@ $sp-level-border: rgba(216, 180, 254, 0.2);
 $sp-reward-claimed-overlay-bg: rgba(30, 0, 50, 0.7);
 $sp-premium-lock-color: $sp-title-color;
 $sp-progress-track-bg: rgba(50, 20, 80, 0.7);
-$sp-progress-fill-bg: $sp-title-color;
+$sp-progress-fill-bg: #a855f7;
 
 $header-level-diamond-size: 32px;
 $header-level-diamond-bg: $sp-level-bg;
@@ -124,6 +124,69 @@ $glow-animation-duration: 2.5s;
 $badge-current-border-radius: 12px;
 $glow-aura-thickness: 3px;
 
+// === Переменные для секции ЗАДАНИЙ ===
+
+// --- Фоны для элементов списка заданий (.task-item) ---
+$task-item-not-completed-bg: $sp-button-buy-bg; // Градиент как у кнопки "Buy Premium" (когда задание не выполнено)
+
+// Для ВЫПОЛНЕННЫХ, но еще НЕ ПОЛУЧЕННЫХ наград (фон становится тусклее)
+$task-item-completed-base-color-1: #7e22ce; // Первый цвет из градиента $sp-button-buy-bg
+$task-item-completed-base-color-2: #a855f7; // Второй цвет из градиента $sp-button-buy-bg
+$task-item-completed-bg: linear-gradient(
+    45deg,
+    darken(desaturate($task-item-completed-base-color-1, 15%), 10%), 
+    darken(desaturate($task-item-completed-base-color-2, 15%), 10%)
+); // Затемненный и обесцвеченный градиент
+
+// Для ПОЛУЧЕННЫХ наград (фон еще более тусклый)
+$task-item-claimed-base-bg-color: darken(desaturate($task-item-completed-base-color-1, 30%), 20%); // Базовый очень тусклый цвет
+// Можно использовать и градиент, если хочется:
+// $task-item-claimed-bg: linear-gradient(
+//     45deg,
+//     darken(desaturate($task-item-completed-base-color-1, 30%), 20%), 
+//     darken(desaturate($task-item-completed-base-color-2, 30%), 20%)
+// );
+
+// --- Прогресс-бар внутри задания ---
+$task-progress-bar-track-bg: rgba(0,0,0, 0.3);         // Фон трека прогресс-бара
+$task-progress-bar-fill-bg: $sp-text-color;          // Цвет заполнения (например, желтый)
+$task-progress-bar-height: 10px;                     // Высота прогресс-бара
+$task-progress-bar-radius: 5px;                      // Скругление углов прогресс-бара
+$task-progress-text-color: #000000;                   // Цвет текста на прогресс-баре (X/Y)
+$task-progress-text-font-size: 0.6em;
+
+// --- Кнопка "Забрать" (Claim) для награды за задание ---
+$task-claim-button-text-color: #ffffff;               // Цвет текста на кнопке
+$task-claim-button-radius: $tasks-button-radius;      // Используем радиус от общей кнопки "View Tasks" для консистентности
+$task-claim-button-padding-y: 8px;
+$task-claim-button-padding-x: 12px;
+$task-claim-button-font-size: 0.8em;
+$task-claim-reward-xp-font-size: 0.8em; // Для текста "+XP" на кнопке
+
+// Цвета фона для кнопки "Забрать" в разных состояниях:
+$task-claim-button-disabled-bg: grey;                 // Фон для неактивной кнопки (задание не выполнено)
+$task-claim-button-ready-bg: linear-gradient(45deg, #34D399, #10B981); // Зеленый градиент (задание выполнено, можно забрать)
+$task-claim-button-claimed-bg: darken($task-claim-button-disabled-bg, 15%); // Фон для кнопки "Получено" (темнее серого)
+
+// --- Оверлей "Выполнено" (галочка + текст) ---
+$task-claimed-overlay-bg: rgba(0, 0, 0, 0.8); // НОВЫЙ: Полупрозрачный черный
+$task-checkmark-icon-color: #34D399;              // Цвет галочки
+$task-checkmark-icon-font-size: 2.8em;
+$task-checkmark-text-color: #E5E7EB;               // Цвет текста "Completed"
+$task-checkmark-text-font-size: 0.9em;
+
+// --- Общие для .task-item ---
+$task-item-border-radius: 8px;
+$task-item-padding-y: 12px;
+$task-item-padding-x: 15px;
+$task-item-margin-bottom: 12px;
+$task-item-gap: 15px; // Отступ между task-info и task-actions
+$task-item-text-color: #f0f0f0; // Основной цвет текста для имени задания
+$task-item-name-font-size: 0.9em;
+$task-info-gap: 8px; // Отступ между именем задания и его прогресс-баром
+
+// === КОНЕЦ ПЕРЕМЕННЫХ ДЛЯ СЕКЦИИ ЗАДАНИЙ ===
+
 @keyframes headerDiamondBorderPulse {
     0% {
         box-shadow: 0 1px 2px rgba(0,0,0,0.2),
@@ -174,6 +237,17 @@ $shimmer-animation-duration: 3.5s;
     }
 }
     
+
+// === Анимация для появления оверлея с галочкой ===
+@keyframes fadeInClaimedOverlay {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
 .shard-pass-screen-wrapper {
     width: 100%;
     height: 100%;
@@ -933,4 +1007,291 @@ $shimmer-animation-duration: 3.5s;
             padding: 6px 3px;
         }
     }
+}
+
+// === STYLES FOR TASKS OVERLAY ===
+.shard-pass-tasks-overlay {
+    flex-grow: 1; // Take available vertical space
+    display: flex;
+    flex-direction: column;
+    background-color: rgba($sp-bg-start, 0.8); // Slightly different background to distinguish
+    // border-top: 1px solid $sp-border-color; // Use borders from .shard-pass-rewards-section if needed
+    // border-bottom: 1px solid $sp-border-color;
+    overflow: hidden; // Parent handles overflow
+    min-height: 250px; // Same as rewards section for consistency
+}
+
+.tasks-tabs-container {
+    display: flex;
+    overflow-x: auto; // Allow horizontal scrolling for tabs if they don't fit
+    background-color: darken($sp-bg-start, 5%);
+    padding: 5px 0;
+    flex-shrink: 0; // Tabs should not shrink
+    scrollbar-width: thin;
+    scrollbar-color: $sp-title-color darken($sp-bg-start, 5%);
+
+    &::-webkit-scrollbar {
+        height: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background-color: $sp-title-color;
+        border-radius: 3px;
+    }
+    &::-webkit-scrollbar-track {
+        background: darken($sp-bg-start, 5%);
+    }
+
+    .task-tab-button {
+        background-color: transparent;
+        border: none;
+        border-bottom: 3px solid transparent; // For active state indicator
+        color: lighten($sp-text-color, 20%);
+        padding: 10px 15px;
+        font-size: 0.9em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.2s ease, border-bottom-color 0.2s ease;
+        white-space: nowrap; // Prevent tab text from wrapping
+
+        &:hover {
+            color: #ffffff;
+        }
+
+        &.active {
+            color: #ffffff;
+            font-weight: 700;
+            border-bottom-color: $sp-title-color; // Highlight active tab
+        }
+    }
+}
+
+.tasks-list-scroll-container {
+    flex-grow: 1;
+    overflow-y: auto; // Vertical scroll for tasks list
+    padding: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: $sp-title-color darken($sp-bg-start, 5%);
+}
+
+// === ПОЛНОЦЕННЫЙ БЛОК ДЛЯ .task-item С ИНТЕГРИРОВАННЫМИ АНИМАЦИЯМИ ИЗ КОД1 ===
+.task-item {
+    border-radius: $task-item-border-radius;
+    padding: $task-item-padding-y $task-item-padding-x;
+    margin-bottom: $task-item-margin-bottom;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $task-item-gap;
+    color: $task-item-text-color;
+    transition: opacity 0.3s ease, background-color 0.3s ease; // Добавим background-color для плавности если нужно
+    position: relative;
+    overflow: hidden;
+
+    // Псевдоэлемент для анимации "перекрашивания" (wipe)
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0; // Изначально ширина 0
+        height: 100%;
+        background: $task-item-claimed-base-bg-color; // Фон "получено" (тусклый), который будет "проявляться"
+        z-index: 0; // Под контентом, но над основным фоном .task-item во время анимации
+        border-radius: inherit;
+        // transition убран отсюда, будет применяться в .is-claiming-animation
+    }
+
+    // Контент задачи должен быть поверх ::before
+    .task-info,
+    .task-actions {
+        position: relative;
+        z-index: 1;
+    }
+
+    // Оверлей "Выполнено" - базовые стили (изначально скрыт)
+    .task-claimed-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 10; // Самый верхний слой в рамках task-item
+        background-color: $task-claimed-overlay-bg;
+        border-radius: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        opacity: 0; // Изначально полностью невидим
+        // Анимация будет применяться через .is-claiming-animation или .claimed
+
+        .checkmark-icon {
+            font-size: $task-checkmark-icon-font-size;
+            color: $task-checkmark-icon-color;
+            line-height: 1;
+        }
+
+        .claimed-text {
+            font-size: $task-checkmark-text-font-size;
+            font-weight: bold;
+            color: $task-checkmark-text-color;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+    }
+
+    // --- СОСТОЯНИЯ ---
+    &.not-completed {
+        background: $task-item-not-completed-bg;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        &::before {
+            width: 0; // Убедимся, что ::before скрыт
+            transition: none; // Нет анимации для ::before в этом состоянии
+        }
+        .task-claimed-overlay { opacity: 0; animation: none; } // Убедимся, что оверлей скрыт
+    }
+
+    &.completed {
+        // Задание выполнено, но награда НЕ получена.
+        background: $task-item-completed-bg; // Яркий фон
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+
+        &::before {
+            width: 0; // ::before все еще скрыт, ждет запуска анимации
+            transition: none;
+        }
+        .task-claimed-overlay { opacity: 0; animation: none; } // Оверлей скрыт
+
+        .task-claim-button.ready-to-claim {
+            background: $task-claim-button-ready-bg;
+            opacity: 1;
+            cursor: pointer;
+        }
+    }
+
+    // Финальное статичное состояние "ПОЛУЧЕНО" (после всех анимаций)
+    &.claimed {
+        background: $task-item-claimed-base-bg-color; // Сразу тусклый фон самого элемента
+        opacity: 0.85; // Немного приглушаем весь элемент
+        box-shadow: none;
+
+        &::before { // ::before уже полностью перекрыл и имеет нужный фон, анимаций нет
+            width: 100%;
+            background: $task-item-claimed-base-bg-color; // Можно и transparent, т.к. фон родителя уже нужный
+            transition: none; // Убедимся, что нет остаточных transition
+        }
+
+        .task-claimed-overlay { // Оверлей в этом состоянии сразу видим, без анимации
+            opacity: 1;
+            pointer-events: auto; // Или none, в зависимости от нужного поведения
+            animation: none; // Отключаем анимацию fadeIn, если она была
+        }
+
+        .task-claim-button { // Стили для кнопки "Получено"
+            background: $task-claim-button-claimed-bg;
+            cursor: default;
+            opacity: 0.5;
+        }
+    }
+
+    // --- ВРЕМЕННЫЙ КЛАСС ДЛЯ ЗАПУСКА АНИМАЦИЙ ПРИ ПЕРЕХОДЕ В CLAIMED ---
+    // Добавляется на короткое время JS-ом, затем убирается, оставляя только .claimed
+    &.is-claiming-animation {
+        // Фон остается от .completed (или устанавливается в него принудительно), чтобы ::before его перекрывал своей анимацией
+        background: $task-item-completed-bg !important; // Важно, чтобы перебить .claimed если он уже успел примениться
+        opacity: 1 !important; // Убедимся, что нет opacity от .claimed на время анимации
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15); // Тень как у .completed
+
+        &::before {
+            width: 100%; // Запускаем wipe-анимацию для ::before
+            transition: width 0.7s ease-in-out; // Анимация wipe только здесь
+        }
+
+        .task-claimed-overlay {
+            opacity: 0; // Начинаем с невидимого (на случай если уже было opacity:1 от .claimed)
+            animation: fadeInClaimedOverlay 0.3s ease-in-out forwards;
+            animation-delay: 0.6s; // Задержка после начала wipe
+            // pointer-events: none; // Уже установлено в базовом стиле
+        }
+
+        .task-claim-button { // Кнопка на время анимации может быть как у .completed или специальная
+           // Можно оставить как есть или скрыть/изменить
+        }
+    }
+
+    // Стили для .task-info, .task-name, .task-progress-bar-container и т.д. остаются как в code2:
+    .task-info {
+        display: flex;
+        flex-direction: column;
+        gap: $task-info-gap;
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .task-name {
+        font-size: $task-item-name-font-size;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .task-progress-bar-container {
+        width: 100%;
+        height: $task-progress-bar-height;
+        background-color: $task-progress-bar-track-bg;
+        border-radius: $task-progress-bar-radius;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .task-progress-bar-fill {
+        height: 100%;
+        background-color: $task-progress-bar-fill-bg;
+        border-radius: $task-progress-bar-radius;
+        transition: width 0.3s ease;
+    }
+
+    .task-progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: $task-progress-text-font-size;
+        color: $task-progress-text-color;
+        font-weight: bold;
+        z-index: 1; // Над .task-progress-bar-fill
+    }
+
+    .task-actions {
+        flex-shrink: 0;
+    }
+
+    .task-claim-button {
+        background: $task-claim-button-disabled-bg;
+        color: $task-claim-button-text-color;
+        border: none;
+        border-radius: $tasks-button-radius;
+        padding: $task-claim-button-padding-y $task-claim-button-padding-x;
+        font-size: $task-claim-button-font-size;
+        font-weight: 600;
+        cursor: not-allowed;
+        opacity: 0.6;
+        transition: background 0.2s ease, opacity 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.2;
+        min-width: 80px; // Примерная минимальная ширина
+
+        .task-claim-reward-xp {
+            font-size: $task-claim-reward-xp-font-size;
+            opacity: 0.9;
+        }
+    }
+}
+
+.no-tasks-message {
+    color: lighten($sp-text-color, 30%);
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
 }
