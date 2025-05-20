@@ -177,10 +177,11 @@ $task-checkmark-text-color: $sp-text-color;
 $task-checkmark-text-font-size: 0.9em;
 
 // --- Общие для .task-item ---
+$task-item-fixed-height: 110px;
 $task-item-border-radius: 8px;
 $task-item-padding-y: 12px;
 $task-item-padding-x: 15px;
-$task-item-margin-bottom: 0px;
+$task-item-margin-bottom: 5px;
 $task-item-gap: 15px; // Отступ между task-info и task-actions
 $task-item-text-color: #f0f0f0; // Основной цвет текста для имени задания
 $task-item-name-font-size: 0.9em;
@@ -1038,7 +1039,6 @@ $shimmer-animation-duration: 3.5s;
     // border-top: 1px solid $sp-border-color; // Use borders from .shard-pass-rewards-section if needed
     // border-bottom: 1px solid $sp-border-color;
     overflow: hidden; // Parent handles overflow
-    min-height: 250px; // Same as rewards section for consistency
 }
 
 .tasks-tabs-container {
@@ -1108,6 +1108,15 @@ $shimmer-animation-duration: 3.5s;
     }
 }
 
+.tasks-content-viewport { 
+    flex-grow: 1;      // Растягивается, занимая место под табами
+    position: relative; // Для абсолютного позиционирования оверлея блокировки
+    display: flex;      // Чтобы дочерний motion.div (список или сообщение) мог расти
+    flex-direction: column; 
+    overflow: hidden;   // Обрезает анимации и предотвращает "выталкивание" контента
+    min-height: 0;      // Для корректной работы flex-grow дочерних элементов с overflow
+}
+
 .tasks-list-scroll-container {
     flex-grow: 1;
     overflow-y: auto; // Vertical scroll for tasks list
@@ -1123,12 +1132,15 @@ $shimmer-animation-duration: 3.5s;
     margin-bottom: $task-item-margin-bottom;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: center; 
     gap: $task-item-gap;
     color: $task-item-text-color;
-    transition: opacity 0.3s ease, background-color 0.3s ease; // Добавим background-color для плавности если нужно
-    position: relative;
-    overflow: hidden;
+    transition: background 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease; // Добавил box-shadow в transition
+    position: relative; 
+    overflow: hidden;   
+
+    height: $task-item-fixed-height; // <<< ЗАДАЕМ ФИКСИРОВАННУЮ ВЫСОТУ
+    box-sizing: border-box;          // Убедись, что padding включен в высоту
 
     // Псевдоэлемент для анимации "перекрашивания" (wipe)
     &::before {
@@ -1328,6 +1340,24 @@ $shimmer-animation-duration: 3.5s;
             opacity: 0.9;
         }
     }
+    .task-premium-lock-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(26, 0, 51, 0.75); // Используй $lock-overlay-background если он определен
+        border-radius: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 4; // Ниже чем .task-claimed-overlay (z-index: 10), но выше контента (z-index: 1)
+        
+        .lock-icon-display {
+            font-size: 3em; // Немного меньше, чем для больших карточек наград
+            color: rgba(255, 255, 255, 0.6); // Используй $lock-icon-color
+        }
+    }
 }
 
 .no-tasks-message {
@@ -1372,5 +1402,74 @@ $shimmer-animation-duration: 3.5s;
         color: $sp-text-color; // Желтый для таймера
         margin-top: 10px;
         letter-spacing: 1px;
+    }
+}
+
+.buy-premium-popup-backdrop {
+    position: fixed; // Или absolute, если ShardPassScreenWrapper - корневой для viewport
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.65); // Затемняющий фон
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; // Очень высокий z-index, чтобы быть поверх всего
+    padding: 20px; // Отступы, чтобы попап не прилипал к краям на маленьких экранах
+    box-sizing: border-box;
+}
+
+.buy-premium-popup-content {
+    background-color: darken($sp-bg-start, 3%); // Темный фон попапа
+    padding: 25px 30px;
+    border-radius: 12px;
+    border: 1px solid $sp-border-color;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.4);
+    text-align: center;
+    color: $sp-text-color; 
+    width: 100%;
+    max-width: 380px; // Максимальная ширина попапа
+
+    h3 {
+        color: $sp-title-color; 
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.3em;
+    }
+    p {
+        font-size: 0.9em;
+        line-height: 1.5;
+        color: lighten($sp-title-color, 20%); 
+        margin-bottom: 25px;
+    }
+    .popup-buttons {
+        display: flex;
+        justify-content: center; // Центрируем кнопки, если одна, или space-around если две
+        gap: 15px;
+    }
+
+    .popup-buy-btn, .popup-close-btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: $tasks-button-radius; 
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        // flex-grow: 1; // Если кнопки должны делить пространство
+        min-width: 120px; // Минимальная ширина кнопок
+
+        &:active {
+            transform: scale(0.97);
+        }
+    }
+    .popup-buy-btn {
+        background: $sp-button-buy-bg; // Используем градиент кнопки "Buy Premium"
+        color: #fff;
+    }
+    .popup-close-btn {
+        background-color: lighten($sp-level-bg, 5%); 
+        color: lighten($sp-title-color, 10%);
+        border: 1px solid $sp-border-color;
     }
 }

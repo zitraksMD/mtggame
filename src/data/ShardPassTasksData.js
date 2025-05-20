@@ -24,7 +24,7 @@ const generateWeeklyTasks = (weekNumber) => {
             targetProgress: 7,
             rewardXP: 250,
             isPremium: false,
-            isClaimed: true,
+            isClaimed: false,
         },
         {
             id: `w${weekNumber}t2`,
