@@ -1,259 +1,231 @@
 // src/components/screens/EventDetailModal.scss
 
+// Глобальное правило для лучшего управления размерами
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0; // Базовый сброс отступов для консистентности
+  padding: 0; // Базовый сброс полей для консистентности
+}
+
+// Применяем margin/padding к конкретным элементам, если необходимо после сброса
+// Например, для body, если это основной файл стилей проекта:
+// body {
+//   margin: 0;
+// }
+// В контексте компонента, сброс выше обычно достаточен.
+
 .event-detail-view-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh; // Занимает всю высоту видимой области
-    width: 100vw;   // Занимает всю ширину видимой области
-    background-color: #ffffff;
-    color: #000000;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    overflow-y: auto;
-  
-    // Добавляем отступы для safe-area
-    // Используем `max()` для подстраховки, если переменная env() не определена или равна 0,
-    // чтобы иметь хотя бы минимальный отступ по умолчанию, если это нужно.
-    // Если минимальный отступ не нужен, можно просто использовать env().
-    padding-top: env(safe-area-inset-top);
-  
-    // Важно! Если вы используете padding для safe-area,
-    // возможно, потребуется изменить box-sizing, чтобы padding не увеличивал общую высоту/ширину.
-    // Однако, для 100vh/100vw и position:fixed это обычно обрабатывается корректно.
-    // Если возникнут проблемы с размерами, можно добавить:
-    // box-sizing: border-box;
-  }
-  
-  .event-detail-view-header {
-    display: flex;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #ffffff;
+  color: #000000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  // overflow-y: auto; // Перемещено на .event-detail-view-main-content для лучшего контроля
+
+  // Обновленный padding-top и остальные safe-area отступы
+  padding-top: max(80px, calc(45px + env(safe-area-inset-top)));
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.event-detail-view-header {
+  display: flex;
+  align-items: center;
+  padding: 0px 20px;         // Внутренние отступы хедера для позиционирования кнопки
+  // background-color: #f8f8f8; // УБИРАЕМ ИЛИ ДЕЛАЕМ ПРОЗРАЧНЫМ фон хедера
+  background-color: transparent; // Явно делаем фон хедера прозрачным
+  // border-bottom: 1px solid #e0e0e0; // УБИРАЕМ нижнюю границу хедера
+  border-bottom: none;          // Явно убираем границу
+  flex-shrink: 0;
+
+  .back-button {
+    background-color: #e9ecef;  // Сероватый фон для кнопки
+    border: 1px solid #ced4da;   // Небольшая граница для блока, чтобы он был четче (опционально)
+    color: #343a40;              // Более темный цвет текста для лучшего контраста с серым фоном
+    font-size: 16px;             // Размер шрифта текста "< Назад"
+    cursor: pointer;
+    padding: 8px 12px;           // Отступы внутри кнопки, создающие "блочность"
+                                 // Для более "квадратного" вида можно попробовать padding: 10px;
+    border-radius: 6px;          // Слегка закругленные углы блока
+    text-decoration: none;       // Убираем подчеркивание, так как это теперь блок-кнопка
+    display: inline-flex;        // Используем inline-flex для обтекания и центровки
     align-items: center;
-    // padding: 15px 20px; // Старые отступы хедера. Теперь safe-area-inset-top/left/right учтены на контейнере.
-                         // Возможно, понадобятся только внутренние отступы, если элементы не прилегают к краям контейнера.
-    padding-top: 15px;    // Оставляем вертикальный отступ внутри хедера
-    padding-bottom: 15px; // Оставляем вертикальный отступ внутри хедера
-    padding-left: 20px;   // Горизонтальный отступ, если нужен дополнительно к safe-area-inset-left
-    padding-right: 20px;  // Горизонтальный отступ, если нужен дополнительно к safe-area-inset-right
-    background-color: #f8f8f8;
-    border-bottom: 1px solid #e0e0e0;
-    flex-shrink: 0;
-  
-    // Если хедер должен учитывать safe-area-inset-top сам (например, если он не position: fixed),
-    // то padding-top: env(safe-area-inset-top); можно было бы применить сюда.
-    // Но так как .event-detail-view-container уже имеет отступы, элементы внутри него будут смещены.
-  
-    .back-button {
-      // Стили остаются
-      background: none;
-      border: none;
-      color: #007bff;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 5px 10px 5px 0;
-      margin-right: 15px;
-  
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-  
-  .event-detail-view-main-content {
-    // flex-grow: 1; // <--- УБИРАЕМ ИЛИ КОММЕНТИРУЕМ ЭТУ СТРОКУ
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .promo-banner-container {
-    width: auto; // Позволяем padding влиять на фактическую ширину содержимого
-    max-height: 300px;
-    overflow: hidden; // Обычно хорошо для изображений с object-fit
-    flex-shrink: 0;
-  
-    // ДОБАВЛЯЕМ ОТСТУПЫ ПО БОКАМ ДЛЯ КОНТЕЙНЕРА БАННЕРА
-    // И, возможно, сверху/снизу, если нужно
-    padding-left: 15px;   // Отступ слева для контейнера
-    padding-right: 15px;  // Отступ справа для контейнера
-    padding-top: 0px;    // Опциональный отступ сверху для контейнера
-    padding-bottom: 0px; // Опциональный отступ снизу для контейнера
-  
-    .promo-banner-image {
-      width: 100%; // Изображение занимает всю ширину контейнера (который теперь с отступами)
-      height: 90%;
-      object-fit: cover; // или 'contain', если важно видеть все изображение без обрезки
-      display: block; // Убирает возможный нижний отступ у inline-block изображений
-      border-radius: 10px; // Добавляем закругленные углы самому изображению, если нужно
-                           // Если у вас уже есть изображение с закругленными углами, это может не понадобиться
-    }
-  }
-  
-  .event-info-content {
-    // УМЕНЬШАЕМ ВЕРХНИЙ ОТСТУП У БЛОКА С ТЕКСТОМ
-    padding-top: 0px; // Например, 15px (было 25px).
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-bottom: 25px; // Пока оставляем этот, но можно тоже уменьшить, если нужно
-    text-align: left;
-  
-    .event-title {
-      font-size: 28px;
-      font-weight: bold;
-      margin-top: 0;
-      margin-bottom: 15px;
-      line-height: 1.3;
-    }
-  
-    .event-description {
-      font-size: 12px;
-      line-height: 1.6;
-      margin-bottom: 25px;
-    }
-  
-    .how-it-works-section {
-      margin-bottom: 25px;
-  
-      .section-subtitle {
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 10px;
-      }
-  
-      .how-it-works-list {
-        list-style: none;
-        padding-left: 0;
-  
-        .how-it-works-item {
-          font-size: 12px;
-          line-height: 1.7;
-          margin-bottom: 8px;
-          display: flex;
-          align-items: flex-start;
-  
-          .list-item-number {
-            font-weight: bold;
-            margin-right: 8px;
-            color: #555;
-          }
-        }
-      }
-    }
-  
-    .event-ends-in {
-      font-size: 12px;
-      color: #777777;
-      padding-top: 5px;
-      border-top: 1px dashed #e0e0e0;
-      text-align: center;
-      margin-bottom: 0; // Правильно
-    }
-  } // Конец .event-info-content
-  
-  .event-detail-view-footer {
-    padding-top: 0;    // Правильно
-    padding-bottom: 15px;
-    padding-left: 20px;
-    padding-right: 20px;
-    background-color: #ffffff;
-    border-top: none; // Правильно
-    display: flex;
     justify-content: center;
-    flex-shrink: 0;
+    line-height: 1.2;            // Для лучшего вертикального выравнивания текста 
+    margin-right: 10px;          // Отступ справа от кнопки
 
-      .join-promo-button {
-        // Стили для кнопки остаются прежними
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        font-size: 18px;
-        font-weight: bold;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    
-        &:hover {
-          background-color: #0056b3;
-        }
-    
-        &:active {
-          background-color: #004085;
-        }
-      }
+    &:hover {
+      background-color: #dee2e6; // Слегка темнее серый при наведении
+      border-color: #adb5bd;
+      // text-decoration: none; // Уже установлено выше
     }
- // Стили для контента ПОСЛЕ присоединения
- .promo-joined-content {
-    text-align: left; // Можно центрировать этот блок
+    // Убираем &:active стили, если не нужны специальные для этой кнопки,
+    // или добавляем, если нужны:
+    // &:active {
+    //   background-color: #ced4da;
+    // }
+  }
+}
 
-    .joined-title {
-      font-size: 26px;
+.event-detail-view-main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; // Позволяет прокручивать только эту часть, если контент не помещается
+  // Внутренние отступы для основного контента, если нужны (не зависящие от safe-area, которые уже на контейнере)
+  // Например, если отступы от хедера или для самого контента:
+  // padding-top: 15px; // Если нужен отступ от хедера
+}
+
+.promo-banner-container {
+  width: 100%; // Изменено на 100% для корректной работы с внутренними отступами, если они будут
+  max-height: 300px;
+  overflow: hidden;
+  flex-shrink: 0;
+  padding: 15px 15px 0 15px; // Отступы вокруг баннера (сверху, слева, справа)
+
+  .promo-banner-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 10px;
+  }
+}
+
+.event-info-content {
+  padding: 15px 20px 25px 20px;
+  text-align: left;
+
+  .event-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 0 15px 0; // Используем margin вместо padding-top
+    line-height: 1.3;
+  }
+
+  .event-description {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+  }
+
+  .how-it-works-section {
+    margin-bottom: 25px;
+
+    .section-subtitle {
+      font-size: 20px;
       font-weight: bold;
-      color: #28a745; // Зеленый цвет для поздравления
       margin-bottom: 10px;
     }
 
-    .joined-message {
-      font-size: 16px;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
+    .how-it-works-list {
+      list-style: none; // padding-left: 0; уже сброшен глобально
 
-    .section-subtitle-joined { // Немного другие стили для подзаголовка здесь
-      font-size: 18px;
-      font-weight: normal; // Можно сделать не таким жирным, как основной "Как это работает"
-      margin-top: 20px;
-      margin-bottom: 15px;
-    }
+      .how-it-works-item {
+        font-size: 12px;
+        line-height: 1.7;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+        // padding-left здесь не нужен, если у .how-it-works-list нет своего padding-left
 
-    // Можно переиспользовать .how-it-works-section и .how-it-works-list стили,
-    // но убедитесь, что они не конфликтуют или скопируйте и адаптируйте при необходимости.
-    // Если вы хотите немного другие отступы для списка здесь, можно добавить специфичные классы.
+        .list-item-number {
+          font-weight: bold;
+          margin-right: 8px;
+          color: #555;
+        }
+      }
+    }
   }
- // Конец .event-info-content
+
+  .event-ends-in {
+    font-size: 12px;
+    color: #777777;
+    padding-top: 15px;
+    border-top: 1px dashed #e0e0e0;
+    text-align: center;
+    margin-top: 15px;
+    // margin-bottom: 0; // Уже сброшен глобально
+  }
+}
+
+.joined-indicator-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0; // Вертикальные отступы
+  padding: 0 20px; // Горизонтальные отступы, чтобы соответствовать .event-info-content
+}
+
+.joined-indicator {
+  color: green;
+  font-size: 2.5em;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 3px dashed green;
+  padding: 0.5em 1.5em;
+  display: inline-block;
+  border-radius: 8px;
+  text-align: center;
+}
 
 .event-detail-view-footer {
-  padding-top: 0;
-  padding-bottom: 15px;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding: 15px 20px;
+  // padding-bottom для safe-area уже учтен на .event-detail-view-container
   background-color: #ffffff;
-  border-top: none;
   display: flex;
   justify-content: center;
   flex-shrink: 0;
+  border-top: 1px solid #e0e0e0; // Добавил разделитель для футера, можно убрать если не нужен
+}
 
-  .join-promo-button {
-    background-color: #007bff; // Синий цвет по умолчанию
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease; // Добавил opacity для disabled
+.join-promo-button,
+.action-button {
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  width: 100%;
+  max-width: 400px;
+}
 
-    &:hover:not(:disabled) { // Ховер только если кнопка не disabled
-      background-color: #0056b3;
-    }
+.join-promo-button {
+  background-color: #007bff;
 
-    &:active:not(:disabled) { // Active только если кнопка не disabled
-      background-color: #004085;
-    }
+  &:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
 
-    // Стили для кнопки ПОСЛЕ присоединения
-    &.joined {
-      background-color: #28a745; // Зеленый цвет
-      color: white;
-      cursor: not-allowed; // Показывает, что кнопка неактивна
+  &:active:not(:disabled) {
+    background-color: #004085;
+  }
 
-      &:hover {
-        background-color: #218838; // Немного темнее зеленый при наведении (хотя она disabled)
-      }
-    }
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
 
-    &:disabled { // Общие стили для неактивной кнопки
-      opacity: 0.7; // Немного прозрачнее, чтобы показать неактивность
-    }
+.action-button {
+  background-color: #28a745; // Зеленый для примера
+
+  &:hover {
+    background-color: #218838;
+  }
+
+  &:active {
+    background-color: #1e7e34;
   }
 }

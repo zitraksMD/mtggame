@@ -54,9 +54,9 @@ const DiscoveryScreen = () => {
       {
         id: 'd1_login',
         name: 'Вход в кошелек',
-        progressCurrent: 0,
+        progressCurrent: 1,
         progressTarget: 1,
-        progressText: '0/1',
+        progressText: '1/1',
         isCompleted: true,
         isClaimed: false, 
         rewards: {
@@ -215,89 +215,88 @@ const DiscoveryScreen = () => {
   };
   
 
-  // Данные для событий events переименованы в eventsData из код1
-  const eventsData = [
-    {
-      id: 'e1',
-      title: 'USDC Форсаж',
-      description: 'Свопни 200+ USDC и забери 20 USDC!',
-      howItWorks: [
-        'Нажмите "Участвовать" ниже.',
-        'Совершите обмен (своп) от 200 USDC на любую другую криптовалюту.',
-        'Готово – ваш бонус 20 USDC будет зачислен в течение 24 часов после окончания акции!'
-      ],
-      endsIn: 'Заканчивается через 3 дня в 3:00 по UTC'
-    },
-    {
-      id: 'e2',
-      title: 'Своп-Спринт',
-      description: 'Соверши 5+ свопов (каждый от $50) за неделю и раздели призовой фонд в $500!',
-      howItWorks: [
-        'Присоединяйтесь к акции.',
-        'Сделайте как минимум 5 обменов криптовалют (свопов) в течение акционной недели.',
-        'Каждый своп должен быть на сумму от $50 в эквиваленте.',
-        'Все участники, выполнившие условия, разделят призовой фонд в $500.'
-      ],
-      endsIn: 'Заканчивается через 7 дней в 3:00 по UTC'
-    },
-    {
-      id: 'e3',
-      title: 'Карта в Крипту',
-      description: 'Купи любую криптовалюту на $100+ с карты и получи бонус $10 в BTC!',
-      howItWorks: [
-        'Нажмите кнопку "Принять участие".',
-        'Купите любую криптовалюту с помощью банковской карты на сумму от $100.',
-        'Бонус в размере $10 в BTC будет начислен на ваш счет.'
-      ],
-      endsIn: 'Заканчивается через 5 дней в 3:00 по UTC'
-    },
-    {
-      id: 'e4',
-      title: 'Фиатный Рывок',
-      description: 'Покупай крипту картой Visa/Mastercard от $200 и участвуй в розыгрыше Ledger Nano S Plus!',
-      howItWorks: [
-        'Убедитесь, что вы участвуете в акции.',
-        'Совершите покупку любой криптовалюты с использованием карты Visa или Mastercard на сумму от $200.',
-        'Вы автоматически становитесь участником розыгрыша аппаратного кошелька Ledger Nano S Plus.'
-      ],
-      endsIn: 'Заканчивается через 10 дней в 3:00 по UTC'
-    },
-    {
-      id: 'e5',
-      title: 'Крипто-Шопинг Уикенд',
-      description: 'Покупай крипту с карты в субботу или воскресенье (от $75) и получи скидку 50% на торговые комиссии на следующей неделе!',
-      howItWorks: [
-        'Активируйте участие в акции.',
-        'Совершите покупку криптовалюты с банковской карты на сумму от $75 в субботу или воскресенье.',
-        'Получите скидку 50% на все торговые комиссии на протяжении следующей недели.'
-      ],
-      endsIn: 'Заканчивается в это воскресенье в 3:00 по UTC'
-    },
-    {
-      id: 'e6',
-      title: 'Активный Трейдер',
-      description: 'Соверши 10+ любых операций (своп, покупка с карты, депозит от $50) и получи долю из призового пула в $1000!',
-      howItWorks: [
-        'Присоединитесь к промоакции.',
-        'Выполните не менее 10 операций: это могут быть свопы, покупки криптовалюты с карты или депозиты (каждый на сумму от $50).',
-        'Участники, выполнившие условия, разделят призовой фонд в $1000.'
-      ],
-      endsIn: 'Заканчивается через 14 дней в 3:00 по UTC'
-    },
-    {
-      id: 'e7',
-      title: 'Ходл & Своп',
-      description: 'Держи от 0.1 BTC на балансе И соверши своп на $100+ в течение недели, чтобы выиграть $50!',
-      howItWorks: [
-        'Убедитесь, что вы зарегистрированы в акции.',
-        'Поддерживайте баланс не менее 0.1 BTC на вашем счету в течение всей акционной недели.',
-        'Совершите хотя бы один обмен (своп) на сумму от $100 в течение той же недели.',
-        'Получите шанс выиграть $50.'
-      ],
-      endsIn: 'Заканчивается через 6 дней в 3:00 по UTC'
-    }
-  ];
-
+ // Data for events, renamed to eventsData from code1
+const eventsData = [
+  {
+    id: 'e1',
+    title: 'USDC Fast Lane',
+    description: 'Swap 200+ USDC and get 20 USDC!',
+    howItWorks: [
+      'Click "Participate" below.',
+      'Make an exchange (swap) of 200+ USDC for any other cryptocurrency.',
+      'Done – your 20 USDC bonus will be credited within 24 hours after the promotion ends!'
+    ],
+    endsIn: 'Ends in 3 days at 3:00 UTC'
+  },
+  {
+    id: 'e2',
+    title: 'Swap Sprint',
+    description: 'Make 5+ swaps (each from $50) within a week and share a $500 prize pool!',
+    howItWorks: [
+      'Join the promotion.',
+      'Make at least 5 cryptocurrency exchanges (swaps) during the promotion week.',
+      'Each swap must be for an amount of $50 or more (equivalent).',
+      'All participants who meet the conditions will share the $500 prize pool.'
+    ],
+    endsIn: 'Ends in 7 days at 3:00 UTC'
+  },
+  {
+    id: 'e3',
+    title: 'Card to Crypto',
+    description: 'Buy any cryptocurrency for $100+ with a card and get a $10 bonus in BTC!',
+    howItWorks: [
+      'Click the "Participate" button.',
+      'Purchase any cryptocurrency using a bank card for an amount of $100 or more.',
+      'A bonus of $10 in BTC will be credited to your account.'
+    ],
+    endsIn: 'Ends in 5 days at 3:00 UTC'
+  },
+  {
+    id: 'e4',
+    title: 'Fiat Rush',
+    description: 'Buy crypto with a Visa/Mastercard (from $200) and participate in a Ledger Nano S Plus giveaway!',
+    howItWorks: [
+      'Make sure you are participating in the promotion.',
+      'Make a purchase of any cryptocurrency using a Visa or Mastercard for an amount of $200 or more.',
+      'You automatically become a participant in the Ledger Nano S Plus hardware wallet giveaway.'
+    ],
+    endsIn: 'Ends in 10 days at 3:00 UTC'
+  },
+  {
+    id: 'e5',
+    title: 'Crypto Shopping Weekend',
+    description: 'Buy crypto with a card on Saturday or Sunday (from $75) and get a 50% discount on trading fees next week!',
+    howItWorks: [
+      'Activate your participation in the promotion.',
+      'Make a cryptocurrency purchase with a bank card for $75 or more on Saturday or Sunday.',
+      'Get a 50% discount on all trading fees throughout the next week.'
+    ],
+    endsIn: 'Ends this Sunday at 3:00 UTC'
+  },
+  {
+    id: 'e6',
+    title: 'Active Trader',
+    description: 'Complete 10+ any operations (swap, card purchase, deposit from $50) and get a share of the $1000 prize pool!',
+    howItWorks: [
+      'Join the promotion.',
+      'Complete at least 10 operations: these can be swaps, cryptocurrency purchases with a card, or deposits (each for $50 or more).',
+      'Participants who meet the conditions will share the $1000 prize pool.'
+    ],
+    endsIn: 'Ends in 14 days at 3:00 UTC'
+  },
+  {
+    id: 'e7',
+    title: 'HODL & Swap',
+    description: 'Hold at least 0.1 BTC in your balance AND make a swap of $100+ within the week to win $50!',
+    howItWorks: [
+      'Ensure you are registered for the promotion.',
+      'Maintain a balance of at least 0.1 BTC in your account throughout the entire promotion week.',
+      'Make at least one exchange (swap) for $100 or more during the same week.',
+      'Get a chance to win $50.'
+    ],
+    endsIn: 'Ends in 6 days at 3:00 UTC'
+  }
+];
   const openTasksPopup = () => setIsTasksPopupOpen(true);
   const closeTasksPopup = () => setIsTasksPopupOpen(false);
 
