@@ -460,12 +460,12 @@ $shimmer-animation-duration: 3.5s;
         border-radius: 8px; // Или твоя текущая высота / 2
         // overflow: hidden; // Убираем, если текст должен быть поверх и может не помещаться
         position: relative; // Важно для абсолютного позиционирования текста внутри
-        margin: 0 10px; // Отступы от ромбов
+        margin: 0 7px; // Отступы от ромбов
 
         .progress-bar-fill {
             height: 100%;
             background-color: $sp-progress-fill-bg; 
-            border-radius: इन्херит; // Наследует от родителя, чтобы углы совпадали
+            border-radius: 8px; 
             // или border-radius: 6px; 
             transition: width 0.3s ease-in-out;
             // box-shadow: 0 0 4px rgba($sp-progress-fill-bg, 0.3); // Можно оставить
