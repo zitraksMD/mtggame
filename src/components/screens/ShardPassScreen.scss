@@ -457,6 +457,8 @@ $shimmer-animation-duration: 3.5s;
     flex-direction: column;
     overflow: hidden;
     min-height: 200px;
+    border-top: 1px solid $sp-border-color; 
+    border-bottom: 1px solid $sp-border-color;
 }
 
 .shard-pass-rewards-horizontal-scroll {
