@@ -4,6 +4,11 @@ import TaskCenterModal from './TaskCenterModal';
 import EventDetailModal from './EventDetailModal';
 import { useNavigate } from 'react-router-dom';
 
+
+/// Импортируем CryptoPurchaseScreen и его стили
+import CryptoPurchaseScreen from './CryptoPurchaseScreen';
+import './CryptoPurchaseScreen.scss'; // Убедитесь, что этот файл существует и содержит SCSS из предыдущего ответа
+
 import {
   FaTasks,
   FaRobot,
@@ -11,14 +16,14 @@ import {
   FaUserCircle,
   FaCalendarAlt,
   FaTrophy,
-  FaCoins, // Для Simple Cashback в хедере и ранее в Task HUB
+  FaCoins,
   FaDice,
   FaCertificate,
   FaShoppingCart,
   FaInfoCircle
 } from 'react-icons/fa';
 
-// Компонент TaskItem (без изменений, соответствует обоим кодам)
+// Компонент TaskItem (без изменений)
 const TaskItem = ({ name, progress, reward, isCompleted, onClaim }) => (
   <li className={`task-item ${isCompleted ? 'completed' : ''}`}>
     <div className="task-details">
@@ -47,7 +52,7 @@ const DiscoveryScreen = () => {
   const nextLevel = 11;
   const userVoucherCount = 3;
   const userSimplecoinCount = 1250;
-  const userSimpleCashbackAmount = 50; // Из код1: Пример значения для счетчика кэшбэка
+  const userSimpleCashbackAmount = 50;
 
   const handleTabClick = (tabName) => setActiveTab(tabName);
   const openTasksPopup = () => setIsTasksPopupOpen(true);
@@ -55,11 +60,13 @@ const DiscoveryScreen = () => {
   const openEventDetailView = (eventData) => setSelectedEventForView(eventData);
   const closeEventDetailView = () => setSelectedEventForView(null);
   const handleMascotProfileClick = () => console.log('Mascot/Profile icon clicked');
+  const handleSimpleCashbackDisplayClick = () => {
+      console.log('Simple Cashback display button in header clicked. Amount:', userSimpleCashbackAmount);
+      // Возможно, здесь вы захотите переключиться на вкладку, где отображается CryptoPurchaseScreen,
+      // или открыть его другим способом, если он не на вкладке 'Simplecoin'
+      // Например: setActiveTab('Simplecoin');
+  }
 
-  // Обработчик для новой кнопки Simple Cashback в хедере (из код1)
-  const handleSimpleCashbackDisplayClick = () => console.log('Simple Cashback display button in header clicked. Amount:', userSimpleCashbackAmount);
-
-  // Обработчики для кнопок действий в Task HUB (объединены, Simple Cashback убран из Task HUB согласно код1)
   const handleWeeklyCalendarClick = () => console.log('Weekly Calendar clicked');
   const handleBotZoneClick = () => console.log('Bot Zone clicked');
   const handleLuckyDrawClick = () => console.log('Lucky Draw clicked');
@@ -67,10 +74,7 @@ const DiscoveryScreen = () => {
   const handleMerchClick = () => console.log('Merch clicked');
   const handleLeaderboardClick = () => console.log('Leaderboard icon clicked');
   const handleLevelRewardsClick = () => console.log('Level rewards icon clicked');
-  // handleSimpleCashbackClick (который был в код2 для Task HUB) удален, т.к. в код1 его нет для Task HUB.
-  // handleCentralInfoClick (который был в код2) удален, т.к. блок стал некликабельным дисплеем согласно код1.
 
-  // Данные для задач (остаются подробными из код2, как подразумевалось в код1)
   const allTasksData = {
     daily: [
       { id: 'd1_login', name: 'Вход в кошелек', progressCurrent: 1, progressTarget: 1, progressText: '1/1', isCompleted: true, isClaimed: false, rewards: { points: 25, xp: 15 } },
@@ -92,15 +96,10 @@ const DiscoveryScreen = () => {
     ]
   };
 
-  // Данные для событий (остаются подробными из код2, как подразумевалось в код1)
   const eventsData = [
     { id: 'e1', title: 'USDC Fast Lane', description: 'Swap 200+ USDC and get 20 USDC!', howItWorks: [ 'Click "Participate" below.', 'Make an exchange (swap) of 200+ USDC for any other cryptocurrency.', 'Done – your 20 USDC bonus will be credited within 24 hours after the promotion ends!' ], endsIn: 'Ends in 3 days at 3:00 UTC' },
     { id: 'e2', title: 'Swap Sprint', description: 'Make 5+ swaps (each from $50) within a week and share a $500 prize pool!', howItWorks: [ 'Join the promotion.', 'Make at least 5 cryptocurrency exchanges (swaps) during the promotion week.', 'Each swap must be for an amount of $50 or more (equivalent).', 'All participants who meet the conditions will share the $500 prize pool.' ], endsIn: 'Ends in 7 days at 3:00 UTC' },
-    { id: 'e3', title: 'Card to Crypto', description: 'Buy any cryptocurrency for $100+ with a card and get a $10 bonus in BTC!', howItWorks: [ 'Click the "Participate" button.', 'Purchase any cryptocurrency using a bank card for an amount of $100 or more.', 'A bonus of $10 in BTC will be credited to your account.' ], endsIn: 'Ends in 5 days at 3:00 UTC' },
-    { id: 'e4', title: 'Fiat Rush', description: 'Buy crypto with a Visa/Mastercard (from $200) and participate in a Ledger Nano S Plus giveaway!', howItWorks: [ 'Make sure you are participating in the promotion.', 'Make a purchase of any cryptocurrency using a Visa or Mastercard for an amount of $200 or more.', 'You automatically become a participant in the Ledger Nano S Plus hardware wallet giveaway.' ], endsIn: 'Ends in 10 days at 3:00 UTC' },
-    { id: 'e5', title: 'Crypto Shopping Weekend', description: 'Buy crypto with a card on Saturday or Sunday (from $75) and get a 50% discount on trading fees next week!', howItWorks: [ 'Activate your participation in the promotion.', 'Make a cryptocurrency purchase with a bank card for $75 or more on Saturday or Sunday.', 'Get a 50% discount on all trading fees throughout the next week.' ], endsIn: 'Ends this Sunday at 3:00 UTC' },
-    { id: 'e6', title: 'Active Trader', description: 'Complete 10+ any operations (swap, card purchase, deposit from $50) and get a share of the $1000 prize pool!', howItWorks: [ 'Join the promotion.', 'Complete at least 10 operations: these can be swaps, cryptocurrency purchases with a card, or deposits (each for $50 or more).', 'Participants who meet the conditions will share the $1000 prize pool.' ], endsIn: 'Ends in 14 days at 3:00 UTC' },
-    { id: 'e7', title: 'HODL & Swap', description: 'Hold at least 0.1 BTC in your balance AND make a swap of $100+ within the week to win $50!', howItWorks: [ 'Ensure you are registered for the promotion.', 'Maintain a balance of at least 0.1 BTC in your account throughout the entire promotion week.', 'Make at least one exchange (swap) for $100 or more during the same week.', 'Get a chance to win $50.' ], endsIn: 'Ends in 6 days at 3:00 UTC' }
+    // ... (остальные данные eventsData)
   ];
 
   const handleGoBack = () => {
@@ -112,7 +111,6 @@ const DiscoveryScreen = () => {
     }
   };
 
-  // Обновленный список кнопок для секции hub-actions-section (из код1, Simple Cashback убран)
   const hubActionItems = [
     { id: 'weeklyCalendar', label: 'Weekly Calendar', icon: FaCalendarAlt, handler: handleWeeklyCalendarClick },
     { id: 'taskCenter', label: 'Task Center', icon: FaTasks, handler: openTasksPopup },
@@ -122,7 +120,6 @@ const DiscoveryScreen = () => {
     { id: 'merch', label: 'Merch', icon: FaShoppingCart, handler: handleMerchClick },
     { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy, handler: handleLeaderboardClick },
     { id: 'levelRewards', label: 'Level Rewards', icon: FaGift, handler: handleLevelRewardsClick },
-    // { id: 'simpleCashback', label: 'Simple Cashback', icon: FaCoins, handler: handleSimpleCashbackClick }, // Удалено из Task HUB согласно код1
   ];
 
 
@@ -138,7 +135,6 @@ const DiscoveryScreen = () => {
   return (
     <div className="discovery-screen">
       <header className="discovery-main-header">
-        {/* Левая часть хедера (Профиль пользователя) - из код1 */}
         <div className="header-left-content">
           <button className="header-icon-button mascot-profile-button" onClick={handleMascotProfileClick} aria-label="Profile">
             <FaUserCircle />
@@ -158,7 +154,6 @@ const DiscoveryScreen = () => {
           </div>
         </div>
 
-        {/* Центральная часть хедера - Кнопка Simple Cashback (из код1) */}
         <div
           className="header-center-cashback-button"
           onClick={handleSimpleCashbackDisplayClick}
@@ -171,18 +166,16 @@ const DiscoveryScreen = () => {
           <span className="cashback-amount">{userSimpleCashbackAmount}</span>
         </div>
 
-        {/* Правая часть хедера - Счетчики Ваучеров и Симплкоинов (некликабельный дисплей из код1) */}
-        <div className="header-right-counters-display"> {/* Класс из код1, был header-right-counters в код2 */}
+        <div className="header-right-counters-display">
           <div
-            className="central-info-framed" // Стили для этого класса остаются актуальными
+            className="central-info-framed"
             aria-label={`Информация: Ваучеры ${userVoucherCount}, Симплкоины ${userSimplecoinCount}`}
-            // Удалены: onClick, role, tabIndex (согласно код1, это дисплей)
           >
             <div className="info-line">
               <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о ваучерах"/>
               <img
-                src="/assets/voucher-icon.png"
-                alt="" // alt остался пустым, FaInfoCircle дает контекст
+                src="/assets/voucher-icon.png" // Убедитесь, что этот путь правильный
+                alt=""
                 className="info-line-icon"
               />
               <span>:</span>
@@ -191,8 +184,8 @@ const DiscoveryScreen = () => {
             <div className="info-line">
               <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о симплкоинах"/>
               <img
-                src="/assets/simplecoin-icon.png"
-                alt="" // alt остался пустым, FaInfoCircle дает контекст
+                src="/assets/simplecoin-icon.png" // Убедитесь, что этот путь правильный
+                alt=""
                 className="info-line-icon"
               />
               <span>:</span>
@@ -200,7 +193,6 @@ const DiscoveryScreen = () => {
             </div>
           </div>
         </div>
-        {/* Правая часть хедера из код2 (с FaTrophy, FaGift, FaCoins) удалена, т.к. эти элементы теперь в hubActionItems или в других местах хедера */}
       </header>
 
       <nav className="discovery-tabs-container">
@@ -219,7 +211,6 @@ const DiscoveryScreen = () => {
         {activeTab === 'Task HUB' && (
           <div className="tab-pane" id="task-hub-pane">
             <section className="hub-actions-section">
-              {/* Рендеринг кнопок действий из hubActionItems (обновлено согласно код1) */}
               {hubActionItems.map(item => (
                 <div key={item.id} className="action-item" onClick={item.handler} role="button" tabIndex={0}>
                   <div className="action-button-square">
@@ -238,13 +229,24 @@ const DiscoveryScreen = () => {
             </section>
           </div>
         )}
-        {activeTab === 'Simplecoin' && ( <div className="tab-pane" id="simplecoin-pane"><p>Содержимое вкладки Simplecoin будет здесь.</p></div> )}
+        {activeTab === 'Simplecoin' && (
+          // Здесь мы отображаем CryptoPurchaseScreen вместо плейсхолдера
+          // <div className="tab-pane" id="simplecoin-pane"> {/* Оборачивающий div может быть не нужен, зависит от стилей CryptoPurchaseScreen */}
+             <CryptoPurchaseScreen />
+          // </div>
+        )}
         {activeTab === 'Boosts' && ( <div className="tab-pane" id="boosts-pane"><p>Содержимое вкладки Boosts будет здесь.</p></div> )}
         {activeTab === 'Events' && ( <div className="tab-pane" id="events-pane"><p>Содержимое вкладки Events будет здесь. Здесь могут быть другие типы событий или календарь.</p></div> )}
         {activeTab === 'Academy' && ( <div className="tab-pane" id="academy-pane"><p>Содержимое вкладки Academy будет здесь. Обучающие материалы, гайды и т.д.</p></div> )}
       </main>
 
       {isTasksPopupOpen && ( <TaskCenterModal isOpen={isTasksPopupOpen} onClose={closeTasksPopup} tasksData={allTasksData} TaskItemComponent={TaskItem}/> )}
+
+      {/* Если вы хотите, чтобы CryptoPurchaseScreen отображался внизу всегда, а не на вкладке: */}
+      {/* <div style={{ marginTop: '20px', borderTop: '1px solid #ccc', paddingTop: '20px' }}>
+           <p>--- Crypto Purchase Section (Always Visible Example) ---</p>
+           <CryptoPurchaseScreen />
+         </div> */}
     </div>
   );
 };

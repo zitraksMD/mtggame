@@ -1,0 +1,243 @@
+// Базовые переменные (можно вынести в отдельный файл _variables.scss)
+$primary-background: #1A1A2E; // Примерный темный фон
+$secondary-background: #2A2A3E; // Чуть светлее для элементов
+$text-color-primary: #E0E0E0;
+$text-color-secondary: #A0A0B0;
+$accent-color: #4A90E2; // Синий акцент для кнопок
+$button-active-bg: #3A506B; // Для активной кнопки "Купити"
+
+// Миксины для удобства
+@mixin flex-center($justify: center, $align: center) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+.crypto-purchase-screen {
+  background-color: $primary-background;
+  color: $text-color-primary;
+  min-height: 100vh; // Занимает всю высоту экрана
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  padding: 15px;
+  box-sizing: border-box;
+
+  .icon-button {
+    background: none;
+    border: none;
+    color: $text-color-primary;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .screen-header {
+    @include flex-center(space-between, center);
+    margin-bottom: 20px;
+    padding-top: 10px; // Отступ сверху, как на скрине
+
+    .back-button {
+      font-size: 1.8rem;
+    }
+
+    .buy-toggle {
+      background-color: $secondary-background;
+      border-radius: 20px;
+      display: flex;
+      overflow: hidden;
+      align-items: center;
+
+      .toggle-button {
+        background-color: transparent;
+        color: $text-color-secondary;
+        border: none;
+        padding: 8px 15px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+
+        &.active {
+          background-color: $button-active-bg;
+          color: $text-color-primary;
+          font-weight: bold;
+        }
+        &:not(.active):hover {
+          background-color: darken($secondary-background, 5%);
+        }
+      }
+      .icon-button { // Для кнопки обмена в toggle
+        padding: 8px 10px;
+        border-left: 1px solid darken($secondary-background, 10%);
+      }
+    }
+    .header-placeholder { // Занимает место справа от toggle, чтобы центрировать
+      width: 40px; // Примерная ширина кнопки назад
+    }
+  }
+
+  .screen-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .amount-display-container {
+    @include flex-center(space-between, center);
+    margin-bottom: 30px;
+    padding: 0 10px;
+
+    .amount-display {
+      .amount-value {
+        font-size: 3rem; // Крупный шрифт для суммы
+        font-weight: 300;
+        margin-right: 8px;
+      }
+      .currency-label {
+        font-size: 2rem;
+        color: $text-color-secondary;
+        font-weight: 300;
+      }
+    }
+
+    .amount-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+
+      .max-button {
+        background-color: $secondary-background;
+        color: $text-color-primary;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        &:hover {
+          background-color: darken($secondary-background, 5%);
+        }
+      }
+      .swap-main-button { // Кнопка обмена справа от суммы
+        background-color: $secondary-background;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        @include flex-center;
+        font-size: 1.2rem;
+      }
+    }
+  }
+
+  .payment-options {
+    margin-bottom: auto; // Отодвигает клавиатуру вниз
+
+    .payment-option {
+      background-color: $secondary-background;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 10px;
+      @include flex-center(space-between, center);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: darken($secondary-background, 5%);
+      }
+
+      .option-icon-name {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+
+        .icon {
+          font-size: 1.8rem; // Размер иконок
+          &.ethereum-icon {
+            color: #627EEA; // Примерный цвет ETH
+          }
+          &.visa-icon {
+            background-color: #fff;
+            color: #1A1F71; // Примерный цвет Visa
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.8rem;
+          }
+        }
+
+        .option-text {
+          display: flex;
+          flex-direction: column;
+          .option-title {
+            font-size: 0.9rem;
+            color: $text-color-primary;
+          }
+          .option-subtitle {
+            font-size: 0.8rem;
+            color: $text-color-secondary;
+          }
+        }
+      }
+
+      .option-details {
+        @include flex-center;
+        gap: 10px;
+        color: $text-color-secondary;
+        font-size: 0.9rem;
+
+        .option-value {
+          color: $text-color-primary;
+        }
+      }
+    }
+  }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px; // Отступы между кнопками
+    margin-bottom: 20px;
+
+    .keypad-button {
+      background-color: transparent;
+      border: none;
+      color: $text-color-primary;
+      font-size: 1.5rem; // Размер цифр
+      padding: 15px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      @include flex-center;
+
+      &:hover {
+        background-color: $secondary-background;
+      }
+      &:active {
+        background-color: darken($secondary-background, 10%);
+      }
+    }
+  }
+
+  .screen-footer {
+    .continue-button {
+      width: 100%;
+      background-color: $accent-color;
+      color: white;
+      border: none;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: darken($accent-color, 10%);
+      }
+    }
+  }
+}

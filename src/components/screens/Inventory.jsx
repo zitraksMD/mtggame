@@ -13,9 +13,16 @@ import InventoryTabs from "../InventoryTabs"; // Компонент для кн�
 
 
 // --- Логика сортировки ---
-const rarityOrder = { legendary: 3, rare: 2, common: 1 };
-const getRarityValue = (item) => rarityOrder[item?.rarity] || 0;
-const LOCAL_STORAGE_KEY = "equippedItems"; // Ключ для сохранения экипировки
+const rarityOrder = { 
+    common: 0, 
+    uncommon: 1, 
+    rare: 2, 
+    epic: 3,        // <--- ДОБАВЛЕНО
+    legendary: 4,   // Изменен порядок
+    mythic: 5       // Изменен порядок
+};
+const getRarityValue = (item) => rarityOrder[item?.rarity] || 0; // Если ключи в объекте и в item.rarity совпадают по регистру
+    const LOCAL_STORAGE_KEY = "equippedItems"; // Ключ для сохранения экипировки
 
 // --- Анимации для смены ЛЕЙАУТОВ ---
 const layoutTransitionVariants = {
@@ -53,6 +60,18 @@ const arrowVariants = {
     }),
 };
 const arrowContainerVariants = { exit: { opacity: 0, transition: { duration: 0.1 } } };
+
+const formatPower = (power) => {
+    if (power == null || isNaN(power)) return '...';
+    if (power < 1000) {
+      return power.toString(); 
+    }
+    const valueInK = power / 1000;
+    const truncatedToOneDecimal = Math.floor(valueInK * 10) / 10;
+    let formattedNumber = truncatedToOneDecimal.toFixed(1);
+    formattedNumber = formattedNumber.replace('.', ',');
+    return `${formattedNumber}K`;
+  };
 
 
 // НАЧАЛО КОМПОНЕНТА INVENTORY
@@ -308,7 +327,7 @@ const Inventory = ({ setShowForge }) => {
                                         )}
                                     </AnimatePresence>
                                 </div>
-
+                                    
                                 {/* --- Правая колонка слотов --- */}
                                 <div className="right-column">
                                     <div className={`equipment-slot ${equipped.helmet ? 'rarity-' + equipped.helmet.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.helmet && setSelectedItem(equipped.helmet)}>
@@ -323,17 +342,21 @@ const Inventory = ({ setShowForge }) => {
                                 </div>
                             </div> {/* Конец .character-equip */}
                         </div> {/* ===== Конец .character-section ===== */}
-
+                        
+                        <div className="inventory-power-display">
+             <span className="inventory-power-label">Your Power: </span>
+             <span className="inventory-power-value">{formatPower(powerLevel)}</span>
+         </div>
 
                         {/* ===== 2. Секция Контента ===== */}
                         <div className="content-section">
+                        <div className="inventory-tabs-container"> {/* <--- Добавили этот div */}
                             {/* --- Табы --- */}
                             <InventoryTabs
                                 activeTab={internalActiveTab}
                                 setActiveTab={setInternalActiveTab}
                                 position="middle"
                             />
-
                             {/* --- Кнопки действий (только для вкладки Gear) --- */}
                             {internalActiveTab === 'gear' && (
                                 <div className="inventory-action-buttons-wrapper">
@@ -396,6 +419,7 @@ const Inventory = ({ setShowForge }) => {
                                 </AnimatePresence>
                             </div> {/* Конец .inventory-main-area */}
                         </div> {/* ===== Конец .content-section ===== */}
+                        </div>
 
                     </motion.div>
                     // ===========================================================

@@ -6,6 +6,7 @@
 $rarity-color-common: #b0b0b0 !default;     // Используем значения из код1 как предпочтительные
 $rarity-color-uncommon: #66bb66 !default;   // Зеленый
 $rarity-color-rare: #5599ff !default;       // Синий
+$rarity-color-epic: #A020F0 !default;
 $rarity-color-legendary: #ffaa44 !default;  // Оранжево-золотой
 $rarity-color-mythic: #cc66ff !default;     // Фиолетовый
 // ----------------------------------------------------
@@ -35,11 +36,46 @@ html, body {
     position: relative;
 }
 
+.inventory-power-display {
+    display: flex;
+    align-items: baseline; // Выравнивание по базовой линии текста
+    justify-content: center; // Центрируем блок
+    padding: 8px 15px;
+    margin-top: -15px; // Дополнительное центрирование, если родитель позволяет
+    // gap: 8px; // Пространство между label и value (уже есть margin-right на label)
+    background-color: rgba(10, 15, 40, 0.65); // Слегка темнее фон, чем у секций
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    // width: fit-content; // Чтобы блок был по ширине контента
+    max-width: 280px; // Ограничение ширины, чтобы не растягивался сильно
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    text-align: center;
+    flex-shrink: 0; // Чтобы не сжимался, если вокруг много контента
+
+    .inventory-power-label {
+        font-size: 16px; // Размер шрифта как в GameHeader или чуть больше
+        font-weight: bold;
+        color: #FFD700; // Золотой цвет, как в GameHeader
+        margin-right: 8px;
+        text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5); // Тень для объема
+    }
+
+    .inventory-power-value {
+        font-size: 18px; // Значение можно сделать чуть крупнее
+        font-weight: 700;
+        color: #ffffff; // Белый цвет для значения
+        // text-shadow: 0px 1px 1px rgba(0,0,0,0.3);
+    }
+}
 // --- СТИЛИ ДЛЯ ПЕРЕКЛЮЧЕНИЯ ЛЕЙАУТОВ ---
 // Базовый класс для всех лейаутов
 .inventory-layout {
     position: absolute;
     top: 0;
+    margin-top: max(
+        70px,
+        calc(45px + env(safe-area-inset-top, 0px))
+      ) m !important;
     left: 0;
     width: 100%;
     height: 100%;
@@ -103,6 +139,11 @@ html, body {
                 &.rarity-rare { border-color: $rarity-color-rare !important; background: radial-gradient(ellipse at center, lighten($rarity-color-rare, 10%), darken($rarity-color-rare, 20%)) !important; }
                 &.rarity-legendary { border-color: $rarity-color-legendary !important; background: radial-gradient(ellipse at center, lighten($rarity-color-legendary, 10%), darken($rarity-color-legendary, 20%)) !important; animation: pulse-legendary 2s infinite ease-in-out; }
                 &.rarity-mythic { border-color: $rarity-color-mythic !important; background: radial-gradient(ellipse at center, lighten($rarity-color-mythic, 10%), darken($rarity-color-mythic, 20%)) !important; animation: pulse-mythic 1.8s infinite ease-in-out; }
+                &.rarity-epic { 
+                    border-color: $rarity-color-epic !important; 
+                    background: radial-gradient(ellipse at center, lighten($rarity-color-epic, 10%), darken($rarity-color-epic, 20%)) !important;
+                    // animation: pulse-epic 1.9s infinite ease-in-out; // Если нужна анимация
+                }
 
                 &:hover { border-color: #fff !important; transform: scale(1.05); }
             } // Конец .equipment-slot
@@ -133,18 +174,53 @@ html, body {
     } // ===== Конец .character-section =====
 
 
-    // ===== 2. Секция Контента (Нижняя Панель) =====
-    .content-section {
-        flex-grow: 1; width: 100%; max-width: 580px; margin: 0 auto;
-        display: flex; flex-direction: column;
-        background-color: rgba(20, 25, 60, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px; padding: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        box-sizing: border-box; overflow: hidden;
+// ===== 2. Секция Контента (Нижняя Панель) =====
+.content-section {
+    flex-grow: 1; 
+    width: 100%; 
+    max-width: 580px; 
+    margin: 0 auto;
+    display: flex; 
+    flex-direction: column;
+    background-color: rgba(20, 25, 60, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px; 
+    padding: 15px; // Оставляем общий padding
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box; 
+    
+    // ▼▼▼ КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ▼▼▼
+    overflow: visible; // Позволяем дочерним элементам (табам) выходить за пределы
+    position: relative; // Для корректного z-index дочерних элементов, если потребуется
 
-        // --- Табы --- (Общие стили ниже)
-        .inventory-tabs { margin-bottom: 0px; }
+    // Стили для .inventory-tabs, когда он является ПРЯМЫМ потомком .content-section
+    // (Это делает эффект нависания специфичным для этого места)
+    > .inventory-tabs {
+        // Общие стили для контейнера табов (flex, gap и т.д.) остаются из глобального .inventory-tabs
+        // Стили для эффекта "нависания":
+        position: relative; // Для z-index и корректного позиционирования тени
+        margin-top: -30px;  // Поднимаем блок табов вверх. Это значение нужно будет подобрать.
+                            // Например, если высота табов с их внутренним padding около 50px, 
+                            // то -25px или -30px заставит их "выступать" наполовину.
+        margin-left: auto;    // Центрируем сам блок табов, если он не на всю ширину
+        margin-right: auto;
+        margin-bottom: 20px;  // Отступ снизу от табов до следующего контента 
+                              // (например, .inventory-action-buttons-wrapper)
+
+        width: fit-content;     // Ширина блока табов по содержимому
+        max-width: 90%;         // Ограничение максимальной ширины
+        
+        background-color: #374151; // Цвет фона для "подиума" табов (подберите под тему)
+                                   // Этот цвет должен быть непрозрачным, чтобы перекрыть фон .content-section
+        padding: 10px 20px 8px 20px;    // Внутренние отступы самого блока табов
+        border-radius: 12px 12px 0 0;   // Скругляем только верхние углы
+        box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.2), // Тень сверху для эффекта "отрыва"
+                    0px 4px 8px rgba(0, 0, 0, 0.15); // Тень снизу
+        z-index: 2; // Чуть выше, чем фон .content-section, но ниже модальных окон
+
+        // Стили для самих кнопок-табов внутри этого нависающего блока не меняются,
+        // они берутся из глобального определения .inventory-tabs button
+    }
 
         // --- Кнопки действий ---
         .inventory-action-buttons-wrapper {
@@ -250,7 +326,11 @@ html, body {
                             &.rarity-rare { border-color: $rarity-color-rare !important; background: radial-gradient(ellipse at center, lighten($rarity-color-rare, 10%), darken($rarity-color-rare, 20%)) !important; }
                             &.rarity-legendary { border-color: $rarity-color-legendary !important; background: radial-gradient(ellipse at center, lighten($rarity-color-legendary, 10%), darken($rarity-color-legendary, 20%)) !important; animation: pulse-legendary 2s infinite ease-in-out; }
                             &.rarity-mythic { border-color: $rarity-color-mythic !important; background: radial-gradient(ellipse at center, lighten($rarity-color-mythic, 10%), darken($rarity-color-mythic, 20%)) !important; animation: pulse-mythic 1.8s infinite ease-in-out; }
-
+                            &.rarity-epic { 
+                                border-color: $rarity-color-epic !important; 
+                                background: radial-gradient(ellipse at center, lighten($rarity-color-epic, 10%), darken($rarity-color-epic, 20%)) !important;
+                                // animation: pulse-epic 1.9s infinite ease-in-out; // Если нужна анимация
+                            }
                             &:hover { border-color: #fff !important; transform: scale(1.03); }
                         } // Конец .inventory-item
 
@@ -300,18 +380,39 @@ html, body {
 // === НАЧАЛО: ОБЩИЕ СТИЛИ ДЛЯ ТАБОВ ===
 // ===========================================================
 .inventory-tabs {
-    flex-shrink: 0; display: flex; justify-content: center; gap: 10px;
+    flex-shrink: 0; 
+    display: flex;          // Эти свойства будут применены ко всем .inventory-tabs
+    justify-content: center; 
+    align-items: center;    // Добавлено для вертикального центрирования кнопок, если их высота разная
+    gap: 10px;              // Отступ между кнопками-табами
 
+    // Стили для самих кнопок-табов
     button {
-        background: #4a5568; color: #cbd5e0; border: none; border-radius: 8px;
-        padding: 8px 20px; font-weight: 600; font-size: 15px; cursor: pointer;
-        transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
+        background: #4a5568; 
+        color: #cbd5e0; 
+        border: none; 
+        border-radius: 8px;
+        padding: 8px 20px; 
+        font-weight: 600; 
+        font-size: 15px; 
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        &:hover { background: #5a6578; color: #fff; }
-        &:active { transform: scale(0.97); }
-        &.active { background: #FFA726; color: #fff; box-shadow: 0 0 10px rgba(255, 167, 38, 0.5); }
+
+        &:hover { 
+            background: #5a6578; 
+            color: #fff; 
+        }
+        &:active { 
+            transform: scale(0.97); 
+        }
+        &.active { 
+            background: #FFA726; // Оранжевый для активного таба (как на скриншоте image_6c74d2.png)
+            color: #fff; 
+            box-shadow: 0 0 10px rgba(255, 167, 38, 0.5), 0 2px 5px rgba(0,0,0,0.3); 
+        }
     }
-} // Конец .inventory-tabs
+}
 // ===========================================================
 // === КОНЕЦ: ОБЩИЕ СТИЛИ ДЛЯ ТАБОВ ===
 // ===========================================================
