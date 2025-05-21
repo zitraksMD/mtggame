@@ -11,14 +11,14 @@ import {
   FaUserCircle,
   FaCalendarAlt,
   FaTrophy,
-  FaCoins,
+  FaCoins, // Для Simple Cashback в хедере и ранее в Task HUB
   FaDice,
   FaCertificate,
   FaShoppingCart,
-  FaInfoCircle // Добавлено из код1
+  FaInfoCircle
 } from 'react-icons/fa';
 
-// Компонент TaskItem (без изменений из код1, соответствует код2)
+// Компонент TaskItem (без изменений, соответствует обоим кодам)
 const TaskItem = ({ name, progress, reward, isCompleted, onClaim }) => (
   <li className={`task-item ${isCompleted ? 'completed' : ''}`}>
     <div className="task-details">
@@ -39,7 +39,7 @@ const DiscoveryScreen = () => {
   const [isTasksPopupOpen, setIsTasksPopupOpen] = useState(false);
   const [selectedEventForView, setSelectedEventForView] = useState(null);
 
-  const userNickname = "highroller"; // Изменено из код1
+  const userNickname = "User123";
   const currentUserXP = 75;
   const maxXPForLevel = 100;
   const xpProgressPercent = (currentUserXP / maxXPForLevel) * 100;
@@ -47,6 +47,7 @@ const DiscoveryScreen = () => {
   const nextLevel = 11;
   const userVoucherCount = 3;
   const userSimplecoinCount = 1250;
+  const userSimpleCashbackAmount = 50; // Из код1: Пример значения для счетчика кэшбэка
 
   const handleTabClick = (tabName) => setActiveTab(tabName);
   const openTasksPopup = () => setIsTasksPopupOpen(true);
@@ -54,20 +55,20 @@ const DiscoveryScreen = () => {
   const openEventDetailView = (eventData) => setSelectedEventForView(eventData);
   const closeEventDetailView = () => setSelectedEventForView(null);
   const handleMascotProfileClick = () => console.log('Mascot/Profile icon clicked');
-  const handleLeaderboardClick = () => console.log('Leaderboard icon clicked');
-  const handleLevelRewardsClick = () => console.log('Level rewards icon clicked');
-  const handleSimpleCashbackClick = () => console.log('Simple Cashback icon clicked');
+
+  // Обработчик для новой кнопки Simple Cashback в хедере (из код1)
+  const handleSimpleCashbackDisplayClick = () => console.log('Simple Cashback display button in header clicked. Amount:', userSimpleCashbackAmount);
+
+  // Обработчики для кнопок действий в Task HUB (объединены, Simple Cashback убран из Task HUB согласно код1)
   const handleWeeklyCalendarClick = () => console.log('Weekly Calendar clicked');
   const handleBotZoneClick = () => console.log('Bot Zone clicked');
   const handleLuckyDrawClick = () => console.log('Lucky Draw clicked');
   const handleAchievementsClick = () => console.log('Achievements clicked');
   const handleMerchClick = () => console.log('Merch clicked');
-
-  // handleCentralInfoClick больше не нужен, так как блок не кликабельный (из код1)
-  // const handleCentralInfoClick = () => {
-  //   console.log('Central info block clicked (Vouchers/Simplecoin)');
-  //   // TODO: Логика для отображения деталей по ваучерам/симплкоинам
-  // };
+  const handleLeaderboardClick = () => console.log('Leaderboard icon clicked');
+  const handleLevelRewardsClick = () => console.log('Level rewards icon clicked');
+  // handleSimpleCashbackClick (который был в код2 для Task HUB) удален, т.к. в код1 его нет для Task HUB.
+  // handleCentralInfoClick (который был в код2) удален, т.к. блок стал некликабельным дисплеем согласно код1.
 
   // Данные для задач (остаются подробными из код2, как подразумевалось в код1)
   const allTasksData = {
@@ -111,6 +112,20 @@ const DiscoveryScreen = () => {
     }
   };
 
+  // Обновленный список кнопок для секции hub-actions-section (из код1, Simple Cashback убран)
+  const hubActionItems = [
+    { id: 'weeklyCalendar', label: 'Weekly Calendar', icon: FaCalendarAlt, handler: handleWeeklyCalendarClick },
+    { id: 'taskCenter', label: 'Task Center', icon: FaTasks, handler: openTasksPopup },
+    { id: 'botZone', label: 'Bot Zone', icon: FaRobot, handler: handleBotZoneClick },
+    { id: 'luckyDraw', label: 'Lucky Draw', icon: FaDice, handler: handleLuckyDrawClick },
+    { id: 'achievements', label: 'Achievements', icon: FaCertificate, handler: handleAchievementsClick },
+    { id: 'merch', label: 'Merch', icon: FaShoppingCart, handler: handleMerchClick },
+    { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy, handler: handleLeaderboardClick },
+    { id: 'levelRewards', label: 'Level Rewards', icon: FaGift, handler: handleLevelRewardsClick },
+    // { id: 'simpleCashback', label: 'Simple Cashback', icon: FaCoins, handler: handleSimpleCashbackClick }, // Удалено из Task HUB согласно код1
+  ];
+
+
   if (selectedEventForView) {
     return (
       <EventDetailModal
@@ -123,7 +138,7 @@ const DiscoveryScreen = () => {
   return (
     <div className="discovery-screen">
       <header className="discovery-main-header">
-        {/* Левая часть хедера */}
+        {/* Левая часть хедера (Профиль пользователя) - из код1 */}
         <div className="header-left-content">
           <button className="header-icon-button mascot-profile-button" onClick={handleMascotProfileClick} aria-label="Profile">
             <FaUserCircle />
@@ -136,34 +151,48 @@ const DiscoveryScreen = () => {
               <span className="level-badge current-level-badge">{currentLevel}</span>
               <div className="xp-bar-container">
                 <div className="xp-bar-fill" style={{ width: `${xpProgressPercent}%` }}></div>
+                <span className="xp-bar-text-on-bar">{currentUserXP} / {maxXPForLevel} XP</span>
               </div>
               <span className="level-badge next-level-badge">{nextLevel}</span>
             </div>
           </div>
         </div>
 
-        {/* Центральная часть хедера - НЕ КНОПКА, с иконками "i" (изменения из код1) */}
-        <div className="header-center-content">
+        {/* Центральная часть хедера - Кнопка Simple Cashback (из код1) */}
+        <div
+          className="header-center-cashback-button"
+          onClick={handleSimpleCashbackDisplayClick}
+          role="button"
+          tabIndex={0}
+          aria-label={`Simple Cashback: ${userSimpleCashbackAmount}`}
+        >
+          <FaCoins className="cashback-icon" />
+          <span className="cashback-separator">:</span>
+          <span className="cashback-amount">{userSimpleCashbackAmount}</span>
+        </div>
+
+        {/* Правая часть хедера - Счетчики Ваучеров и Симплкоинов (некликабельный дисплей из код1) */}
+        <div className="header-right-counters-display"> {/* Класс из код1, был header-right-counters в код2 */}
           <div
-            className="central-info-framed"
-            // Удалены: onClick, role, tabIndex (из код1)
-            aria-label={`Информация: Ваучеры ${userVoucherCount}, Симплкоины ${userSimplecoinCount}`} // Обновлено из код1
+            className="central-info-framed" // Стили для этого класса остаются актуальными
+            aria-label={`Информация: Ваучеры ${userVoucherCount}, Симплкоины ${userSimplecoinCount}`}
+            // Удалены: onClick, role, tabIndex (согласно код1, это дисплей)
           >
             <div className="info-line">
-              <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о ваучерах"/> {/* Добавлено из код1 */}
+              <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о ваучерах"/>
               <img
                 src="/assets/voucher-icon.png"
-                alt="" // Изменено из код1 (пустой alt, так как FaInfoCircle предоставляет инфо)
+                alt="" // alt остался пустым, FaInfoCircle дает контекст
                 className="info-line-icon"
               />
               <span>:</span>
               <span className="info-count">{userVoucherCount}</span>
             </div>
             <div className="info-line">
-              <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о симплкоинах"/> {/* Добавлено из код1 */}
+              <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о симплкоинах"/>
               <img
                 src="/assets/simplecoin-icon.png"
-                alt="" // Изменено из код1 (пустой alt, так как FaInfoCircle предоставляет инфо)
+                alt="" // alt остался пустым, FaInfoCircle дает контекст
                 className="info-line-icon"
               />
               <span>:</span>
@@ -171,19 +200,7 @@ const DiscoveryScreen = () => {
             </div>
           </div>
         </div>
-
-        {/* Правая часть хедера */}
-        <div className="header-right-content">
-          <button className="header-icon-button leaderboard-button" onClick={handleLeaderboardClick} aria-label="Leaderboard">
-            <FaTrophy />
-          </button>
-          <button className="header-icon-button level-rewards-button" onClick={handleLevelRewardsClick} aria-label="Level Rewards">
-            <FaGift />
-          </button>
-          <button className="header-icon-button simple-cashback-button" onClick={handleSimpleCashbackClick} aria-label="Simple Cashback">
-            <FaCoins />
-          </button>
-        </div>
+        {/* Правая часть хедера из код2 (с FaTrophy, FaGift, FaCoins) удалена, т.к. эти элементы теперь в hubActionItems или в других местах хедера */}
       </header>
 
       <nav className="discovery-tabs-container">
@@ -202,12 +219,15 @@ const DiscoveryScreen = () => {
         {activeTab === 'Task HUB' && (
           <div className="tab-pane" id="task-hub-pane">
             <section className="hub-actions-section">
-              <div className="action-item" onClick={handleWeeklyCalendarClick}><div className="action-button-square"><FaCalendarAlt className="action-icon" /></div><p className="action-label">Weekly Calendar</p></div>
-              <div className="action-item" onClick={openTasksPopup}><div className="action-button-square"><FaTasks className="action-icon" /></div><p className="action-label">Task Center</p></div>
-              <div className="action-item" onClick={handleBotZoneClick}><div className="action-button-square"><FaRobot className="action-icon" /></div><p className="action-label">Bot Zone</p></div>
-              <div className="action-item" onClick={handleLuckyDrawClick}><div className="action-button-square"><FaDice className="action-icon" /></div><p className="action-label">Lucky Draw</p></div>
-              <div className="action-item" onClick={handleAchievementsClick}><div className="action-button-square"><FaCertificate className="action-icon" /></div><p className="action-label">Achievements</p></div>
-              <div className="action-item" onClick={handleMerchClick}><div className="action-button-square"><FaShoppingCart className="action-icon" /></div><p className="action-label">Merch</p></div>
+              {/* Рендеринг кнопок действий из hubActionItems (обновлено согласно код1) */}
+              {hubActionItems.map(item => (
+                <div key={item.id} className="action-item" onClick={item.handler} role="button" tabIndex={0}>
+                  <div className="action-button-square">
+                    <item.icon className="action-icon" />
+                  </div>
+                  <p className="action-label">{item.label}</p>
+                </div>
+              ))}
             </section>
             <section className="events-section">
               <h2 className="section-title">Live Promos:</h2>
