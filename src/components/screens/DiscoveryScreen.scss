@@ -2,195 +2,128 @@
 
 // --- ОБЩИЕ СТИЛИ ЭКРАНА ---
 .discovery-screen {
-  // Новый фон: фиолетовый градиент (из код2)
   background: linear-gradient(135deg, #483D8B 0%, #6A5ACD 50%, #9370DB 100%);
   min-height: 100vh;
   width: 100%;
-  color: #ffffff; // Основной цвет текста теперь белый для темного фона (из код2)
-  overflow-y: auto; // Для прокрутки, если контент не помещается (из код2)
+  color: #ffffff;
+  overflow-y: auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
 
-// --- НОВАЯ ШАПКА ---
+// --- ОБНОВЛЕННАЯ ШАПКА (из предоставленных изменений) ---
 .discovery-main-header {
   display: flex;
-  // margin-top из код2 (с учетом safe-area)
   margin-top: max(
-    80px,
-    calc(45px + env(safe-area-inset-top, 0px))
+    15px, // Из нового блока
+    calc(15px + env(safe-area-inset-top, 0px)) // Из нового блока
   );
   justify-content: space-between;
-  align-items: flex-start; // Из код2 (было align-items: center в некоторых частях код1)
-  padding: 15px 20px; // Уменьшим немного отступы для компактности (из код2)
+  align-items: flex-start; // ИЗМЕНЕНО: выравнивание по верху для всех блоков в хедере
+  padding: 10px 15px;    // Можно немного увеличить верхний/нижний padding, если нужно больше "воздуха" сверху
   width: 100%;
   box-sizing: border-box;
+  gap: 10px;
 
   .header-left-content {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px; // Отступ между элементами (из код2)
+    align-items: center; // Иконка маскота и инфо остаются выровненными по центру друг с другом
+    gap: 8px;
+    // Если левый блок должен быть выровнен по верху относительно своего содержимого,
+    // то align-items: flex-start здесь тоже может понадобиться, но обычно align-items: center для группы "иконка + инфо" выглядит лучше.
+    // Сейчас он будет выровнен по верху хедера как группа.
+  }
 
-    .main-title { // Из код2 (новый элемент)
-      font-size: 1.8em;
-      color: #ffffff;
-      margin: 0;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
+  .header-center-content {
+    display: flex;
+    justify-content: center;
+    align-items: center; // Центрируем рамку внутри этого блока, если она меньше доступного пространства
 
-    // Nickname-frame из код1, стилизован и интегрирован с user-nickname из код2
-    .nickname-frame {
-      background-color: rgba(255, 255, 255, 0.1); // Из код1
-      border: 1px solid rgba(255, 255, 255, 0.3);   // Из код1
-      border-radius: 12px;                       // Из код1
-      padding: 4px 12px;                         // Из код1
-      margin-top: 8px;                           // Из код1, можно настроить или удалить, если gap из .header-left-content достаточен
-      margin-bottom: 8px;                        // Из код1, отступ до прогресс-бара
-      display: inline-block;                     // Из код1
-
-      .user-nickname { // Стили для .user-nickname из код1, цвета/размеры можно адаптировать из код2 при необходимости
-        color: #ffffff;         // Из код1 (белый цвет текста)
-        font-weight: 500;       // Из код1
-        margin: 0;              // Из код1 (убираем стандартные отступы параграфа)
-        font-size: 0.95em;      // Размер из код2, можно оставить из код1 если нужно
-        // color: #e0e0e0;      // Альтернативный цвет из код2
-      }
-    }
-
-
-    .level-xp-progress-wrapper { // Из код2
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      width: auto;
-    }
-
-    .level-badge { // Из код2
-      font-size: 0.8em;
-      font-weight: 600;
-      color: #ffffff;
-      background-color: rgba(0, 0, 0, 0.25);
-      padding: 3px 7px;
-      border-radius: 4px;
+    .central-info-framed { // Переименовано с .vouchers-display-framed
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 10px; // Отступы для двух строк
+      border-radius: 8px;
+      font-size: 0.75em;    // Шрифт чуть меньше для компактности двух строк
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;        // Для расположения строк одна под другой
+      flex-direction: column; // Строки одна под другой
+      align-items: flex-start; // Текст в каждой строке будет начинаться слева
+      gap: 3px;               // Небольшой отступ между строками "Ваучер" и "Симплкоин"
+      transition: background-color 0.2s ease;
       white-space: nowrap;
-    }
 
-    .xp-bar-container { // Из код2
-      width: 120px;
-      height: 14px;
-      background-color: rgba(0, 0, 0, 0.3);
-      border-radius: 7px;
-      overflow: hidden;
-      position: relative;
-
-      .xp-bar-fill { // Из код2
-        height: 100%;
-        background: #00bfff; // Ярко-голубой
-        border-radius: 7px;
-        transition: width 0.5s ease-in-out;
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.3);
       }
 
-      .xp-bar-text-on-bar { // Из код2
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 0.7em;
-        color: white;
-        font-weight: bold;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
-        white-space: nowrap;
+      .info-line {
+        // Можно добавить стили для каждой строки, если нужно
+        // Например, display: flex; justify-content: space-between; width: 100%;
+        // Но для простого "Текст : Счетчик" это не обязательно
+      }
+
+      .info-count {
+        font-weight: 700;
+        margin-left: 4px;
       }
     }
   }
 
   .header-right-content {
     display: flex;
-    align-items: center;
-    gap: 10px;
-
-    .header-icon-button {
-      background: none;
-      border: none;
-      color: #fff;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%; // Это важно для круглого фона кнопки
-      transition: background-color 0.2s ease;
-
-      width: 40px;
-      height: 40px;
-      padding: 0;
-
-      svg {
-        font-size: 22px;
-        display: block;
-      }
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.1); // Общий ховер для всех кнопок (если не переопределен)
-      }
-
-      // Специфичные стили для кнопки назад
-      &.back-button {
-        // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
-        background: rgba(255,255,255,0.15); // Применяем фон к самой кнопке .back-button
-        position: relative;
-        bottom: 10px;
-
-        // Убираем фон с SVG, если он там был по ошибке
-        // svg {
-        //   // background: transparent; // или просто удалить background отсюда
-        //   // position: relative; // Оставляем, если нужно для точного выравнивания
-        //   // bottom: 1px; // Ваше значение для выравнивания
-        // }
-        // Если смещение `bottom: 10px` было для компенсации фона на SVG, его нужно будет пересмотреть
-        // Скорее всего, если выравнивание уже достигнуто, то position/bottom для SVG может быть не нужен или нужен другой
-
-        // Если вы все еще нуждаетесь в пиксельной подгонке ПОСЛЕ исправления фона
-
-
-        &:hover {
-           background-color: rgba(255,255,255,0.3); // Специфичный ховер для кнопки назад
-        }
-      }
-
-      // Для кнопки подарка - она будет без фона по умолчанию (прозрачная),
-      // если не задать ей специфичный background.
-      &.level-rewards-button {
-        // Если хотите, чтобы у кнопки подарка тоже был фон, добавьте его здесь:
-        // background: rgba(255,255,255,0.15); // Такой же фон, как у кнопки назад
-        // &:hover {
-        //   background-color: rgba(255,255,255,0.3);
-        // }
-
-        // Если нужно подкорректировать позицию иконки подарка:
-        // svg {
-        //   position: relative;
-        //   top: 1px; // Пример
-        // }
-      }
-    }
+    align-items: center; // Иконки внутри этой группы остаются выровненными по центру друг с другом
+    gap: 5px;
+    // Эта группа как целое будет выровнена по верху хедера благодаря align-items: flex-start у .discovery-main-header
   }
-}
 
-// --- ТАБЫ ---
+  // Стили для .header-icon-button и других элементов шапки из нового блока
+  .header-icon-button {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: 0;
+    line-height: normal;
+    box-sizing: border-box;
+
+    svg {
+      font-size: 16px;
+      display: block;
+    }
+    &:hover { background-color: rgba(255, 255, 255, 0.3); }
+  }
+  .mascot-profile-button { svg { font-size: 24px; } } // Эта вложенность соответствует новому блоку
+  .user-info-group { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .nickname-frame { background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; padding: 3px 8px; .user-nickname { font-weight: 500; margin: 0; font-size: 0.9em; } }
+  .level-xp-progress-wrapper { display: flex; align-items: center; gap: 4px; width: auto; }
+  .level-badge { font-size: 0.7em; padding: 2px 5px; border-radius: 3px; background-color: rgba(0, 0, 0, 0.25); color: #ffffff; white-space: nowrap; }
+  .xp-bar-container { width: 40px; height: 10px; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; overflow: hidden; position: relative; .xp-bar-fill { height: 100%; background: #00bfff; border-radius: 5px; transition: width 0.5s ease-in-out; } .xp-bar-text-on-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.6em; color: white; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); white-space: nowrap; } }
+
+} // конец .discovery-main-header
+
+
+// --- ТАБЫ --- (без изменений)
 .discovery-tabs-container {
   display: flex;
-  justify-content: space-around; // Из код1, код2 использует center. Выберите один.
-  background-color: rgba(0, 0, 0, 0.15); // Полупрозрачный фон для табов (из код2)
-  margin: 10px 20px 15px 20px;      // Отступы вокруг табов (из код2)
-  border-radius: 8px;               // (из код2)
-  padding: 4px;                     // Небольшой внутренний отступ для кнопок (из код2)
-  overflow-x: auto;                 // Горизонтальная прокрутка, если табы не помещаются (из код1)
-  white-space: nowrap;              // Предотвращает перенос табов на новую строку (из код1)
+  justify-content: space-around;
+  background-color: rgba(0, 0, 0, 0.15);
+  margin: 10px 20px 15px 20px;
+  border-radius: 8px;
+  padding: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
 
-  // Стилизация скроллбара для Webkit из код1
   &::-webkit-scrollbar {
     height: 3px;
   }
@@ -200,64 +133,60 @@
   }
 
   .tab-button {
-    padding: 8px 18px; // Компактнее (из код2), код1 имел 8px 12px
-    font-size: 0.95em;  // (из код2), код1 имел 14px
-    font-weight: 500;   // (из код2)
+    padding: 8px 18px;
+    font-size: 0.95em;
+    font-weight: 500;
     cursor: pointer;
     background-color: transparent;
-    color: #e0e0e0;     // Цвет неактивного таба (из код2)
+    color: #e0e0e0;
     border: none;
-    // border-bottom: 3px solid transparent; // Заменено на background-color в .active
     outline: none;
-    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease; // (из код2)
-    border-radius: 6px; // Скругление самим кнопкам табов (из код2)
-    margin: 0 3px;      // Небольшой отступ между кнопками (из код2)
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+    border-radius: 6px;
+    margin: 0 3px;
 
     &:hover {
       color: #ffffff;
-      background-color: rgba(255,255,255,0.1); // (из код2)
+      background-color: rgba(255,255,255,0.1);
     }
 
     &.active {
       color: #ffffff;
-      font-weight: 600; // Жирнее для активного (из код2)
-      // border-bottom-color: #00bfff; // Линия под активным табом (из код2), можно оставить если нравится
-      background-color: rgba(0, 191, 255, 0.15); // Легкий фон для активного таба (из код2)
+      font-weight: 600;
+      background-color: rgba(0, 191, 255, 0.15);
     }
   }
 }
 
-// --- ОСНОВНОЙ КОНТЕНТ ---
+// --- ОСНОВНОЙ КОНТЕНТ --- (без изменений в этой части)
 .discovery-tab-content {
   flex-grow: 1;
   width: 100%;
-  padding: 0px 20px 20px 20px; // Отступы для контента вкладок (из код2)
+  padding: 0px 20px 20px 20px;
   box-sizing: border-box;
   overflow-y: auto;
 
-  // Общие стили для .tab-pane из код1
   .tab-pane {
-    padding: 15px; // Общий отступ для содержимого вкладок (из код1)
-    color: #fff;   // Пример цвета текста (из код1, основной цвет уже #fff из .discovery-screen)
+    padding: 15px;
+    color: #fff;
   }
 }
 
-#task-hub-pane { // Специфичная панель из код2
+#task-hub-pane {
   display: flex;
   flex-direction: column;
-  gap: 20px; // Расстояние между секциями в Task HUB
+  gap: 20px;
 }
 
 
-// --- КНОПКИ В TASK HUB (Quest Center, Bot Zone) ---
-// Стили из код2, так как они более детализированы и тематичны
-// код1 имел .hub-actions-section, но стили из код2 лучше подходят
+// --- КНОПКИ В TASK HUB (Quest Center, Bot Zone и т.д.) --- (без изменений)
 .hub-actions-section {
   display: flex;
-  justify-content: center; // Центрируем кнопки (из код2)
-  gap: 25px; // Расстояние между квадратными кнопками (из код2, в код1 было 15px)
-  padding: 10px 0; // Уменьшим отступы (из код2)
-  margin-bottom: 0px; // Отступ снизу (из код1, сохранен)
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px 0;
+  margin-bottom: 0px;
 
   .action-item {
     display: flex;
@@ -265,102 +194,98 @@
     align-items: center;
     cursor: pointer;
     text-align: center;
-    width: 90px; // Ширина элемента (из код2)
+    width: 90px;
 
     .action-button-square {
-      width: 65px;  // (из код2, в код1 было 60px)
-      height: 65px; // (из код2, в код1 было 60px)
-      background-color: rgba(0, 0, 0, 0.2); // Темнее фон (из код2, в код1 было 0.1 прозрачность)
-      border: 1px solid rgba(255, 255, 255, 0.15); // Светлая граница (из код2)
-      border-radius: 10px; // (из код2, также 10px в код1)
+      width: 65px;
+      height: 65px;
+      background-color: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 7px; // (из код2, в код1 было 5px)
-      transition: background-color 0.2s ease, transform 0.2s ease; // (из код2)
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2); // (из код2)
+      margin-bottom: 7px;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 
       .action-icon {
-        font-size: 1.8em; // (из код2, в код1 было 28px ~1.75em если базовый 16px)
-        color: #00bfff;   // Голубая иконка (из код2, в код1 было #fff)
+        font-size: 1.8em;
+        color: #00bfff;
       }
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.3); // (из код2, в код1 было 0.2 прозрачность)
-        transform: scale(1.05); // (из код2)
+        background-color: rgba(0, 0, 0, 0.3);
+        transform: scale(1.05);
       }
     }
 
     .action-label {
-      font-size: 0.85em; // (из код2, в код1 было 12px)
-      color: #e0e0e0;   // Светлый цвет подписи (из код2, в код1 было #eee)
-      font-weight: 500; // (из код2)
+      font-size: 0.85em;
+      color: #e0e0e0;
+      font-weight: 500;
       margin: 0;
     }
   }
 }
 
-// --- СТИЛИ ДЛЯ СЕКЦИИ LIVE PROMOS ---
-// Стили из код2, так как они более детализированы и тематичны
+// --- СТИЛИ ДЛЯ СЕКЦИИ LIVE PROMOS --- (без изменений)
 .events-section {
-  margin-top: 0px; // (из код1, сохранен)
+  margin-top: 0px;
 
-  .section-title { // Заголовок "Live Promos:"
+  .section-title {
     text-align: left;
-    font-size: 1.4em; // Уменьшим немного (из код2, в код1 было 18px ~1.125em)
-    color: #ffffff;  // (из код2, также #fff в код1)
+    font-size: 1.4em;
+    color: #ffffff;
     margin-top: 15px;
-    margin-bottom: 15px; // (из код2, в код1 было 10px)
+    margin-bottom: 15px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2); // Светлая линия (из код2)
-    font-weight: 600; // (из код2)
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
   }
 
   .live-events-grid {
     display: grid;
-    // grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); // Адаптивная сетка (из код1)
-    grid-template-columns: 1fr; // Из код2 для мобильных по умолчанию
-    gap: 12px; // (из код2, в код1 было 10px)
+    grid-template-columns: 1fr;
+    gap: 12px;
     margin-bottom: 40px;
 
-    @media (min-width: 600px) { // Медиа-запрос из код2
+    @media (min-width: 600px) {
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
 
     .live-event-button {
-      // background-color: rgba(255, 255, 255, 0.1); // Из код1, заменено градиентом из код2
-      background: linear-gradient(135deg, #483D8B 0%, #6A5ACD 50%, #9370DB 100%); // Из код2
-      border: 1px solid rgba(255, 255, 255, 0.1); // Из код2 (в код1 было 0.2)
-      color: #ffffff; // (из код2, также #fff в код1)
-      padding: 15px; // (из код2, в код1 было 10px)
-      font-size: 1em; // (из код2)
-      font-weight: 600; // (из код2)
-      border-radius: 8px; // (из код2, также 8px в код1)
+      background: linear-gradient(135deg, #483D8B 0%, #6A5ACD 50%, #9370DB 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      padding: 15px;
+      font-size: 1em;
+      font-weight: 600;
+      border-radius: 8px;
       cursor: pointer;
       text-align: center;
-      transition: all 0.2s ease-out; // (из код2)
+      transition: all 0.2s ease-out;
       width: 100%;
-      min-height: 80px; // (из код2)
+      min-height: 80px;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1.3;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15); // (из код2)
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
 
       &:hover {
-        // background-color: rgba(255, 255, 255, 0.2); // Из код1, заменено стилями из код2
-        background-color: rgba(0, 0, 0, 0.35); // Из код2 (темнее фон при наведении)
-        border-color: rgba(255, 255, 255, 0.2); // Из код2
-        transform: translateY(-2px); // Из код2
+        background-color: rgba(0, 0, 0, 0.35);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
       }
     }
 
     .no-events-info {
-      color: #bdc3c7; // (из код2, в код1 было #aaa)
+      color: #bdc3c7;
       text-align: center;
       padding: 20px;
       font-style: italic;
-      grid-column: 1 / -1; // (из код2)
+      grid-column: 1 / -1;
     }
   }
 }

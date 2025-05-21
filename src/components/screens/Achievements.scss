@@ -55,24 +55,7 @@
     }
 }
 
-// === КНОПКА НАГРАД ЗА УРОВЕНЬ ===
-.level-rewards-button {
-    display: block;
-    margin: 0 auto 20px auto; // Центрирование и отступ вниз
-    padding: 8px 16px;
-    background-color: rgba(138, 43, 226, 0.8);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 
-    &:hover { background-color: rgba(158, 73, 246, 0.9); }
-    &:active { transform: scale(0.98); }
-}
 
 // === Список Достижений (контейнер) ===
 .achievements-list {
