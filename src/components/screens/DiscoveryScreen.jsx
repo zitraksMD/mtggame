@@ -14,10 +14,11 @@ import {
   FaCoins,
   FaDice,
   FaCertificate,
-  FaShoppingCart
+  FaShoppingCart,
+  FaInfoCircle // Добавлено из код1
 } from 'react-icons/fa';
 
-// Компонент TaskItem (без изменений)
+// Компонент TaskItem (без изменений из код1, соответствует код2)
 const TaskItem = ({ name, progress, reward, isCompleted, onClaim }) => (
   <li className={`task-item ${isCompleted ? 'completed' : ''}`}>
     <div className="task-details">
@@ -38,14 +39,14 @@ const DiscoveryScreen = () => {
   const [isTasksPopupOpen, setIsTasksPopupOpen] = useState(false);
   const [selectedEventForView, setSelectedEventForView] = useState(null);
 
-  const userNickname = "User123";
+  const userNickname = "highroller"; // Изменено из код1
   const currentUserXP = 75;
   const maxXPForLevel = 100;
   const xpProgressPercent = (currentUserXP / maxXPForLevel) * 100;
   const currentLevel = 10;
   const nextLevel = 11;
-  const userVoucherCount = 3;     // Пример количества ваучеров
-  const userSimplecoinCount = 1250; // Пример количества симплкоинов
+  const userVoucherCount = 3;
+  const userSimplecoinCount = 1250;
 
   const handleTabClick = (tabName) => setActiveTab(tabName);
   const openTasksPopup = () => setIsTasksPopupOpen(true);
@@ -62,13 +63,13 @@ const DiscoveryScreen = () => {
   const handleAchievementsClick = () => console.log('Achievements clicked');
   const handleMerchClick = () => console.log('Merch clicked');
 
-  // Обработчик для центрального блока (Ваучеры/Симплкоины)
-  const handleCentralInfoClick = () => {
-    console.log('Central info block clicked (Vouchers/Simplecoin)');
-    // TODO: Логика для отображения деталей по ваучерам/симплкоинам
-  };
+  // handleCentralInfoClick больше не нужен, так как блок не кликабельный (из код1)
+  // const handleCentralInfoClick = () => {
+  //   console.log('Central info block clicked (Vouchers/Simplecoin)');
+  //   // TODO: Логика для отображения деталей по ваучерам/симплкоинам
+  // };
 
-  // Данные для задач (сохранены из предыдущей версии)
+  // Данные для задач (остаются подробными из код2, как подразумевалось в код1)
   const allTasksData = {
     daily: [
       { id: 'd1_login', name: 'Вход в кошелек', progressCurrent: 1, progressTarget: 1, progressText: '1/1', isCompleted: true, isClaimed: false, rewards: { points: 25, xp: 15 } },
@@ -90,7 +91,7 @@ const DiscoveryScreen = () => {
     ]
   };
 
-  // Данные для событий (сохранены из предыдущей версии)
+  // Данные для событий (остаются подробными из код2, как подразумевалось в код1)
   const eventsData = [
     { id: 'e1', title: 'USDC Fast Lane', description: 'Swap 200+ USDC and get 20 USDC!', howItWorks: [ 'Click "Participate" below.', 'Make an exchange (swap) of 200+ USDC for any other cryptocurrency.', 'Done – your 20 USDC bonus will be credited within 24 hours after the promotion ends!' ], endsIn: 'Ends in 3 days at 3:00 UTC' },
     { id: 'e2', title: 'Swap Sprint', description: 'Make 5+ swaps (each from $50) within a week and share a $500 prize pool!', howItWorks: [ 'Join the promotion.', 'Make at least 5 cryptocurrency exchanges (swaps) during the promotion week.', 'Each swap must be for an amount of $50 or more (equivalent).', 'All participants who meet the conditions will share the $500 prize pool.' ], endsIn: 'Ends in 7 days at 3:00 UTC' },
@@ -101,16 +102,14 @@ const DiscoveryScreen = () => {
     { id: 'e7', title: 'HODL & Swap', description: 'Hold at least 0.1 BTC in your balance AND make a swap of $100+ within the week to win $50!', howItWorks: [ 'Ensure you are registered for the promotion.', 'Maintain a balance of at least 0.1 BTC in your account throughout the entire promotion week.', 'Make at least one exchange (swap) for $100 or more during the same week.', 'Get a chance to win $50.' ], endsIn: 'Ends in 6 days at 3:00 UTC' }
   ];
 
-  // Обработчик handleGoBack из предыдущей версии
   const handleGoBack = () => {
     if (selectedEventForView) {
       closeEventDetailView();
     } else {
       console.log('Back button clicked from Discovery main screen, navigating to /main');
-      navigate('/main'); // Предполагается, что /main - это предыдущий экран или главный экран
+      navigate('/main');
     }
   };
-
 
   if (selectedEventForView) {
     return (
@@ -144,21 +143,31 @@ const DiscoveryScreen = () => {
           </div>
         </div>
 
-        {/* Центральная часть хедера - Ваучеры и Симплкоины */}
+        {/* Центральная часть хедера - НЕ КНОПКА, с иконками "i" (изменения из код1) */}
         <div className="header-center-content">
           <div
             className="central-info-framed"
-            onClick={handleCentralInfoClick}
-            role="button"
-            tabIndex={0}
-            aria-label={`Ваучеры: ${userVoucherCount}, Симплкоины: ${userSimplecoinCount}`}
+            // Удалены: onClick, role, tabIndex (из код1)
+            aria-label={`Информация: Ваучеры ${userVoucherCount}, Симплкоины ${userSimplecoinCount}`} // Обновлено из код1
           >
             <div className="info-line">
-              <span>Vouchers: </span>
+              <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о ваучерах"/> {/* Добавлено из код1 */}
+              <img
+                src="/assets/voucher-icon.png"
+                alt="" // Изменено из код1 (пустой alt, так как FaInfoCircle предоставляет инфо)
+                className="info-line-icon"
+              />
+              <span>:</span>
               <span className="info-count">{userVoucherCount}</span>
             </div>
             <div className="info-line">
-              <span>Simplecoins: </span>
+              <FaInfoCircle className="info-tooltip-trigger" aria-label="Информация о симплкоинах"/> {/* Добавлено из код1 */}
+              <img
+                src="/assets/simplecoin-icon.png"
+                alt="" // Изменено из код1 (пустой alt, так как FaInfoCircle предоставляет инфо)
+                className="info-line-icon"
+              />
+              <span>:</span>
               <span className="info-count">{userSimplecoinCount}</span>
             </div>
           </div>

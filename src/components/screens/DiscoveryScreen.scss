@@ -12,74 +12,90 @@
   flex-direction: column;
 }
 
-// --- ОБНОВЛЕННАЯ ШАПКА (из предоставленных изменений) ---
+// --- ОБНОВЛЕННАЯ ШАПКА ---
 .discovery-main-header {
   display: flex;
   margin-top: max(
-    15px, // Из нового блока
-    calc(15px + env(safe-area-inset-top, 0px)) // Из нового блока
+    40px,
+    calc(15px + env(safe-area-inset-top, 0px))
   );
   justify-content: space-between;
-  align-items: flex-start; // ИЗМЕНЕНО: выравнивание по верху для всех блоков в хедере
-  padding: 10px 15px;    // Можно немного увеличить верхний/нижний padding, если нужно больше "воздуха" сверху
+  align-items: flex-start;
+  padding: 10px 20px;
   width: 100%;
   box-sizing: border-box;
   gap: 10px;
 
   .header-left-content {
     display: flex;
-    align-items: center; // Иконка маскота и инфо остаются выровненными по центру друг с другом
+    align-items: center;
     gap: 8px;
-    // Если левый блок должен быть выровнен по верху относительно своего содержимого,
-    // то align-items: flex-start здесь тоже может понадобиться, но обычно align-items: center для группы "иконка + инфо" выглядит лучше.
-    // Сейчас он будет выровнен по верху хедера как группа.
   }
 
   .header-center-content {
     display: flex;
     justify-content: center;
-    align-items: center; // Центрируем рамку внутри этого блока, если она меньше доступного пространства
+    align-items: center;
 
-    .central-info-framed { // Переименовано с .vouchers-display-framed
+    .central-info-framed {
       background: rgba(255, 255, 255, 0.15);
       color: #fff;
-      padding: 6px 10px; // Отступы для двух строк
+      padding: 6px 10px;
       border-radius: 8px;
-      font-size: 0.75em;    // Шрифт чуть меньше для компактности двух строк
+      font-size: 0.75em;
       font-weight: 500;
-      cursor: pointer;
-      display: flex;        // Для расположения строк одна под другой
-      flex-direction: column; // Строки одна под другой
-      align-items: flex-start; // Текст в каждой строке будет начинаться слева
-      gap: 3px;               // Небольшой отступ между строками "Ваучер" и "Симплкоин"
-      transition: background-color 0.2s ease;
+      // cursor: pointer; // УДАЛЕНО согласно новым стилям
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      transition: background-color 0.2s ease; // Оставлено, может быть полезно для общих эффектов
       white-space: nowrap;
 
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-      }
+      // &:hover { // УДАЛЕНО, блок не должен менять фон при наведении согласно новым стилям
+      //   background-color: rgba(255, 255, 255, 0.3);
+      // }
 
       .info-line {
-        // Можно добавить стили для каждой строки, если нужно
-        // Например, display: flex; justify-content: space-between; width: 100%;
-        // Но для простого "Текст : Счетчик" это не обязательно
+        display: flex;
+        align-items: center;
+        width: 100%;
+
+        .info-tooltip-trigger { // Стили для иконки "i" (из новых стилей)
+          font-size: 0.95em;
+          color: rgba(255, 255, 255, 0.7);
+          margin-right: 6px;
+          cursor: help;
+          &:hover {
+            color: rgba(255, 255, 255, 1);
+          }
+        }
+
+        .info-line-icon { // Стили для <img> (ваучер/симплкоин) (из новых стилей)
+          width: 18px;
+          height: 18px;
+          margin-right: 5px;
+          object-fit: contain;
+        }
+
+        // Стили для двоеточия (из новых стилей)
+        span:not(.info-tooltip-trigger):not(.info-line-icon):not(.info-count) {
+          margin-right: 5px;
+        }
       }
 
       .info-count {
-        font-weight: 700;
-        margin-left: 4px;
+        font-weight: 700; // Обновлено согласно новым стилям (удален margin-left)
       }
     }
   }
 
   .header-right-content {
     display: flex;
-    align-items: center; // Иконки внутри этой группы остаются выровненными по центру друг с другом
-    gap: 5px;
-    // Эта группа как целое будет выровнена по верху хедера благодаря align-items: flex-start у .discovery-main-header
+    align-items: center;
+    gap: 10px;
   }
 
-  // Стили для .header-icon-button и других элементов шапки из нового блока
   .header-icon-button {
     background: rgba(255,255,255,0.15);
     border: none;
@@ -103,12 +119,12 @@
     }
     &:hover { background-color: rgba(255, 255, 255, 0.3); }
   }
-  .mascot-profile-button { svg { font-size: 24px; } } // Эта вложенность соответствует новому блоку
+  .mascot-profile-button { svg { font-size: 24px; } }
   .user-info-group { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
   .nickname-frame { background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; padding: 3px 8px; .user-nickname { font-weight: 500; margin: 0; font-size: 0.9em; } }
   .level-xp-progress-wrapper { display: flex; align-items: center; gap: 4px; width: auto; }
   .level-badge { font-size: 0.7em; padding: 2px 5px; border-radius: 3px; background-color: rgba(0, 0, 0, 0.25); color: #ffffff; white-space: nowrap; }
-  .xp-bar-container { width: 40px; height: 10px; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; overflow: hidden; position: relative; .xp-bar-fill { height: 100%; background: #00bfff; border-radius: 5px; transition: width 0.5s ease-in-out; } .xp-bar-text-on-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.6em; color: white; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); white-space: nowrap; } }
+  .xp-bar-container { width: 70px; height: 10px; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; overflow: hidden; position: relative; .xp-bar-fill { height: 100%; background: #00bfff; border-radius: 5px; transition: width 0.5s ease-in-out; } .xp-bar-text-on-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.6em; color: white; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); white-space: nowrap; } }
 
 } // конец .discovery-main-header
 
