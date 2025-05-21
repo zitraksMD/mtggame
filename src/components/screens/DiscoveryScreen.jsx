@@ -136,7 +136,6 @@ const DiscoveryScreen = () => {
               <span className="level-badge current-level-badge">{currentLevel}</span>
               <div className="xp-bar-container">
                 <div className="xp-bar-fill" style={{ width: `${xpProgressPercent}%` }}></div>
-                <span className="xp-bar-text-on-bar">{currentUserXP} / {maxXPForLevel} XP</span>
               </div>
               <span className="level-badge next-level-badge">{nextLevel}</span>
             </div>
