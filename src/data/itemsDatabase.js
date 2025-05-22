@@ -61,9 +61,11 @@ const DIAMOND_COST_START_LEVEL = 50; // Уровень, С которого на
  * @returns {number} Рассчитанное значение характеристики.
  */
 export function calculateItemStat(itemType, statName, rarity, level) {
-    if (level < 1 || level > MAX_ITEM_LEVEL) {
-        level = Math.max(1, Math.min(MAX_ITEM_LEVEL, level));
-    }
+if (typeof level !== 'number' || Number.isNaN(level) || level < 1) {
+    level = 1; // Если уровень не число, NaN, null, undefined или меньше 1, считаем его равным 1
+} else if (level > MAX_ITEM_LEVEL) {
+    level = MAX_ITEM_LEVEL; // Если уровень больше максимального, ограничиваем максимальным
+}
 
     let baseMaxRollM100;
     switch (statName) {

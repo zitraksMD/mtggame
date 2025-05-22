@@ -8,8 +8,11 @@ import CharacterViewer from "../CharacterViewer";
 import ArtifactsPanel from "./ArtifactsPanel";
 import InventoryTabs from "../InventoryTabs";
 import ItemDetailPopup from "../popups/ItemDetailPopup"; // <--- ИСПРАВЬТЕ ПУТЬ ЗДЕСЬ
-import { MAX_ITEM_LEVEL } from '../../data/itemsDatabase.js'; // <<< ДОБАВЛЕНО: для handleUpgradeClick
-
+import { 
+    MAX_ITEM_LEVEL, 
+    getGoldUpgradeCost,     // <<< ДОБАВЬТЕ ЭТО
+    getDiamondUpgradeCost   // <<< И ЭТО
+} from '../../data/itemsDatabase.js'; 
 // --- Логика сортировки ---
 const rarityOrder = { 
     common: 0, 
@@ -145,31 +148,25 @@ const Inventory = ({ setShowForge }) => {
     };
 
     // ИЗМЕНЕНИЕ: alert в handleUpgradeClick использует MAX_ITEM_LEVEL, параметр itemToUpgrade
-    const handleUpgradeClick = (itemToUpgrade) => {
-        console.log(`Попытка улучшить ${itemToUpgrade.name} (ID: ${itemToUpgrade.id}, Level: ${itemToUpgrade.level})`); // Сообщение из "Кода 1"
-        alert(`Улучшение ${itemToUpgrade.name} (Ур. ${itemToUpgrade.level}/${itemToUpgrade.maxLevel || MAX_ITEM_LEVEL}) - логика в разработке!`); // Alert из "Кода 1"
+const handleUpgradeClick = (itemToUpgradeFromPopup) => {
+    if (!itemToUpgradeFromPopup) return;
+    const { upgradeItem } = useGameStore.getState();
+    const success = upgradeItem(itemToUpgradeFromPopup); // Передаем весь объект
 
-        // --- ПРИМЕР (если бы была функция в сторе, из "Кода 2" с небольшими правками) ---
-        // const oldPower = useGameStore.getState().powerLevel;
-        // const { upgradeEquippedItem } = useGameStore.getState(); // Предположим, что upgradeEquippedItem есть
-        // if (upgradeEquippedItem) {
-        //     const success = upgradeEquippedItem(itemToUpgrade.type); // Функция из стора
-        //     if (success) {
-        //         const updatedEquippedItem = useGameStore.getState().equipped[itemToUpgrade.type];
-        //         if (updatedEquippedItem) {
-        //             setSelectedItem(updatedEquippedItem); // Обновляем selectedItem для попапа
-        //         } else {
-        //             setSelectedItem(null); 
-        //         }
-        //         requestAnimationFrame(() => {
-        //             const newPower = useGameStore.getState().powerLevel;
-        //             triggerPowerChangeEffect(oldPower, newPower, Date.now() + '_upgrade');
-        //         });
-        //     } else {
-        //         console.error("Не удалось улучшить предмет");
-        //     }
-        // }
-    };
+    if (success) {
+        let updatedItemInStore;
+        const currentEquipped = useGameStore.getState().equipped;
+        if (currentEquipped[itemToUpgradeFromPopup.type]?.uid === itemToUpgradeFromPopup.uid) {
+            updatedItemInStore = currentEquipped[itemToUpgradeFromPopup.type];
+        } else {
+            updatedItemInStore = useGameStore.getState().inventory.find(invItem => invItem.uid === itemToUpgradeFromPopup.uid);
+        }
+        if (updatedItemInStore) setSelectedItem(updatedItemInStore);
+        else setSelectedItem(null);
+    } else {
+        // alert("Не удалось улучшить предмет.");
+    }
+};
 
     const sortedInventory = useMemo(() => {
         return [...inventory].sort((itemA, itemB) => {
@@ -354,8 +351,10 @@ return (
                     onEquipItem={handleEquip}
                     onUnequipItem={handleUnequip}
                     onUpgradeItem={handleUpgradeClick}
-                    // getGoldUpgradeCost={getGoldUpgradeCost}
-                    // getDiamondUpgradeCost={getDiamondUpgradeCost}
+                    getGoldUpgradeCost={getGoldUpgradeCost}     // Вы уже передаете эти функции
+                    getDiamondUpgradeCost={getDiamondUpgradeCost} // для расчета стоимости
+                    playerGold={gold}      // <<< НОВЫЙ PROP: золото игрока
+                    playerDiamonds={diamonds} 
                 />
             )}
         </AnimatePresence>
