@@ -38,33 +38,36 @@ html, body {
 
 .inventory-power-display {
     display: flex;
-    align-items: baseline; // Выравнивание по базовой линии текста
-    justify-content: center; // Центрируем блок
+    align-items: baseline; // Важно для красивого выравнивания текста "Power:" и больших цифр
+    justify-content: center;
     padding: 8px 15px;
-    margin-top: -15px; // Дополнительное центрирование, если родитель позволяет
-    // gap: 8px; // Пространство между label и value (уже есть margin-right на label)
-    background-color: rgba(10, 15, 40, 0.65); // Слегка темнее фон, чем у секций
+    margin-top: 0; // Как мы установили ранее, отступ управляется gap'ом родителя
+    background-color: rgba(10, 15, 40, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    // width: fit-content; // Чтобы блок был по ширине контента
-    max-width: 280px; // Ограничение ширины, чтобы не растягивался сильно
+    width: 100%; 
+    max-width: 280px; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     text-align: center;
-    flex-shrink: 0; // Чтобы не сжимался, если вокруг много контента
+    flex-shrink: 0;
 
-    .inventory-power-label {
-        font-size: 16px; // Размер шрифта как в GameHeader или чуть больше
+    .inventory-power-label { // Для текста "Power:"
+        font-size: 24px;     // Текущий размер
         font-weight: bold;
-        color: #FFD700; // Золотой цвет, как в GameHeader
-        margin-right: 8px;
-        text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5); // Тень для объема
+        color: #FFD700;      // Текущий золотой цвет, хорошо сочетается с новым счетчиком
+        margin-right: 8px;   // Отступ справа от "Power:"
+        text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5);
+        white-space: nowrap; // Чтобы "Power:" не переносилось, если вдруг что
     }
 
-    .inventory-power-value {
-        font-size: 18px; // Значение можно сделать чуть крупнее
-        font-weight: 700;
-        color: #ffffff; // Белый цвет для значения
-        // text-shadow: 0px 1px 1px rgba(0,0,0,0.3);
+    .inventory-power-value { // Для цифр счетчика
+        // --- ИЗМЕНЕНИЯ ---
+        font-size: 24px;      // Увеличиваем размер шрифта (например, до 28px, настройте по вкусу)
+        font-weight: 700;     // Оставляем жирным
+        color: #FFD700;      // Делаем цифры золотыми
+        line-height: 1;       // Может помочь с вертикальным выравниванием очень крупного текста
+        // text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); // Опционально: легкая тень для объема
+        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
     }
 }
 // --- СТИЛИ ДЛЯ ПЕРЕКЛЮЧЕНИЯ ЛЕЙАУТОВ ---
@@ -75,7 +78,7 @@ html, body {
     margin-top: max(
         70px,
         calc(45px + env(safe-area-inset-top, 0px))
-      ) m !important;
+      ) !important;
     left: 0;
     width: 100%;
     height: 100%;
@@ -95,23 +98,32 @@ html, body {
     margin-top: -5px; // Добавлен отступ сверху
 
     // ===== 1. Секция Персонажа =====
-    .character-section {
-        flex-shrink: 0;
-        width: 100%;
-        max-width: 580px;
-        margin: 0 auto;
-        background-color: rgba(20, 25, 60, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        padding: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        box-sizing: border-box;
+.character-section {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 580px; // Как было у вас
+    margin: 0 auto;   // Горизонтальное центрирование самого блока .character-section
+                      // Вертикальный отступ теперь будет управляться gap'ом родителя .inventory-layout--normal
+    background-color: rgba(20, 25, 60, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 10px;    // Существующий padding
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
 
-        .character-equip {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
+    // --- ДОБАВЛЕННЫЕ СТИЛИ для расположения .character-equip и .inventory-power-display ---
+    display: flex;
+    flex-direction: column; // Располагаем дочерние элементы (экипировка и сила) друг под другом
+    align-items: center;    // Центрируем их по горизонтали
+    gap: 10px; // Отступ между блоком экипировки и блоком силы (настройте по вкусу, можно 15px или 20px)
+    // --- КОНЕЦ ДОБАВЛЕННЫХ СТИЛЕЙ ---
+
+    .character-equip {
+        // Стили для .character-equip остаются прежними
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px; // Как было у вас
 
             .left-column, .right-column {
                 display: flex;
@@ -185,165 +197,233 @@ html, body {
     background-color: rgba(20, 25, 60, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px; 
-    padding: 15px; // Оставляем общий padding
+    padding: 15px; // Общий padding. Табы будут "выезжать" за верхний край этого padding.
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     box-sizing: border-box; 
     
-    // ▼▼▼ КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ▼▼▼
-    overflow: visible; // Позволяем дочерним элементам (табам) выходить за пределы
-    position: relative; // Для корректного z-index дочерних элементов, если потребуется
+    // --- ИЗМЕНЕНИЕ: Позволяем дочерним элементам выходить за пределы ---
+    overflow: visible; 
+    position: relative; // Для z-index и контекста позиционирования дочерних элементов
 
-    // Стили для .inventory-tabs, когда он является ПРЯМЫМ потомком .content-section
-    // (Это делает эффект нависания специфичным для этого места)
-    > .inventory-tabs {
-        // Общие стили для контейнера табов (flex, gap и т.д.) остаются из глобального .inventory-tabs
-        // Стили для эффекта "нависания":
-        position: relative; // Для z-index и корректного позиционирования тени
-        margin-top: -30px;  // Поднимаем блок табов вверх. Это значение нужно будет подобрать.
-                            // Например, если высота табов с их внутренним padding около 50px, 
-                            // то -25px или -30px заставит их "выступать" наполовину.
-        margin-left: auto;    // Центрируем сам блок табов, если он не на всю ширину
-        margin-right: auto;
-        margin-bottom: 20px;  // Отступ снизу от табов до следующего контента 
-                              // (например, .inventory-action-buttons-wrapper)
+    // Стили для корневого элемента компонента InventoryTabs 
+    // (предполагаем, что он имеет класс .inventory-tabs)
+    > .inventory-tabs { 
+        flex-shrink: 0;
+        position: relative; 
+        z-index: 10; // Выше, чтобы перекрывать предыдущий блок при необходимости
 
-        width: fit-content;     // Ширина блока табов по содержимому
-        max-width: 90%;         // Ограничение максимальной ширины
+        // --- ИЗМЕНЕНИЕ: Увеличиваем отрицательный отступ сверху ---
+        // Это значение подбирается. Если padding-top у .content-section = 15px,
+        // а высота самого блока табов с его внутренними отступами ~50-60px,
+        // то margin-top: -40px или -45px заставит его значительно "выйти" вверх.
+        // Например, -40px означает, что верхний край табов будет на 25px (40-15) выше 
+        // верхней границы фона .content-section.
+        margin-top: -40px; 
         
-        background-color: #374151; // Цвет фона для "подиума" табов (подберите под тему)
-                                   // Этот цвет должен быть непрозрачным, чтобы перекрыть фон .content-section
-        padding: 10px 20px 8px 20px;    // Внутренние отступы самого блока табов
-        border-radius: 12px 12px 0 0;   // Скругляем только верхние углы
-        box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.2), // Тень сверху для эффекта "отрыва"
-                    0px 4px 8px rgba(0, 0, 0, 0.15); // Тень снизу
-        z-index: 2; // Чуть выше, чем фон .content-section, но ниже модальных окон
+        margin-left: auto;
+        margin-right: auto;
+        // Отступ снизу до .inventory-action-buttons-wrapper или .inventory-main-area
+        // Можно немного уменьшить, если табы сильно поднялись
+        margin-bottom: 15px; 
 
-        // Стили для самих кнопок-табов внутри этого нависающего блока не меняются,
-        // они берутся из глобального определения .inventory-tabs button
+        width: fit-content;
+        max-width: 90%;
+        
+        // --- ИЗМЕНЕНИЕ: Возвращаем и адаптируем стили "подиума" ---
+        // Адаптируем padding "подиума" под увеличенные кнопки
+        padding: 10px 15px 8px 15px; 
+        border-radius: 10px 10px 0 0; // Скругление верхних углов "подиума" (можно сделать чуть меньше, чем у кнопок)
+        display: flex;
+        justify-content: center;
+        align-items: center; 
+        gap: 0px; // Отступ между кнопками (можно уменьшить, если кнопки стали шире)
+
+        // Стили для самих кнопок-табов
+        button {
+            border: none; 
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+
+            // --- ИЗМЕНЕНИЕ: Делаем кнопки еще немного больше ---
+            padding: 10px 22px; // Например, 10px вертикальный, 22px горизонтальный
+            font-size: 16px;    // Увеличиваем шрифт
+            border-radius: 8px 8px 0 0; // Скругление только верхних углов кнопок
+            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
+            background: #4a5568; 
+            color: #cbd5e0; 
+            box-shadow: inset 0 -2px 0px rgba(0,0,0,0.1);
+
+            &:hover:not(.active) { 
+                background: #5a6578; 
+                color: #fff; 
+            }
+            &:active:not(.active) { 
+                transform: scale(0.97); 
+            }
+
+            &.active { 
+                background: #FFA726; 
+                color: #fff; 
+                box-shadow: 0 -1px 4px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.25); 
+                position: relative; 
+            }
+        }
+    } // Конец > .inventory-tabs
+
+    // --- Кнопки действий (прямой потомок .content-section) ---
+    > .inventory-action-buttons-wrapper {
+        flex-shrink: 0; 
+        width: 100%; 
+        max-width: 400px; 
+        padding: 0 5px; 
+        box-sizing: border-box;
+        margin: 0 auto 15px auto; // Отступы: сверху 0 (т.к. .inventory-tabs уже дал margin-bottom), авто по бокам, 15px снизу
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+
+        .inventory-sort-button, .inventory-forge-button {
+            border-radius: 8px; padding: 6px 15px; font-size: 14px; font-weight: 500;
+            height: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: none;
+            cursor: pointer; transition: background 0.2s ease, transform 0.1s ease;
+            display: inline-flex; align-items: center; justify-content: center; position: relative;
+            &:active { transform: scale(0.97); }
+        }
+        .inventory-sort-button { background-color: #667eea; color: white; &:hover { background-color: #7f8ff5; } }
+        .inventory-forge-button {
+            background-color: #A1887F; color: white; &:hover { background-color: #bcaaa4; }
+            .forge-indicator {
+                position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; font-size: 12px;
+                background-color: #ef4444; color: white; font-weight: bold; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center; line-height: 1;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); pointer-events: none;
+            }
+        }
     }
 
-        // --- Кнопки действий ---
-        .inventory-action-buttons-wrapper {
-            flex-shrink: 0; width: 100%; max-width: 400px; padding: 0 5px; box-sizing: border-box;
-            margin: 0 auto 15px auto; display: flex; justify-content: space-between; align-items: center;
+    // --- Основная область (Статы / Инвентарь) ---
+    // Прямой потомок .content-section
+    > .inventory-main-area {
+        flex-grow: 1; // ЗАНИМАЕТ ВСЁ ОСТАВШЕЕСЯ ПРОСТРАНСТВО по высоте
+        width: 100%;
+        overflow: hidden; // ВАЖНО: для корректного расчета height: 100% у дочернего .inventory-gear-wrapper
+        position: relative; 
+        // display: flex; align-items: center; justify-content: center; // Оставляем, как было в вашем SCSS, для центрирования .stats-panel
+        border-radius: 10px; 
+        background-color: rgba(0, 0, 0, 0.15);
 
-            .inventory-sort-button, .inventory-forge-button {
-                border-radius: 8px; padding: 6px 15px; font-size: 14px; font-weight: 500;
-                height: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: none;
-                cursor: pointer; transition: background 0.2s ease, transform 0.1s ease;
-                display: inline-flex; align-items: center; justify-content: center; position: relative;
-                &:active { transform: scale(0.97); }
+        // Если .stats-panel должен быть по центру, когда .inventory-main-area не flex:
+        // .stats-panel { margin-left: auto; margin-right: auto; }
+        // Но т.к. у вас было display:flex, оставляем его для .inventory-main-area, если нужно центрировать .stats-panel
+         display: flex; 
+         align-items: center; 
+         justify-content: center;
+
+
+        .stats-panel {
+            background-color: transparent; border: none; box-shadow: none;
+            padding: 5px; margin: 0; // margin: 0 здесь, т.к. родитель (.inventory-main-area) центрирует
+            height: auto; 
+            width: 100%; // Будет ограничен max-width
+            max-width: 350px; 
+            overflow-y: auto; 
+            box-sizing: border-box;
+
+            &::-webkit-scrollbar { width: 8px; }
+            &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+            &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+            &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
+
+            p {
+                display: flex; align-items: center; margin: 12px 0; font-size: 16px;
+                &::before { content: attr(data-icon); display: inline-block; font-size: 20px; width: 28px; margin-right: 10px; text-align: center; opacity: 0.9; }
+                .stat-label { flex-grow: 1; color: #a0aec0; }
+                .stat-value { color: #fff; font-weight: 600; margin-left: 10px; }
             }
-            .inventory-sort-button { background-color: #667eea; color: white; &:hover { background-color: #7f8ff5; } }
-            .inventory-forge-button {
-                background-color: #A1887F; color: white; &:hover { background-color: #bcaaa4; }
-                .forge-indicator {
-                    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; font-size: 12px;
-                    background-color: #ef4444; color: white; font-weight: bold; border-radius: 50%;
-                    display: flex; align-items: center; justify-content: center; line-height: 1;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); pointer-events: none;
-                }
+            hr.stats-divider {
+                border: none; height: 1px;
+                background-color: rgba(120, 130, 160, 0.2);
+                margin: 15px 0 10px 0;
             }
-        } // Конец .inventory-action-buttons-wrapper
+            .power-level-value {
+                color: $rarity-color-legendary; 
+                text-shadow: 0 0 5px rgba($rarity-color-legendary, 0.7);
+            }
+        }
 
-        // --- Основная область (Статы / Инвентарь) ---
-        .inventory-main-area {
-            flex-grow: 1; overflow: hidden; width: 100%;
-            border-radius: 10px; background-color: rgba(0, 0, 0, 0.15);
-            position: relative; display: flex; align-items: center; justify-content: center;
+        .inventory-gear-wrapper {
+ height: 100%;           // Должен занимать 100% высоты .inventory-main-area
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        overflow: hidden;       // Обрезает то, что может выйти за пределы
+        min-height: 0;          // <--- САМЫЙ ВАЖНЫЙ ФИКС ДЛЯ ЭТОЙ ПРОБЛЕМЫ!
 
-            // Панель Статов
-            .stats-panel {
-                background-color: transparent; border: none; box-shadow: none;
-                padding: 5px; margin: 0; height: auto; width: 100%;
-                max-width: 350px; overflow-y: auto; box-sizing: border-box;
+            .inventory-scroll-wrapper {
+               flex-grow: 1; 
+            width: 100%; 
+            overflow-y: auto; // Теперь это должно р// Принудительно показать скроллбар
+                        flex-basis: 0;          // Хорошо добавить для flex-grow
 
-                &::-webkit-scrollbar { width: 8px; }
-                &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
-                &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-                &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
+                overflow-x: hidden;
+                padding: 0px; 
+                box-sizing: border-box;
+                margin-bottom: 110px;
 
-                p {
-                    display: flex; align-items: center; margin: 12px 0; font-size: 16px;
-                    &::before { content: attr(data-icon); display: inline-block; font-size: 20px; width: 28px; margin-right: 10px; text-align: center; opacity: 0.9; }
-                    .stat-label { flex-grow: 1; color: #a0aec0; }
-                    .stat-value { color: #fff; font-weight: 600; margin-left: 10px; }
-                }
-                // Разделитель перед силой в статах
-                 hr.stats-divider { // Используем тот же класс, что и в попапе, но стили могут быть другие
-                    border: none; height: 1px;
-                    background-color: rgba(120, 130, 160, 0.2);
-                    margin: 15px 0 10px 0; // Отступы для разделителя в статах
-                 }
-                 // Отдельный стиль для значения силы
-                 .power-level-value {
-                    color: $rarity-color-legendary; // Пример: используем цвет легендарки
-                    text-shadow: 0 0 5px rgba($rarity-color-legendary, 0.7);
-                 }
-            } // Конец .stats-panel
+                 &::-webkit-scrollbar {
+            display: none; // Можно также использовать width: 0; height: 0;
+        }
+        
 
-            // --- Обертка сетки инвентаря ---
-            .inventory-gear-wrapper {
-                height: 100%; display: flex; flex-direction: column; width: 100%; overflow: hidden;
+                .inventory-items {
+                    display: grid !important;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 12px; 
+                    padding: 0; 
+                    width: 100%; 
+                    height: max-content; 
 
-                .inventory-scroll-wrapper {
-                    flex-grow: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
-                    padding: 0px; box-sizing: border-box;
-                    margin-bottom: 15px;
+                    .inventory-item {
+                        width: 100%; padding-bottom: 100%; height: 0; position: relative;
+                        border-radius: 8px; border: 2px solid transparent; background-color: rgba(0, 0, 0, 0.2);
+                        cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
-                    &::-webkit-scrollbar { width: 8px; }
-                    &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
-                    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-                    &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
-
-                    .inventory-items {
-                        display: grid !important; grid-template-columns: repeat(5, 1fr); // 5 колонок
-                        gap: 12px; padding: 0; width: 100%; height: max-content;
-
-                        .inventory-item {
-                            width: 100%; padding-bottom: 100%; height: 0; position: relative;
-                            border-radius: 8px; border: 2px solid transparent; background-color: rgba(0, 0, 0, 0.2);
-                            cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-
-                            img {
-                                position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                                max-width: 75%; max-height: 75%; width: auto; height: auto;
-                                object-fit: contain; display: block;
-                            }
-
-                            .equipped-indicator {
-                                position: absolute; bottom: 2px; right: 2px; width: 18px; height: 18px;
-                                background-color: $rarity-color-legendary; // Индикатор цвета легендарки
-                                color: #000; border-radius: 50%;
-                                font-size: 11px; font-weight: bold; display: flex; align-items: center;
-                                justify-content: center; line-height: 1; box-shadow: 0 0 3px rgba(0,0,0,0.5);
-                                z-index: 2;
-                            }
-
-                            // Стили редкости
-                            &.rarity-common { border-color: $rarity-color-common !important; background: radial-gradient(ellipse at center, lighten($rarity-color-common, 15%), darken($rarity-color-common, 15%)) !important; }
-                            &.rarity-uncommon { border-color: $rarity-color-uncommon !important; background: radial-gradient(ellipse at center, lighten($rarity-color-uncommon, 10%), darken($rarity-color-uncommon, 20%)) !important; }
-                            &.rarity-rare { border-color: $rarity-color-rare !important; background: radial-gradient(ellipse at center, lighten($rarity-color-rare, 10%), darken($rarity-color-rare, 20%)) !important; }
-                            &.rarity-legendary { border-color: $rarity-color-legendary !important; background: radial-gradient(ellipse at center, lighten($rarity-color-legendary, 10%), darken($rarity-color-legendary, 20%)) !important; animation: pulse-legendary 2s infinite ease-in-out; }
-                            &.rarity-mythic { border-color: $rarity-color-mythic !important; background: radial-gradient(ellipse at center, lighten($rarity-color-mythic, 10%), darken($rarity-color-mythic, 20%)) !important; animation: pulse-mythic 1.8s infinite ease-in-out; }
-                            &.rarity-epic { 
-                                border-color: $rarity-color-epic !important; 
-                                background: radial-gradient(ellipse at center, lighten($rarity-color-epic, 10%), darken($rarity-color-epic, 20%)) !important;
-                                // animation: pulse-epic 1.9s infinite ease-in-out; // Если нужна анимация
-                            }
-                            &:hover { border-color: #fff !important; transform: scale(1.03); }
-                        } // Конец .inventory-item
-
-                        .empty-inventory-message {
-                            grid-column: 1 / -1; text-align: center; color: #a0aec0;
-                            padding: 20px; font-style: italic;
+                        img {
+                            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                            max-width: 75%; max-height: 75%; width: auto; height: auto;
+                            object-fit: contain; display: block;
                         }
-                    } // Конец .inventory-items
-                } // Конец .inventory-scroll-wrapper
-            } // Конец .inventory-gear-wrapper
-        } // Конец .inventory-main-area
-    } // ===== Конец .content-section =====
-} // ===== Конец .inventory-layout--normal =====
+                        .equipped-indicator {
+                            position: absolute; bottom: 2px; right: 2px; width: 18px; height: 18px;
+                            background-color: $rarity-color-legendary; 
+                            color: #000; border-radius: 50%;
+                            font-size: 11px; font-weight: bold; display: flex; align-items: center;
+                            justify-content: center; line-height: 1; box-shadow: 0 0 3px rgba(0,0,0,0.5);
+                            z-index: 2;
+                        }
+                        &.rarity-common { border-color: $rarity-color-common !important; background: radial-gradient(ellipse at center, lighten($rarity-color-common, 15%), darken($rarity-color-common, 15%)) !important; }
+                        &.rarity-uncommon { border-color: $rarity-color-uncommon !important; background: radial-gradient(ellipse at center, lighten($rarity-color-uncommon, 10%), darken($rarity-color-uncommon, 20%)) !important; }
+                        &.rarity-rare { border-color: $rarity-color-rare !important; background: radial-gradient(ellipse at center, lighten($rarity-color-rare, 10%), darken($rarity-color-rare, 20%)) !important; }
+                        &.rarity-legendary { border-color: $rarity-color-legendary !important; background: radial-gradient(ellipse at center, lighten($rarity-color-legendary, 10%), darken($rarity-color-legendary, 20%)) !important; animation: pulse-legendary 2s infinite ease-in-out; }
+                        &.rarity-mythic { border-color: $rarity-color-mythic !important; background: radial-gradient(ellipse at center, lighten($rarity-color-mythic, 10%), darken($rarity-color-mythic, 20%)) !important; animation: pulse-mythic 1.8s infinite ease-in-out; }
+                        &.rarity-epic { 
+                            border-color: $rarity-color-epic !important; 
+                            background: radial-gradient(ellipse at center, lighten($rarity-color-epic, 10%), darken($rarity-color-epic, 20%)) !important;
+                        }
+                        &:hover { border-color: #fff !important; transform: scale(1.03); }
+                    }
+                    .empty-inventory-message {
+                        grid-column: 1 / -1; text-align: center; color: #a0aec0;
+                        padding: 20px; font-style: italic;
+                    }
+                }
+            }
+        }
+    }
+}
+}
 
 // ===========================================================
 // === СТИЛИ ДЛЯ ЛЕЙАУТА 2 (Artifacts) ====
