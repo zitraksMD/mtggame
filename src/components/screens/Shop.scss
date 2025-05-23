@@ -145,9 +145,17 @@ $section-content-box-border: rgba(255, 255, 255, 0.1) !default;
     // }
 
     // Общие стили для сеток товаров (Daily Deals, Currency)
-    .daily-shop-grid, .currency-grid { // bundles-grid удален отсюда, т.к. бандлы теперь в карусели
+    .daily-shop-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); // Адаптивные колонки для карточек
+        grid-template-columns: repeat(2, 1fr); // <--- Вот изменение: всегда 2 колонки
+        gap: 15px;                             // Отступ между колонками и рядами
+        width: 100%;
+    }
+
+    // Стили для сетки Валюты (Currency) - остаются адаптивными, как были
+    .currency-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); // Адаптивные колонки
         gap: 15px;
         width: 100%;
 
