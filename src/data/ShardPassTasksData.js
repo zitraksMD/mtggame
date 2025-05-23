@@ -19,12 +19,12 @@
 const generateWeeklyTasks = (weekNumber) => {
     const tasks = [
         {
-            id: `w${weekNumber}_task_login_days`, // ID для задачи на логины
+            id: `w${weekNumber}_task_login_days`,
             name: 'Log in 7 different days',
             targetProgress: 7,
             rewardXP: 250,
             isPremium: false,
-            eventTracked: 'login', // Общее событие входа. Логика уникальности дней будет в store.
+            eventTracked: 'login',
         },
         {
             id: `w${weekNumber}_task_complete_normal`,
@@ -43,8 +43,18 @@ const generateWeeklyTasks = (weekNumber) => {
             isPremium: false,
             eventTracked: 'open_chest',
         },
+        // --- НОВОЕ ЗАДАНИЕ НА УЛУЧШЕНИЕ СНАРЯЖЕНИЯ ---
         {
-            id: `w${weekNumber}_task_upgrade_gear`,
+            id: `w${weekNumber}_task_weekly_gear_upgrades_3`, // Уникальный ID для этого задания
+            name: 'Создать снаряжение 3 раза', // Название задания
+            targetProgress: 3,                        // Цель: 3 улучшения
+            rewardXP: 300,                            // Пример награды XP (можете настроить)
+            isPremium: false,                         // false = бесплатное задание (можете сделать true, если нужно)
+            eventTracked: 'forge_item',             // Отслеживаем событие улучшения снаряжения
+        },
+        // --- КОНЕЦ НОВОГО ЗАДАНИЯ ---
+        {
+            id: `w${weekNumber}_task_upgrade_gear`, // Это ваше существующее премиум-задание на 10 улучшений
             name: 'Upgrade any equipment 10 times',
             targetProgress: 10,
             rewardXP: 400,
@@ -57,7 +67,7 @@ const generateWeeklyTasks = (weekNumber) => {
             targetProgress: 3,
             rewardXP: 500,
             isPremium: true,
-            eventTracked: 'upgrade_artifact',
+            eventTracked: 'upgrade_artifact', // Убедитесь, что у вас есть это событие, если оно отличается от upgrade_gear
         },
         {
             id: `w${weekNumber}_task_complete_hard`,

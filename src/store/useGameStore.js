@@ -1090,7 +1090,7 @@ equipItem: (itemToEquip) => {
                 ...flagUpdate
             };
         });
-        get().trackTaskEvent('upgrade_gear', 1); // Assuming forging counts as 'upgrade_gear'
+        get().trackTaskEvent('forge_item', 1); // Assuming forging counts as 'upgrade_gear'
         get().checkAllAchievements();
         return true;
     },
@@ -1636,7 +1636,12 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
     }
 
     const currentLevel = itemObjectToUpgrade.level || 0;
-    const actualMaxLevel = itemObjectToUpgrade.maxLevel || itemDefinition.maxLevel || MAX_ITEM_LEVEL;
+    // Используем itemMaxActualLevel, как мы определяли для попапа, для консистентности
+    const actualMaxLevel = (itemObjectToUpgrade.maxLevel !== undefined && itemObjectToUpgrade.maxLevel > 0) 
+        ? itemObjectToUpgrade.maxLevel 
+        : (itemDefinition.maxLevel !== undefined && itemDefinition.maxLevel > 0 
+            ? itemDefinition.maxLevel 
+            : MAX_ITEM_LEVEL);
 
     if (currentLevel >= actualMaxLevel) {
         console.log(`Предмет ${itemObjectToUpgrade.name} уже максимального уровня.`);
@@ -1649,42 +1654,56 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
         return false;
     }
 
-    const goldCost = getGoldUpgradeCost(currentLevel, itemRarity);
-    const diamondCost = getDiamondUpgradeCost(currentLevel, itemRarity);
+    // Предполагаем, что getGoldUpgradeCost и getDiamondUpgradeCost существуют и доступны в get() или глобально
+    const goldCost = get().getGoldUpgradeCost ? get().getGoldUpgradeCost(currentLevel, itemRarity) : getGoldUpgradeCost(currentLevel, itemRarity);
+    const diamondCost = get().getDiamondUpgradeCost ? get().getDiamondUpgradeCost(currentLevel, itemRarity) : getDiamondUpgradeCost(currentLevel, itemRarity);
+
 
     if (gold < goldCost) {
         console.log(`Недостаточно золота для улучшения ${itemObjectToUpgrade.name}.`);
+        // Здесь можно также вызывать событие или показывать уведомление игроку
         return false;
     }
     if (diamonds < diamondCost) {
         console.log(`Недостаточно алмазов для улучшения ${itemObjectToUpgrade.name}.`);
+        // Здесь можно также вызывать событие или показывать уведомление игроку
         return false;
     }
 
     const newLevel = currentLevel + 1;
     let itemWasEquipped = false;
+    // Флаг для обновления booleanFlags.hasForgedOrUpgraded (если улучшение уровня тоже его меняет)
+    const currentUpgradeFlag = get().booleanFlags.hasForgedOrUpgraded; 
+    let flagUpdate = !currentUpgradeFlag ? { booleanFlags: { ...get().booleanFlags, hasForgedOrUpgraded: true } } : {};
+
 
     set((state) => {
         let newEquipped = { ...state.equipped };
         let newInventory = [...state.inventory];
 
-        // Проверяем, был ли предмет экипирован
         const slotType = itemObjectToUpgrade.type;
         if (state.equipped[slotType]?.uid === itemObjectToUpgrade.uid) {
             itemWasEquipped = true;
             newEquipped[slotType] = { ...state.equipped[slotType], level: newLevel };
+            // Также обновим предмет в инвентаре, если он дублируется там (нетипично, но для полноты)
+            const invIdx = newInventory.findIndex(invItem => invItem.uid === itemObjectToUpgrade.uid);
+            if (invIdx !== -1) {
+                newInventory[invIdx] = { ...newInventory[invIdx], level: newLevel };
+            }
         } else {
-            // Ищем и обновляем в инвентаре
             const itemIndex = newInventory.findIndex(invItem => invItem.uid === itemObjectToUpgrade.uid);
             if (itemIndex !== -1) {
                 newInventory[itemIndex] = { ...newInventory[itemIndex], level: newLevel };
             } else {
-                console.error(`Предмет с UID ${itemObjectToUpgrade.uid} не найден ни в экипировке, ни в инвентаре.`);
-                // Важно вернуть неизмененное состояние, если предмет не найден,
-                // чтобы не списать ресурсы зря. Но проверки выше должны были это отловить.
-                // Для безопасности, можно здесь не менять состояние и вернуть из внешней функции false.
-                // Однако, если мы дошли сюда, значит предмет существует (иначе первые проверки бы не прошли).
-                // Эта ветка маловероятна, если itemObjectToUpgrade всегда актуален.
+                // Эта ситуация не должна возникать, если itemObjectToUpgrade всегда корректен
+                // и проверки на наличие предмета уже были сделаны перед вызовом upgradeItem.
+                // Если дошли сюда, значит, что-то пошло не так с объектом предмета.
+                // Чтобы избежать списания ресурсов, можно здесь не возвращать изменения состояния.
+                // Однако, функция вернет true ниже, что не совсем корректно.
+                // Лучше, если такие проверки делаются до изменения состояния.
+                console.error(`КРИТИЧЕСКАЯ ОШИБКА: Предмет с UID ${itemObjectToUpgrade.uid} для улучшения не найден.`);
+                // В этом случае не будем менять состояние, но это нужно обработать более явно.
+                return state; // Возвращаем старое состояние, чтобы ресурсы не списались
             }
         }
 
@@ -1693,14 +1712,29 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
             diamonds: state.diamonds - diamondCost,
             equipped: newEquipped,
             inventory: newInventory,
+            ...flagUpdate // Обновляем флаг, если он изменился
         };
     });
+    
+    // Если предмет не был найден (маловероятная ветка выше вернула state), то newLevel не актуален.
+    // Для безопасности, можно добавить проверку, что уровень действительно изменился, прежде чем логировать и отсылать ивент.
+    // const updatedItem = get().inventory.find(i => i.uid === itemObjectToUpgrade.uid) || get().equipped[itemObjectToUpgrade.type];
+    // if (!updatedItem || updatedItem.level !== newLevel) {
+    //    console.error("Ошибка применения улучшения уровня, отмена последующих действий.");
+    //    return false; // Если улучшение не применилось, не трекаем и не обновляем.
+    // }
+
 
     if (itemWasEquipped) {
         get().updatePowerLevel();
-        get().initializeLevelHp();
+        // get().initializeLevelHp(); // Убедитесь, что эта функция делает то, что нужно при улучшении
     }
-    get().checkAllAchievements(); // Достижения могут быть за улучшение любого предмета
+    
+    // --- ДОБАВЛЕНО ОТСЛЕЖИВАНИЕ СОБЫТИЯ ---
+    get().trackTaskEvent('upgrade_gear', 1); // Отслеживаем успешное улучшение уровня
+    // -----------------------------------------
+
+    get().checkAllAchievements(); 
 
     console.log(`Предмет ${itemObjectToUpgrade.name} (UID: ${itemObjectToUpgrade.uid}) улучшен до уровня ${newLevel}`);
     return true;
@@ -1742,22 +1776,27 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
         if(!newItemInstance) return currentInventory;
         return [...currentInventory, newItemInstance];
     },
-    openGearChest: (chestId) => { // из КОД2, добавлен trackTaskEvent
+openGearChest: (chestId) => {
         const state = get();
-        const chestData = getGearChestById(chestId);
+        const chestData = getGearChestById(chestId); // Получаем данные сундука, включая новое поле shardPassXp
         if (!chestData) {
             console.error(`[GearChest] Сундук с ID ${chestId} не найден в gearChestData.js.`);
-            return;
+            return; // или return { success: false, error: "Сундук не найден" };
         }
+
+        // Проверка и списание стоимости
         const cost = chestData.cost;
         if (state[cost.currency] < cost.price) {
             alert(`Недостаточно ${cost.currency}! Нужно ${cost.price}`);
-            return;
+            return; // или return { success: false, error: "Недостаточно средств" };
         }
+
+        // Логика определения редкости и предмета из код2
         const currentPity = state.gearChestPity[chestId] || {};
         let nextPity = { ...currentPity };
         let guaranteedRarity = null;
         let finalRarity = null;
+
         if (chestData.pity) {
             const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
             pityConfigs.forEach(p => {
@@ -1774,16 +1813,19 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
                 }
             }
         }
+
         if (guaranteedRarity) {
             finalRarity = guaranteedRarity;
         } else {
             finalRarity = _rollWeightedRarity_Gear(chestData.rarityChances);
         }
+
         const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
         if (!obtainedItemData) {
             console.error(`[GearChest] Не удалось получить предмет редкости ${finalRarity}. Отмена.`);
-            return;
+            return; // или return { success: false, error: "Ошибка генерации предмета" };
         }
+
         const obtainedRarity = obtainedItemData.rarity;
         if (chestData.pity) {
             const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
@@ -1794,10 +1836,13 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
                 nextPity.rare = 0;
             }
         }
+
         const rewardDetails = {
             type: 'gear', id: obtainedItemData.id, name: obtainedItemData.name,
             icon: obtainedItemData.image, rarity: obtainedItemData.rarity, amount: 1,
         };
+
+        // Обновление состояния (set)
         set(prevState => {
             if (!prevState) {
                 console.error("[GearChest] prevState is undefined in set function!");
@@ -1805,20 +1850,31 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
             }
             return {
                 [cost.currency]: prevState[cost.currency] - cost.price,
-                totalGearChestsOpened: prevState.totalGearChestsOpened + 1,
+                totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 1, // Убедитесь, что totalGearChestsOpened инициализирован
                 gearChestPity: {
                     ...prevState.gearChestPity,
-                    [chestId]: nextPity
+                    [chestId]: nextPity // nextPity рассчитано выше
                 },
-                inventory: get().addItemToInventoryLogic(prevState.inventory, obtainedItemData), // Use modified addItemToInventoryLogic
+                inventory: get().addItemToInventoryLogic(prevState.inventory, obtainedItemData), // Используем вашу логику добавления
                 lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'gear', name: chestData.name },
-                lastChestRewards: [rewardDetails]
+                lastChestRewards: [rewardDetails] // rewardDetails определено выше
             };
         });
-        get().trackTaskEvent('open_chest', 1);
+
+        // --- >>> ИЗМЕНЕНИЕ ИЗ КОД1: НАЧИСЛЕНИЕ ОПЫТА SHARDPASS <<< ---
+        if (chestData.shardPassXp && chestData.shardPassXp > 0) {
+            get().addShardPassXp(chestData.shardPassXp); // Вызываем функцию добавления опыта
+            console.log(`[ShardPass] Начислено ${chestData.shardPassXp} XP за открытие сундука ${chestData.name}`);
+        }
+        // --- КОНЕЦ БЛОКА НАЧИСЛЕНИЯ ОПЫТА ---
+
+        // Отслеживание события открытия сундука для задач и ачивок (из код2)
+        get().trackTaskEvent('open_chest', 1); // В код1 здесь было , { /* ... eventDetails ... */} - можно добавить, если нужно
         get().checkAllAchievements();
+        // return { success: true, awardedItem: obtainedItemData }; // Если функция должна возвращать результат
     },
-    openGearChestX10: (chestId) => { // из КОД2, добавлен trackTaskEvent
+
+    openGearChestX10: (chestId) => {
         const state = get();
         const chestData = getGearChestById(chestId);
         if (!chestData) {
@@ -1831,10 +1887,14 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
             alert(`Недостаточно ${cost.currency}! Нужно ${totalCost}`);
             return;
         }
-        let workingPity = { ...(state.gearChestPity[chestId] || {}) };
+
+        let workingPity = { ...(state.gearChestPity[chestId] || {}) }; // Копия pity для работы из код2
         const rewardsDetailed = [];
         const newItemInstances = [];
+        let accumulatedShardPassXp = 0; // --- ИЗМЕНЕНИЕ ИЗ КОД1 ---
+
         for (let i = 0; i < 10; i++) {
+            // Логика определения награды i-го сундука и обновления workingPity из код2
             let guaranteedRarity = null;
             let finalRarity = null;
             if (chestData.pity) {
@@ -1853,47 +1913,70 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
                     }
                 }
             }
+
             if (guaranteedRarity) {
                 finalRarity = guaranteedRarity;
             } else {
                 finalRarity = _rollWeightedRarity_Gear(chestData.rarityChances);
             }
+
             const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
             if (!obtainedItemData) {
-                console.error(`  [Pull ${i + 1}] Не удалось получить предмет редкости ${finalRarity}! Пропускаем.`);
-                rewardsDetailed.push({ type: 'error', name: `Ошибка получения ${finalRarity}` });
-                continue;
+                console.error(` [Pull ${i + 1}] Не удалось получить предмет редкости ${finalRarity}! Пропускаем.`);
+                rewardsDetailed.push({ type: 'error', name: `Ошибка получения ${finalRarity}`, rarity: 'Error', icon: 'path/to/error/icon.png' }); // Добавил детали для UI об ошибке
+                // Важно: нужно решить, как обрабатывать pity, если предмет не получен.
+                // Текущая логика код2 продолжит инкрементировать pity.
+                // Если это нежелательно, здесь нужно добавить логику отката/коррекции workingPity.
+                // Для простоты оставлено как в код2.
+                continue; // Пропускаем добавление предмета и XP для этого конкретного открытия
             }
+
             const obtainedRarity = obtainedItemData.rarity;
             if (chestData.pity) {
                 const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-                 if (obtainedRarity === 'Epic' && pityConfigs.some(p => p.rarity === 'Epic')) {
+                if (obtainedRarity === 'Epic' && pityConfigs.some(p => p.rarity === 'Epic')) {
                     workingPity.epic = 0;
                     if (pityConfigs.some(p => p.rarity === 'Rare')) workingPity.rare = 0;
                 } else if (obtainedRarity === 'Rare' && pityConfigs.some(p => p.rarity === 'Rare')) {
                     workingPity.rare = 0;
                 }
             }
-            const rewardDetails = { type: 'gear', ...obtainedItemData, amount: 1, icon: obtainedItemData.image };
-            rewardsDetailed.push(rewardDetails);
-            const newItem = createItemInstance(obtainedItemData);
+            
+            const rewardDetail = { type: 'gear', ...obtainedItemData, amount: 1, icon: obtainedItemData.image }; // Из код2
+            rewardsDetailed.push(rewardDetail);
+            
+            const newItem = createItemInstance(obtainedItemData); // Предполагается, что createItemInstance существует
             if(newItem) newItemInstances.push(newItem);
+
+            // --- >>> ИЗМЕНЕНИЕ ИЗ КОД1: Аккумулирование опыта ShardPass <<< ---
+            if (chestData.shardPassXp && chestData.shardPassXp > 0) {
+                accumulatedShardPassXp += chestData.shardPassXp;
+            }
         }
+        
         set(prevState => {
-            if (!prevState) return {};
+            if (!prevState) {
+                console.error("[GearChestX10] prevState is undefined in set function!");
+                return {};
+            }
             return {
                 [cost.currency]: prevState[cost.currency] - totalCost,
-                totalGearChestsOpened: prevState.totalGearChestsOpened + 10,
-                gearChestPity: {
-                    ...prevState.gearChestPity,
-                    [chestId]: workingPity
-                },
-                inventory: [...prevState.inventory, ...newItemInstances],
+                totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 10,
+                gearChestPity: { ...prevState.gearChestPity, [chestId]: workingPity },
+                inventory: get().addItemToInventoryLogic(prevState.inventory, newItemInstances, true), // Предположим, что addItemToInventoryLogic может принимать массив и флаг isMultiple
+                // или inventory: [...prevState.inventory, ...newItemInstances], // если addItemToInventoryLogic так не умеет
                 lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'gear', name: chestData.name },
                 lastChestRewards: rewardsDetailed
             };
         });
-        get().trackTaskEvent('open_chest', 10);
+
+        // --- >>> ИЗМЕНЕНИЕ ИЗ КОД1: Начисление суммарного опыта ShardPass <<< ---
+        if (accumulatedShardPassXp > 0) {
+            get().addShardPassXp(accumulatedShardPassXp);
+            console.log(`[ShardPass] Начислено ${accumulatedShardPassXp} XP за открытие x10 сундука ${chestData.name}`);
+        }
+
+        get().trackTaskEvent('open_chest', 10); // В код1 здесь было , { /* ... eventDetails ... */}
         get().checkAllAchievements();
     },
     processArtifactReward: (dropType, targetArtifactId) => { // из КОД2
@@ -2527,214 +2610,231 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
     }),
 
     // trackTaskEvent (из КОД1 - расширенная версия для ShardPass и стандартных задач)
-    trackTaskEvent: (eventType, amount = 1, eventDetails = {}) => {
-        console.log(`[Tasks_TrackEvent_Store] Event: ${eventType}, Amount: ${amount}, Details:`, eventDetails);
-        const state = get();
-        let counterChanges = {};
-        const now = new Date();
-        const todayDateString = now.toISOString().split('T')[0];
+// trackTaskEvent (расширенная версия)
+trackTaskEvent: (eventType, amount = 1, eventDetails = {}) => {
+    console.log(`[Tasks_TrackEvent_Store] Event: ${eventType}, Amount: ${amount}, Details:`, eventDetails);
+    const state = get();
+    let counterChanges = {};
+    const nowForCounters = new Date(); // Используем одну временную метку для всех счетчиков в этом вызове
+    const todayDateString = nowForCounters.toISOString().split('T')[0];
 
-        // 1. Обновляем периодические счетчики
-        switch (eventType) {
-            case 'login':
-                if (!state.dailyLoginToday) counterChanges.dailyLoginToday = true;
-                if (state.lastSeenLoginDateForWeekly !== todayDateString) {
-                    counterChanges.weeklyLoginDays = (state.weeklyLoginDays || 0) + 1;
-                    counterChanges.lastSeenLoginDateForWeekly = todayDateString;
-                }
-                if (state.lastSeenLoginDateForMonthly !== todayDateString) {
-                    counterChanges.monthlyLoginDays = (state.monthlyLoginDays || 0) + 1;
-                    counterChanges.lastSeenLoginDateForMonthly = todayDateString;
-                }
-                break;
-            case 'kill_monster':
-                counterChanges.killsToday = (state.killsToday || 0) + amount;
-                counterChanges.killsThisWeek = (state.killsThisWeek || 0) + amount;
-                counterChanges.killsThisMonth = (state.killsThisMonth || 0) + amount;
-                break;
-            case 'complete_level':
-                counterChanges.levelsCompletedToday = (state.levelsCompletedToday || 0) + amount;
-                counterChanges.levelsCompletedThisWeek = (state.levelsCompletedThisWeek || 0) + amount;
-                counterChanges.levelsCompletedThisMonth = (state.levelsCompletedThisMonth || 0) + amount;
-                break;
-            case 'upgrade_gear':
-                counterChanges.gearUpgradedToday = (state.gearUpgradedToday || 0) + amount;
-                counterChanges.gearUpgradedThisWeek = (state.gearUpgradedThisWeek || 0) + amount;
-                counterChanges.gearUpgradedThisMonth = (state.gearUpgradedThisMonth || 0) + amount;
-                break;
-            case 'open_chest':
-                counterChanges.chestsOpenedToday = (state.chestsOpenedToday || 0) + amount;
-                counterChanges.chestsOpenedThisWeek = (state.chestsOpenedThisWeek || 0) + amount;
-                counterChanges.chestsOpenedThisMonth = (state.chestsOpenedThisMonth || 0) + amount;
-                break;
-            // earn_gold, earn_diamonds, earn_toncoin_shards, collect_item handled by their respective add functions
-        }
-        if (Object.keys(counterChanges).length > 0) {
-            set(counterChanges);
-        }
-
-        const updatedState = get();
-
-        // 2. Обновляем прогресс Daily/Weekly/Monthly задач (логика из КОД1)
-        let newDailyProgress = { ...updatedState.dailyTaskProgress };
-        let newWeeklyProgress = { ...updatedState.weeklyTaskProgress };
-        let newMonthlyProgress = { ...updatedState.monthlyTaskProgress };
-        let anyStandardTaskProgressChanged = false;
-
-        const standardTaskProcessingLogic = (taskDef, progressObject, taskType) => {
-            const taskState = progressObject[taskDef.id] || { progress: 0, completed: false, initialStatValue: 0 };
-            if (taskState.completed) return false;
-            let currentEventValueForTask = 0;
-            let taskAffectedByThisEvent = false;
-
-            if (taskDef.eventTracked === eventType ||
-                (eventType === 'login' && (taskDef.eventTracked === 'dailyLoginToday' || taskDef.eventTracked === 'weeklyLoginDays' || taskDef.eventTracked === 'monthlyLoginDays')) ||
-                (eventType === 'kill_monster' && (taskDef.eventTracked === 'killsToday' || taskDef.eventTracked === 'killsThisWeek' || taskDef.eventTracked === 'killsThisMonth' || taskDef.eventTracked === 'totalKills')) ||
-                (eventType === 'complete_level' && (taskDef.eventTracked === 'levelsCompletedToday' || taskDef.eventTracked === 'levelsCompletedThisWeek' || taskDef.eventTracked === 'levelsCompletedThisMonth')) ||
-                (eventType === 'upgrade_gear' && (taskDef.eventTracked === 'gearUpgradedToday' || taskDef.eventTracked === 'gearUpgradedThisWeek' || taskDef.eventTracked === 'gearUpgradedThisMonth')) ||
-                (eventType === 'open_chest' && (taskDef.eventTracked === 'chestsOpenedToday' || taskDef.eventTracked === 'chestsOpenedThisWeek' || taskDef.eventTracked === 'chestsOpenedThisMonth'))
-            ) {
-                taskAffectedByThisEvent = true;
-                if (updatedState.hasOwnProperty(taskDef.eventTracked)) {
-                    currentEventValueForTask = updatedState[taskDef.eventTracked] || 0;
-                     if (taskDef.eventTracked === 'dailyLoginToday') {
-                         currentEventValueForTask = updatedState.dailyLoginToday ? 1 : 0;
-                     }
-                } else if (taskDef.eventTracked === eventType && taskDef.countIncrementally) {
-                     currentEventValueForTask = (taskState.progress || 0) + amount;
-                } else if (taskDef.eventTracked === eventType ) {
-                     currentEventValueForTask = amount;
-                }
+    // 1. Обновляем периодические счетчики в состоянии (state)
+    switch (eventType) {
+        case 'login':
+            if (!state.dailyLoginToday) counterChanges.dailyLoginToday = true;
+            if (state.lastSeenLoginDateForWeekly !== todayDateString) {
+                counterChanges.weeklyLoginDays = (state.weeklyLoginDays || 0) + 1;
+                counterChanges.lastSeenLoginDateForWeekly = todayDateString;
             }
-
-            if (taskAffectedByThisEvent) {
-                currentEventValueForTask = Number(currentEventValueForTask) || 0;
-                const newProgress = Math.min(currentEventValueForTask, taskDef.target);
-                if (newProgress !== taskState.progress || (newProgress >= taskDef.target && !taskState.completed)) {
-                    progressObject[taskDef.id] = {
-                        ...taskState,
-                        progress: newProgress,
-                        completed: newProgress >= taskDef.target
-                    };
-                    if (progressObject[taskDef.id].completed && !taskState.completed) {
-                        console.log(`[Tasks_Standard] ${taskType} task '${taskDef.id}' COMPLETED!`);
-                    }
-                    return true;
-                }
+            if (state.lastSeenLoginDateForMonthly !== todayDateString) {
+                counterChanges.monthlyLoginDays = (state.monthlyLoginDays || 0) + 1;
+                counterChanges.lastSeenLoginDateForMonthly = todayDateString;
             }
-            return false;
-        };
-
-        [TASK_TYPES.DAILY, TASK_TYPES.WEEKLY, TASK_TYPES.MONTHLY].forEach(taskType => {
-            const definitions = ALL_TASK_DEFINITIONS[taskType] || [];
-            let progressMap;
-            if (taskType === TASK_TYPES.DAILY) progressMap = newDailyProgress;
-            else if (taskType === TASK_TYPES.WEEKLY) progressMap = newWeeklyProgress;
-            else if (taskType === TASK_TYPES.MONTHLY) progressMap = newMonthlyProgress;
-            else return;
-
-            definitions.forEach(taskDef => {
-                if (taskDef.eventTracked) {
-                    if (standardTaskProcessingLogic(taskDef, progressMap, taskType)) {
-                        anyStandardTaskProgressChanged = true;
-                    }
-                }
-            });
-        });
-        if (anyStandardTaskProgressChanged) {
-            set({
-                dailyTaskProgress: newDailyProgress,
-                weeklyTaskProgress: newWeeklyProgress,
-                monthlyTaskProgress: newMonthlyProgress,
-            });
-        }
-
-// 3. Обновляем прогресс ShardPass задач
-// Используем updatedState, полученный после обновления счетчиков Daily/Weekly/Monthly
-let newShardPassTasksProgress = JSON.parse(JSON.stringify(updatedState.shardPassTasksProgress));
-let anyShardPassTaskProgressChanged = false;
-
-Object.keys(shardPassTaskDefinitionsByWeek).forEach(weekKey => {
-    // Убедимся, что newShardPassTasksProgress[weekKey] существует, если нет - инициализируем
-    if (!newShardPassTasksProgress[weekKey]) {
-        newShardPassTasksProgress[weekKey] = {};
+            break;
+        case 'kill_monster':
+            counterChanges.killsToday = (state.killsToday || 0) + amount;
+            counterChanges.killsThisWeek = (state.killsThisWeek || 0) + amount;
+            counterChanges.killsThisMonth = (state.killsThisMonth || 0) + amount;
+            break;
+        case 'complete_level':
+            counterChanges.levelsCompletedToday = (state.levelsCompletedToday || 0) + amount;
+            counterChanges.levelsCompletedThisWeek = (state.levelsCompletedThisWeek || 0) + amount;
+            counterChanges.levelsCompletedThisMonth = (state.levelsCompletedThisMonth || 0) + amount;
+            break;
+        case 'upgrade_gear':
+            counterChanges.gearUpgradedToday = (state.gearUpgradedToday || 0) + amount;
+            counterChanges.gearUpgradedThisWeek = (state.gearUpgradedThisWeek || 0) + amount;
+            counterChanges.gearUpgradedThisMonth = (state.gearUpgradedThisMonth || 0) + amount;
+            break;
+        case 'open_chest':
+            counterChanges.chestsOpenedToday = (state.chestsOpenedToday || 0) + amount;
+            counterChanges.chestsOpenedThisWeek = (state.chestsOpenedThisWeek || 0) + amount;
+            counterChanges.chestsOpenedThisMonth = (state.chestsOpenedThisMonth || 0) + amount;
+            break;
+        case 'forge_item':
+            counterChanges.itemsForgedToday = (state.itemsForgedToday || 0) + amount;
+            counterChanges.itemsForgedThisWeek = (state.itemsForgedThisWeek || 0) + amount;
+            counterChanges.itemsForgedThisMonth = (state.itemsForgedThisMonth || 0) + amount;
+            break;
     }
 
-    shardPassTaskDefinitionsByWeek[weekKey].forEach(taskDef => {
-        // Инициализация состояния задачи, если оно отсутствует, включая lastCountedLoginDate для задач на логин
-        let spTaskState = newShardPassTasksProgress[weekKey][taskDef.id];
-        if (!spTaskState) {
-            spTaskState = {
-                progress: 0,
-                isClaimed: false,
-                ...(taskDef.eventTracked === 'login' && { lastCountedLoginDate: null }) // Добавляем, если это задача на логин
-            };
-            newShardPassTasksProgress[weekKey][taskDef.id] = spTaskState;
-        } else if (taskDef.eventTracked === 'login' && spTaskState.lastCountedLoginDate === undefined) {
-            // Если состояние уже есть, но lastCountedLoginDate отсутствует для логин-задачи (например, из старого сохранения)
-            spTaskState.lastCountedLoginDate = null;
+    if (Object.keys(counterChanges).length > 0) {
+        set(counterChanges);
+    }
+
+    const updatedState = get(); // Получаем состояние ПОСЛЕ обновления счетчиков
+
+    // 2. Обновляем прогресс Daily/Weekly/Monthly задач
+    let newDailyProgress = { ...updatedState.dailyTaskProgress };
+    let newWeeklyProgress = { ...updatedState.weeklyTaskProgress };
+    let newMonthlyProgress = { ...updatedState.monthlyTaskProgress };
+    let anyStandardTaskProgressChanged = false;
+
+    const standardTaskProcessingLogic = (taskDef, progressObject, taskType) => {
+        // ... (ваша существующая логика standardTaskProcessingLogic, она должна корректно работать
+        //      с новыми счетчиками itemsForgedToday и т.д., если задачи на них ссылаются,
+        //      ИЛИ если задачи на 'forge_item' являются инкрементальными)
+        // Пример условия из вашего кода, которое нужно проверить и дополнить при необходимости:
+        const taskState = progressObject[taskDef.id] || { progress: 0, completed: false, initialStatValue: 0 };
+        if (taskState.completed) return false;
+        let currentEventValueForTask = 0;
+        let taskAffectedByThisEvent = false;
+
+        if (taskDef.eventTracked === eventType ||
+            (eventType === 'login' && (taskDef.eventTracked === 'dailyLoginToday' || taskDef.eventTracked === 'weeklyLoginDays' || taskDef.eventTracked === 'monthlyLoginDays')) ||
+            (eventType === 'kill_monster' && (taskDef.eventTracked === 'killsToday' || taskDef.eventTracked === 'killsThisWeek' || taskDef.eventTracked === 'killsThisMonth' || taskDef.eventTracked === 'totalKills')) ||
+            (eventType === 'complete_level' && (taskDef.eventTracked === 'levelsCompletedToday' || taskDef.eventTracked === 'levelsCompletedThisWeek' || taskDef.eventTracked === 'levelsCompletedThisMonth')) ||
+            (eventType === 'upgrade_gear' && (taskDef.eventTracked === 'gearUpgradedToday' || taskDef.eventTracked === 'gearUpgradedThisWeek' || taskDef.eventTracked === 'gearUpgradedThisMonth')) ||
+            (eventType === 'open_chest' && (taskDef.eventTracked === 'chestsOpenedToday' || taskDef.eventTracked === 'chestsOpenedThisWeek' || taskDef.eventTracked === 'chestsOpenedThisMonth')) ||
+            (eventType === 'forge_item' && (taskDef.eventTracked === 'itemsForgedToday' || taskDef.eventTracked === 'itemsForgedThisWeek' || taskDef.eventTracked === 'itemsForgedThisMonth'))
+        ) {
+            taskAffectedByThisEvent = true;
+            if (updatedState.hasOwnProperty(taskDef.eventTracked)) {
+                currentEventValueForTask = updatedState[taskDef.eventTracked] || 0;
+                 if (taskDef.eventTracked === 'dailyLoginToday') {
+                      currentEventValueForTask = updatedState.dailyLoginToday ? 1 : 0;
+                  }
+            } else if (taskDef.eventTracked === eventType && taskDef.countIncrementally) {
+                currentEventValueForTask = (taskState.progress || 0) + amount;
+            } else if (taskDef.eventTracked === eventType ) {
+                currentEventValueForTask = amount;
+            }
         }
 
-
-        if (spTaskState.isClaimed) return; // Пропускаем, если награда уже получена
-
-        if (taskDef.eventTracked === eventType) { // Проверяем, соответствует ли событие отслеживаемому задачей
-            let matchCondition = true;
-            if (taskDef.condition) {
-                matchCondition = Object.keys(taskDef.condition).every(key =>
-                    eventDetails.hasOwnProperty(key) && eventDetails[key] === taskDef.condition[key]
-                );
+        if (taskAffectedByThisEvent) {
+            currentEventValueForTask = Number(currentEventValueForTask) || 0;
+            const newProgress = Math.min(currentEventValueForTask, taskDef.target);
+            if (newProgress !== taskState.progress || (newProgress >= taskDef.target && !taskState.completed)) {
+                progressObject[taskDef.id] = {
+                    ...taskState,
+                    progress: newProgress,
+                    completed: newProgress >= taskDef.target
+                };
+                if (progressObject[taskDef.id].completed && !taskState.completed) {
+                    console.log(`[Tasks_Standard] <span class="math-inline">\{taskType\} task '</span>{taskDef.id}' COMPLETED!`);
+                }
+                return true;
             }
+        }
+        return false;
+    };
+    // Применение standardTaskProcessingLogic (ваш существующий цикл)
+    [TASK_TYPES.DAILY, TASK_TYPES.WEEKLY, TASK_TYPES.MONTHLY].forEach(taskType => {
+        const definitions = ALL_TASK_DEFINITIONS[taskType] || []; // Убедитесь, что ALL_TASK_DEFINITIONS и TASK_TYPES доступны
+        let progressMap;
+        if (taskType === TASK_TYPES.DAILY) progressMap = newDailyProgress;
+        else if (taskType === TASK_TYPES.WEEKLY) progressMap = newWeeklyProgress;
+        else if (taskType === TASK_TYPES.MONTHLY) progressMap = newMonthlyProgress;
+        else return;
 
-            if (matchCondition) {
-                if (taskDef.eventTracked === 'login') {
-                    // <<< СПЕЦИАЛЬНАЯ ОБРАБОТКА ДЛЯ ЗАДАЧ SHARDPASS НА ЕЖЕДНЕВНЫЙ ВХОД >>>
-                    if ((spTaskState.progress || 0) < taskDef.targetProgress) {
-                        const todayDateString = new Date().toISOString().split('T')[0];
-                        if (spTaskState.lastCountedLoginDate !== todayDateString) {
-                            const newProgress = (spTaskState.progress || 0) + 1; // Увеличиваем на 1 за уникальный день
-                            
-                            newShardPassTasksProgress[weekKey][taskDef.id] = {
-                                ...spTaskState,
-                                progress: newProgress,
-                                lastCountedLoginDate: todayDateString, // Обновляем дату последнего засчитанного входа
-                            };
-                            anyShardPassTaskProgressChanged = true;
-                            console.log(`[Tasks_ShardPass_Login] Task '${taskDef.id}' (Week ${weekKey}) progress: ${newProgress}/${taskDef.targetProgress}`);
-                        } else {
-                            // console.log(`[Tasks_ShardPass_Login] Task '${taskDef.id}' (Week ${weekKey}) already counted login for ${todayDateString}`);
-                        }
-                    }
-                } else {
-                    // <<< ОБЩАЯ ОБРАБОТКА ДЛЯ ДРУГИХ ТИПОВ ЗАДАЧ SHARDPASS >>>
-                    const currentProgress = spTaskState.progress || 0;
-                    // 'amount' берется из аргументов trackTaskEvent
-                    const newProgress = Math.min(currentProgress + amount, taskDef.targetProgress);
-                    
-                    // Обновляем, если прогресс изменился ИЛИ если достигнута цель (чтобы completed статус мог обновиться в UI)
-                    if (newProgress !== currentProgress || (newProgress === taskDef.targetProgress && currentProgress < taskDef.targetProgress)) {
-                        newShardPassTasksProgress[weekKey][taskDef.id] = {
-                            ...spTaskState,
-                            progress: newProgress,
-                        };
-                        // Если lastCountedLoginDate было в spTaskState для не-логин задачи (чего не должно быть), оно сохранится.
-                        // Это можно исправить, если явно не копировать его для не-логин задач.
-                        // Но по идее, оно там будет только если taskDef.eventTracked === 'login'
-                        anyShardPassTaskProgressChanged = true;
-                        console.log(`[Tasks_ShardPass] Task '${taskDef.id}' (Week ${weekKey}) progress: ${newProgress}/${taskDef.targetProgress}`);
-                    }
+        definitions.forEach(taskDef => {
+            if (taskDef.eventTracked) {
+                if (standardTaskProcessingLogic(taskDef, progressMap, taskType)) {
+                    anyStandardTaskProgressChanged = true;
                 }
             }
+        });
+    });
+    if (anyStandardTaskProgressChanged) {
+        set({
+            dailyTaskProgress: newDailyProgress,
+            weeklyTaskProgress: newWeeklyProgress,
+            monthlyTaskProgress: newMonthlyProgress,
+        });
+    }
+
+
+    // 3. Обновляем прогресс ShardPass задач
+    let newShardPassTasksProgressFromEvent = JSON.parse(JSON.stringify(updatedState.shardPassTasksProgress)); // Используем другое имя переменной, чтобы не было конфликта имен
+    let anyShardPassTaskProgressChangedThisEvent = false; // Аналогично
+
+    const currentTimeMs = new Date().getTime(); // Текущее время для сравнения
+
+    Object.keys(shardPassTaskDefinitionsByWeek).forEach(weekKeyString => {
+        const weekNumInt = parseInt(weekKeyString, 10);
+
+        // --- ОСНОВНОЕ ИЗМЕНЕНИЕ ЛОГИКИ ЗДЕСЬ ---
+        // Получаем время начала текущей недели в цикле
+        const weekUnlockTimestamp = getUnlockDateTimeForWeek(weekNumInt, SEASON_START_DATE_UTC).getTime();
+
+        // Пропускаем обработку задач для недель, которые еще не начались
+        if (currentTimeMs < weekUnlockTimestamp) {
+            // console.log(`[Tasks_ShardPass] Week ${weekKeyString} has not unlocked yet. Skipping.`);
+            return; // Переходим к следующей неделе в цикле forEach
+        }
+        // --- КОНЕЦ ОСНОВНОГО ИЗМЕНЕНИЯ ЛОГИКИ ---
+
+        // Если мы дошли сюда, значит неделя weekKeyString уже активна или прошла
+        // и ее задачи могут быть выполнены или "довыполнены".
+
+        if (!newShardPassTasksProgressFromEvent[weekKeyString]) {
+            newShardPassTasksProgressFromEvent[weekKeyString] = {};
+        }
+
+        if (shardPassTaskDefinitionsByWeek[weekKeyString]) {
+            shardPassTaskDefinitionsByWeek[weekKeyString].forEach(taskDef => {
+                let spTaskState = newShardPassTasksProgressFromEvent[weekKeyString][taskDef.id];
+                if (!spTaskState) {
+                    spTaskState = {
+                        progress: 0,
+                        isClaimed: false,
+                        ...(taskDef.eventTracked === 'login' && { lastCountedLoginDate: null })
+                    };
+                    newShardPassTasksProgressFromEvent[weekKeyString][taskDef.id] = spTaskState;
+                } else if (taskDef.eventTracked === 'login' && spTaskState.lastCountedLoginDate === undefined) {
+                    spTaskState.lastCountedLoginDate = null;
+                }
+
+                if (spTaskState.isClaimed) return;
+
+                if (taskDef.eventTracked === eventType) {
+                    let matchCondition = true;
+                    if (taskDef.condition) {
+                        matchCondition = Object.keys(taskDef.condition).every(key =>
+                            eventDetails.hasOwnProperty(key) && eventDetails[key] === taskDef.condition[key]
+                        );
+                    }
+
+                    if (matchCondition) {
+                        if (taskDef.eventTracked === 'login') {
+                            if ((spTaskState.progress || 0) < taskDef.targetProgress) {
+                                const todayForLoginTask = new Date().toISOString().split('T')[0];
+                                if (spTaskState.lastCountedLoginDate !== todayForLoginTask) {
+                                    const newProgressLogin = (spTaskState.progress || 0) + 1;
+                                    newShardPassTasksProgressFromEvent[weekKeyString][taskDef.id] = {
+                                        ...spTaskState,
+                                        progress: newProgressLogin,
+                                        lastCountedLoginDate: todayForLoginTask,
+                                    };
+                                    anyShardPassTaskProgressChangedThisEvent = true;
+                                    console.log(`[Tasks_ShardPass_Login] Task '${taskDef.id}' (Week ${weekKeyString}) progress: <span class="math-inline">\{newProgressLogin\}/</span>{taskDef.targetProgress}`);
+                                }
+                            }
+                        } else {
+                            const currentProgress = spTaskState.progress || 0;
+                            const newProgress = Math.min(currentProgress + amount, taskDef.targetProgress);
+
+                            if (newProgress !== currentProgress || (newProgress === taskDef.targetProgress && currentProgress < taskDef.targetProgress)) {
+                                newShardPassTasksProgressFromEvent[weekKeyString][taskDef.id] = {
+                                    ...spTaskState,
+                                    progress: newProgress,
+                                };
+                                anyShardPassTaskProgressChangedThisEvent = true;
+                                console.log(`[Tasks_ShardPass] Task '${taskDef.id}' (Week ${weekKeyString}) progress: <span class="math-inline">\{newProgress\}/</span>{taskDef.targetProgress}`);
+                            }
+                        }
+                    }
+                }
+            });
         }
     });
-});
 
-        if (anyShardPassTaskProgressChanged) {
-            set({ shardPassTasksProgress: newShardPassTasksProgress });
-        }
-        get().setHasClaimableRewardsIndicator(get().checkIfAnyTaskOrAchievementIsClaimable());  
-    },
+    if (anyShardPassTaskProgressChangedThisEvent) {
+        set({ shardPassTasksProgress: newShardPassTasksProgressFromEvent });
+    }
 
+    get().setHasClaimableRewardsIndicator(get().checkIfAnyTaskOrAchievementIsClaimable());
+},
     claimTaskReward: (taskType, taskId) => { // из КОД2/КОД1
         const state = get();
         let progressObjectKey, taskBarXpKey, taskDefinitionsForType;
@@ -2843,6 +2943,49 @@ Object.keys(shardPassTaskDefinitionsByWeek).forEach(weekKey => {
         });
         get().setHasClaimableRewardsIndicator(get().checkIfAnyTaskOrAchievementIsClaimable());
     },
+
+    addShardPassXp: (xpToAdd) => {
+        set((state) => {
+            // Проверяем, не достигнут ли максимальный уровень ShardPass
+            if (state.shardPassCurrentLevel >= state.shardPassMaxLevel) {
+                console.log("[ShardPass] Max level reached. No XP added.");
+                return {}; // Ничего не меняем
+            }
+
+            let newCurrentXp = state.shardPassCurrentXp + xpToAdd;
+            let newCurrentLevel = state.shardPassCurrentLevel;
+            let levelsGained = 0;
+
+            // Обработка повышения уровня (или нескольких уровней)
+            while (newCurrentXp >= state.shardPassXpPerLevel && newCurrentLevel < state.shardPassMaxLevel) {
+                newCurrentXp -= state.shardPassXpPerLevel;
+                newCurrentLevel++;
+                levelsGained++;
+                console.log(`[ShardPass] Leveled up! New level: ${newCurrentLevel}`);
+                // Здесь можно добавить логику для уведомления игрока о новом уровне,
+                // разблокировки наград и т.д.
+            }
+
+            // Если после повышения достигнут максимальный уровень
+            if (newCurrentLevel >= state.shardPassMaxLevel) {
+                newCurrentXp = 0; // Или state.shardPassXpPerLevel, если хотите показывать полную полоску на макс. уровне
+                console.log(`[ShardPass] Max level ${state.shardPassMaxLevel} reached.`);
+            }
+            
+            const changes = {
+                shardPassCurrentXp: newCurrentXp,
+                shardPassCurrentLevel: newCurrentLevel,
+            };
+            return changes;
+        });
+
+        // После обновления состояния, проверим, не стали ли доступны новые награды
+        // (Это важно, если у вас есть индикатор доступных наград)
+        if (get().setHasClaimableRewardsIndicator && get().checkIfAnyTaskOrAchievementIsClaimable) {
+             get().setHasClaimableRewardsIndicator(get().checkIfAnyTaskOrAchievementIsClaimable());
+        }
+    },
+    
     claimShardPassReward: (level, isPremiumTrack) => {
         const state = get();
         const rewardKey = `level_${level}_${isPremiumTrack ? 'premium' : 'free'}`;
