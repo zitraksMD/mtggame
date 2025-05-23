@@ -149,8 +149,8 @@ const ChestResultsPopup = ({ rewards, onClose, lastOpenInfo }) => {
                     {rewards && rewards.slice(0, visibleSlots).map((reward, index) => {
                         const quantityText = getRewardQuantityText(reward);
                         const isTooltipActive = activeTooltipIndex === index;
-                        const itemKey = reward.uniqueId || `${reward.type}-${reward.id || reward.artifactId || index}`;
-                        const currentRevealState = revealState[index] || 'placeholder';
+const baseIdentifier = reward.id || reward.artifactId || reward.name || 'reward'; // Базовый идентификатор, если есть
+const itemKey = reward.uid || `${reward.type}-${baseIdentifier}-${index}`;                        const currentRevealState = revealState[index] || 'placeholder';
                         const rarityClass = `rarity-${(reward.rarity || 'common').toLowerCase()}`;
 
                         return (
@@ -179,8 +179,9 @@ const ChestResultsPopup = ({ rewards, onClose, lastOpenInfo }) => {
                                             src={reward.icon || '/assets/default-item.png'}
                                             alt={reward.name || reward.type}
                                             className="reward-icon"
-                                            onError={(e) => { e.target.src = '/assets/default-item.png'; }}
-                                        />
+onError={(e) => {
+    e.target.src = '/assets/default-item.png';
+}}                                        />
                                         {quantityText && ( <span className="reward-quantity">{quantityText}</span> )}
                                         {reward.type === 'full_artifact' && reward.isNew && ( <span className="reward-new-indicator">!</span> )}
                                         {/* Тултип рендерится всегда, когда активен, поверх карточки */}

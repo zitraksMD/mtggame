@@ -105,6 +105,10 @@ const Inventory = ({ setShowForge }) => {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(equipped));
     }, [equipped]);
 
+    useEffect(() => {
+    console.log('[Inventory.jsx] Received inventory update:', JSON.parse(JSON.stringify(inventory)));
+    console.log('[Inventory.jsx] Inventory length:', inventory.length);
+}, [inventory]);
     // === ИЗМЕНЕНИЕ: Удалена логика для встроенного попапа ===
     // const equippedItemForComparison = useMemo(() => { ... });
     // const calculateDiff = (selectedStat, equippedStat) => { ... };
@@ -167,6 +171,11 @@ const handleUpgradeClick = (itemToUpgradeFromPopup) => {
         // alert("Не удалось улучшить предмет.");
     }
 };
+
+useEffect(() => {
+    console.log('[Inventory.jsx] Received inventory update:', JSON.parse(JSON.stringify(inventory)));
+    console.log('[Inventory.jsx] Inventory length:', inventory.length);
+}, [inventory]);
 
     const sortedInventory = useMemo(() => {
         return [...inventory].sort((itemA, itemB) => {

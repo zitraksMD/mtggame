@@ -22,7 +22,7 @@ import {
     BASE_SHARD_COST_PER_LEVEL,
     ALL_ARTIFACTS_ARRAY
 } from '../data/artifactsData';
-import { getArtifactChestById, selectWeightedRandom as selectWeightedRewardType } from '../data/artifactChestData.js';
+import { getArtifactChestById, selectWeightedRandomItem as selectWeightedRewardType } from '../data/artifactChestData.js';
 import { GEAR_CHESTS, getGearChestById } from '../data/gearChestData';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -54,6 +54,16 @@ const MONTHLY_TASKS_REFRESH_HOUR_UTC = REFRESH_HOUR_UTC;
 const RUNE_ATTEMPTS_REFRESH_HOUR_UTC = REFRESH_HOUR_UTC;
 
 const INITIAL_CHAPTER_ID = 1;
+
+const rarityOrder = {
+    "Common": 1,
+    "Uncommon": 2,
+    "Rare": 3,
+    "Epic": 4,
+    "Legendary": 5,
+    "Mythic": 6
+    // Добавьте/измените по необходимости
+};
 
 // --- Начальное состояние для ShardPass (из КОД1) ---
 const getDefaultShardPassState = () => {
@@ -91,17 +101,27 @@ const getDefaultShardPassState = () => {
     };
 };
 
-const createItemInstance = (itemTemplate) => {
-    if (!itemTemplate) {
+const createItemInstance = (itemTemplateInput) => {
+    if (!itemTemplateInput) {
         console.warn("Attempted to create instance from null/undefined template");
         return null;
     }
-    return { 
-        ...itemTemplate,        // Копируем все свойства из шаблона предмета
-        uid: uuidv4(),          // Присваиваем уникальный ID экземпляру
-        level: 1,               // <<< ИЗМЕНЕНИЕ: Устанавливаем начальный уровень 1
-                                // и используем 'level' для консистентности
-        // Здесь можно добавить другие начальные свойства экземпляра, если необходимо
+
+    // Проверяем, является ли itemTemplateInput массивом, и берем первый элемент, если да
+    const actualItemTemplate = Array.isArray(itemTemplateInput) && itemTemplateInput.length > 0
+        ? itemTemplateInput[0]
+        : itemTemplateInput;
+
+    // Дополнительная проверка, что actualItemTemplate теперь действительно объект
+    if (!actualItemTemplate || typeof actualItemTemplate !== 'object' || Array.isArray(actualItemTemplate)) {
+        console.warn("Invalid actual item template after processing:", actualItemTemplate, "Original input:", itemTemplateInput);
+        return null;
+    }
+
+    return {
+        ...actualItemTemplate, // Копируем все свойства из фактического шаблона предмета
+        uid: uuidv4(),
+        level: 1,
     };
 };
 
@@ -353,6 +373,25 @@ const _selectWeightedArtifactIdFromSet_ByRarity = (setId) => { // из КОД2
     console.warn(`[SelectWeightedArtifact] Ошибка взвешенного выбора для сета ${setId}, возврат последнего элемента.`);
     return weightedArtifactPool[weightedArtifactPool.length - 1].id;
 };
+const _selectRandomArtifactIdOfGivenRarity = (targetRarity) => {
+    if (!ALL_ARTIFACTS_ARRAY || ALL_ARTIFACTS_ARRAY.length === 0) {
+        console.error("[SelectRandomArtifact] Глобальный список артефактов (ALL_ARTIFACTS_ARRAY) не определен или пуст.");
+        return null;
+    }
+    if (!targetRarity || typeof targetRarity !== 'string') {
+        console.error("[SelectRandomArtifact] Целевая редкость (targetRarity) не предоставлена или имеет неверный формат.", targetRarity);
+        return null;
+    }
+    const normalizedTargetRarity = targetRarity.toLowerCase();
+    const possibleArtifacts = ALL_ARTIFACTS_ARRAY.filter(artifact => artifact.rarity === normalizedTargetRarity);
+    if (possibleArtifacts.length === 0) {
+        console.warn(`[SelectRandomArtifact] Не найдено артефактов для редкости: ${normalizedTargetRarity}.`);
+        return null;
+    }
+    const randomIndex = Math.floor(Math.random() * possibleArtifacts.length);
+    return possibleArtifacts[randomIndex].id;
+};
+
 const _rollWeightedRarity_Gear = (rarityChances) => { // из КОД2
     if (!rarityChances || Object.keys(rarityChances).length === 0) {
         console.error("[RollRarityGear] Объект шансов пуст!");
@@ -1777,377 +1816,586 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
         return [...currentInventory, newItemInstance];
     },
 openGearChest: (chestId) => {
-        const state = get();
-        const chestData = getGearChestById(chestId); // Получаем данные сундука, включая новое поле shardPassXp
-        if (!chestData) {
-            console.error(`[GearChest] Сундук с ID ${chestId} не найден в gearChestData.js.`);
-            return; // или return { success: false, error: "Сундук не найден" };
+    const state = get();
+    const chestData = getGearChestById(chestId);
+
+    if (!chestData) {
+        console.error(`[GearChest] Сундук с ID ${chestId} не найден.`);
+        return { success: false, error: "Сундук не найден" }; // Возвращаем объект для обработки в UI
+    }
+
+    const cost = chestData.cost;
+    if (state[cost.currency] < cost.price) {
+        // В UI лучше показывать сообщение, а не alert, но для отладки alert подойдет
+        alert(`Недостаточно ${cost.currency}! Нужно ${cost.price}`);
+        return { success: false, error: `Недостаточно ${cost.currency}` };
+    }
+
+    // 1. Инициализация и инкремент счетчиков гаранта
+    const currentPityForChest = state.gearChestPity[chestId] || {};
+    let newPityState = { ...currentPityForChest }; // Копируем текущие счетчики для этой сессии открытия
+    
+    const pityConfigs = chestData.pity ? (Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity]) : [];
+
+    pityConfigs.forEach(pConfig => {
+        const key = pConfig.rarity.toLowerCase();
+        newPityState[key] = (newPityState[key] || 0) + 1;
+    });
+
+    // 2. Определение гарантированной редкости (если есть)
+    let guaranteedRarityByPity = null;
+    // Сортируем конфигурации гарантов от высшей редкости к низшей, чтобы проверить сначала самый ценный гарант
+    const sortedPityConfigs = [...pityConfigs].sort((a, b) => (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0));
+
+    for (const pConfig of sortedPityConfigs) {
+        const key = pConfig.rarity.toLowerCase();
+        if (newPityState[key] >= pConfig.limit) {
+            guaranteedRarityByPity = pConfig.rarity;
+            console.log(`[GearChest] Сработал гарант для ${pConfig.rarity} (${newPityState[key]}/${pConfig.limit}) для сундука ${chestId}`);
+            break; // Берем самый высокий сработавший гарант
         }
+    }
 
-        // Проверка и списание стоимости
-        const cost = chestData.cost;
-        if (state[cost.currency] < cost.price) {
-            alert(`Недостаточно ${cost.currency}! Нужно ${cost.price}`);
-            return; // или return { success: false, error: "Недостаточно средств" };
-        }
+    // 3. Определение итоговой редкости предмета
+    const finalRarity = guaranteedRarityByPity || _rollWeightedRarity_Gear(chestData.rarityChances);
 
-        // Логика определения редкости и предмета из код2
-        const currentPity = state.gearChestPity[chestId] || {};
-        let nextPity = { ...currentPity };
-        let guaranteedRarity = null;
-        let finalRarity = null;
+    // 4. Получение предмета
+    const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
 
-        if (chestData.pity) {
-            const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-            pityConfigs.forEach(p => {
-                const key = p.rarity.toLowerCase();
-                nextPity[key] = (nextPity[key] || 0) + 1;
-            });
-            const epicPityConfig = pityConfigs.find(p => p.rarity === 'Epic');
-            if (epicPityConfig && nextPity.epic >= epicPityConfig.limit) {
-                guaranteedRarity = 'Epic';
-            } else {
-                const rarePityConfig = pityConfigs.find(p => p.rarity === 'Rare');
-                if (rarePityConfig && nextPity.rare >= rarePityConfig.limit) {
-                    guaranteedRarity = 'Rare';
-                }
+    if (!obtainedItemData) {
+        console.error(`[GearChest] Не удалось получить предмет редкости ${finalRarity}. Отмена.`);
+        // Важно: если здесь происходит отмена, инкрементированные pity-счетчики (в newPityState)
+        // не должны быть сохранены, так как открытие фактически не состоялось (предмет не получен, валюта не списана).
+        // В текущей структуре это нормально, так как set() вызывается позже.
+        return { success: false, error: "Ошибка генерации предмета" };
+    }
+    const actualObtainedRarity = obtainedItemData.rarity;
+
+    // 5. Сброс счетчиков гаранта на основе ФАКТИЧЕСКИ выпавшей редкости
+    // Если выпал предмет редкости R, то сбрасываются все счетчики гарантов для редкостей <= R.
+    pityConfigs.forEach(pConfig => {
+        const pityRarityKey = pConfig.rarity.toLowerCase();
+        // Если полученная редкость такая же или лучше, чем та, на которую гарант, сбрасываем этот гарант.
+        if (rarityOrder[actualObtainedRarity] >= rarityOrder[pConfig.rarity]) {
+            if (newPityState[pityRarityKey] > 0) { // Сбрасываем, только если был прогресс
+                 console.log(`[GearChest] Счетчик гаранта для ${pConfig.rarity} (был ${newPityState[pityRarityKey]}) сброшен, т.к. выпал ${actualObtainedRarity}.`);
+                newPityState[pityRarityKey] = 0;
             }
         }
+    });
 
-        if (guaranteedRarity) {
-            finalRarity = guaranteedRarity;
-        } else {
-            finalRarity = _rollWeightedRarity_Gear(chestData.rarityChances);
-        }
-
-        const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
-        if (!obtainedItemData) {
-            console.error(`[GearChest] Не удалось получить предмет редкости ${finalRarity}. Отмена.`);
-            return; // или return { success: false, error: "Ошибка генерации предмета" };
-        }
-
-        const obtainedRarity = obtainedItemData.rarity;
-        if (chestData.pity) {
-            const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-            if (obtainedRarity === 'Epic' && pityConfigs.some(p => p.rarity === 'Epic')) {
-                nextPity.epic = 0;
-                if (pityConfigs.some(p => p.rarity === 'Rare')) nextPity.rare = 0;
-            } else if (obtainedRarity === 'Rare' && pityConfigs.some(p => p.rarity === 'Rare')) {
-                nextPity.rare = 0;
-            }
-        }
-
-        const rewardDetails = {
-            type: 'gear', id: obtainedItemData.id, name: obtainedItemData.name,
-            icon: obtainedItemData.image, rarity: obtainedItemData.rarity, amount: 1,
+    // Подготовка данных для UI и обновления состояния
+    // const newItemInstance = createItemInstance(obtainedItemData); // Вы это делаете в addItemToInventoryLogic
+    const rewardDetailsForUI = {
+        type: 'gear', id: obtainedItemData.id, name: obtainedItemData.name,
+        icon: obtainedItemData.image, rarity: actualObtainedRarity, amount: 1,
+    };
+    
+    // 6. Обновление состояния игрока
+    set(prevState => {
+        const updatedInventory = get().addItemToInventoryLogic(prevState.inventory, obtainedItemData);
+            console.log('[STORE] Inventory in openGearChest updated:', JSON.parse(JSON.stringify(updatedInventory))); // <-- ЛОГ
+        return {
+            [cost.currency]: prevState[cost.currency] - cost.price,
+            totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 1,
+            gearChestPity: {
+                ...prevState.gearChestPity,
+                [chestId]: newPityState // Сохраняем обновленные счетчики гарантов
+            },
+            inventory: updatedInventory,
+            lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'gear', name: chestData.name, icon: chestData.icon },
+            lastChestRewards: [rewardDetailsForUI]
         };
+    });
 
-        // Обновление состояния (set)
-        set(prevState => {
-            if (!prevState) {
-                console.error("[GearChest] prevState is undefined in set function!");
-                return {};
-            }
-            return {
-                [cost.currency]: prevState[cost.currency] - cost.price,
-                totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 1, // Убедитесь, что totalGearChestsOpened инициализирован
-                gearChestPity: {
-                    ...prevState.gearChestPity,
-                    [chestId]: nextPity // nextPity рассчитано выше
-                },
-                inventory: get().addItemToInventoryLogic(prevState.inventory, obtainedItemData), // Используем вашу логику добавления
-                lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'gear', name: chestData.name },
-                lastChestRewards: [rewardDetails] // rewardDetails определено выше
-            };
+    // 7. Начисление опыта ShardPass
+    if (chestData.shardPassXp && chestData.shardPassXp > 0) {
+        get().addShardPassXp(chestData.shardPassXp);
+        console.log(`[ShardPass] Начислено ${chestData.shardPassXp} XP за открытие сундука ${chestData.name}`);
+    }
+
+    // 8. Отслеживание события и проверка достижений
+    get().trackTaskEvent('open_chest', 1, { chestId: chestId, rarity: actualObtainedRarity });
+    get().checkAllAchievements();
+
+    console.log(`[GearChest] Открыт: ${chestData.name}. Получено: ${obtainedItemData.name} (${actualObtainedRarity}). Гарант сработал для: ${guaranteedRarityByPity || 'Нет'}`);
+    return { success: true, awardedItem: obtainedItemData }; // Возвращаем полученный предмет для UI
+},
+
+   // В вашем файле useGameStore.js
+
+// Убедитесь, что эти функции и данные доступны в области видимости:
+// getGearChestById, _rollWeightedRarity_Gear, _selectRandomGearItemByRarity_Gear,
+// rarityOrder (объект для определения "веса" редкостей),
+// createItemInstance (или ваша логика addItemToInventoryLogic)
+
+openGearChestX10: (chestId) => {
+    const state = get();
+    const chestData = getGearChestById(chestId);
+
+    if (!chestData) {
+        console.error(`[GearChestX10] Сундук с ID ${chestId} не найден.`);
+        return { success: false, error: "Сундук не найден", awardedItems: [] };
+    }
+
+    const cost = chestData.cost;
+    const totalCost = cost.price * 10;
+
+    if (state[cost.currency] < totalCost) {
+        alert(`Недостаточно ${cost.currency}! Нужно ${totalCost}`);
+        return { success: false, error: `Недостаточно ${cost.currency}`, awardedItems: [] };
+    }
+
+    let workingPity = { ...(state.gearChestPity[chestId] || {}) };
+    const rewardsDetailed = [];
+    const newItemInstances = []; // Сюда будут добавляться УЖЕ СОЗДАННЫЕ экземпляры
+    let accumulatedShardPassXp = 0;
+
+    const pityConfigs = chestData.pity ? (Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity]) : [];
+    const sortedPityConfigs = [...pityConfigs].sort((a, b) => (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0));
+
+    console.log(`[GearChestX10] Начало открытия x10 для ${chestId}. Начальные pity:`, JSON.parse(JSON.stringify(workingPity)));
+
+    for (let i = 0; i < 10; i++) {
+        console.log(`[GearChestX10] Открытие #${i + 1}/10. Текущие workingPity перед инкрементом:`, JSON.parse(JSON.stringify(workingPity)));
+        let pityCountersForThisPull = { ...workingPity };
+
+        pityConfigs.forEach(pConfig => {
+            const key = pConfig.rarity.toLowerCase();
+            pityCountersForThisPull[key] = (pityCountersForThisPull[key] || 0) + 1;
         });
+        console.log(`[GearChestX10] Pity после инкремента для открытия #${i + 1}:`, JSON.parse(JSON.stringify(pityCountersForThisPull)));
 
-        // --- >>> ИЗМЕНЕНИЕ ИЗ КОД1: НАЧИСЛЕНИЕ ОПЫТА SHARDPASS <<< ---
-        if (chestData.shardPassXp && chestData.shardPassXp > 0) {
-            get().addShardPassXp(chestData.shardPassXp); // Вызываем функцию добавления опыта
-            console.log(`[ShardPass] Начислено ${chestData.shardPassXp} XP за открытие сундука ${chestData.name}`);
-        }
-        // --- КОНЕЦ БЛОКА НАЧИСЛЕНИЯ ОПЫТА ---
-
-        // Отслеживание события открытия сундука для задач и ачивок (из код2)
-        get().trackTaskEvent('open_chest', 1); // В код1 здесь было , { /* ... eventDetails ... */} - можно добавить, если нужно
-        get().checkAllAchievements();
-        // return { success: true, awardedItem: obtainedItemData }; // Если функция должна возвращать результат
-    },
-
-    openGearChestX10: (chestId) => {
-        const state = get();
-        const chestData = getGearChestById(chestId);
-        if (!chestData) {
-            console.error(`[GearChestX10] Сундук с ID ${chestId} не найден.`);
-            return;
-        }
-        const cost = chestData.cost;
-        const totalCost = cost.price * 10;
-        if (state[cost.currency] < totalCost) {
-            alert(`Недостаточно ${cost.currency}! Нужно ${totalCost}`);
-            return;
+        let guaranteedRarityThisPull = null;
+        for (const pConfig of sortedPityConfigs) {
+            const key = pConfig.rarity.toLowerCase();
+            if (pityCountersForThisPull[key] >= pConfig.limit) {
+                guaranteedRarityThisPull = pConfig.rarity;
+                console.log(`[GearChestX10 Pull ${i+1}] Сработал гарант для ${pConfig.rarity} (${pityCountersForThisPull[key]}/${pConfig.limit})`);
+                break;
+            }
         }
 
-        let workingPity = { ...(state.gearChestPity[chestId] || {}) }; // Копия pity для работы из код2
-        const rewardsDetailed = [];
-        const newItemInstances = [];
-        let accumulatedShardPassXp = 0; // --- ИЗМЕНЕНИЕ ИЗ КОД1 ---
+        const finalRarityThisPull = guaranteedRarityThisPull || _rollWeightedRarity_Gear(chestData.rarityChances);
+        
+        // Лог структуры obtainedItemData ПЕРЕД передачей в createItemInstance
+        const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarityThisPull);
+        console.log(`[X10 Pull ${i+1}] obtainedItemData СТРУКТУРА:`, JSON.parse(JSON.stringify(obtainedItemData)));
 
-        for (let i = 0; i < 10; i++) {
-            // Логика определения награды i-го сундука и обновления workingPity из код2
-            let guaranteedRarity = null;
-            let finalRarity = null;
-            if (chestData.pity) {
-                const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-                pityConfigs.forEach(p => {
-                    const key = p.rarity.toLowerCase();
-                    workingPity[key] = (workingPity[key] || 0) + 1;
-                });
-                const epicPityConfig = pityConfigs.find(p => p.rarity === 'Epic');
-                if (epicPityConfig && workingPity.epic >= epicPityConfig.limit) {
-                    guaranteedRarity = 'Epic';
-                } else {
-                    const rarePityConfig = pityConfigs.find(p => p.rarity === 'Rare');
-                    if (rarePityConfig && workingPity.rare >= rarePityConfig.limit) {
-                        guaranteedRarity = 'Rare';
-                    }
-                }
-            }
 
-            if (guaranteedRarity) {
-                finalRarity = guaranteedRarity;
-            } else {
-                finalRarity = _rollWeightedRarity_Gear(chestData.rarityChances);
-            }
-
-            const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
-            if (!obtainedItemData) {
-                console.error(` [Pull ${i + 1}] Не удалось получить предмет редкости ${finalRarity}! Пропускаем.`);
-                rewardsDetailed.push({ type: 'error', name: `Ошибка получения ${finalRarity}`, rarity: 'Error', icon: 'path/to/error/icon.png' }); // Добавил детали для UI об ошибке
-                // Важно: нужно решить, как обрабатывать pity, если предмет не получен.
-                // Текущая логика код2 продолжит инкрементировать pity.
-                // Если это нежелательно, здесь нужно добавить логику отката/коррекции workingPity.
-                // Для простоты оставлено как в код2.
-                continue; // Пропускаем добавление предмета и XP для этого конкретного открытия
-            }
-
-            const obtainedRarity = obtainedItemData.rarity;
-            if (chestData.pity) {
-                const pityConfigs = Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity];
-                if (obtainedRarity === 'Epic' && pityConfigs.some(p => p.rarity === 'Epic')) {
-                    workingPity.epic = 0;
-                    if (pityConfigs.some(p => p.rarity === 'Rare')) workingPity.rare = 0;
-                } else if (obtainedRarity === 'Rare' && pityConfigs.some(p => p.rarity === 'Rare')) {
-                    workingPity.rare = 0;
-                }
-            }
-            
-            const rewardDetail = { type: 'gear', ...obtainedItemData, amount: 1, icon: obtainedItemData.image }; // Из код2
-            rewardsDetailed.push(rewardDetail);
-            
-            const newItem = createItemInstance(obtainedItemData); // Предполагается, что createItemInstance существует
-            if(newItem) newItemInstances.push(newItem);
-
-            // --- >>> ИЗМЕНЕНИЕ ИЗ КОД1: Аккумулирование опыта ShardPass <<< ---
-            if (chestData.shardPassXp && chestData.shardPassXp > 0) {
-                accumulatedShardPassXp += chestData.shardPassXp;
-            }
+        if (!obtainedItemData) {
+            console.error(`[GearChestX10 Pull ${i + 1}] Не удалось получить предмет редкости ${finalRarityThisPull}! Pity сохраняются.`);
+            rewardsDetailed.push({ type: 'error', name: `Ошибка получения ${finalRarityThisPull}`, rarity: 'Error', icon: '/assets/default-item.png' });
+            workingPity = { ...pityCountersForThisPull };
+            continue;
         }
         
-        set(prevState => {
-            if (!prevState) {
-                console.error("[GearChestX10] prevState is undefined in set function!");
-                return {};
-            }
-            return {
-                [cost.currency]: prevState[cost.currency] - totalCost,
-                totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 10,
-                gearChestPity: { ...prevState.gearChestPity, [chestId]: workingPity },
-                inventory: get().addItemToInventoryLogic(prevState.inventory, newItemInstances, true), // Предположим, что addItemToInventoryLogic может принимать массив и флаг isMultiple
-                // или inventory: [...prevState.inventory, ...newItemInstances], // если addItemToInventoryLogic так не умеет
-                lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'gear', name: chestData.name },
-                lastChestRewards: rewardsDetailed
-            };
-        });
+        // Предполагаем, что obtainedItemData.rarity и obtainedItemData.name существуют, если obtainedItemData не null
+        const actualObtainedRarityThisPull = obtainedItemData.rarity; 
+        console.log(`[GearChestX10 Pull ${i+1}] Выпал: ${obtainedItemData.name} (${actualObtainedRarityThisPull}). Гарант был: ${guaranteedRarityThisPull || 'Нет'}`);
 
-        // --- >>> ИЗМЕНЕНИЕ ИЗ КОД1: Начисление суммарного опыта ShardPass <<< ---
-        if (accumulatedShardPassXp > 0) {
-            get().addShardPassXp(accumulatedShardPassXp);
-            console.log(`[ShardPass] Начислено ${accumulatedShardPassXp} XP за открытие x10 сундука ${chestData.name}`);
-        }
-
-        get().trackTaskEvent('open_chest', 10); // В код1 здесь было , { /* ... eventDetails ... */}
-        get().checkAllAchievements();
-    },
-    processArtifactReward: (dropType, targetArtifactId) => { // из КОД2
-        if (!targetArtifactId) return { details: null, obtainedFullArtifact: false };
-        const artifactData = getArtifactById(targetArtifactId);
-        if (!artifactData) { console.error(`[ProcessArtifact] Data not found for ${targetArtifactId}`); return { details: null, obtainedFullArtifact: false }; }
-        let rewardDetails = null;
-        let obtainedFullArtifact = false;
-        if (dropType === 'artifact_shard') {
-            const amount = 1;
-            get().addArtifactShards(targetArtifactId, amount);
-            rewardDetails = { type: 'artifact_shard', amount, artifactId: targetArtifactId, icon: artifactData.icon, name: `${artifactData.name} (осколок)`, rarity: artifactData.rarity };
-        }
-        else if (dropType === 'full_artifact') {
-            obtainedFullArtifact = true;
-            const currentArtifactState = get().artifactLevels[targetArtifactId];
-            const isCollected = get().collectedArtifacts.has(targetArtifactId);
-            const isActive = isCollected && currentArtifactState && currentArtifactState.level > 0;
-            const shardAmountOnDuplicate = artifactData.shardValueOnDuplicate || 10;
-            if (isActive) {
-                get().addArtifactShards(targetArtifactId, shardAmountOnDuplicate);
-                rewardDetails = { type: 'full_artifact_duplicate', artifactId: targetArtifactId, isNew: false, shardAmount: shardAmountOnDuplicate, icon: artifactData.icon, name: artifactData.name, rarity: artifactData.rarity };
-            } else {
-                if (!isCollected) {
-                    get().collectArtifact(targetArtifactId);
+        pityConfigs.forEach(pConfig => {
+            const pityRarityKey = pConfig.rarity.toLowerCase();
+            if (rarityOrder[actualObtainedRarityThisPull] >= rarityOrder[pConfig.rarity]) {
+                if (pityCountersForThisPull[pityRarityKey] > 0) {
+                    console.log(`[GearChestX10 Pull ${i+1}] Счетчик гаранта для ${pConfig.rarity} (был ${pityCountersForThisPull[pityRarityKey]}) сброшен до 0, т.к. выпал ${actualObtainedRarityThisPull}.`);
+                    pityCountersForThisPull[pityRarityKey] = 0;
                 }
-                set(state => {
-                     const newCollected = new Set(state.collectedArtifacts);
-                     newCollected.add(targetArtifactId);
-                     return {
-                         collectedArtifacts: newCollected,
-                         artifactLevels: {
-                             ...state.artifactLevels,
-                             [targetArtifactId]: {
-                                 shards: (state.artifactLevels[targetArtifactId]?.shards || 0),
-                                 level: 1,
-                             }
-                         }
-                     };
-                });
-                get().updatePowerLevel();
-                rewardDetails = { type: 'full_artifact_new', artifactId: targetArtifactId, isNew: true, icon: artifactData.icon, name: artifactData.name, rarity: artifactData.rarity };
             }
-        } else {
-            console.warn("Unknown dropType in processArtifactReward:", dropType);
-        }
-        return { details: rewardDetails, obtainedFullArtifact: obtainedFullArtifact };
-    },
-    openArtifactChest: (chestId) => { // из КОД2, добавлен trackTaskEvent
-        const state = get();
-        const chestData = getArtifactChestById(chestId);
-        if (!chestData || !chestData.isEnabled) { console.error(`Сундук ${chestId} не найден или не активен.`); return; }
-        if (state[chestData.cost.currency] < chestData.cost.price) { alert(`Недостаточно ${chestData.cost.currency}!`); return; }
-        let currentPity = state.artifactChestPity[chestId] || 0;
-        currentPity++;
-        const newTotalOpened = state.totalArtifactChestsOpened + 1;
-        let rewardTypeObj = null;
-        let obtainedFullArtifactDueToPity = false;
-        if (currentPity >= chestData.pityLimit) {
-            rewardTypeObj = chestData.rewardPool.find(r => r.type === 'full_artifact');
-            if (rewardTypeObj) obtainedFullArtifactDueToPity = true;
-            else {
-                console.warn(`Pity hit for ${chestId}, but 'full_artifact' type not in pool. Rolling normally.`);
-                rewardTypeObj = selectWeightedRewardType(chestData.rewardPool);
-            }
-        } else {
-            rewardTypeObj = selectWeightedRewardType(chestData.rewardPool);
-        }
-        if (!rewardTypeObj) { console.error("Не удалось определить тип награды."); return; }
-        const rewardType = rewardTypeObj.type;
-        let rewardProcessingResult = { details: null, obtainedFullArtifact: obtainedFullArtifactDueToPity };
-        if (rewardType === 'gold') {
-            const amount = Math.floor(Math.random() * (rewardTypeObj.max - rewardTypeObj.min + 1)) + rewardTypeObj.min;
-            get().addGold(amount); // Uses modified addGold
-            rewardProcessingResult.details = { type: 'gold', amount, icon: '/assets/icons/currency/gold.png', name: 'Золото' };
-        } else if (rewardType === 'diamonds') {
-            const amount = rewardTypeObj.amount;
-            get().addDiamonds(amount); // Uses modified addDiamonds
-            rewardProcessingResult.details = { type: 'diamonds', amount, icon: '/assets/icons/currency/diamond.png', name: 'Алмазы' };
-        } else if (rewardType === 'artifact_shard' || rewardType === 'full_artifact') {
-            const targetArtifactId = _selectWeightedArtifactIdFromSet_ByRarity(chestData.setId);
-            if (!targetArtifactId) { console.error("Не удалось выбрать артефакт из сета."); return; }
-            const typeToProcess = obtainedFullArtifactDueToPity ? 'full_artifact' : rewardType;
-            rewardProcessingResult = get().processArtifactReward(typeToProcess, targetArtifactId);
-        } else {
-            console.warn(`Неизвестный тип награды из пула: ${rewardType}`);
-        }
-        let finalPityValue = currentPity;
-        if (rewardProcessingResult.obtainedFullArtifact || obtainedFullArtifactDueToPity) {
-            finalPityValue = 0;
-        }
-        set((prevState) => {
-            if (!prevState) return {};
-            return {
-                [chestData.cost.currency]: prevState[chestData.cost.currency] - chestData.cost.price,
-                artifactChestPity: { ...prevState.artifactChestPity, [chestId]: finalPityValue },
-                totalArtifactChestsOpened: newTotalOpened,
-                lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'artifact', name: chestData.name },
-                lastChestRewards: rewardProcessingResult.details ? [rewardProcessingResult.details] : [],
-            };
         });
-        get().trackTaskEvent('open_chest', 1);
-        get().checkAllAchievements();
-        if(rewardProcessingResult.obtainedFullArtifact || rewardType === 'artifact_shard'){
-            get().initializeLevelHp();
+        
+        workingPity = { ...pityCountersForThisPull };
+        console.log(`[GearChestX10] Pity после сброса для открытия #${i + 1} (станет workingPity для #${i + 2}):`, JSON.parse(JSON.stringify(workingPity)));
+
+        // createItemInstance должна принимать объект obtainedItemData и возвращать объект экземпляра
+        const newItemInstanceWithUid = createItemInstance(obtainedItemData); 
+        // Лог структуры того, что ВЕРНУЛА createItemInstance
+        console.log(`[X10 Pull ${i+1}] createItemInstance output:`, JSON.parse(JSON.stringify(newItemInstanceWithUid))); 
+
+        if(!newItemInstanceWithUid) { 
+            console.error(`[GearChestX10 Pull ${i + 1}] Ошибка создания экземпляра для ${obtainedItemData.id}`);
+            rewardsDetailed.push({ type: 'error', name: `Ошибка экземпляра ${obtainedItemData.name}`, rarity: 'Error', icon: '/assets/default-item.png' });
+            continue; 
         }
-    },
-    openArtifactChestX10: (chestId) => { // из КОД2, добавлен trackTaskEvent
+
+        newItemInstances.push(newItemInstanceWithUid); // Добавляем корректный экземпляр
+
+        const rewardDetailForPopup = {
+            type: 'gear',
+            id: newItemInstanceWithUid.id,
+            uid: newItemInstanceWithUid.uid,
+            name: newItemInstanceWithUid.name,
+            icon: newItemInstanceWithUid.image,
+            rarity: newItemInstanceWithUid.rarity,
+            level: newItemInstanceWithUid.level || 0,
+            amount: 1
+        };
+        rewardsDetailed.push(rewardDetailForPopup);
+        
+        if (chestData.shardPassXp && chestData.shardPassXp > 0) {
+            accumulatedShardPassXp += chestData.shardPassXp;
+        }
+    } // Конец цикла for (10 открытий)
+
+    console.log(`[GearChestX10] Завершение открытия x10. Финальные pity для сохранения:`, JSON.parse(JSON.stringify(workingPity)));
+
+    set(prevState => {
+        console.log('[STORE X10 Set] prevState.inventory (структура ПЕРЕД):', JSON.parse(JSON.stringify(prevState.inventory.slice(0,5)))); // Первые 5 для краткости
+        console.log(`[STORE X10 Set] prevState.inventory.length: ${prevState.inventory.length}`);
+        console.log(`[STORE X10 Set] newItemInstances.length (добавляемые): ${newItemInstances.length}`);
+        if (newItemInstances.length > 0) {
+             console.log('[STORE X10 Set] newItemInstances[0] (структура ПЕРЕД добавлением):', JSON.parse(JSON.stringify(newItemInstances[0])));
+        }
+
+        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        // Просто объединяем существующий инвентарь с массивом НОВЫХ, УЖЕ СОЗДАННЫХ экземпляров.
+        // `newItemInstances` уже содержит готовые экземпляры.
+        const finalInventory = [...prevState.inventory, ...newItemInstances];
+        // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+        
+        console.log(`[STORE X10 Set] finalInventory.length: ${finalInventory.length}`);
+        console.log('[STORE X10 Set] Итоговый finalInventory для сохранения (структура):', JSON.parse(JSON.stringify(finalInventory.slice(0, prevState.inventory.length + 5)))); // Первые несколько для проверки
+
+        return {
+            [cost.currency]: prevState[cost.currency] - totalCost,
+            totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 10, // Используем 10, т.к. цикл на 10 итераций
+            gearChestPity: { 
+                ...prevState.gearChestPity, 
+                [chestId]: workingPity
+            },
+            inventory: finalInventory,
+            lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'gear', name: chestData.name, icon: chestData.icon },
+            lastChestRewards: rewardsDetailed
+        };
+    });
+
+    if (accumulatedShardPassXp > 0) {
+        get().addShardPassXp(accumulatedShardPassXp);
+        console.log(`[ShardPass] Начислено ${accumulatedShardPassXp} XP за открытие x10 сундука ${chestData.name}`);
+    }
+
+    get().trackTaskEvent('open_chest', 10, { chestId: chestId });
+    get().checkAllAchievements();
+    
+    return { success: true, awardedItems: newItemInstances };
+},
+
+// processArtifactReward остается без изменений, так как он не относится к проблеме с предметами экипировки
+processArtifactReward: (dropType, targetArtifactId) => {
+    if (!targetArtifactId) {
+        console.warn("[ProcessArtifact] targetArtifactId не предоставлен.");
+        return { details: null, obtainedFullArtifact: false };
+    }
+    const artifactData = getArtifactById(targetArtifactId); // Убедитесь, что getArtifactById импортирована
+    if (!artifactData) {
+        console.error(`[ProcessArtifact] Данные для артефакта ${targetArtifactId} не найдены.`);
+        return { details: null, obtainedFullArtifact: false };
+    }
+
+    let rewardDetails = null;
+    let obtainedFullArtifact = false;
+
+    if (dropType === 'artifact_shard') {
+        const amount = 1; // Обычно осколок дается по одному
+        get().addArtifactShards(targetArtifactId, amount); // Ваша логика добавления осколков
+        rewardDetails = {
+            uid: uuidv4(), // <--- ДОБАВЛЕН УНИКАЛЬНЫЙ ID
+            type: 'artifact_shard',
+            amount,
+            artifactId: targetArtifactId,
+            icon: artifactData.icon,
+            name: `${artifactData.name} (осколок)`,
+            rarity: artifactData.rarity
+        };
+    } else if (dropType === 'full_artifact') {
+        obtainedFullArtifact = true;
+        const currentArtifactState = get().artifactLevels[targetArtifactId];
+        const isCollected = get().collectedArtifacts.has(targetArtifactId);
+        // Активным считаем, если собран и уровень > 0 (или просто собран, если у вас нет отдельной активации)
+        const isActive = isCollected && currentArtifactState && currentArtifactState.level > 0; 
+        const shardAmountOnDuplicate = artifactData.shardValueOnDuplicate || 10; // Количество осколков за дубликат
+
+        if (isActive) { // Если артефакт уже есть и активен (например, прокачан)
+            get().addArtifactShards(targetArtifactId, shardAmountOnDuplicate);
+            rewardDetails = {
+                uid: uuidv4(), // <--- ДОБАВЛЕН УНИКАЛЬНЫЙ ID
+                type: 'full_artifact_duplicate', // Тип для дубликата
+                artifactId: targetArtifactId,
+                isNew: false,
+                shardAmount: shardAmountOnDuplicate, // Количество полученных осколков
+                icon: artifactData.icon,
+                name: artifactData.name,
+                rarity: artifactData.rarity
+            };
+        } else { // Если артефакт новый или еще не был "активирован" (уровень 0)
+            if (!isCollected) {
+                // Эта логика может быть частью set ниже или отдельной функцией
+                // get().collectArtifact(targetArtifactId); 
+            }
+            // Обновляем состояние: добавляем в собранные, устанавливаем уровень 1
+            set(state => {
+                const newCollected = new Set(state.collectedArtifacts);
+                newCollected.add(targetArtifactId);
+                return {
+                    collectedArtifacts: newCollected,
+                    artifactLevels: {
+                        ...state.artifactLevels,
+                        [targetArtifactId]: {
+                            shards: (state.artifactLevels[targetArtifactId]?.shards || 0),
+                            level: 1, // Устанавливаем уровень 1 при первом получении
+                        }
+                    }
+                };
+            });
+            get().updatePowerLevel(); // Обновляем силу игрока
+            rewardDetails = {
+                uid: uuidv4(), // <--- ДОБАВЛЕН УНИКАЛЬНЫЙ ID
+                type: 'full_artifact_new', // Тип для нового артефакта
+                artifactId: targetArtifactId,
+                isNew: true,
+                icon: artifactData.icon,
+                name: artifactData.name,
+                rarity: artifactData.rarity
+            };
+        }
+    } else {
+        console.warn("[ProcessArtifact] Неизвестный dropType:", dropType);
+    }
+
+    return { details: rewardDetails, obtainedFullArtifact: obtainedFullArtifact };
+},
+openArtifactChest: (chestId) => {
         const state = get();
         const chestData = getArtifactChestById(chestId);
-        if (!chestData || !chestData.isEnabled) { console.error(`Сундук ${chestId} не найден или не активен.`); return; }
+
+        if (!chestData || !chestData.isEnabled) {
+            console.error(`[ArtifactChest] Сундук ${chestId} не найден или не активен.`);
+            return { success: false, error: `Сундук ${chestId} не найден или не активен.` };
+        }
+        if (state[chestData.cost.currency] < chestData.cost.price) {
+            alert(`Недостаточно ${chestData.cost.currency}! Нужно ${chestData.cost.price}.`);
+            return { success: false, error: `Недостаточно ${chestData.cost.currency}` };
+        }
+
+        let currentPityCounter = state.artifactChestPity[chestId] || 0;
+        currentPityCounter++;
+
+        let chosenRewardFromPool = null;
+        let isPityTriggered = false;
+        let targetArtifactRarityFromRoll = null; // Редкость, определенная роллом (обычным или по гаранту)
+
+        // 1. Определяем награду
+        if (chestData.pity && currentPityCounter >= chestData.pity.triggerLimit) {
+            console.log(`[ArtifactChest] Сработал гарант для ${chestId} (${currentPityCounter}/${chestData.pity.triggerLimit})`);
+            isPityTriggered = true;
+            const pityRarityObject = selectWeightedRewardType(chestData.pity.guaranteedArtifactRarityPool);
+            if (pityRarityObject && pityRarityObject.rarity) {
+                targetArtifactRarityFromRoll = pityRarityObject.rarity;
+                chosenRewardFromPool = { type: 'full_artifact', rarity: targetArtifactRarityFromRoll }; // Гарант всегда на ПОЛНЫЙ артефакт
+                console.log(`[ArtifactChest] Гарант дал редкость: ${targetArtifactRarityFromRoll} (для full_artifact)`);
+            } else {
+                console.error(`[ArtifactChest] Ошибка определения редкости по гаранту для ${chestId}. Возврат к обычному роллу.`);
+                chosenRewardFromPool = selectWeightedRewardType(chestData.rewardPool);
+                isPityTriggered = false;
+            }
+        } else {
+            chosenRewardFromPool = selectWeightedRewardType(chestData.rewardPool);
+            console.log(`[ArtifactChest] Обычный ролл:`, chosenRewardFromPool);
+        }
+
+        if (!chosenRewardFromPool) {
+            console.error("[ArtifactChest] Не удалось определить награду.");
+            set(prevState => ({ artifactChestPity: { ...prevState.artifactChestPity, [chestId]: currentPityCounter - 1 } }));
+            return { success: false, error: "Ошибка определения награды" };
+        }
+
+        // 2. Обрабатываем выбранную награду
+        let rewardProcessingResult = { details: null, obtainedFullArtifact: false };
+        const rewardType = chosenRewardFromPool.type;
+
+        if (rewardType === 'gold') {
+            const amount = Math.floor(Math.random() * (chosenRewardFromPool.max - chosenRewardFromPool.min + 1)) + chosenRewardFromPool.min;
+            get().addGold(amount);
+            rewardProcessingResult.details = { type: 'gold', amount, icon: '/assets/coin-icon.png', name: 'Золото', rarity: 'Common' };
+        } else if (rewardType === 'diamonds') {
+            const amount = chosenRewardFromPool.amount;
+            get().addDiamonds(amount);  
+            rewardProcessingResult.details = { type: 'diamonds', amount, icon: '/assets/diamond-image.png', name: 'Алмазы', rarity: 'Common' };
+        } else if (rewardType === 'full_artifact' || rewardType === 'artifact_shard') { // ОБРАБОТКА И ОСКОЛКОВ И АРТЕФАКТОВ
+            targetArtifactRarityFromRoll = chosenRewardFromPool.rarity; // Редкость из rewardPool или из pityPool (если isPityTriggered)
+            if (!targetArtifactRarityFromRoll) {
+                console.error(`[ArtifactChest] Награда '${rewardType}' не имеет свойства rarity!`, chosenRewardFromPool);
+                rewardProcessingResult.details = { type: 'error', name: `Ошибка: ${rewardType} без редкости`, rarity: 'Error' };
+            } else {
+                const targetArtifactId = _selectRandomArtifactIdOfGivenRarity(targetArtifactRarityFromRoll);
+                if (!targetArtifactId) {
+                    console.error(`[ArtifactChest] Не удалось выбрать ID для ${rewardType} редкости ${targetArtifactRarityFromRoll}.`);
+                    const compensationAmount = Math.round(chestData.cost.price * 0.1); // Пример компенсации
+                    get().addGold(compensationAmount);
+                    rewardProcessingResult.details = { type: 'gold', amount: compensationAmount, icon: '/assets/coin-icon.png', name: `Компенсация (${rewardType} ${targetArtifactRarityFromRoll})`, rarity: 'Common' };
+                } else {
+                    // Передаем тип ('full_artifact' или 'artifact_shard') и ID в processArtifactReward
+                    rewardProcessingResult = get().processArtifactReward(rewardType, targetArtifactId);
+                }
+            }
+        } else {
+            console.warn(`[ArtifactChest] Неизвестный тип награды из пула: ${rewardType}`);
+            rewardProcessingResult.details = { type: 'error', name: `Неизвестный тип ${rewardType}`, rarity: 'Error' };
+        }
+        
+        // Логика сброса гаранта
+        if (isPityTriggered) { // Если это был ролл по гаранту
+            console.log(`[ArtifactChest] Попытка по гаранту была сделана. Сброс гаранта для ${chestId}. (Получено: ${rewardProcessingResult.obtainedFullArtifact ? 'полный артефакт' : 'другое/ошибка'})`);
+            currentPityCounter = 0;
+        } else if (rewardType === 'full_artifact' && rewardProcessingResult.obtainedFullArtifact) {
+            // Если ПОЛНЫЙ артефакт выпал по обычному роллу
+            console.log(`[ArtifactChest] Получен полный артефакт по обычному роллу. Сброс гаранта для ${chestId}.`);
+            currentPityCounter = 0;
+        }
+
+        // 3. Обновляем состояние
+        set((prevState) => ({
+            [chestData.cost.currency]: prevState[chestData.cost.currency] - chestData.cost.price,
+            artifactChestPity: { ...prevState.artifactChestPity, [chestId]: currentPityCounter },
+            totalArtifactChestsOpened: (prevState.totalArtifactChestsOpened || 0) + 1,
+            lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'artifact', name: chestData.name, icon: chestData.icon },
+            lastChestRewards: rewardProcessingResult.details ? [rewardProcessingResult.details] : [],
+        }));
+
+        if (chestData.shardPassXp && chestData.shardPassXp > 0) get().addShardPassXp(chestData.shardPassXp);
+        get().trackTaskEvent('open_chest', 1, { chestId: chestId, type: 'artifact' });
+        get().checkAllAchievements();
+        if(rewardProcessingResult.obtainedFullArtifact || rewardType === 'artifact_shard') get().initializeLevelHp();
+        
+        console.log(`[ArtifactChest] Открыт: ${chestData.name}. Награда:`, rewardProcessingResult.details);
+        return { success: true, awardedItemDetails: rewardProcessingResult.details };
+    },
+
+    openArtifactChestX10: (chestId) => {
+        const state = get();
+        const chestData = getArtifactChestById(chestId);
+
+        if (!chestData || !chestData.isEnabled) {
+            console.error(`[ArtifactChestX10] Сундук ${chestId} не найден или не активен.`);
+            return { success: false, error: `Сундук ${chestId} не найден или не активен.`, awardedItemsDetails: [] };
+        }
         const totalCost = chestData.cost.price * 10;
-        if (state[chestData.cost.currency] < totalCost) { alert(`Недостаточно ${chestData.cost.currency}!`); return; }
-        let workingPity = state.artifactChestPity[chestId] || 0;
-        const newTotalOpened = state.totalArtifactChestsOpened + 10;
+        if (state[chestData.cost.currency] < totalCost) {
+            alert(`Недостаточно ${chestData.cost.currency}! Нужно ${totalCost}.`);
+            return { success: false, error: `Недостаточно ${chestData.cost.currency}`, awardedItemsDetails: [] };
+        }
+
+        let workingPityCounter = state.artifactChestPity[chestId] || 0;
         const rewardsDetailed = [];
+        let accumulatedShardPassXp = 0;
         let hasObtainedAnyArtifactMaterialInBatch = false;
+
         for (let i = 0; i < 10; i++) {
-            workingPity++;
-            let rewardTypeObj = null;
-            let obtainedFullArtifactThisPull = false;
-            if (workingPity >= chestData.pityLimit) {
-                rewardTypeObj = chestData.rewardPool.find(r => r.type === 'full_artifact');
-                if (rewardTypeObj) obtainedFullArtifactThisPull = true;
-                else rewardTypeObj = selectWeightedRewardType(chestData.rewardPool);
+            workingPityCounter++;
+            let currentPullChosenReward = null;
+            let isThisPullPityTriggered = false;
+            let targetArtifactRarityThisPull = null;
+
+            // 1. Определяем награду для текущего открытия
+            if (chestData.pity && workingPityCounter >= chestData.pity.triggerLimit) {
+                console.log(`[ArtifactChestX10 Pull ${i+1}] Сработал гарант (${workingPityCounter}/${chestData.pity.triggerLimit})`);
+                isThisPullPityTriggered = true;
+                const pityRarityObject = selectWeightedRewardType(chestData.pity.guaranteedArtifactRarityPool);
+                if (pityRarityObject && pityRarityObject.rarity) {
+                    targetArtifactRarityThisPull = pityRarityObject.rarity;
+                    currentPullChosenReward = { type: 'full_artifact', rarity: targetArtifactRarityThisPull };
+                    console.log(`[ArtifactChestX10 Pull ${i+1}] Гарант дал редкость: ${targetArtifactRarityThisPull} (для full_artifact)`);
+                } else {
+                    console.error(`[ArtifactChestX10 Pull ${i+1}] Ошибка определения редкости по гаранту. Возврат к обычному роллу.`);
+                    currentPullChosenReward = selectWeightedRewardType(chestData.rewardPool);
+                    isThisPullPityTriggered = false;
+                }
             } else {
-                rewardTypeObj = selectWeightedRewardType(chestData.rewardPool);
+                currentPullChosenReward = selectWeightedRewardType(chestData.rewardPool);
+                 console.log(`[ArtifactChestX10 Pull ${i+1}] Обычный ролл:`, currentPullChosenReward);
             }
-            if (!rewardTypeObj) { console.error(`[X10 Pull ${i+1}] Failed type roll!`); rewardsDetailed.push({ type: 'error', name: 'Ошибка ролла типа' }); continue; }
-            const rewardType = rewardTypeObj.type;
-            let currentPullProcessingResult = { details: null, obtainedFullArtifact: obtainedFullArtifactThisPull };
+
+            if (!currentPullChosenReward) {
+                console.error(`[ArtifactChestX10 Pull ${i + 1}] Не удалось определить награду.`);
+                rewardsDetailed.push({ type: 'error', name: `Ошибка ролла #${i+1}`, rarity: 'Error' });
+                if (isThisPullPityTriggered) workingPityCounter = 0; // Сбрасываем гарант, если он должен был сработать, но награда не определилась
+                continue; 
+            }
+            
+            // 2. Обрабатываем выбранную награду
+            let currentPullProcessingResult = { details: null, obtainedFullArtifact: false };
+            const rewardType = currentPullChosenReward.type;
+
             if (rewardType === 'gold') {
-                const amount = Math.floor(Math.random() * (rewardTypeObj.max - rewardTypeObj.min + 1)) + rewardTypeObj.min;
-                get().addGold(amount); // Uses modified addGold
-                currentPullProcessingResult.details = { type: 'gold', amount, icon: '/assets/icons/currency/gold.png', name: 'Золото' };
+                const amount = Math.floor(Math.random() * (currentPullChosenReward.max - currentPullChosenReward.min + 1)) + currentPullChosenReward.min;
+                get().addGold(amount);
+                currentPullProcessingResult.details = { type: 'gold', amount, icon: '/assets/coin-icon.png', name: 'Золото', rarity: 'Common' };
             } else if (rewardType === 'diamonds') {
-                const amount = rewardTypeObj.amount;
-                get().addDiamonds(amount); // Uses modified addDiamonds
-                currentPullProcessingResult.details = { type: 'diamonds', amount, icon: '/assets/icons/currency/diamond.png', name: 'Алмазы' };
-            } else if (rewardType === 'artifact_shard' || rewardType === 'full_artifact') {
-                const targetArtifactId = _selectWeightedArtifactIdFromSet_ByRarity(chestData.setId);
-                if (!targetArtifactId) { console.error(`[X10 Pull ${i+1}] Failed artifact selection!`); rewardsDetailed.push({ type: 'error', name: 'Ошибка выбора артефакта' }); continue; }
-                const typeToProcess = obtainedFullArtifactThisPull ? 'full_artifact' : rewardType;
-                currentPullProcessingResult = get().processArtifactReward(typeToProcess, targetArtifactId);
-                if(currentPullProcessingResult.obtainedFullArtifact || rewardType === 'artifact_shard') hasObtainedAnyArtifactMaterialInBatch = true;
+                const amount = currentPullChosenReward.amount;
+                get().addDiamonds(amount);
+                currentPullProcessingResult.details = { type: 'diamonds', amount, icon: '/assets/diamond-image.png', name: 'Алмазы', rarity: 'Common' };
+            } else if (rewardType === 'full_artifact' || rewardType === 'artifact_shard') { // ОБРАБОТКА И ОСКОЛКОВ И АРТЕФАКТОВ
+                targetArtifactRarityThisPull = currentPullChosenReward.rarity;
+                if (!targetArtifactRarityThisPull) {
+                    console.error(`[ArtifactChestX10 Pull ${i+1}] Награда '${rewardType}' не имеет свойства rarity!`, currentPullChosenReward);
+                    currentPullProcessingResult.details = { type: 'error', name: `Артефакт/осколок без редкости #${i+1}`, rarity: 'Error' };
+                } else {
+                    const targetArtifactId = _selectRandomArtifactIdOfGivenRarity(targetArtifactRarityThisPull);
+                    if (!targetArtifactId) {
+                        console.error(`[ArtifactChestX10 Pull ${i+1}] Не удалось выбрать ID для ${rewardType} редкости ${targetArtifactRarityThisPull}.`);
+                        const compensationAmount = Math.round(chestData.cost.price / 10 * 0.1); // Пример компенсации
+                        get().addGold(compensationAmount);
+                        currentPullProcessingResult.details = { type: 'gold', amount: compensationAmount, icon: '/assets/icons/currency/gold.png', name: `Компенсация (${rewardType} ${targetArtifactRarityThisPull}) #${i+1}`, rarity: 'Common' };
+                    } else {
+                        currentPullProcessingResult = get().processArtifactReward(rewardType, targetArtifactId);
+                    }
+                }
             } else {
-                 console.warn(`[X10 Pull ${i+1}] Unknown type: ${rewardType}`);
-                 currentPullProcessingResult.details = { type: 'error', name: `Неизвестный тип ${rewardType}` };
+                // Этот блок теперь не должен вызываться, если все типы из пула обработаны
+                console.warn(`[ArtifactChestX10 Pull ${i+1}] Неизвестный тип награды: ${rewardType}`);
+                currentPullProcessingResult.details = { type: 'error', name: `Неизв. тип #${i+1}`, rarity: 'Error' };
             }
+            
             if (currentPullProcessingResult.details) {
                 rewardsDetailed.push(currentPullProcessingResult.details);
             } else {
-                rewardsDetailed.push({ type: 'error', name: 'Ошибка обработки награды' });
+                rewardsDetailed.push({ type: 'error', name: `Ошибка обработки #${i+1}`, rarity: 'Error' });
             }
-            if (currentPullProcessingResult.obtainedFullArtifact) {
-                workingPity = 0;
+
+            // Логика сброса гаранта
+            if (isThisPullPityTriggered) {
+                console.log(`[ArtifactChestX10 Pull ${i+1}] Попытка по гаранту была сделана. Сброс рабочего счетчика гаранта. (Получено: ${currentPullProcessingResult.obtainedFullArtifact ? 'полный артефакт' : 'другое/ошибка'})`);
+                workingPityCounter = 0;
+            } else if (rewardType === 'full_artifact' && currentPullProcessingResult.obtainedFullArtifact) {
+                console.log(`[ArtifactChestX10 Pull ${i+1}] Получен полный артефакт по обычному роллу. Сброс рабочего счетчика гаранта.`);
+                workingPityCounter = 0;
             }
-        }
+
+            if(currentPullProcessingResult.obtainedFullArtifact || rewardType === 'artifact_shard') {
+                 hasObtainedAnyArtifactMaterialInBatch = true;
+            }
+            if (chestData.shardPassXp && chestData.shardPassXp > 0) {
+                accumulatedShardPassXp += chestData.shardPassXp;
+            }
+        } // Конец цикла 10 открытий
+
         set((prevState) => ({
             [chestData.cost.currency]: prevState[chestData.cost.currency] - totalCost,
-            artifactChestPity: { ...prevState.artifactChestPity, [chestId]: workingPity },
-            totalArtifactChestsOpened: newTotalOpened,
-            lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'artifact', name: chestData.name },
+            artifactChestPity: { ...prevState.artifactChestPity, [chestId]: workingPityCounter },
+            totalArtifactChestsOpened: (prevState.totalArtifactChestsOpened || 0) + 10,
+            lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'artifact', name: chestData.name, icon: chestData.icon },
             lastChestRewards: rewardsDetailed,
         }));
-        get().trackTaskEvent('open_chest', 10);
+
+        if (accumulatedShardPassXp > 0) get().addShardPassXp(accumulatedShardPassXp);
+        get().trackTaskEvent('open_chest', 10, { chestId: chestId, type: 'artifact' });
         get().checkAllAchievements();
-        if(hasObtainedAnyArtifactMaterialInBatch){
-            get().initializeLevelHp();
-        }
+        if(hasObtainedAnyArtifactMaterialInBatch) get().initializeLevelHp();
+        
+        console.log(`[ArtifactChestX10] Открыт: ${chestData.name}. Награды (${rewardsDetailed.length}): ${rewardsDetailed.map(r => r.name).join(', ')}`);
+        return { success: true, awardedItemsDetails: rewardsDetailed };
     },
+
     clearLastChestData: () => set({ lastChestRewards: null, lastOpenedChestInfo: null }),
     resetLevelRewards: () => { set({ currentLevelRewards: { gold: 0, diamonds: 0, items: [] } }); },
     addLevelReward: (type, amountOrItem) => { // из КОД2

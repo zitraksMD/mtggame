@@ -49,10 +49,10 @@ export const GEAR_CHESTS = [
         cost: { currency: 'diamonds', price: 0 },
         possibleRarities: ["Common", "Uncommon", "Rare", "Epic"],
         rarityChances: {
-            "Common": 0.60,
-            "Uncommon": 0.25,
-            "Rare": 0.12,
-            "Epic": 0.03,
+            "Common": 0.65,
+            "Uncommon": 0.27,
+            "Rare": 0.07,
+            "Epic": 0.01,
         },
         pity: [
             { rarity: "Rare", limit: 10 },
