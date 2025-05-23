@@ -177,34 +177,43 @@ const ItemDetailPopup = ({
 
 
     // Отображение стоимости улучшения (логика из код2, но использует itemMaxActualLevel)
-const displayUpgradeCost = () => { // Теперь эта функция будет возвращать объект
+const displayUpgradeCost = () => { // Если у вас эта функция так называется
     if (!item || typeof getGoldUpgradeCost !== 'function' || typeof getDiamondUpgradeCost !== 'function') {
-        return { isNa: true, textNa: "(N/A)" }; // Возвращаем объект для случая N/A
+        return { isNa: true, textNa: "(N/A)" };
     }
 
-    // currentActualLevel и itemMaxActualLevel уже должны быть определены в компоненте
     if (currentActualLevel >= itemMaxActualLevel) {
-        return null; // Нет стоимости для отображения, если предмет максимального уровня
+        return null;
     }
 
     const goldCost = getGoldUpgradeCost(currentActualLevel, item.rarity);
     const diamondCost = getDiamondUpgradeCost(currentActualLevel, item.rarity);
 
-    // Проверяем на неопределенность или бесконечность перед тем, как считать, что стоимости нет
     const goldIsUnavailable = goldCost === Infinity || goldCost === undefined;
     const diamondIsUnavailable = diamondCost === Infinity || diamondCost === undefined;
 
     if (goldIsUnavailable && diamondIsUnavailable) {
         return { isNa: true, textNa: "(N/A)" };
     }
-    // Условие для бесплатного улучшения, если оба стоят 0 или меньше
     if ((goldIsUnavailable || goldCost <= 0) && (diamondIsUnavailable || diamondCost <= 0)) {
         return { isFree: true, textFree: "Бесплатно" };
     }
 
+    // --- НОВОЕ: Проверка достаточности золота ---
+    let hasSufficientGold = true; // По умолчанию считаем, что золота достаточно
+    if (goldCost > 0 && !goldIsUnavailable) {
+        // playerGold приходит как проп в компонент ItemDetailPopup
+        if (typeof playerGold !== 'number' || playerGold < goldCost) {
+            hasSufficientGold = false;
+        }
+    }
+    // Аналогично можно добавить hasSufficientDiamonds, если нужно
+
     return {
         gold: (goldCost > 0 && !goldIsUnavailable) ? goldCost : null,
         diamonds: (diamondCost > 0 && !diamondIsUnavailable) ? diamondCost : null,
+        hasSufficientGold: hasSufficientGold, // Добавляем флаг в результат
+        // hasSufficientDiamonds: hasSufficientDiamonds, // Если нужно
     };
 };
 
@@ -374,35 +383,38 @@ const displayUpgradeCost = () => { // Теперь эта функция буд�
         {/* Убираем отображение уровня в скобках из основного текста кнопки */}
         {!canUpgrade ? "Max." : "Upgrade"}
     </span>
+{canUpgrade && (() => {
+    const costInfo = displayUpgradeCost(); // Вызываем вашу обновленную функцию
+    if (!costInfo) return null;
 
-    {/* Обновленное отображение стоимости ВНУТРИ КНОПКИ */}
-    {canUpgrade && (() => { // Самовызывающаяся функция для рендеринга стоимости
-        const costInfo = displayUpgradeCost(); // Вызываем обновленную функцию
-        if (!costInfo) return null;
-
-        return (
-            <span className="upgrade-cost-display"> {/* Используем тот же класс, что и для панели валюты, или новый */}
-                {costInfo.isNa && <span className="cost-info-text">{costInfo.textNa}</span>}
-                {costInfo.isFree && <span className="cost-info-text">{costInfo.textFree}</span>}
-                
-                {costInfo.gold && (
-                    <span className="cost-item cost-gold">
-                        <span>{costInfo.gold.toLocaleString()}</span>
-                        <img src="/assets/coin-icon.png" alt="" className="cost-icon" />
+    return (
+        <span className="upgrade-cost-display">
+            {costInfo.isNa && <span className="cost-info-text">{costInfo.textNa}</span>}
+            {costInfo.isFree && <span className="cost-info-text">{costInfo.textFree}</span>}
+            
+            {costInfo.gold && (
+                <span className="cost-item cost-gold">
+                    {/* Оборачиваем число в span и добавляем класс, если золота не хватает */}
+                    <span className={!costInfo.hasSufficientGold ? 'insufficient-funds' : ''}>
+                        {costInfo.gold.toLocaleString()}
                     </span>
-                )}
-                {/* Если стоимость может быть и золотом И алмазами одновременно ВНУТРИ кнопки, добавляем отступ */}
-                {costInfo.gold && costInfo.diamonds && <span style={{margin: '0 4px'}}></span>} 
+                    <img src="/assets/coin-icon.png" alt="" className="cost-icon" />
+                </span>
+            )}
 
-                {costInfo.diamonds && (
-                    <span className="cost-item cost-diamonds">
-                        <span>{costInfo.diamonds.toLocaleString()}</span>
-                        <img src="/assets/diamond-image.png" alt="" className="cost-icon" />
-                    </span>
-                )}
-            </span>
-        );
-    })()}
+            {/* Разделитель, если есть и золото, и алмазы */}
+            {costInfo.gold && costInfo.diamonds && <span style={{margin: '0 3px'}}></span>} 
+
+            {costInfo.diamonds && (
+                <span className="cost-item cost-diamonds">
+                    {/* Здесь также можно добавить проверку для алмазов, если нужно */}
+                    <span>{costInfo.diamonds.toLocaleString()}</span>
+                    <img src="/assets/diamond-image.png" alt="" className="cost-icon" />
+                </span>
+            )}
+        </span>
+    );
+})()}
 </button>
 
                             {canUpgrade &&
