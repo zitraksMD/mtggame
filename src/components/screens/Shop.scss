@@ -20,6 +20,10 @@ $shop-header-background: rgba(10, 15, 40, 0.9) !default; // Фон шапки
 $section-content-box-background: rgba(30, 35, 70, 0.6) !default; // Фон для вложенных блоков контента
 $section-content-box-border: rgba(255, 255, 255, 0.1) !default;
 
+$resource-group-background: rgba(0, 0, 0, 0.25); // Фон для групп ресурсов/ключей
+$resource-group-border-radius: 8px;
+$resource-group-padding: 8px 12px;
+
 // =======================================================
 // ===               ОСНОВНЫЕ СТИЛИ ЭКРАНА МАГАЗИНА               ===
 // =======================================================
@@ -40,52 +44,72 @@ $section-content-box-border: rgba(255, 255, 255, 0.1) !default;
 }
 
 .shop-header-permanent {
-    flex-shrink: 0; // Шапка не должна сжиматься
-    padding: 8px 15px;
-    background-color: $shop-header-background; // Фон для шапки
-    border-bottom: 1px solid $section-content-box-border; // Единообразная граница
+  flex-shrink: 0;
+  padding: 8px 15px; // Общие отступы для самой шапки
+  background-color: $shop-header-background; // Фон всей шапки (может быть прозрачным, если группы полностью его перекрывают)
+  border-bottom: 1px solid $section-content-box-border;
+  display: flex;
+  justify-content: space-between; // Размещает группы по краям
+  align-items: center; // Выравнивает группы по центру вертикально
+  width: 100%;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  // min-height для шапки, чтобы учесть внутренние отступы и высоту контента
+  min-height: 50px; // Подберите значение или оставьте на усмотрение контента + padding
+
+  // Общий стиль для контейнеров групп (ресурсы и ключи)
+  .resource-group-container {
     display: flex;
-    justify-content: center; // По умолчанию валюта справа
     align-items: center;
-    width: 100%;
-    box-sizing: border-box;
-    position: sticky; // Для "всегда видимой" шапки
-    top: 0;           // Прилипает к верху при скролле .shop-scrollable-content
-    z-index: 100;       // Чтобы была поверх скроллящегося контента
+    background-color: $resource-group-background;
+    border-radius: $resource-group-border-radius;
+    padding: $resource-group-padding;
+    // border: 1px solid rgba(255, 255, 255, 0.1); // Опциональная рамка для групп
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); // Опциональная тень
+  }
 
-    // Стили для отображения валюты игрока в шапке
-    .player-currency-display-shop {
-        display: flex;
-        gap: 20px; // Отступ между золотом и алмазами
-        align-items: center;
-          margin-top: max(
-    70px,
-    calc(45px + env(safe-area-inset-top, 0px))
-  );
-        margin-bottom: 0;
-        margin-left: 0;
-        background-color: transparent;
-        border: none;
-        box-shadow: none;
-        padding: 0; // Убираем внутренние отступы, если они были
+  .player-resources-display { // Контейнер для золота и алмазов
+    @extend .resource-group-container; // Наследуем общие стили
+    gap: 18px; // Отступ между золотом и алмазами
 
-        .currency-item {
-            display: flex;
-            align-items: center;
-            gap: 8px; // Отступ между иконкой и текстом
-            font-size: 16px;
-            font-weight: bold;
-            color: #e0e5f0; // Светлый цвет текста для валюты
+    .currency-item {
+      display: flex;
+      align-items: center;
+      gap: 7px; // Отступ между иконкой валюты и текстом
+      font-size: 16px;
+      font-weight: bold;
+      color: #e0e5f0;
 
-            .currency-icon-shop { // Иконка валюты в шапке
-                height: 24px; // Размер иконок
-                width: 24px;
-                object-fit: contain;
-            }
-        }
+      .currency-icon-shop {
+        height: 22px; // Немного уменьшил для компактности в группе
+        width: 22px;
+        object-fit: contain;
+      }
     }
-}
+  }
 
+  .player-keys-display { // Контейнер для ключей
+    @extend .resource-group-container; // Наследуем общие стили
+    gap: 12px; // Отступ между разными типами ключей
+
+    .key-item {
+      display: flex;
+      align-items: center;
+      gap: 5px; // Отступ между иконкой ключа и количеством
+      font-size: 15px;
+      font-weight: bold;
+      color: #e0e5f0;
+
+      .key-icon-shop {
+        height: 18px; // Иконки ключей могут быть чуть меньше
+        width: 18px;
+        object-fit: contain;
+      }
+    }
+  }
+}
 .shop-scrollable-content {
     flex-grow: 1; // Занимает всё оставшееся пространство под шапкой
     overflow-y: auto; // Включаем вертикальную прокрутку только для этого блока

@@ -8,6 +8,7 @@ import forgeRecipes from "../data/forgeDatabase";
 import achievementsData from '../data/achievementsDatabase';
 import { RACES, getRaceDataById } from '../config/raceData';
 import { ALL_ZONES_CONFIG } from '../data/worldMapData';
+import { REWARD_TYPES } from '../data/ShardPassRewardsData.js'; // <<< ДОБАВЬТЕ ЭТОТ ИМПОРТ
 
 import {
     ALL_TASK_DEFINITIONS,
@@ -181,7 +182,9 @@ const loadFromLocalStorage = () => {
                 booleanFlags: {}, levelsCompleted: {},
                 achievementLevel: 1, achievementXp: 0,
                 artifactLevels: {}, artifactChestPity: {},
-                gearKeys: 0, totalArtifactChestsOpened: 0,
+                rareChestKeys: 10,   
+                epicChestKeys: 25,
+                 totalArtifactChestsOpened: 0,
                 gearChestPity: {}, totalGearChestsOpened: 0,
                 dailyDeals: [], dailyDealsLastGenerated: null,
                 lastOpenedChestInfo: null, lastChestRewards: null,
@@ -217,7 +220,7 @@ const loadFromLocalStorage = () => {
             lastEnergyRefillTimestamp: Date.now(), dailyShopPurchases: {}, achievementsStatus: {},
             totalGoldCollected: 0, totalKills: 0, booleanFlags: {}, levelsCompleted: {},
             achievementLevel: 1, achievementXp: 0, artifactLevels: {}, artifactChestPity: {},
-            gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
+            rareChestKeys: 10, epicChestKeys: 25, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
             dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
             treasureChestAttempts: 3, treasureChestLastReset: null, activeDebuffs: [],
             isAffectedByWeakeningAura: false, completedZones: {}, userPhotoUrl: null,
@@ -304,7 +307,7 @@ const loadFromLocalStorage = () => {
             energyMax: DEFAULT_MAX_ENERGY, energyCurrent: DEFAULT_MAX_ENERGY, lastEnergyRefillTimestamp: Date.now(),
             dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0, booleanFlags: {},
             levelsCompleted: {}, achievementLevel: 1, achievementXp: 0, artifactLevels: {}, artifactChestPity: {},
-            gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0, dailyDeals: [],
+            rareChestKeys: 10, epicChestKeys: 25, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0, dailyDeals: [],
             dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null, treasureChestAttempts: 3,
             treasureChestLastReset: null, activeDebuffs: [], isAffectedByWeakeningAura: false, completedZones: {},
             userPhotoUrl: null, currentChapterId: INITIAL_CHAPTER_ID,
@@ -437,6 +440,8 @@ const useGameStore = create((set, get) => ({
     diamonds: savedState.diamonds,
     toncoinShards: savedState.toncoinShards || 0,
     toncoinBalance: savedState.toncoinBalance || 0,
+    rareChestKeys: savedState.rareChestKeys ?? 0,   // Если в старом сохранении нет, будет 0 (или 10, если хотите дать их старым игрокам)
+    epicChestKeys: savedState.epicChestKeys ?? 0,
     username: savedState.username,
     userPhotoUrl: savedState.userPhotoUrl,
     powerLevel: savedState.powerLevel,
@@ -465,7 +470,6 @@ const useGameStore = create((set, get) => ({
     achievementLevel: savedState.achievementLevel,
     achievementXp: savedState.achievementXp,
     artifactChestPity: savedState.artifactChestPity,
-    gearKeys: savedState.gearKeys,
     totalArtifactChestsOpened: savedState.totalArtifactChestsOpened,
     gearChestPity: savedState.gearChestPity,
     totalGearChestsOpened: savedState.totalGearChestsOpened,
@@ -1810,275 +1814,338 @@ upgradeItem: (itemObjectToUpgrade) => { // Принимает весь объе�
            set({ powerLevel: finalPowerLevel });
         }
     },
-    addItemToInventoryLogic: (currentInventory, itemData) => { // из КОД2
-        const newItemInstance = createItemInstance(itemData);
-        if(!newItemInstance) return currentInventory;
+ addItemToInventoryLogic: (currentInventory, itemData) => {
+        const newItemInstance = createItemInstance(itemData); // <<< Прямой вызов, если createItemInstance - хелпер
+        if (!newItemInstance) return currentInventory;
         return [...currentInventory, newItemInstance];
     },
-openGearChest: (chestId) => {
-    const state = get();
-    const chestData = getGearChestById(chestId);
 
-    if (!chestData) {
-        console.error(`[GearChest] Сундук с ID ${chestId} не найден.`);
-        return { success: false, error: "Сундук не найден" }; // Возвращаем объект для обработки в UI
-    }
-
-    const cost = chestData.cost;
-    if (state[cost.currency] < cost.price) {
-        // В UI лучше показывать сообщение, а не alert, но для отладки alert подойдет
-        alert(`Недостаточно ${cost.currency}! Нужно ${cost.price}`);
-        return { success: false, error: `Недостаточно ${cost.currency}` };
-    }
-
-    // 1. Инициализация и инкремент счетчиков гаранта
-    const currentPityForChest = state.gearChestPity[chestId] || {};
-    let newPityState = { ...currentPityForChest }; // Копируем текущие счетчики для этой сессии открытия
-    
-    const pityConfigs = chestData.pity ? (Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity]) : [];
-
-    pityConfigs.forEach(pConfig => {
-        const key = pConfig.rarity.toLowerCase();
-        newPityState[key] = (newPityState[key] || 0) + 1;
-    });
-
-    // 2. Определение гарантированной редкости (если есть)
-    let guaranteedRarityByPity = null;
-    // Сортируем конфигурации гарантов от высшей редкости к низшей, чтобы проверить сначала самый ценный гарант
-    const sortedPityConfigs = [...pityConfigs].sort((a, b) => (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0));
-
-    for (const pConfig of sortedPityConfigs) {
-        const key = pConfig.rarity.toLowerCase();
-        if (newPityState[key] >= pConfig.limit) {
-            guaranteedRarityByPity = pConfig.rarity;
-            console.log(`[GearChest] Сработал гарант для ${pConfig.rarity} (${newPityState[key]}/${pConfig.limit}) для сундука ${chestId}`);
-            break; // Берем самый высокий сработавший гарант
+    addKeys: (keyType, amount) => set(state => {
+        if (keyType === REWARD_TYPES.RARE_CHEST_KEY) {
+            return { rareChestKeys: Math.max(0, state.rareChestKeys + amount) };
         }
-    }
+        if (keyType === REWARD_TYPES.EPIC_CHEST_KEY) {
+            return { epicChestKeys: Math.max(0, state.epicChestKeys + amount) };
+        }
+        console.warn("addKeys: Unknown keyType", keyType);
+        return {};
+    }),
 
-    // 3. Определение итоговой редкости предмета
-    const finalRarity = guaranteedRarityByPity || _rollWeightedRarity_Gear(chestData.rarityChances);
+    openGearChest: (chestId) => {
+        const state = get();
+        const chestData = getGearChestById(chestId);
 
-    // 4. Получение предмета
-    const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity);
+        if (!chestData) {
+            console.error(`[GearChest] Сундук с ID ${chestId} не найден.`);
+            return { success: false, error: "Сундук не найден", paymentMethodUsed: null };
+        }
 
-    if (!obtainedItemData) {
-        console.error(`[GearChest] Не удалось получить предмет редкости ${finalRarity}. Отмена.`);
-        // Важно: если здесь происходит отмена, инкрементированные pity-счетчики (в newPityState)
-        // не должны быть сохранены, так как открытие фактически не состоялось (предмет не получен, валюта не списана).
-        // В текущей структуре это нормально, так как set() вызывается позже.
-        return { success: false, error: "Ошибка генерации предмета" };
-    }
-    const actualObtainedRarity = obtainedItemData.rarity;
+        let paymentMethodUsed = null;
+        let currencyToDeductName = null;
+        let currencyAmountToDeduct = 0;
+        let keyTypeToDeduct = null;
+        let keysAmountToDeduct = 0;
 
-    // 5. Сброс счетчиков гаранта на основе ФАКТИЧЕСКИ выпавшей редкости
-    // Если выпал предмет редкости R, то сбрасываются все счетчики гарантов для редкостей <= R.
-    pityConfigs.forEach(pConfig => {
-        const pityRarityKey = pConfig.rarity.toLowerCase();
-        // Если полученная редкость такая же или лучше, чем та, на которую гарант, сбрасываем этот гарант.
-        if (rarityOrder[actualObtainedRarity] >= rarityOrder[pConfig.rarity]) {
-            if (newPityState[pityRarityKey] > 0) { // Сбрасываем, только если был прогресс
-                 console.log(`[GearChest] Счетчик гаранта для ${pConfig.rarity} (был ${newPityState[pityRarityKey]}) сброшен, т.к. выпал ${actualObtainedRarity}.`);
-                newPityState[pityRarityKey] = 0;
+        const keyForFreeOpen = chestData.keyToOpenForFree;
+        const currencyCost = chestData.cost;
+
+        // 1. Попытка использовать ключ
+        if (keyForFreeOpen) {
+            if (keyForFreeOpen === REWARD_TYPES.RARE_CHEST_KEY && state.rareChestKeys >= 1) {
+                keyTypeToDeduct = REWARD_TYPES.RARE_CHEST_KEY;
+                keysAmountToDeduct = 1;
+                paymentMethodUsed = 'key';
+            } else if (keyForFreeOpen === REWARD_TYPES.EPIC_CHEST_KEY && state.epicChestKeys >= 1) {
+                keyTypeToDeduct = REWARD_TYPES.EPIC_CHEST_KEY;
+                keysAmountToDeduct = 1;
+                paymentMethodUsed = 'key';
             }
         }
-    });
 
-    // Подготовка данных для UI и обновления состояния
-    // const newItemInstance = createItemInstance(obtainedItemData); // Вы это делаете в addItemToInventoryLogic
-    const rewardDetailsForUI = {
-        type: 'gear', id: obtainedItemData.id, name: obtainedItemData.name,
-        icon: obtainedItemData.image, rarity: actualObtainedRarity, amount: 1,
-    };
-    
-    // 6. Обновление состояния игрока
-    set(prevState => {
-        const updatedInventory = get().addItemToInventoryLogic(prevState.inventory, obtainedItemData);
-            console.log('[STORE] Inventory in openGearChest updated:', JSON.parse(JSON.stringify(updatedInventory))); // <-- ЛОГ
-        return {
-            [cost.currency]: prevState[cost.currency] - cost.price,
-            totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 1,
-            gearChestPity: {
-                ...prevState.gearChestPity,
-                [chestId]: newPityState // Сохраняем обновленные счетчики гарантов
-            },
-            inventory: updatedInventory,
-            lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'gear', name: chestData.name, icon: chestData.icon },
-            lastChestRewards: [rewardDetailsForUI]
-        };
-    });
+        // 2. Если ключ не использован, попытка использовать валюту
+        if (paymentMethodUsed !== 'key') {
+            if (currencyCost && typeof currencyCost.price === 'number') {
+                currencyToDeductName = currencyCost.currency;
+                if (currencyCost.price > 0) {
+                    if (currencyCost.currency === 'gold') {
+                        if (state.gold >= currencyCost.price) {
+                            currencyAmountToDeduct = currencyCost.price;
+                            paymentMethodUsed = 'currency';
+                        } else {
+                            alert(`Недостаточно золота! Нужно ${currencyCost.price}`);
+                            return { success: false, error: "Недостаточно золота", paymentMethodUsed: null };
+                        }
+                    } else if (currencyCost.currency === 'diamonds') {
+                        if (state.diamonds >= currencyCost.price) {
+                            currencyAmountToDeduct = currencyCost.price;
+                            paymentMethodUsed = 'currency';
+                        } else {
+                            alert(`Недостаточно алмазов! Нужно ${currencyCost.price}`);
+                            return { success: false, error: "Недостаточно алмазов", paymentMethodUsed: null };
+                        }
+                    } else {
+                        console.error(`[GearChest] Неизвестная валюта: ${currencyCost.currency} для сундука ${chestId} с ценой > 0`);
+                        return { success: false, error: "Неизвестная валюта", paymentMethodUsed: null };
+                    }
+                } else {
+                    currencyAmountToDeduct = 0;
+                    paymentMethodUsed = 'free_by_price_0';
+                }
+            } else {
+                paymentMethodUsed = 'free_no_cost_config';
+            }
+        }
 
-    // 7. Начисление опыта ShardPass
-    if (chestData.shardPassXp && chestData.shardPassXp > 0) {
-        get().addShardPassXp(chestData.shardPassXp);
-        console.log(`[ShardPass] Начислено ${chestData.shardPassXp} XP за открытие сундука ${chestData.name}`);
-    }
+        if (!paymentMethodUsed) {
+            console.error(`[GearChest] Не удалось определить способ оплаты для ${chestId}.`);
+            return { success: false, error: "Ошибка оплаты", paymentMethodUsed: null };
+        }
 
-    // 8. Отслеживание события и проверка достижений
-    get().trackTaskEvent('open_chest', 1, { chestId: chestId, rarity: actualObtainedRarity });
-    get().checkAllAchievements();
-
-    console.log(`[GearChest] Открыт: ${chestData.name}. Получено: ${obtainedItemData.name} (${actualObtainedRarity}). Гарант сработал для: ${guaranteedRarityByPity || 'Нет'}`);
-    return { success: true, awardedItem: obtainedItemData }; // Возвращаем полученный предмет для UI
-},
-
-   // В вашем файле useGameStore.js
-
-// Убедитесь, что эти функции и данные доступны в области видимости:
-// getGearChestById, _rollWeightedRarity_Gear, _selectRandomGearItemByRarity_Gear,
-// rarityOrder (объект для определения "веса" редкостей),
-// createItemInstance (или ваша логика addItemToInventoryLogic)
-
-openGearChestX10: (chestId) => {
-    const state = get();
-    const chestData = getGearChestById(chestId);
-
-    if (!chestData) {
-        console.error(`[GearChestX10] Сундук с ID ${chestId} не найден.`);
-        return { success: false, error: "Сундук не найден", awardedItems: [] };
-    }
-
-    const cost = chestData.cost;
-    const totalCost = cost.price * 10;
-
-    if (state[cost.currency] < totalCost) {
-        alert(`Недостаточно ${cost.currency}! Нужно ${totalCost}`);
-        return { success: false, error: `Недостаточно ${cost.currency}`, awardedItems: [] };
-    }
-
-    let workingPity = { ...(state.gearChestPity[chestId] || {}) };
-    const rewardsDetailed = [];
-    const newItemInstances = []; // Сюда будут добавляться УЖЕ СОЗДАННЫЕ экземпляры
-    let accumulatedShardPassXp = 0;
-
-    const pityConfigs = chestData.pity ? (Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity]) : [];
-    const sortedPityConfigs = [...pityConfigs].sort((a, b) => (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0));
-
-    console.log(`[GearChestX10] Начало открытия x10 для ${chestId}. Начальные pity:`, JSON.parse(JSON.stringify(workingPity)));
-
-    for (let i = 0; i < 10; i++) {
-        console.log(`[GearChestX10] Открытие #${i + 1}/10. Текущие workingPity перед инкрементом:`, JSON.parse(JSON.stringify(workingPity)));
-        let pityCountersForThisPull = { ...workingPity };
-
+        const currentPityForChest = state.gearChestPity[chestId] || {};
+        let newPityState = { ...currentPityForChest };
+        const pityConfigs = chestData.pity ? (Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity]) : [];
         pityConfigs.forEach(pConfig => {
             const key = pConfig.rarity.toLowerCase();
-            pityCountersForThisPull[key] = (pityCountersForThisPull[key] || 0) + 1;
+            newPityState[key] = (newPityState[key] || 0) + 1;
         });
-        console.log(`[GearChestX10] Pity после инкремента для открытия #${i + 1}:`, JSON.parse(JSON.stringify(pityCountersForThisPull)));
 
-        let guaranteedRarityThisPull = null;
+        let guaranteedRarityByPity = null;
+        const sortedPityConfigs = [...pityConfigs].sort((a, b) => (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0));
         for (const pConfig of sortedPityConfigs) {
             const key = pConfig.rarity.toLowerCase();
-            if (pityCountersForThisPull[key] >= pConfig.limit) {
-                guaranteedRarityThisPull = pConfig.rarity;
-                console.log(`[GearChestX10 Pull ${i+1}] Сработал гарант для ${pConfig.rarity} (${pityCountersForThisPull[key]}/${pConfig.limit})`);
+            if (newPityState[key] >= pConfig.limit) {
+                guaranteedRarityByPity = pConfig.rarity;
+                console.log(`[GearChest] Сработал гарант для ${pConfig.rarity} (${newPityState[key]}/${pConfig.limit}) для сундука ${chestId}`);
                 break;
             }
         }
 
-        const finalRarityThisPull = guaranteedRarityThisPull || _rollWeightedRarity_Gear(chestData.rarityChances);
-        
-        // Лог структуры obtainedItemData ПЕРЕД передачей в createItemInstance
-        const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarityThisPull);
-        console.log(`[X10 Pull ${i+1}] obtainedItemData СТРУКТУРА:`, JSON.parse(JSON.stringify(obtainedItemData)));
-
+        const finalRarity = guaranteedRarityByPity || _rollWeightedRarity_Gear(chestData.rarityChances); // <<< Прямой вызов
+        const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarity); // <<< Прямой вызов
 
         if (!obtainedItemData) {
-            console.error(`[GearChestX10 Pull ${i + 1}] Не удалось получить предмет редкости ${finalRarityThisPull}! Pity сохраняются.`);
-            rewardsDetailed.push({ type: 'error', name: `Ошибка получения ${finalRarityThisPull}`, rarity: 'Error', icon: '/assets/default-item.png' });
-            workingPity = { ...pityCountersForThisPull };
-            continue;
+            console.error(`[GearChest] Не удалось получить предмет редкости ${finalRarity}. Отмена.`);
+            return { success: false, error: "Ошибка генерации предмета", paymentMethodUsed };
         }
-        
-        // Предполагаем, что obtainedItemData.rarity и obtainedItemData.name существуют, если obtainedItemData не null
-        const actualObtainedRarityThisPull = obtainedItemData.rarity; 
-        console.log(`[GearChestX10 Pull ${i+1}] Выпал: ${obtainedItemData.name} (${actualObtainedRarityThisPull}). Гарант был: ${guaranteedRarityThisPull || 'Нет'}`);
+        const actualObtainedRarity = obtainedItemData.rarity;
 
         pityConfigs.forEach(pConfig => {
             const pityRarityKey = pConfig.rarity.toLowerCase();
-            if (rarityOrder[actualObtainedRarityThisPull] >= rarityOrder[pConfig.rarity]) {
-                if (pityCountersForThisPull[pityRarityKey] > 0) {
-                    console.log(`[GearChestX10 Pull ${i+1}] Счетчик гаранта для ${pConfig.rarity} (был ${pityCountersForThisPull[pityRarityKey]}) сброшен до 0, т.к. выпал ${actualObtainedRarityThisPull}.`);
-                    pityCountersForThisPull[pityRarityKey] = 0;
+            if (rarityOrder[actualObtainedRarity] >= rarityOrder[pConfig.rarity]) {
+                if (newPityState[pityRarityKey] > 0) {
+                    newPityState[pityRarityKey] = 0;
                 }
             }
         });
-        
-        workingPity = { ...pityCountersForThisPull };
-        console.log(`[GearChestX10] Pity после сброса для открытия #${i + 1} (станет workingPity для #${i + 2}):`, JSON.parse(JSON.stringify(workingPity)));
 
-        // createItemInstance должна принимать объект obtainedItemData и возвращать объект экземпляра
-        const newItemInstanceWithUid = createItemInstance(obtainedItemData); 
-        // Лог структуры того, что ВЕРНУЛА createItemInstance
-        console.log(`[X10 Pull ${i+1}] createItemInstance output:`, JSON.parse(JSON.stringify(newItemInstanceWithUid))); 
-
-        if(!newItemInstanceWithUid) { 
-            console.error(`[GearChestX10 Pull ${i + 1}] Ошибка создания экземпляра для ${obtainedItemData.id}`);
-            rewardsDetailed.push({ type: 'error', name: `Ошибка экземпляра ${obtainedItemData.name}`, rarity: 'Error', icon: '/assets/default-item.png' });
-            continue; 
-        }
-
-        newItemInstances.push(newItemInstanceWithUid); // Добавляем корректный экземпляр
-
-        const rewardDetailForPopup = {
-            type: 'gear',
-            id: newItemInstanceWithUid.id,
-            uid: newItemInstanceWithUid.uid,
-            name: newItemInstanceWithUid.name,
-            icon: newItemInstanceWithUid.image,
-            rarity: newItemInstanceWithUid.rarity,
-            level: newItemInstanceWithUid.level || 0,
-            amount: 1
+        const rewardDetailsForUI = {
+            type: 'gear', id: obtainedItemData.id, name: obtainedItemData.name,
+            icon: obtainedItemData.image, rarity: actualObtainedRarity, amount: 1,
         };
-        rewardsDetailed.push(rewardDetailForPopup);
         
+        set(prevState => {
+            // Используем get().addItemToInventoryLogic, так как addItemToInventoryLogic определен как метод стора
+            // и ваша инструкция "Если это не так [т.е. если это метод стора], верните для них get()" это подтверждает.
+            // Внутри addItemToInventoryLogic вызов createItemInstance уже прямой.
+            const updatedInventory = get().addItemToInventoryLogic(prevState.inventory, obtainedItemData);
+            
+            let resourceUpdates = {};
+            if (paymentMethodUsed === 'currency' && currencyToDeductName && currencyAmountToDeduct > 0) {
+                resourceUpdates[currencyToDeductName] = prevState[currencyToDeductName] - currencyAmountToDeduct;
+            } else if (paymentMethodUsed === 'key' && keyTypeToDeduct && keysAmountToDeduct > 0) {
+                if (keyTypeToDeduct === REWARD_TYPES.RARE_CHEST_KEY) {
+                    resourceUpdates.rareChestKeys = prevState.rareChestKeys - keysAmountToDeduct;
+                } else if (keyTypeToDeduct === REWARD_TYPES.EPIC_CHEST_KEY) {
+                    resourceUpdates.epicChestKeys = prevState.epicChestKeys - keysAmountToDeduct;
+                }
+            }
+
+            return {
+                ...resourceUpdates,
+                totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 1,
+                gearChestPity: {
+                    ...prevState.gearChestPity,
+                    [chestId]: newPityState
+                },
+                inventory: updatedInventory,
+                lastOpenedChestInfo: { chestId: chestId, amount: 1, type: 'gear', name: chestData.name, icon: chestData.icon },
+                lastChestRewards: [rewardDetailsForUI]
+            };
+        });
+
         if (chestData.shardPassXp && chestData.shardPassXp > 0) {
-            accumulatedShardPassXp += chestData.shardPassXp;
+            get().addShardPassXp(chestData.shardPassXp);
         }
-    } // Конец цикла for (10 открытий)
+        get().trackTaskEvent('open_chest', 1, { chestId: chestId, rarity: actualObtainedRarity });
+        get().checkAllAchievements();
 
-    console.log(`[GearChestX10] Завершение открытия x10. Финальные pity для сохранения:`, JSON.parse(JSON.stringify(workingPity)));
+        console.log(`[GearChest] Открыт: ${chestData.name} (Оплата: ${paymentMethodUsed}). Получено: ${obtainedItemData.name} (${actualObtainedRarity}). Гарант: ${guaranteedRarityByPity || 'Нет'}`);
+        return { success: true, awardedItem: obtainedItemData, paymentMethodUsed };
+    },
 
-    set(prevState => {
-        console.log('[STORE X10 Set] prevState.inventory (структура ПЕРЕД):', JSON.parse(JSON.stringify(prevState.inventory.slice(0,5)))); // Первые 5 для краткости
-        console.log(`[STORE X10 Set] prevState.inventory.length: ${prevState.inventory.length}`);
-        console.log(`[STORE X10 Set] newItemInstances.length (добавляемые): ${newItemInstances.length}`);
-        if (newItemInstances.length > 0) {
-             console.log('[STORE X10 Set] newItemInstances[0] (структура ПЕРЕД добавлением):', JSON.parse(JSON.stringify(newItemInstances[0])));
+    openGearChestX10: (chestId) => {
+        const state = get();
+        const chestData = getGearChestById(chestId);
+        const countToOpen = 10;
+
+        if (!chestData) {
+            console.error(`[GearChestX10] Сундук с ID ${chestId} не найден.`);
+            return { success: false, error: "Сундук не найден", awardedItems: [], paymentMethodUsed: null };
         }
 
-        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-        // Просто объединяем существующий инвентарь с массивом НОВЫХ, УЖЕ СОЗДАННЫХ экземпляров.
-        // `newItemInstances` уже содержит готовые экземпляры.
-        const finalInventory = [...prevState.inventory, ...newItemInstances];
-        // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+        let paymentMethodUsed = null;
+        let currencyToDeductName = null;
+        let totalCurrencyAmountToDeduct = 0;
+        let keyTypeToDeduct = null;
+        let totalKeysAmountToDeduct = 0;
+
+        const keyForFreeOpen = chestData.keyToOpenForFree;
+        const currencyCost = chestData.cost;
+
+        if (keyForFreeOpen) {
+            if (keyForFreeOpen === REWARD_TYPES.RARE_CHEST_KEY && state.rareChestKeys >= countToOpen) {
+                keyTypeToDeduct = REWARD_TYPES.RARE_CHEST_KEY;
+                totalKeysAmountToDeduct = countToOpen;
+                paymentMethodUsed = 'key';
+            } else if (keyForFreeOpen === REWARD_TYPES.EPIC_CHEST_KEY && state.epicChestKeys >= countToOpen) {
+                keyTypeToDeduct = REWARD_TYPES.EPIC_CHEST_KEY;
+                totalKeysAmountToDeduct = countToOpen;
+                paymentMethodUsed = 'key';
+            }
+        }
+
+        if (paymentMethodUsed !== 'key') {
+            if (currencyCost && typeof currencyCost.price === 'number') {
+                currencyToDeductName = currencyCost.currency;
+                if (currencyCost.price > 0) {
+                    const totalNeededCurrency = currencyCost.price * countToOpen;
+                    if (currencyCost.currency === 'gold') {
+                        if (state.gold >= totalNeededCurrency) {
+                            totalCurrencyAmountToDeduct = totalNeededCurrency;
+                            paymentMethodUsed = 'currency';
+                        } else {
+                            alert(`Недостаточно золота! Нужно ${totalNeededCurrency}`);
+                            return { success: false, error: "Недостаточно золота", awardedItems: [], paymentMethodUsed: null };
+                        }
+                    } else if (currencyCost.currency === 'diamonds') {
+                        if (state.diamonds >= totalNeededCurrency) {
+                            totalCurrencyAmountToDeduct = totalNeededCurrency;
+                            paymentMethodUsed = 'currency';
+                        } else {
+                            alert(`Недостаточно алмазов! Нужно ${totalNeededCurrency}`);
+                            return { success: false, error: "Недостаточно алмазов", awardedItems: [], paymentMethodUsed: null };
+                        }
+                    } else {
+                         console.error(`[GearChestX10] Неизвестная валюта: ${currencyCost.currency} для ${chestId} с ценой > 0`);
+                         return { success: false, error: "Неизвестная валюта", awardedItems: [], paymentMethodUsed: null };
+                    }
+                } else {
+                    totalCurrencyAmountToDeduct = 0;
+                    paymentMethodUsed = 'free_by_price_0';
+                }
+            } else {
+                paymentMethodUsed = 'free_no_cost_config';
+            }
+        }
+
+        if (!paymentMethodUsed) {
+            console.error(`[GearChestX10] Не удалось определить способ оплаты для ${chestId} x10.`);
+            return { success: false, error: "Ошибка оплаты x10", awardedItems: [], paymentMethodUsed: null };
+        }
+
+        let workingPity = { ...(state.gearChestPity[chestId] || {}) };
+        const rewardsDetailed = [];
+        const newItemInstances = [];
+        let accumulatedShardPassXp = 0;
+        const pityConfigs = chestData.pity ? (Array.isArray(chestData.pity) ? chestData.pity : [chestData.pity]) : [];
+        const sortedPityConfigs = [...pityConfigs].sort((a, b) => (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0));
+
+        console.log(`[GearChestX10] Начало открытия x10 (Оплата: ${paymentMethodUsed}) для ${chestId}. Pity:`, JSON.parse(JSON.stringify(workingPity)));
+
+        for (let i = 0; i < countToOpen; i++) {
+            let pityCountersForThisPull = { ...workingPity };
+            pityConfigs.forEach(pConfig => {
+                const key = pConfig.rarity.toLowerCase();
+                pityCountersForThisPull[key] = (pityCountersForThisPull[key] || 0) + 1;
+            });
+
+            let guaranteedRarityThisPull = null;
+            for (const pConfig of sortedPityConfigs) {
+                const key = pConfig.rarity.toLowerCase();
+                if (pityCountersForThisPull[key] >= pConfig.limit) {
+                    guaranteedRarityThisPull = pConfig.rarity;
+                    break;
+                }
+            }
+            const finalRarityThisPull = guaranteedRarityThisPull || _rollWeightedRarity_Gear(chestData.rarityChances); // <<< Прямой вызов
+            const obtainedItemData = _selectRandomGearItemByRarity_Gear(finalRarityThisPull); // <<< Прямой вызов
+
+            if (!obtainedItemData) {
+                rewardsDetailed.push({ type: 'error', name: `Ошибка ${finalRarityThisPull}`, rarity: 'Error', icon: '/assets/default-item.png' });
+                workingPity = { ...pityCountersForThisPull }; 
+                continue;
+            }
+            const actualObtainedRarityThisPull = obtainedItemData.rarity;
+            pityConfigs.forEach(pConfig => {
+                const pityRarityKey = pConfig.rarity.toLowerCase();
+                if (rarityOrder[actualObtainedRarityThisPull] >= rarityOrder[pConfig.rarity]) {
+                    if (pityCountersForThisPull[pityRarityKey] > 0) {
+                        pityCountersForThisPull[pityRarityKey] = 0;
+                    }
+                }
+            });
+            workingPity = { ...pityCountersForThisPull };
+            const newItemInstanceWithUid = createItemInstance(obtainedItemData); // <<< Прямой вызов
+            if(!newItemInstanceWithUid) {
+                 rewardsDetailed.push({ type: 'error', name: `Ошибка экз. ${obtainedItemData.name}`, rarity: 'Error', icon: '/assets/default-item.png' });
+                 continue;
+            }
+            newItemInstances.push(newItemInstanceWithUid);
+            rewardsDetailed.push({
+                type: 'gear', id: newItemInstanceWithUid.id, uid: newItemInstanceWithUid.uid,
+                name: newItemInstanceWithUid.name, icon: newItemInstanceWithUid.image,
+                rarity: newItemInstanceWithUid.rarity, level: newItemInstanceWithUid.level || 0, amount: 1
+            });
+            if (chestData.shardPassXp && chestData.shardPassXp > 0) {
+                accumulatedShardPassXp += chestData.shardPassXp;
+            }
+        }
+
+        set(prevState => {
+            const finalInventory = [...prevState.inventory, ...newItemInstances]; // newItemInstances уже содержат готовые экземпляры
+            let resourceUpdates = {};
+
+            if (paymentMethodUsed === 'currency' && currencyToDeductName && totalCurrencyAmountToDeduct > 0) {
+                resourceUpdates[currencyToDeductName] = prevState[currencyToDeductName] - totalCurrencyAmountToDeduct;
+            } else if (paymentMethodUsed === 'key' && keyTypeToDeduct && totalKeysAmountToDeduct > 0) {
+                if (keyTypeToDeduct === REWARD_TYPES.RARE_CHEST_KEY) {
+                    resourceUpdates.rareChestKeys = prevState.rareChestKeys - totalKeysAmountToDeduct;
+                } else if (keyTypeToDeduct === REWARD_TYPES.EPIC_CHEST_KEY) {
+                    resourceUpdates.epicChestKeys = prevState.epicChestKeys - totalKeysAmountToDeduct;
+                }
+            }
+            
+            return {
+                ...resourceUpdates,
+                totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + countToOpen,
+                gearChestPity: { 
+                    ...prevState.gearChestPity, 
+                    [chestId]: workingPity 
+                },
+                inventory: finalInventory,
+                lastOpenedChestInfo: { chestId: chestId, amount: countToOpen, type: 'gear', name: chestData.name, icon: chestData.icon },
+                lastChestRewards: rewardsDetailed
+            };
+        });
+
+        if (accumulatedShardPassXp > 0) {
+            get().addShardPassXp(accumulatedShardPassXp);
+        }
+        get().trackTaskEvent('open_chest', countToOpen, { chestId: chestId });
+        get().checkAllAchievements();
         
-        console.log(`[STORE X10 Set] finalInventory.length: ${finalInventory.length}`);
-        console.log('[STORE X10 Set] Итоговый finalInventory для сохранения (структура):', JSON.parse(JSON.stringify(finalInventory.slice(0, prevState.inventory.length + 5)))); // Первые несколько для проверки
-
-        return {
-            [cost.currency]: prevState[cost.currency] - totalCost,
-            totalGearChestsOpened: (prevState.totalGearChestsOpened || 0) + 10, // Используем 10, т.к. цикл на 10 итераций
-            gearChestPity: { 
-                ...prevState.gearChestPity, 
-                [chestId]: workingPity
-            },
-            inventory: finalInventory,
-            lastOpenedChestInfo: { chestId: chestId, amount: 10, type: 'gear', name: chestData.name, icon: chestData.icon },
-            lastChestRewards: rewardsDetailed
-        };
-    });
-
-    if (accumulatedShardPassXp > 0) {
-        get().addShardPassXp(accumulatedShardPassXp);
-        console.log(`[ShardPass] Начислено ${accumulatedShardPassXp} XP за открытие x10 сундука ${chestData.name}`);
-    }
-
-    get().trackTaskEvent('open_chest', 10, { chestId: chestId });
-    get().checkAllAchievements();
-    
-    return { success: true, awardedItems: newItemInstances };
-},
+        return { success: true, awardedItems: newItemInstances, paymentMethodUsed };
+    },
 
 // processArtifactReward остается без изменений, так как он не относится к проблеме с предметами экипировки
 processArtifactReward: (dropType, targetArtifactId) => {
@@ -3400,10 +3467,12 @@ trackTaskEvent: (eventType, amount = 1, eventDetails = {}) => {
             weeklyLoginDays: 0, killsThisWeek: 0, levelsCompletedThisWeek: 0, gearUpgradedThisWeek: 0, chestsOpenedThisWeek: 0,
             monthlyTaskProgress: {}, monthlyTaskBarXp: 0, monthlyBonusClaimed: false, lastMonthlyReset: null,
             monthlyLoginDays: 0, killsThisMonth: 0, levelsCompletedThisMonth: 0, gearUpgradedThisMonth: 0, chestsOpenedThisMonth: 0,
+            
         };
         const defaultShardPassOnReset = getDefaultShardPassState(); // из КОД1
         set({
             gold: 100000, diamonds: 10000, toncoinShards: 0, toncoinBalance: 0,
+             rareChestKeys: 10, epicChestKeys: 25,
             username: null, powerLevel: 0, userPhotoUrl: null,
             playerBaseStats: { ...DEFAULT_BASE_STATS },
             playerHp: DEFAULT_BASE_STATS.hp,
@@ -3413,7 +3482,7 @@ trackTaskEvent: (eventType, amount = 1, eventDetails = {}) => {
             dailyShopPurchases: {}, achievementsStatus: {}, totalGoldCollected: 0, totalKills: 0,
             booleanFlags: {}, levelsCompleted: {}, achievementLevel: 1, achievementXp: 0,
             collectedArtifacts: new Set(), artifactLevels: {}, artifactChestPity: {},
-            gearKeys: 0, totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
+            totalArtifactChestsOpened: 0, gearChestPity: {}, totalGearChestsOpened: 0,
             dailyDeals: [], dailyDealsLastGenerated: null, lastOpenedChestInfo: null, lastChestRewards: null,
             activeDebuffs: [], isAffectedByWeakeningAura: false,
             energyMax: DEFAULT_MAX_ENERGY, energyCurrent: DEFAULT_MAX_ENERGY, lastEnergyRefillTimestamp: Date.now(),
@@ -3441,7 +3510,7 @@ useGameStore.subscribe((state) => {
         gold, diamonds, toncoinShards, toncoinBalance, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
         energyCurrent, energyMax, lastEnergyRefillTimestamp,
-        dailyDeals, dailyDealsLastGenerated, dailyShopPurchases,
+        dailyDeals, rareChestKeys, epicChestKeys, dailyDealsLastGenerated, dailyShopPurchases,
         achievementsStatus, totalGoldCollected, totalKills,
         booleanFlags, levelsCompleted,
         achievementLevel, achievementXp,
@@ -3464,7 +3533,7 @@ useGameStore.subscribe((state) => {
     } = state;
 
     const stateToSave = {
-        gold, diamonds, toncoinShards, toncoinBalance, username, inventory, equipped, powerLevel,
+        gold, diamonds, toncoinShards, toncoinBalance, rareChestKeys, epicChestKeys, username, inventory, equipped, powerLevel,
         playerBaseStats, playerHp, playerRace,
         energyCurrent, energyMax, lastEnergyRefillTimestamp,
         dailyDeals, dailyDealsLastGenerated, dailyShopPurchases,
