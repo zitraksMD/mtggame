@@ -79,49 +79,59 @@
 
 /* --- Rewards Grid --- */
 .rewards-grid {
-    /* --- Существующие стили для сетки (когда > 1 элемента) --- */
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 12px;
-    padding: 10px 5px;
-    overflow-y: auto;
-    flex-shrink: 1;
-    min-height: 80px;
-    perspective: 1000px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); // Для нескольких предметов
+  gap: 12px;
+  padding: 10px; // Небольшой внутренний отступ для самой сетки
+  overflow-y: auto;   // Позволяет прокрутку, если предметов очень много
+  flex-shrink: 1;     // Позволяет этому блоку сжиматься, если не хватает места в попапе
+  perspective: 1000px; // Для 3D анимаций карточек
 
-    /* --- Scrollbar Styles --- */
-    &::-webkit-scrollbar { width: 6px; }
-    &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
-    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.4); border-radius: 3px; }
-    &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.6); }
+  /* Устанавливаем фиксированную высоту. 
+    Подберите значение, которое вам подходит.
+    Например, для 2 рядов по 5 предметов (предмет ~70px, зазор ~12px):
+    (70px высота предмета + 12px зазор) * 2 ряда - 12px (нет зазора после второго ряда) + 20px (вертикальные padding'и самой сетки)
+    Примерно: (70 * 2) + 12 + (10*2) = 140 + 12 + 20 = 172px. 
+    Или вы можете задать высоту, кратную, например, 3 рядам, чтобы всегда было место.
+    Для примера поставим 170px.
+  */
+  height: 300px; // <<< ЗАДАЕМ ФИКСИРОВАННУЮ ВЫСОТУ
+  min-height: 80px; // Оставляем на всякий случай, но height будет иметь приоритет
 
-&.single-item {
-    display: flex;              // Меняем display на flex
-    justify-content: center;    // Центрируем по горизонтали
-    align-items: center;        // Центрируем по вертикали
-    // Отключаем ненужные свойства grid
+  /* Стили для скроллбара (оставляем ваши) */
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
+  &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.4); border-radius: 3px; }
+  &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.6); }
+
+  /* Стили для случая с ОДНОЙ наградой */
+  &.single-item {
+    display: flex;             // Меняем на flex для центрирования
+    justify-content: center;   // Центрирование по горизонтали
+    align-items: center;       // Центрирование по вертикали
+    
+    // Отключаем свойства grid, так как они больше не нужны
     grid-template-columns: none;
     gap: 0;
-    // Убедимся, что контейнер растягивается, чтобы было где центрировать
-    flex-grow: 1;
-    padding: 20px; // Можно добавить отступы для одного элемента
+    // padding здесь можно оставить или изменить на padding: 0; если внутренние отступы не нужны для одного элемента
+    // height: 170px; // Наследуется от .rewards-grid
 
-    // Опционально: Делаем сам элемент чуть крупнее, когда он один
     .reward-item {
-       width: 90px; // Например, 90px вместо 70px в сетке
-       // aspect-ratio остается 1/1
-       // Убедись, что размер иконки внутри (.reward-icon) тоже подстроен, если нужно
+      // Можно сделать одиночный предмет чуть крупнее, если хотите
+      width: 90px; 
+      // height: 90px; // Если используете aspect-ratio, это не нужно
     }
-}
+  }
 }
 
 /* --- Reward Item (Flip Container) --- */
 .reward-item {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    position: relative;
-    cursor: pointer;
-    transform-style: preserve-3d;
+  width: 100%; // Для .rewards-grid в режиме grid, это займет ячейку
+  aspect-ratio: 1 / 1; // Сохраняем квадратную форму
+  position: relative;
+  cursor: pointer;
+  transform-style: preserve-3d;
+
 
     .reward-item-flipper-inner {
       position: relative;
