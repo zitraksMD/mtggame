@@ -1,630 +1,650 @@
 // src/components/Shop.scss
 
 // =======================================================
-// ===              (ПРЕДПОЛАГАЕМЫЕ) ПЕРЕМЕННЫЕ          ===
+// ===                                 ПЕРЕМЕННЫЕ                                    ===
 // =======================================================
-// Убедитесь, что эти переменные определены где-то!
+// Существующие переменные редкости
 $rarity-color-common: #b0b0b0 !default;
 $rarity-color-uncommon: #2ecc71 !default;
 $rarity-color-rare: #3a7ac0 !default;
-$rarity-color-epic: #9b59b6 !default; // Добавлен Epic
+$rarity-color-epic: #9b59b6 !default;
 $rarity-color-legendary: #d08000 !default;
 $rarity-color-mythic: #c03050 !default;
 
-// --- ПЕРЕМЕННЫЕ ДЛЯ ОРБИТ УДАЛЕНЫ ---
+// Переменные, предложенные в новой структуре (или их аналоги)
+// $shop-header-height: 50px; // Не используется, высота по контенту
+$shop-title-color: #e0e5f0 !default; // Цвет для заголовков секций
+$text-muted-light: #a0a0b5 !default; // Для приглушенного текста, например, "нет предложений"
+$shop-background-main: #1a1a2e !default; // Общий фон экрана магазина
+$shop-header-background: rgba(10, 15, 40, 0.9) !default; // Фон шапки
+$section-content-box-background: rgba(30, 35, 70, 0.6) !default; // Фон для вложенных блоков контента
+$section-content-box-border: rgba(255, 255, 255, 0.1) !default;
 
 // =======================================================
-// ===              ОСНОВНЫЕ СТИЛИ МАГАЗИНА              ===
+// ===               ОСНОВНЫЕ СТИЛИ ЭКРАНА МАГАЗИНА               ===
 // =======================================================
 
 .shop-screen {
-  position: absolute; inset: 0; z-index: 1;
-  width: 100%; height: 100%;
-  background: url("/assets/main-screen-bg.png") no-repeat center center / cover;
-  padding: 15px 10px 10px 10px;
-  box-sizing: border-box;
-  color: white;
-  display: flex; flex-direction: column; align-items: center;
-  overflow: hidden;
-}
-
-.shop-header {
-  width: 100%; max-width: 650px; // Чуть шире
-  text-align: center;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 10px;
-  box-sizing: border-box;
-
-  h2 { margin: 0; font-size: 24px; color: #ffcc80; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-
-  .player-currency {
     display: flex;
-    gap: 15px;
+    flex-direction: column; // Шапка сверху, скроллящийся контент снизу
+    height: 100%;       // Занимает всю доступную высоту родителя
+    width: 100%;        // Занимает всю доступную ширину родителя
+    overflow: hidden;     // Предотвращает двойные скроллбары на самом .shop-screen
+    background-color: $shop-background-main; // Общий фон для всего экрана магазина
+    // background: url("/assets/main-screen-bg.png") no-repeat center center / cover; // Если предпочитаете изображение
+    color: white;
+    position: absolute; // Если shop-screen абсолютно позиционирован относительно родителя
+    inset: 0;
+    z-index: 1; // Если используется z-index менеджмент
+    box-sizing: border-box;
+}
+
+.shop-header-permanent {
+    flex-shrink: 0; // Шапка не должна сжиматься
+    padding: 8px 15px;
+    background-color: $shop-header-background; // Фон для шапки
+    border-bottom: 1px solid $section-content-box-border; // Единообразная граница
+    display: flex;
+    justify-content: center; // По умолчанию валюта справа
     align-items: center;
-    span {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 16px;
-      font-weight: bold;
-      color: #eee;
-      background-color: rgba(0,0,0,0.3);
-      padding: 3px 8px;
-      border-radius: 5px;
-      img { height: 20px; width: 20px; }
+    width: 100%;
+    box-sizing: border-box;
+    position: sticky; // Для "всегда видимой" шапки
+    top: 0;           // Прилипает к верху при скролле .shop-scrollable-content
+    z-index: 100;       // Чтобы была поверх скроллящегося контента
+
+    // Стили для отображения валюты игрока в шапке
+    .player-currency-display-shop {
+        display: flex;
+        gap: 20px; // Отступ между золотом и алмазами
+        align-items: center;
+          margin-top: max(
+    70px,
+    calc(45px + env(safe-area-inset-top, 0px))
+  );
+        margin-bottom: 0;
+        margin-left: 0;
+        background-color: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0; // Убираем внутренние отступы, если они были
+
+        .currency-item {
+            display: flex;
+            align-items: center;
+            gap: 8px; // Отступ между иконкой и текстом
+            font-size: 16px;
+            font-weight: bold;
+            color: #e0e5f0; // Светлый цвет текста для валюты
+
+            .currency-icon-shop { // Иконка валюты в шапке
+                height: 24px; // Размер иконок
+                width: 24px;
+                object-fit: contain;
+            }
+        }
     }
-  }
 }
 
-// --- Область контента (СКРОЛЛИТСЯ) ---
-.shop-content {
-  width: 100%;
-  max-width: 700px; // Можно увеличить, если нужно
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  margin-top: 30px;
-  padding: 25px 5px 60px 5px;
-  box-sizing: border-box;
-  scroll-snap-type: y mandatory; // <<< Вертикальный скролл-снэп
+.shop-scrollable-content {
+    flex-grow: 1; // Занимает всё оставшееся пространство под шапкой
+    overflow-y: auto; // Включаем вертикальную прокрутку только для этого блока
+    overflow-x: hidden;
+    padding: 20px 15px 60px 15px; // Отступы для всего скроллящегося контента (снизу больше)
+    display: flex;
+    flex-direction: column;
+    align-items: center; // Центрируем секции
+    gap: 25px;           // Отступ между секциями магазина
+    width: 100%;
+    box-sizing: border-box;
 
-  // Стилизация скроллбара
-  &::-webkit-scrollbar { width: 8px; }
-  &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
-  &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-  &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
-}
+    // Стилизация скроллбара (можно взять из старого .shop-content)
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 4px; }
+    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+    &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
 
+    .shop-section {
+        width: 100%;
+        max-width: 640px; // Общий ограничитель ширины для секций контента
+        // margin-bottom: 40px; // Заменено на gap в .shop-scrollable-content
+        // position: relative; // Не нужно для нового заголовка
+        // padding-top: 20px; // Не нужно для нового заголовка
 
-// =======================================================
-// ===              СТИЛИ СЕКЦИЙ МАГАЗИНА               ===
-// =======================================================
+        &:last-child { margin-bottom: 0; } // Убираем нижний отступ у последней секции
 
-.shop-section {
-  margin-bottom: 40px;
-  width: 100%;
-  position: relative;
-  padding-top: 20px; // Место под "нависающий" заголовок
-  scroll-snap-align: start; // <<< Точка примагничивания
-  scroll-snap-stop: always; // <<< Гарантирует остановку
+        .shop-section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: $shop-title-color;
+            margin-bottom: 15px;
+            padding-left: 5px; 
+            text-align: left; // Или center, если предпочитаете
+        }
 
-  &:last-child { margin-bottom: 10px; }
-}
-
-// --- Заголовок секции (нависающий) ---
-.shop-section-title {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3; // Выше контентного блока
-
-  display: inline-block;
-  background: linear-gradient(to bottom, #5a6f9a, #4a5a8a);
-  color: #ffddaa;
-  padding: 6px 25px;
-  border-radius: 10px;
-  border: 1px solid #7a8ed9;
-  font-size: 1.25em;
-  font-weight: bold;
-  text-align: center;
-  margin: 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-  white-space: nowrap;
-  max-width: 90%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-// --- Фон/рамка для контента внутри секции ---
-.section-content-box {
-  background-color: rgba(20, 25, 60, 0.7);
-  border: 1px solid rgba(122, 126, 217, 0.4);
-  border-radius: 12px;
-  padding: 25px 15px 15px 15px;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 5px;
-  position: relative; // Для позиционирования элементов внутри
-}
-
-// =======================================================
-// ===                    СТИЛИ DAILY SHOP               ===
-// =======================================================
-.daily-shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 15px;
-  width: 100%;
-
-  @media (min-width: 500px) {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-}
-
-.daily-timer {
-  text-align: center;
-  font-size: 0.8em;
-  color: #aaa;
-  margin-bottom: 15px;
-}
-
-.shop-item-card {
-  background-color: rgba(40, 45, 60, 0.9);
-  border: 1px solid #6a758a;
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border-left-width: 5px;
-  min-height: 153px;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  }
-
-  // --- Цвета левой рамки по редкости ---
-  &.rarity-common { border-left-color: $rarity-color-common; }
-  &.rarity-uncommon { border-left-color: $rarity-color-uncommon; }
-  &.rarity-rare { border-left-color: $rarity-color-rare; }
-  &.rarity-epic { border-left-color: $rarity-color-epic; }
-  &.rarity-legendary { border-left-color: $rarity-color-legendary; }
-  &.rarity-mythic { border-left-color: $rarity-color-mythic; }
-
-  .discount-banner {
-    position: absolute;
-    top: 8px; left: -28px;
-    background-color: #e64a19; color: white;
-    padding: 2px 30px; font-size: 10px; font-weight: bold;
-    transform: rotate(-45deg); box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    z-index: 1;
-  }
-
-  .item-name {
-    font-size: 12px; font-weight: bold; color: #f0f0f0;
-    margin-bottom: 8px; height: 2.8em; line-height: 1.4em;
-    overflow: hidden; width: 100%;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  }
-
-  > img { // Основная картинка товара/валюты/бандла
-    width: 52px; height: 52px;
-    object-fit: contain; margin-bottom: 8px;
-  }
-
-  .purchase-limit {
-    font-size: 11px; color: #99aab5; margin-bottom: 8px;
-  }
-
-  .purchase-button {
-    width: 100%; padding: 8px 5px; border: none; border-radius: 6px;
-    background: linear-gradient(to bottom, #5a9a5a, #4CAF50); color: white;
-    cursor: pointer; font-weight: bold; font-size: 14px;
-    display: flex; align-items: center; justify-content: center; gap: 5px;
-    border: 1px solid #3a7a3a; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
-    transition: background 0.2s, transform 0.1s, border-color 0.2s, opacity 0.2s;
-    margin-top: auto;
-
-    img { // Иконка валюты ВНУТРИ кнопки
-      width: 16px; height: 16px; margin: 0;
-      vertical-align: middle;
+        .section-content-box {
+            background-color: $section-content-box-background;
+            border: 1px solid $section-content-box-border;
+            border-radius: 12px;
+            padding: 15px; // Внутренние отступы для контента секции
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            // width: 100%; // Уже у .shop-section
+            box-sizing: border-box;
+            // margin-top: 5px; // Не нужно, отступ заголовка управляет этим
+            position: relative; 
+        }
     }
 
-    &:hover:not(:disabled) { background: linear-gradient(to bottom, #6aac6a, #5cb85c); }
-    &:active:not(:disabled) { transform: scale(0.98); }
-    &:disabled {
-      background: linear-gradient(to bottom, #666, #555);
-      border-color: #444; cursor: not-allowed; opacity: 0.7;
-    }
-  }
+    // Стили для секции специальных предложений (если карусель, то эта сетка не нужна)
+    // .special-bundles-section {
+    //   .special-bundles-grid {
+    //     display: grid;
+    //     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    //     gap: 20px;
+    //   }
+    // }
 
-  &.sold-out {
-    opacity: 0.6;
-    .purchase-button {
-      background: linear-gradient(to bottom, #777, #666);
-      border-color: #555; cursor: default;
-    }
-    .purchase-limit { color: #777; }
-  }
-} // Конец .shop-item-card
+    // Общие стили для сеток товаров (Daily Deals, Currency)
+    .daily-shop-grid, .currency-grid { // bundles-grid удален отсюда, т.к. бандлы теперь в карусели
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); // Адаптивные колонки для карточек
+        gap: 15px;
+        width: 100%;
 
-.artifact-shard-card {
-  > img { width: 40px; height: 40px; } // Картинка артефакта
-  .purchase-button.shard-button {
-    background: linear-gradient(to bottom, #6a7ac0, #5a6ac0); // Синеватая
-    border-color: #4a5aa0;
-      &:hover:not(:disabled) { background: linear-gradient(to bottom, #7a8ad0, #6a7ad0); }
-  }
+        // Можно добавить медиа-запросы из старого .daily-shop-grid, если нужны более тонкие настройки
+        // @media (min-width: 500px) {
+        //   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        // }
+    }
+    
+    // .bundles-grid был удален, т.к. обычные наборы теперь тоже в карусели.
+    // Если для них нужна была особая структура сетки до карусели, она теперь неактуальна.
+
+    .no-offers-message {
+      text-align: center;
+      padding: 20px;
+      color: $text-muted-light;
+      font-style: italic;
+    }
+
+    .daily-timer { // Таймер для Daily Deals
+        text-align: center;
+        font-size: 0.9em; // Немного увеличил
+        color: $text-muted-light;
+        margin-bottom: 15px;
+    }
 }
 
 
 // =======================================================
-// ===      СТИЛИ ДЛЯ СУНДУКОВ (АРТЕФАКТЫ - КАРТОЧКИ)    ===
+// ===           СТИЛИ КАРТОЧЕК (Daily, Bundle, Currency)   ===
 // =======================================================
-// Эти стили для отображения артефактных сундуков в виде списка карточек,
-// НЕ для карусели снаряжения.
-
-.artifact-chests-list {
-  display: flex; flex-direction: column; gap: 20px;
-  width: 100%; padding-bottom: 5px;
-}
-
-.artifact-chest-entry {
-  position: relative; display: flex; width: 100%;
-  transition: transform 0.2s ease; margin-bottom: 0;
-
-  // Анимация открытия для артефактов (карточек)
-  &.opening { animation: shakeAndGlowHorizontal 0.8s ease-in-out; }
-}
-
-// --- Карточка сундука (только для Артефактов) ---
-.chest-card { // Применяется к ArtifactChestCard
-  border-radius: 12px; padding: 12px 15px;
-  display: flex; flex-direction: column;
-  width: 100%; min-height: 150px;
-  position: relative; overflow: hidden;
-  box-shadow: 0 3px 7px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, rgba(40, 50, 90, 0.85), rgba(25, 30, 65, 0.9));
-  border: 1px solid rgba(100, 110, 180, 0.5);
-
-  .card-main-content {
-     display: flex; align-items: center; gap: 15px;
-     margin-bottom: 12px; flex-grow: 1;
-  }
-
-  .chest-graphic-area { // Графика для артефактных сундуков (карточек)
-    flex: 0 0 90px; display: flex; align-items: center; justify-content: center;
-    img.chest-graphic-img { max-width: 100%; max-height: 90px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
-  }
-
-  .chest-content-area {
-    flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; overflow: hidden;
-  }
-
-  .chest-name { font-size: 1.1em; font-weight: bold; color: #e0e8ff; margin: 0; }
-  .chest-description { font-size: 0.85em; color: #b0c0ee; line-height: 1.3; margin: 0; }
-
-  // ОБЩИЕ стили для Pity и кнопок, используемые и в карточках, и в слайдах карусели
-  .chest-pity-info { // Базовые стили Pity (для карточек и слайдов)
-    font-size: 0.8em; // Базовый размер шрифта Pity
-    font-weight: bold; line-height: 1.4; width: fit-content;
-    margin-top: auto; // Прижимается вниз, если есть место (в карточках)
-    span {
-       display: inline-block; color: #ffddaa; // Базовый цвет
-       background-color: rgba(0, 0, 0, 0.25); padding: 2px 6px; border-radius: 4px;
-       margin-bottom: 4px; margin-right: 5px;
-       border: 1px solid rgba(255, 221, 170, 0.3); // Базовый бордер
-       text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
-       white-space: nowrap;
-
-       // Стилизация плашек гарантов по редкости (переопределяются в .chest-pity-info-container ниже)
-       // &.rarity-legendary { color: $rarity-color-legendary; border-color: rgba($rarity-color-legendary, 0.6); }
-       // &.rarity-epic { color: $rarity-color-epic; border-color: rgba($rarity-color-epic, 0.5); }
-       // ... и т.д.
-    }
-  }
-
-  .chest-button-wrapper { // Обертка кнопок (общая для карточек и слайдов)
-    display: flex; gap: 10px; width: 100%;
-    margin-top: auto; flex-shrink: 0;
-  }
-
-  // Общие стили кнопок открытия (база для карточек и слайдов)
-  .purchase-button.open-chest-button {
-    flex-grow: 1; flex-basis: 0; padding: 8px 10px; font-size: 13px; min-width: auto; border-radius: 8px;
-    color: white; cursor: pointer; font-weight: bold; display: flex;
-    align-items: center; justify-content: center; gap: 6px;
-    transition: background 0.2s, transform 0.1s, box-shadow 0.2s, border-color 0.2s;
-    border: 1px solid transparent; text-transform: none;
-    background-origin: border-box;
-    box-shadow: 0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
-    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
-
-    img { height: 18px; width: auto; vertical-align: middle; filter: none; margin: 0; }
-    span { font-weight: bold; margin-left: auto; padding-left: 5px; opacity: 1; font-size: 1em; } // Для x1 / x10
-
-    &:disabled {
-       opacity: 0.6; cursor: not-allowed;
-       background: #555 !important; border-color: #444 !important;
-       box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(0,0,0,0.1);
-    }
-    &:hover:not(:disabled) { box-shadow: 0 3px 5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2); }
-    &:active:not(:disabled) { transform: translateY(1px) scale(0.98); box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
-
-    // --- Стили КНОПОК ОТКРЫТИЯ по типу сундука ---
-    &.gear-style { // Зеленый (ДЛЯ СНАРЯЖЕНИЯ - В КАРУСЕЛИ)
-       background: linear-gradient(to bottom, #65d36e, #4caf50); border-color: #3a8a3a;
-       &:hover:not(:disabled) { background: linear-gradient(to bottom, #75e37e, #5cb85c); }
-    }
-    &.wish-style { // Синий (ДЛЯ АРТЕФАКТОВ - В КАРТОЧКАХ)
-       background: linear-gradient(to bottom, #5a7ac0, #4a6ac0); border-color: #3a5aa0;
-       &:hover:not(:disabled) { background: linear-gradient(to bottom, #6a8ad0, #5a7ad0); }
-    }
-    // --- Конец стилей кнопок открытия ---
-  } // Конец .open-chest-button
-} // Конец .chest-card (только для артефактов)
-
-
-// =======================================================
-// ===            СТИЛИ ДЛЯ ВАЛЮТЫ И БАНДЛОВ            ===
-// =======================================================
-
-.currency-grid, .bundles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px; width: 100%;
-}
-
-.currency-pack-card { // Наследует от .shop-item-card
-  > img { width: 60px; height: 60px; margin-bottom: 10px; }
-  .purchase-button.currency-button { // Золотой градиент
-    background: linear-gradient(to bottom, #ffc500, #ffb000);
-    border-color: #d49800; color: #332800; text-shadow: none;
-    &:hover:not(:disabled) { background: linear-gradient(to bottom, #ffd540, #ffc040); }
-  }
-}
-
-.bundle-card { // Наследует от .shop-item-card
-  > img { width: 70px; height: 70px; margin-bottom: 10px; }
-  .bundle-contents {
-    font-size: 11px; color: #b0c0ff; line-height: 1.4; margin-bottom: 10px;
-    flex-grow: 1;
-    span { display: block; }
-  }
-  .purchase-button.bundle-button { // Красный градиент
-    background: linear-gradient(to bottom, #f45a5a, #e44a4a);
-    border-color: #c43a3a;
-    &:hover:not(:disabled) { background: linear-gradient(to bottom, #f66a6a, #e65a5a); }
-  }
-}
-
-// =======================================================
-// ===       СТИЛИ КАРУСЕЛИ СУНДУКОВ (СНАРЯЖЕНИЕ)        ===
-// ===   (Объединено из Кода 1 и Кода 2, почищено)      ===
-// =======================================================
-
-// --- Контейнер Карусели ---
-.chest-carousel-container.gear-carousel {
-  width: 100%;
-  height: 78vh; // <<< Высота из примера (Например, 78% высоты видимой области, подбери значение!)
-  max-height: 600px; // Опционально: максимальная высота на больших экранах
-  overflow: hidden; // Обрезка обязательна
-  position: relative; // Для позиционирования слайдов и навигации/пагинации
-  border-radius: 8px; // Скругление
-  // Фон можно оставить от .section-content-box или добавить свой, если отличается
-}
-
-// --- Слайд Карусели (ОБЩИЙ СТИЛЬ ДЛЯ КАЖДОГО СЛАЙДА ВНУТРИ КАПУСЕЛИ) ---
-.chest-slide { // Может использоваться Framer Motion <motion.div className="chest-slide ...">
-  // --- Позиционирование и Размеры ---
-  // Для Framer Motion AnimatePresence: position: absolute позволяет слайдам накладываться
-  // для анимации перехода. Сам Framer Motion управляет их видимостью/анимацией.
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%; // Занимает весь контейнер карусели
-  justify-content: flex-start;
-
-  // --- Контекст для дочерних absolute ---
-  // Добавляем position: relative, чтобы абсолютно позиционированные элементы внутри
-  // (например, .chest-info-button) позиционировались относительно ЭТОГО слайда.
-  position: relative; // <<< Важно для позиционирования .chest-info-button
-
-  // --- Внутренняя раскладка ---
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 20px 50px 20px; // Внутренние отступы (снизу больше для пагинации)
-  box-sizing: border-box;
-
-  // --- Внешний вид ---
-  background: linear-gradient(170deg, rgba(45, 52, 90, 0.9), rgba(32, 36, 60, 0.95) 70%); // Градиентный фон
-  border-radius: 8px; // Скругление углов слайда (соответствует контейнеру)
-
-  // Анимация открытия (если используешь класс .opening на слайде)
-  &.opening {
-    animation: slightShake 0.5s ease-in-out;
-    // Можно добавить свечение или другую анимацию
-    // box-shadow: 0 0 15px 5px rgba(255, 255, 150, 0.7);
-  }
-
-  // --- Название сундука внутри слайда ---
-  .chest-slide-name {
-    font-size: 1.3em; // Крупнее
-    font-weight: bold;
-    color: #ffddaa;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); // Усилена тень
-    margin: 0 0 20px 0; // Больше отступ снизу
+.shop-item-card { // Общий стиль для всех карточек товаров/бандлов/валюты
+    background-color: rgba(40, 45, 80, 0.85); // Немного изменил фон
+    border: 1px solid rgba(106, 117, 138, 0.7); // Немного изменил границу
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    flex-shrink: 0; // Не сжимать название
-  }
-
-  // --- Кнопка "i" (информация о сундуке) ---
-  .chest-info-button {
-    position: absolute; // Позиционируется абсолютно ВНУТРИ .chest-slide
-    top: 5px;      // Отступ от ВЕРХА .chest-slide (учитывай padding слайда)
-    right: 5px;     // Отступ от ПРАВОГО КРАЯ .chest-slide (учитывай padding слайда)
-    z-index: 10;     // Поверх основного контента слайда
-
-    // --- Стили внешнего вида кнопки "i" ---
-    width: 24px; height: 24px; padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    background: rgba(0, 0, 0, 0.4); color: #eee;
-    font-size: 14px; font-weight: bold; line-height: 22px; text-align: center;
-    border-radius: 50%; cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
-
-    &:hover { background: rgba(0, 0, 0, 0.6); border-color: white; }
-    &:active { transform: scale(0.9); }
-  }
-
-  // --- Область с большой картинкой сундука ---
-  .chest-slide-graphic-area {
-    //flex-grow: 1; // Растягиваем по высоте, чтобы занять доступное место
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 200px; // Минимальная высота для картинки
-    margin-bottom: 20px; // Отступ до пити
-    // position: relative; // НЕ НУЖНО, т.к. кнопка "i" позиционируется от .chest-slide
-
-    // --- Сама картинка сундука внутри слайда ---
-    .chest-slide-graphic-img {
-      display: block;
-      max-width: 100%; // Может занимать больше ширины
-      max-height: 280px; // <<< Макс. высота картинки (подбери значение!)
-      object-fit: contain;
-      filter: drop-shadow(0 8px 15px rgba(0,0,0,0.5)); // Усилена тень
-      user-select: none;
-      -webkit-user-drag: none;
-    }
-  }
-
-  .chest-slide-description {
-    font-size: 0.9em; // Размер шрифта
-    color: #b0c0ee; // Цвет (как в старой карточке)
-    line-height: 1.4; // Межстрочный интервал
-    text-align: center; // Выравнивание
-    margin: 0 10px 15px 10px; // Отступы (сверху 0, по бокам, снизу до pity) - настрой!
-    max-width: 90%; // Не слишком широко
-  }
-  
-  // --- Контейнер для информации о гарантах (Pity) внутри слайда ---
-  .chest-pity-info-container {
-    margin-bottom: 25px; // Отступ до кнопок
-    min-height: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px 8px;
-    flex-shrink: 0;
-    width: 100%;
-
-    // Используем базовые стили .chest-pity-info (определены выше в .chest-card)
-    // и добавляем цвета для редкости
-    .chest-pity-info {
-      font-size: 0.9em; // Уточняем размер шрифта для Pity в карусели
-
-      span { // Стилизуем плашки гарантов по редкости
-        &.rarity-legendary { color: $rarity-color-legendary; border-color: rgba($rarity-color-legendary, 0.6); }
-        &.rarity-epic { color: $rarity-color-epic; border-color: rgba($rarity-color-epic, 0.5); }
-        &.rarity-rare { color: $rarity-color-rare; border-color: rgba($rarity-color-rare, 0.5); }
-        &.rarity-uncommon { color: $rarity-color-uncommon; border-color: rgba($rarity-color-uncommon, 0.5); }
-        &.rarity-common { color: $rarity-color-common; border-color: rgba($rarity-color-common, 0.5); }
-        &.rarity-mythic { color: $rarity-color-mythic; border-color: rgba($rarity-color-mythic, 0.6); }
-      }
-    }
-  }
-
-  // --- Обертка кнопок x1/x10 внутри слайда ---
-  .chest-button-wrapper {
-    // Использует базовые стили .chest-button-wrapper (display:flex, gap), определенные выше в .chest-card
-    width: 90%; max-width: 380px; // Ограничиваем ширину кнопок
-    flex-shrink: 0; margin-top: auto; // Прижимаем к низу, если есть место
-
-    // Сами кнопки x1/x10 используют стили, определенные выше:
-    // .purchase-button.open-chest-button.gear-style
-  }
-
-} // --- Конец .chest-slide ---
-
-
-// --- Кнопки Навигации Карусели (< >) ---
-.carousel-nav-button {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 15; // Выше всего остального в карусели
-
-  // --- Стили для прозрачности ---
-  background-color: transparent; // Прозрачный фон
-  color: white; // Цвет стрелки
-  border: 1px solid rgba(255, 255, 255, 0.5); // Полупрозрачная белая рамка
-  // --- Конец стилей для прозрачности ---
-
-  border-radius: 50%;
-  width: 36px; height: 36px; font-size: 18px; line-height: 36px; // Выровнял line-height
-  text-align: center; cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.9); // Делаем рамку ярче
-    color: #fff; // Убеждаемся, что стрелка остается яркой
-    // Можно добавить тень для стрелки, если она плохо видна на каком-то фоне:
-    // text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
-  }
-  &:active {
-    transform: translateY(-50%) scale(0.9);
-    // border-color: white; // Можно сделать рамку полностью белой при нажатии
-  }
-
-  // --- Позиционирование ---
-  // Разместим их чуть внутри контейнера
-  &.prev { left: 10px; }
-  &.next { right: 10px; }
-}
-
-
-// --- Пагинация (точки) Карусели ---
-.carousel-pagination {
-  position: absolute;
-  bottom: 12px; // Отступ снизу внутри контейнера карусели
-  left: 50%; transform: translateX(-50%);
-  display: flex; gap: 10px;
-  z-index: 12; // Поверх слайдов, но под кнопками навигации
-
-  .dot {
-    width: 9px; height: 9px; border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.3);
-    border: none; padding: 0; cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left-width: 5px; // Акцентная рамка слева
+    min-height: 180px; // Немного увеличил высоту для лучшего размещения контента
+    box-sizing: border-box;
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.5); transform: scale(1.1);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25); // Улучшенная тень при ховере
     }
-    &.active {
-      background-color: #ffddaa; transform: scale(1.2);
+
+    // --- Цвета левой рамки по редкости ---
+    &.rarity-common { border-left-color: $rarity-color-common; }
+    &.rarity-uncommon { border-left-color: $rarity-color-uncommon; }
+    &.rarity-rare { border-left-color: $rarity-color-rare; }
+    &.rarity-epic { border-left-color: $rarity-color-epic; }
+    &.rarity-legendary { border-left-color: $rarity-color-legendary; }
+    &.rarity-mythic { border-left-color: $rarity-color-mythic; }
+
+    .discount-banner {
+        position: absolute;
+        top: 8px; left: -28px;
+        background-color: #e64a19; color: white;
+        padding: 2px 30px; font-size: 10px; font-weight: bold;
+        transform: rotate(-45deg); box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        z-index: 1;
     }
-  }
+
+    .item-name {
+        font-size: 13px; // Немного увеличил
+        font-weight: bold; color: #f0f0f0;
+        margin-bottom: 8px; height: 2.8em; line-height: 1.4em;
+        overflow: hidden; width: 100%;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+
+    > img { // Основная картинка товара/валюты/бандла
+        width: 52px; height: 52px; // Стандартный размер
+        object-fit: contain; margin-bottom: 8px;
+    }
+
+    .purchase-limit {
+        font-size: 11px; color: #99aab5; margin-bottom: 8px;
+    }
+
+    .purchase-button {
+        width: 100%; padding: 8px 5px; border: none; border-radius: 6px;
+        background: linear-gradient(to bottom, #5a9a5a, #4CAF50); color: white;
+        cursor: pointer; font-weight: bold; font-size: 14px;
+        display: flex; align-items: center; justify-content: center; gap: 5px;
+        border: 1px solid #3a7a3a; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        transition: background 0.2s, transform 0.1s, border-color 0.2s, opacity 0.2s;
+        margin-top: auto; // Прижимает кнопку к низу
+
+        img { // Иконка валюты ВНУТРИ кнопки
+            width: 16px; height: 16px; margin: 0;
+            vertical-align: middle;
+        }
+
+        &:hover:not(:disabled) { background: linear-gradient(to bottom, #6aac6a, #5cb85c); }
+        &:active:not(:disabled) { transform: scale(0.98); }
+        &:disabled {
+            background: linear-gradient(to bottom, #666, #555);
+            border-color: #444; cursor: not-allowed; opacity: 0.7;
+        }
+    }
+
+    &.sold-out {
+        opacity: 0.6;
+        .purchase-button {
+            background: linear-gradient(to bottom, #777, #666);
+            border-color: #555; cursor: default;
+        }
+        .purchase-limit { color: #777; }
+    }
+}
+
+.artifact-shard-card { // Специфичные стили для карточки осколков
+    > img { width: 40px; height: 40px; } 
+    .purchase-button.shard-button {
+        background: linear-gradient(to bottom, #6a7ac0, #5a6ac0); 
+        border-color: #4a5aa0;
+        &:hover:not(:disabled) { background: linear-gradient(to bottom, #7a8ad0, #6a7ad0); }
+    }
+}
+
+.currency-pack-card { // Специфичные стили для карточки валюты
+    > img { width: 60px; height: 60px; margin-bottom: 10px; }
+    .purchase-button.currency-button { 
+        background: linear-gradient(to bottom, #ffc500, #ffb000);
+        border-color: #d49800; color: #332800; text-shadow: none;
+        &:hover:not(:disabled) { background: linear-gradient(to bottom, #ffd540, #ffc040); }
+    }
+}
+
+.bundle-card { // Специфичные стили для карточки бандла
+    > img { width: 70px; height: 70px; margin-bottom: 10px; }
+    .bundle-contents {
+        font-size: 11px; color: #b0c0ff; line-height: 1.4; margin-bottom: 10px;
+        flex-grow: 1; // Чтобы занимало место и кнопка была внизу
+        span { display: block; }
+    }
+    .purchase-button.bundle-button { 
+        background: linear-gradient(to bottom, #f45a5a, #e44a4a);
+        border-color: #c43a3a;
+        &:hover:not(:disabled) { background: linear-gradient(to bottom, #f66a6a, #e65a5a); }
+    }
 }
 
 // =======================================================
-// ===            СТИЛИ ОРБИТЫ ПРЕДМЕТОВ/ОРБ           ===
-// ===                   ( У Д А Л Е Н О )             ===
+// ===               СТИЛИ КАРУСЕЛИ СУНДУКОВ                   ===
 // =======================================================
-// Стили для .orbit-wrapper, .orbit-container, @keyframes orbit и т.д. удалены,
-// так как не используются в текущей версии карусели.
 
-
-// =======================================================
-// ===                   КЛЮЧЕВЫЕ КАДРЫ                 ===
-// =======================================================
-@keyframes shakeAndGlowHorizontal { // Анимация для .artifact-chest-entry.opening (карточки)
-  0%, 100% { transform: scale(1); box-shadow: none; }
-  10%, 30%, 50%, 70%, 90% { transform: scale(1.01) translateX(0); box-shadow: 0 0 10px 2px rgba(255, 255, 180, 0.5); }
-  20% { transform: scale(0.99) translateX(-3px); box-shadow: 0 0 5px 1px rgba(255, 255, 180, 0.3); }
-  40% { transform: scale(0.99) translateX(3px); box-shadow: 0 0 5px 1px rgba(255, 255, 180, 0.3); }
-  60% { transform: scale(0.99) translateX(-3px); box-shadow: 0 0 5px 1px rgba(255, 255, 180, 0.3); }
-  80% { transform: scale(0.99) translateX(3px); box-shadow: 0 0 5px 1px rgba(255, 255, 180, 0.3); }
+.chest-carousel-container { // Общий для .gear-carousel и .artifact-carousel
+    width: 100%;
+    // height: 78vh; // Можно настроить или убрать, если высота по .chest-slide
+    // max-height: 600px; 
+    min-height: 450px; // Минимальная высота для карусели
+    overflow: hidden; 
+    position: relative; 
+    border-radius: 8px; 
+    // Фон берется из .section-content-box
 }
 
-// Анимация для слайда карусели при открытии (если используем `.opening { animation: slightShake ... }`)
+.chest-slide { 
+    position: absolute; // Этот стиль уже был, он важен для AnimatePresence
+    top: 0; left: 0;
+    width: 100%; height: 100%; 
+    // justify-content: flex-start; // Для Framer Motion - это не стандартное свойство justify-content. Если нужно, уточните. Framer motion позиционирует сам.
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 25px 20px 50px 20px; // Отступы (снизу больше для пагинации)
+    box-sizing: border-box;
+    background: linear-gradient(170deg, rgba(45, 52, 90, 0.9), rgba(32, 36, 60, 0.95) 70%); 
+    border-radius: 8px; // Должно совпадать с контейнером, если контейнер имеет свой фон/рамку
+
+    &.opening {
+        animation: slightShake 0.5s ease-in-out;
+    }
+
+    .chest-title-wrapper { // Обертка для заголовка и кнопки "i"
+        display: flex;
+        align-items: center;
+        justify-content: center; // Центрируем заголовок, если кнопка i его смещает
+        width: 100%;
+        position: relative; // Для абсолютного позиционирования кнопки "i"
+        margin-bottom: 20px; // Отступ от заголовка до картинки
+        min-height: 28px; // Чтобы не прыгало при отсутствии кнопки i
+    }
+
+    .chest-slide-name {
+        font-size: 1.3em; 
+        font-weight: bold;
+        color: #ffddaa;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); 
+        margin: 0; // Убираем внешние отступы, позиционируется через flex/wrapper
+        text-align: center;
+        flex-grow: 1; // Если кнопка i рядом, чтобы заголовок занимал место
+    }
+
+    .chest-info-button {
+        position: absolute; 
+        top: 50%; // Вертикально по центру относительно wrapper
+        transform: translateY(-50%);
+        right: 0px;   // Отступ от правого края wrapper'а
+        z-index: 10;  
+        width: 24px; height: 24px; padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: rgba(0, 0, 0, 0.4); color: #eee;
+        font-size: 14px; font-weight: bold; line-height: 22px; text-align: center;
+        border-radius: 50%; cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
+        &:hover { background: rgba(0, 0, 0, 0.6); border-color: white; }
+        &:active { transform: translateY(-50%) scale(0.9); } // Сохраняем translateY
+    }
+
+    .chest-slide-graphic-area {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 180px; // Уменьшил немного, чтобы было больше места для pity/кнопок
+        margin-bottom: 15px; // Отступ до описания или pity
+        flex-grow: 1; // Позволяет картинке занять доступное место
+
+        .chest-slide-graphic-img {
+            display: block;
+            max-width: 90%; // Чтобы не прилипала к краям
+            max-height: 250px; 
+            object-fit: contain;
+            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.5)); 
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+    }
+
+    .chest-slide-description {
+        font-size: 0.9em; 
+        color: #b0c0ee; 
+        line-height: 1.4; 
+        text-align: center; 
+        margin: 0 10px 15px 10px; 
+        max-width: 90%; 
+        flex-shrink: 0;
+    }
+    
+    .chest-pity-info-container {
+        margin-bottom: 20px; // Уменьшил отступ
+        min-height: 25px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 5px 8px;
+        flex-shrink: 0;
+        width: 100%;
+
+        .chest-pity-info { // Общий для pity в слайдах
+            font-size: 0.9em; 
+            font-weight: bold; line-height: 1.4; width: fit-content;
+        
+            span {
+                display: inline-block; 
+                background-color: rgba(0, 0, 0, 0.25); padding: 3px 7px; // Немного увеличил padding
+                border-radius: 4px;
+                margin-bottom: 4px; margin-right: 5px; // Как было
+                border: 1px solid transparent; // Граница будет по редкости
+                text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+                white-space: nowrap;
+
+                &.rarity-legendary { color: $rarity-color-legendary; border-color: rgba($rarity-color-legendary, 0.6); }
+                &.rarity-epic { color: $rarity-color-epic; border-color: rgba($rarity-color-epic, 0.5); }
+                &.rarity-rare { color: $rarity-color-rare; border-color: rgba($rarity-color-rare, 0.5); }
+                &.rarity-uncommon { color: $rarity-color-uncommon; border-color: rgba($rarity-color-uncommon, 0.5); }
+                &.rarity-common { color: $rarity-color-common; border-color: rgba($rarity-color-common, 0.5); }
+                &.rarity-mythic { color: $rarity-color-mythic; border-color: rgba($rarity-color-mythic, 0.6); }
+            }
+        }
+    }
+
+    .chest-button-wrapper { // Обертка для кнопок x1/x10 в слайде
+        display: flex; gap: 10px; width: 100%;
+        max-width: 380px; 
+        flex-shrink: 0; 
+        margin-top: auto; // Прижимаем к низу, если есть место
+
+        .purchase-button.open-chest-button { // Кнопки открытия сундуков (общие для карусели)
+            flex-grow: 1; flex-basis: 0; padding: 10px 10px; // Увеличил padding
+            font-size: 14px; // Увеличил шрифт
+            min-width: auto; border-radius: 8px;
+            color: white; cursor: pointer; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; gap: 6px;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s, border-color 0.2s;
+            border: 1px solid transparent; text-transform: none;
+            background-origin: border-box;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+
+            img { height: 18px; width: auto; vertical-align: middle; filter: none; margin: 0; }
+            span { font-weight: bold; margin-left: auto; padding-left: 5px; opacity: 1; font-size: 1em; }
+
+            &:disabled {
+                opacity: 0.6; cursor: not-allowed;
+                background: #555 !important; border-color: #444 !important;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(0,0,0,0.1);
+            }
+            &:hover:not(:disabled) { box-shadow: 0 3px 5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2); }
+            &:active:not(:disabled) { transform: translateY(1px) scale(0.98); box-shadow: 0 1px 2px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
+
+            // Специфичные стили для кнопок открытия по типу сундука в карусели
+            &.gear-style { 
+                background: linear-gradient(to bottom, #65d36e, #4caf50); border-color: #3a8a3a;
+                &:hover:not(:disabled) { background: linear-gradient(to bottom, #75e37e, #5cb85c); }
+            }
+            &.wish-style { // Для артефактных сундуков в карусели
+                background: linear-gradient(to bottom, #5a7ac0, #4a6ac0); border-color: #3a5aa0;
+                &:hover:not(:disabled) { background: linear-gradient(to bottom, #6a8ad0, #5a7ad0); }
+            }
+        }
+    }
+}
+
+// Специфичный класс для слайдов артефактов, если нужны отличия от gear-slide
+.artifact-chest-slide {
+    // Можно добавить/переопределить стили здесь
+    // Например, другой градиент фона:
+    // background: linear-gradient(170deg, rgba(60, 45, 90, 0.9), rgba(40, 32, 60, 0.95) 70%);
+}
+
+// =======================================================
+// ===           СТИЛИ КАРУСЕЛИ БАНДЛОВ (НОВОЕ)            ===
+// =======================================================
+.bundle-carousel-container {
+    position: relative;
+    display: flex;     
+    justify-content: center;
+    align-items: center;
+    // Уменьшаем высоту карусели для горизонтальных карточек
+    min-height: 160px; // Пример: 120-140px (высота карточки) + отступы для точек
+    overflow: hidden; 
+    width: 100%;      
+
+    // Стили для конкретных каруселей, если нужны отличия
+    &.special-bundle-carousel {
+        // min-height: 170px; // Можно чуть больше, если спец. бандлы крупнее
+    }
+    // &.general-bundle-carousel { ... }
+
+    .bundle-slide {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%; 
+        height: 100%; 
+        
+        // Стили для BundleCard внутри карусели (горизонтальный вид)
+        .shop-item-card.bundle-card {
+            flex-direction: row; // <--- Главное изменение для горизонтального расположения
+            align-items: stretch; // Растягиваем дочерние элементы по высоте карточки
+            width: 95%;          // Занимает почти всю ширину слайда
+            max-width: 580px;    // Ограничиваем максимальную ширину для больших экранов
+            min-height: 120px;   // Задаем минимальную высоту для горизонтальной карточки
+            padding: 10px 15px;  // Обновляем внутренние отступы
+
+            .bundle-image { // Стили для изображения бандла
+                width: 80px;    // Фиксированная ширина изображения
+                height: auto;   // Автоматическая высота для сохранения пропорций
+                                // или height: 100px; если нужна фиксированная высота изображения
+                max-height: 100px; // Ограничение максимальной высоты изображения
+                object-fit: contain;
+                margin-right: 15px; // Отступ справа от изображения
+                margin-bottom: 0;   // Убираем нижний отступ, т.к. теперь в строке
+                align-self: center; // Центрируем изображение по вертикали
+                flex-shrink: 0;     // Предотвращаем сжатие изображения
+            }
+
+            .bundle-text-content { // Новый контейнер для текстовой части и кнопки
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between; // Распределяем пространство
+                align-items: flex-start;      // Выравнивание по левому краю
+                text-align: left;
+                flex-grow: 1;                 // Занимает оставшееся пространство
+                overflow: hidden;             // Обрезаем содержимое, если не помещается
+            }
+
+            .item-name {
+                font-size: 14px; // Можно чуть увеличить для горизонтального вида
+                height: auto;    // Убираем фиксированную высоту
+                -webkit-line-clamp: 2; // Оставляем ограничение в 2 строки
+                margin-bottom: 5px;
+                width: 100%;
+            }
+
+            .bundle-contents {
+                font-size: 11px;
+                color: #b0c0ff;
+                line-height: 1.3;
+                margin-bottom: 8px;
+                flex-grow: 1; // Позволяет этому блоку занять доступное место перед кнопкой
+                width: 100%;
+                overflow-y: auto; // Если контента много, будет скролл
+                max-height: 40px; // Ограничиваем высоту списка контента (примерно 3 строки)
+                span { 
+                    display: block; 
+                }
+            }
+            
+            .purchase-button.bundle-button {
+                margin-top: 0;      // Убираем автоматический верхний отступ
+                width: auto;        // Ширина по содержимому или можно задать фиксированную
+                padding: 6px 12px;  // Немного уменьшаем паддинг кнопки
+                font-size: 13px;
+                align-self: flex-end; // Кнопка внизу справа текстового блока
+                // Если кнопка должна быть во всю ширину текстового блока:
+                // align-self: stretch; 
+                // width: 100%;
+            }
+
+            // Позиционирование баннера скидки для горизонтальной карточки
+            .discount-banner {
+                top: 0px;
+                left: 0px;
+                transform: none; // Убираем поворот
+                border-radius: 10px 0px 8px 0px; // Скругляем нужные углы
+                padding: 3px 8px;
+                font-size: 10px;
+                // Можно оставить старое позиционирование, если оно лучше смотрится
+                // top: 8px; left: -28px; transform: rotate(-45deg); 
+            }
+        }
+    }
+
+    // Скрываем боковые кнопки навигации для каруселей бандлов
+    .carousel-nav-button {
+        display: none !important; 
+    }
+}
+
+// Убедитесь, что стили пагинации (.carousel-pagination) остаются видимыми и корректно позиционируются.
+// Если они были внутри .carousel-nav-button или как-то зависели от них, возможно, потребуется коррекция.
+// Текущие стили для .carousel-pagination должны работать нормально:
+.carousel-pagination {
+    position: absolute;
+    bottom: 0px; // Можно чуть поднять, если карточки стали ниже
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20; 
+    display: flex;
+    gap: 8px; 
+    padding: 5px; 
+
+    .dot {
+        width: 10px; // Размер точки
+        height: 10px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.4);
+        border: none; // Убрал границу по умолчанию
+        padding: 0;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.2s;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.6);
+            transform: scale(1.1);
+        }
+        &.active {
+            background-color: white; // Или $rarity-color-legendary, или другой акцентный цвет
+            transform: scale(1.2);
+        }
+        &:disabled { // Если нужно будет отключать точки
+             opacity: 0.4;
+             cursor: not-allowed;
+        }
+    }
+}
+
+
+// =======================================================
+// ===                                 КЛЮЧЕВЫЕ КАДРЫ                                  ===
+// =======================================================
+// Анимация для слайда карусели при открытии
 @keyframes slightShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  50% { transform: translateX(2px); }
-  75% { transform: translateX(-1px); }
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    50% { transform: translateX(2px); }
+    75% { transform: translateX(-1px); }
 }
 
-// @keyframes pulse-glow { ... } // Не используется, можно удалить если не нужна
+// Удалены неиспользуемые стили и анимации:
+// - Старый .shop-header, .player-currency
+// - Старый .shop-content (заменен на .shop-scrollable-content)
+// - Старый "нависающий" .shop-section-title
+// - Стили для .artifact-chests-list и .artifact-chest-entry (т.к. артефакты теперь в карусели)
+// - Старый .chest-card (для артефактов в виде списка, теперь используется .chest-slide)
+// - Анимация shakeAndGlowHorizontal (была для .artifact-chest-entry)
+// - Анимация pulse-glow
+// - Стили орбит
