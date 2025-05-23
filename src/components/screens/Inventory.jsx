@@ -24,7 +24,6 @@ const rarityOrder = {
 };
 // ИЗМЕНЕНИЕ: getRarityValue теперь использует toLowerCase() для большей надежности
 const getRarityValue = (item) => rarityOrder[item?.rarity?.toLowerCase()] || 0; 
-const LOCAL_STORAGE_KEY = "equippedItems";
 
 // --- Анимации (остаются из "Кода 2") ---
 const layoutTransitionVariants = {
@@ -93,17 +92,7 @@ const Inventory = ({ setShowForge }) => {
     const [sortOrder, setSortOrder] = useState('desc');
     const canForge = useMemo(() => isAnyRecipeCraftable(), [isAnyRecipeCraftable, inventory, gold, diamonds]);
 
-    useEffect(() => {
-        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (saved) {
-            try { setEquipped(JSON.parse(saved)); }
-            catch (err) { console.warn("Failed to parse equipped items:", err); }
-        }
-    }, [setEquipped]);
 
-    useEffect(() => {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(equipped));
-    }, [equipped]);
 
     useEffect(() => {
     console.log('[Inventory.jsx] Received inventory update:', JSON.parse(JSON.stringify(inventory)));
