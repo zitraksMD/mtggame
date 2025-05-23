@@ -77,7 +77,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
         isZoneUnlocked: state.isZoneUnlocked,
         treasureChestAttempts: state.treasureChestAttempts,
         useTreasureChestAttempt: state.useTreasureChestAttempt,
-        hardPassCurrentLevel: state.shardPassCurrentLevel,
+        shardPassCurrentLevel: state.shardPassCurrentLevel,
     }));
 
     const [activeView, setActiveView] = useState('detailed');
@@ -747,7 +747,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                     <span className="shardpass-button-text">ShardPass</span>
                     <div className="shardpass-level-rhombus">
                         {/* Отображаем уровень из стора, по умолчанию 1, если еще не загружен */}
-                        <span className="shardpass-level-number">{shardPassCurrentLevel ?? 1}</span>
+                        <span className="shardpass-level-number">{shardPassCurrentLevel}</span>
                     </div>
                     {/* Элемент для эффекта переливания, если не используется псевдо-элемент */}
                     <div className="shardpass-button-shimmer-overlay"></div>
