@@ -78,14 +78,30 @@ const CurrencyPackCard = ({ pack, onPurchase }) => {
     );
 };
 
-const BundleCard = ({ bundle, onPurchase }) => {
+// ИЗМЕНЕННЫЙ BundleCard для использования onShowTooltip
+const BundleCard = ({ bundle, onPurchase, onShowTooltip }) => {
     if (!bundle) {
         return <div className="shop-item-card bundle-card error-placeholder" style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p>Ошибка загрузки набора</p></div>;
     }
-    const purchaseDisabled = false;
+    const purchaseDisabled = false; // Ваша логика доступности покупки
+
+    const handleInfoClick = (e) => {
+        e.stopPropagation();
+        if (onShowTooltip) {
+            onShowTooltip(bundle); // Передаем данные бандла в обработчик
+        }
+    };
 
     return (
         <div className={`shop-item-card bundle-card rarity-${bundle.rarity || 'rare'}`}>
+            <button
+                className="bundle-info-tooltip-trigger"
+                onClick={handleInfoClick} // Используем новый обработчик
+                aria-label="Информация о наборе"
+                title="Информация о наборе"
+            >
+                i
+            </button>
             {bundle.discount > 0 && <div className="discount-banner">{bundle.discount}% OFF</div>}
             <img
                 className="bundle-image"
@@ -95,9 +111,16 @@ const BundleCard = ({ bundle, onPurchase }) => {
             <div className="bundle-text-content">
                 <div className="item-name">{bundle.name}</div>
                 <div className="bundle-contents">
-                    {bundle.contents?.map((content, index) => <span key={index}>{typeof content === 'object' ? content.text : content}</span>)}
+                    {bundle.contents?.slice(0, 2).map((content, index) => (
+                        <span key={`main-content-${index}`}>{typeof content === 'object' ? content.text : content}</span>
+                    ))}
+                    {bundle.contents && bundle.contents.length > 2 && <span>и еще...</span>}
                 </div>
-                <button className="purchase-button bundle-button" onClick={() => onPurchase(bundle.id)} disabled={purchaseDisabled}>
+                <button
+                    className="purchase-button bundle-button"
+                    onClick={() => onPurchase(bundle.id)}
+                    disabled={purchaseDisabled}
+                >
                     <span>
                         {bundle.priceDisplay
                             ? bundle.priceDisplay
@@ -161,6 +184,24 @@ const Shop = () => {
     const [directionSpecial, setDirectionSpecial] = useState(0);
     const [currentGeneralBundleIndex, setCurrentGeneralBundleIndex] = useState(0);
     const [directionGeneral, setDirectionGeneral] = useState(0);
+
+    // >>> НОВОЕ СОСТОЯНИЕ И ОБРАБОТЧИКИ ДЛЯ ТУЛТИПА БАНДЛОВ <<<
+    const [activeBundleTooltip, setActiveBundleTooltip] = useState(null);
+
+    const handleShowBundleTooltip = useCallback((bundleData) => {
+    console.log('Attempting to show tooltip for:', bundleData); // Для отладки
+    setActiveBundleTooltip(bundleData);
+}, []);
+
+// Проверьте также, что activeBundleTooltip меняется:
+useEffect(() => {
+    console.log('activeBundleTooltip changed to:', activeBundleTooltip);
+}, [activeBundleTooltip]);
+
+    const handleCloseBundleTooltip = useCallback(() => {
+        setActiveBundleTooltip(null);
+    }, []);
+    // >>> КОНЕЦ НОВЫХ СОСТОЯНИЙ И ОБРАБОТЧИКОВ <<<
 
     const currencyPacks = [
         { id: 'gold_pack_1', name: 'Мешок золота', type: 'gold', amount: 10000, price: 50, currency: 'diamonds', icon: '/assets/currencies/gold_pack_1.png', priceDisplay: '50💎', rarity: 'common' },
@@ -354,8 +395,6 @@ const Shop = () => {
     // Упрощенный обработчик, основная логика в сторе
     const handleOpenGearChest = useCallback((chestId, amount = 1) => {
         if (openingChestId) return;
-        // Проверку на наличие chestData и достаточность средств теперь делает сам action в сторе.
-        // UI должен только отражать возможность покупки, а store сделает финальную проверку.
         setOpeningChestId(chestId);
         try {
             if (amount === 10) {
@@ -365,7 +404,7 @@ const Shop = () => {
             }
         } catch (error) {
             console.error(`[Shop] Error calling open action for gear chest ${chestId} x${amount}:`, error);
-            setOpeningChestId(null); // Сбрасываем, если вызов action сам по себе вызвал ошибку
+            setOpeningChestId(null);
         }
     }, [openingChestId, openGearChest, openGearChestX10]);
 
@@ -409,7 +448,6 @@ const Shop = () => {
                 style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}
             >
                 <div className="shop-header-permanent">
-                    {/* Ресурсы (золото, алмазы) - слева */}
                     <div className="player-resources-display resource-group-container">
                         <div className="currency-item">
                             <img src="/assets/coin-icon.png" alt="Золото" className="currency-icon-shop" />
@@ -420,20 +458,16 @@ const Shop = () => {
                             <span>{diamonds !== undefined && diamonds !== null ? diamonds.toLocaleString() : '--'}</span>
                         </div>
                     </div>
-
-                    {/* Ключи - справа */}
                     <div className="player-keys-display resource-group-container">
                         {typeof rareChestKeys === 'number' && (
                             <div className="key-item">
                                 <img src="/assets/key-image.png" alt="Редкие ключи" className="key-icon-shop" />
-                                {/* ЗАМЕНИТЕ /assets/icons/rare-key-icon.png НА ВАШ ПУТЬ */}
                                 <span>{rareChestKeys.toLocaleString()}</span>
                             </div>
                         )}
                         {typeof epicChestKeys === 'number' && (
                             <div className="key-item">
                                 <img src="/assets/key-image.png" alt="Эпические ключи" className="key-icon-shop" />
-                                {/* ЗАМЕНИТЕ /assets/icons/epic-key-icon.png НА ВАШ ПУТЬ */}
                                 <span>{epicChestKeys.toLocaleString()}</span>
                             </div>
                         )}
@@ -463,6 +497,7 @@ const Shop = () => {
                                                 <BundleCard
                                                     bundle={activeSpecialDeals[currentSpecialBundleIndex]}
                                                     onPurchase={() => handlePurchaseSpecialBundle(activeSpecialDeals[currentSpecialBundleIndex].id)}
+                                                    onShowTooltip={handleShowBundleTooltip} // <<< ИЗМЕНЕНИЕ: ПЕРЕДАЕМ ФУНКЦИЮ
                                                 />
                                             )}
                                         </motion.div>
@@ -562,24 +597,23 @@ const Shop = () => {
                                             let displayCostX10 = "";
                                             let displayIconX10 = chest.cost.currency === 'gold' ? '/assets/coin-icon.png' : '/assets/diamond-image.png';
 
-                                            const keyType = chest.keyToOpenForFree; // Например, REWARD_TYPES.RARE_CHEST_KEY
+                                            const keyType = chest.keyToOpenForFree;
                                             let playerKeysForThisChest = 0;
                                             let keyIconPath = null;
 
                                             if (keyType === REWARD_TYPES.RARE_CHEST_KEY) {
                                                 playerKeysForThisChest = rareChestKeys;
-                                                keyIconPath = "/assets/key-image.png"; // ЗАМЕНИТЕ ПУТЬ
+                                                keyIconPath = "/assets/key-image.png";
                                             } else if (keyType === REWARD_TYPES.EPIC_CHEST_KEY) {
                                                 playerKeysForThisChest = epicChestKeys;
-                                                keyIconPath = "/assets/key-image.png"; // ЗАМЕНИТЕ ПУТЬ
+                                                keyIconPath = "/assets/key-image.png";
                                             }
 
-                                            // Логика для x1
                                             if (keyType && playerKeysForThisChest >= 1) {
                                                 canOpenX1 = true;
                                                 displayCostX1 = "1";
                                                 displayIconX1 = keyIconPath;
-                                            } else if (chest.cost.price === 0) { // Бесплатный по валюте
+                                            } else if (chest.cost.price === 0) {
                                                 canOpenX1 = true;
                                                 displayCostX1 = "Бесплатно";
                                             } else if (chest.cost.currency === 'gold' ? gold >= chest.cost.price : diamonds >= chest.cost.price) {
@@ -589,7 +623,6 @@ const Shop = () => {
                                                 displayCostX1 = chest.cost.price.toLocaleString();
                                             }
 
-                                            // Логика для x10
                                             if (keyType && playerKeysForThisChest >= 10) {
                                                 canOpenX10 = true;
                                                 displayCostX10 = "10";
@@ -801,7 +834,7 @@ const Shop = () => {
                     {/* --- 6. ОБЫЧНЫЕ НАБОРЫ (General Bundles) --- */}
                     {GENERAL_BUNDLES && GENERAL_BUNDLES.length > 0 && (
                         <div className="shop-section general-bundles-section">
-                            <h3 className="shop-section-title">Bundles:</h3>
+                            <h3 className="shop-section-title">Bundles:</h3> {/* Оставил ваш вариант "Bundles:" */}
                             <div className="section-content-box">
                                 <div className="bundle-carousel-container general-bundle-carousel">
                                     <AnimatePresence initial={false} custom={directionGeneral} mode='wait'>
@@ -830,6 +863,7 @@ const Shop = () => {
                                                             alert(`Покупка набора ${currentBundle.name} в разработке`);
                                                         }
                                                     }}
+                                                    onShowTooltip={handleShowBundleTooltip} // <<< ВОТ ИЗМЕНЕНИЕ: ПЕРЕДАЕМ ФУНКЦИЮ
                                                 />
                                             )}
                                         </motion.div>
@@ -864,9 +898,9 @@ const Shop = () => {
                     {/* --- 7. ПОКУПКА ВАЛЮТЫ (Currency) --- */}
                     {currencyPacks && currencyPacks.length > 0 && (
                         <div className="shop-section">
-                            <h3 className="shop-section-title">Currency</h3>
+                            <h3 className="shop-section-title">Currency</h3> {/* Или "Валюта" */}
                             <div className="section-content-box">
-                                <div className="daily-shop-grid currency-grid">
+                                <div className="daily-shop-grid currency-grid"> {/* <--- ОБРАТИТЕ ВНИМАНИЕ НА ЭТУ СТРОКУ */}
                                     {currencyPacks.map(pack => (
                                         <CurrencyPackCard
                                             key={pack.id}
@@ -882,6 +916,61 @@ const Shop = () => {
 
                 </div> {/* Конец .shop-scrollable-content */}
             </motion.div> {/* Конец .shop-screen */}
+
+            {/* === МОДАЛЬНОЕ ОКНО ДЛЯ ИНФОРМАЦИИ О БАНДЛЕ === */}
+            <AnimatePresence>
+                {activeBundleTooltip && (
+                    <motion.div
+                        className="global-bundle-tooltip-overlay" // Убедитесь, что этот класс стилизован для отображения поверх всего
+                        onClick={handleCloseBundleTooltip}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <motion.div
+                            className="global-bundle-tooltip-popup" // Стилизуйте этот класс для самого попапа
+                            onClick={(e) => e.stopPropagation()} // Предотвращает закрытие по клику на сам попап
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25, duration: 0.2 }}
+                        >
+                            <button className="tooltip-close-button" onClick={handleCloseBundleTooltip} aria-label="Закрыть">×</button>
+                            {activeBundleTooltip.name && <h3 className="tooltip-bundle-name">{activeBundleTooltip.name}</h3>}
+                            {activeBundleTooltip.description && <p className="tooltip-bundle-description">{activeBundleTooltip.description}</p>}
+
+                            {activeBundleTooltip.contents && activeBundleTooltip.contents.length > 0 && (
+                                <div className="tooltip-bundle-contents-list">
+                                    <h4>Содержимое набора:</h4>
+                                    <ul>
+                                        {activeBundleTooltip.contents.map((content, index) => {
+                                            let textToShow = '';
+                                            if (typeof content === 'string') {
+                                                textToShow = content;
+                                            } else if (typeof content === 'object' && content !== null) {
+                                                textToShow = content.text || `Предмет ${content.id || index}`;
+                                                if (content.quantity) textToShow += ` x${content.quantity}`;
+                                                if (content.rarity) textToShow += ` (${content.rarity})`;
+                                            }
+                                            return <li key={`tooltip-content-${index}`}>{textToShow}</li>;
+                                        })}
+                                    </ul>
+                                </div>
+                            )}
+                            {/* Дополнительная информация, если есть */}
+                            {activeBundleTooltip.discount > 0 && <p className="tooltip-bundle-discount">Скидка: {activeBundleTooltip.discount}%</p>}
+                            {activeBundleTooltip.priceDisplay && <p className="tooltip-bundle-price">Цена: {activeBundleTooltip.priceDisplay}</p>}
+                            {!activeBundleTooltip.priceDisplay && activeBundleTooltip.price && activeBundleTooltip.currency &&
+                                <p className="tooltip-bundle-price">Цена: {activeBundleTooltip.price}{activeBundleTooltip.currency === 'USDT' || activeBundleTooltip.currency === 'USDC' ? ` ${activeBundleTooltip.currency}` : '$'}</p>
+                            }
+                            {/* Можно добавить иконки, изображения предметов и т.д. */}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* === КОНЕЦ МОДАЛЬНОГО ОКНА ДЛЯ ИНФОРМАЦИИ О БАНДЛЕ === */}
+
 
             {/* Попапы */}
             {lastChestRewards && (

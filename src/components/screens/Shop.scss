@@ -33,6 +33,14 @@ $shop-section-title-padding-horizontal: 30px; // Больше отступы п�
 $shop-section-title-min-width: 250px; // Минимальная ширина для таблички
 $shop-section-title-margin-bottom: 30px; // Увеличенный отступ снизу
 
+// Если переменные еще не определены, можно использовать временные значения:
+$modal-backdrop-bg: rgba(0, 0, 0, 0.65) !default;
+$modal-tooltip-bg: #282c4c !default; // Фон самого модального окна (темно-сине-фиолетовый)
+$modal-tooltip-border: rgba(130, 140, 190, 0.5) !default;
+$modal-tooltip-shadow: 0 10px 30px rgba(0,0,0,0.3) !default;
+$modal-tooltip-text-color: #e8ecf5 !default;
+$bundle-tooltip-header-color: #d08000 !default;
+
 // =======================================================
 // ===                           ОСНОВНЫЕ СТИЛИ ЭКРАНА МАГАЗИНА                           ===
 // =======================================================
@@ -190,8 +198,8 @@ $shop-section-title-margin-bottom: 30px; // Увеличенный отступ 
 
     .currency-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr);
+         gap: 15px;
         width: 100%;
     }
     
@@ -215,90 +223,128 @@ $shop-section-title-margin-bottom: 30px; // Увеличенный отступ 
 // ===                         СТИЛИ КАРТОЧЕК (Daily, Bundle, Currency)                         ===
 // =======================================================
 .shop-item-card { // Общий стиль для всех карточек товаров/бандлов/валюты
-  background-color: rgba(40, 45, 80, 0.85); 
-  border: 1px solid rgba(106, 117, 138, 0.7); 
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border-left-width: 5px; 
-  min-height: 180px; 
-  box-sizing: border-box;
+    background-color: rgba(40, 45, 80, 0.85);
+    border: 1px solid rgba(106, 117, 138, 0.7);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative; // Важно для позиционирования дочерних абсолютных элементов
+    overflow: hidden; // Помогает с некоторыми эффектами, но для тултипа может понадобиться overflow: visible, если он выходит за пределы
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left-width: 5px;
+    min-height: 180px;
+    box-sizing: border-box;
 
-  &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25); 
-  }
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
 
-  // --- Цвета левой рамки по редкости ---
-  &.rarity-common { border-left-color: $rarity-color-common; }
-  &.rarity-uncommon { border-left-color: $rarity-color-uncommon; }
-  &.rarity-rare { border-left-color: $rarity-color-rare; }
-  &.rarity-epic { border-left-color: $rarity-color-epic; }
-  &.rarity-legendary { border-left-color: $rarity-color-legendary; }
-  &.rarity-mythic { border-left-color: $rarity-color-mythic; }
+    // --- Цвета левой рамки по редкости (существующие) ---
+    &.rarity-common { border-left-color: $rarity-color-common; }
+    &.rarity-uncommon { border-left-color: $rarity-color-uncommon; }
+    &.rarity-rare { border-left-color: $rarity-color-rare; }
+    &.rarity-epic { border-left-color: $rarity-color-epic; }
+    &.rarity-legendary { border-left-color: $rarity-color-legendary; }
+    &.rarity-mythic { border-left-color: $rarity-color-mythic; }
 
-  .discount-banner {
-      position: absolute;
-      top: 8px; left: -28px;
-      background-color: #e64a19; color: white;
-      padding: 2px 30px; font-size: 10px; font-weight: bold;
-      transform: rotate(-45deg); box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      z-index: 1;
-  }
+    // === КНОПКА-ТРИГГЕР ДЛЯ ТУЛТИПА БАНДЛА ===
+    .bundle-info-tooltip-trigger {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 3; // Выше контента карточки, ниже тултипа
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.45);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-family: 'Georgia', serif; // Для красивой 'i'
+        font-weight: bold;
+        line-height: 1; // Убираем лишнюю высоту строки для центрирования 'i'
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 
-  .item-name {
-      font-size: 13px; 
-      font-weight: bold; color: #f0f0f0;
-      margin-bottom: 8px; height: 2.8em; line-height: 1.4em;
-      overflow: hidden; width: 100%;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  }
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.65);
+            transform: scale(1.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        &:active {
+            transform: scale(1.0); // Возвращаем масштаб при клике
+        }
+    }
+    
+    // Существующие стили для контента карточки (могут потребовать z-index, если перекрываются)
+    .discount-banner {
+        position: absolute;
+        top: 8px; left: -28px;
+        background-color: #e64a19; color: white;
+        padding: 2px 30px; font-size: 10px; font-weight: bold;
+        transform: rotate(-45deg); box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        z-index: 1; // Ниже чем trigger и tooltip
+    }
 
-  > img { 
-      width: 52px; height: 52px; 
-      object-fit: contain; margin-bottom: 8px;
-  }
+    .item-name {
+        font-size: 13px;
+        font-weight: bold; color: #f0f0f0;
+        margin-bottom: 8px; height: 2.8em; line-height: 1.4em;
+        overflow: hidden; width: 100%;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        z-index: 1;
+    }
 
-  .purchase-limit {
-      font-size: 11px; color: #99aab5; margin-bottom: 8px;
-  }
+    > img { // Основная картинка товара/валюты/бандла
+        width: 52px; height: 52px;
+        object-fit: contain; margin-bottom: 8px;
+        z-index: 1;
+    }
 
-  .purchase-button {
-      width: 100%; padding: 8px 5px; border: none; border-radius: 6px;
-      background: linear-gradient(to bottom, #5a9a5a, #4CAF50); color: white;
-      cursor: pointer; font-weight: bold; font-size: 14px;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      border: 1px solid #3a7a3a; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
-      transition: background 0.2s, transform 0.1s, border-color 0.2s, opacity 0.2s;
-      margin-top: auto; 
+    .purchase-limit {
+        font-size: 11px; color: #99aab5; margin-bottom: 8px;
+        z-index: 1;
+    }
 
-      img { 
-          width: 16px; height: 16px; margin: 0;
-          vertical-align: middle;
-      }
+    .purchase-button {
+        width: 100%; padding: 8px 5px; border: none; border-radius: 6px;
+        background: linear-gradient(to bottom, #5a9a5a, #4CAF50); color: white;
+        cursor: pointer; font-weight: bold; font-size: 14px;
+        display: flex; align-items: center; justify-content: center; gap: 5px;
+        border: 1px solid #3a7a3a; box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        transition: background 0.2s, transform 0.1s, border-color 0.2s, opacity 0.2s;
+        margin-top: auto;
+        z-index: 1;
 
-      &:hover:not(:disabled) { background: linear-gradient(to bottom, #6aac6a, #5cb85c); }
-      &:active:not(:disabled) { transform: scale(0.98); }
-      &:disabled {
-          background: linear-gradient(to bottom, #666, #555);
-          border-color: #444; cursor: not-allowed; opacity: 0.7;
-      }
-  }
+        img {
+            width: 16px; height: 16px; margin: 0;
+            vertical-align: middle;
+        }
 
-  &.sold-out {
-      opacity: 0.6;
-      .purchase-button {
-          background: linear-gradient(to bottom, #777, #666);
-          border-color: #555; cursor: default;
-      }
-      .purchase-limit { color: #777; }
-  }
+        &:hover:not(:disabled) { background: linear-gradient(to bottom, #6aac6a, #5cb85c); }
+        &:active:not(:disabled) { transform: scale(0.98); }
+        &:disabled {
+            background: linear-gradient(to bottom, #666, #555);
+            border-color: #444; cursor: not-allowed; opacity: 0.7;
+        }
+    }
+
+    &.sold-out {
+        opacity: 0.6;
+        .purchase-button {
+            background: linear-gradient(to bottom, #777, #666);
+            border-color: #555; cursor: default;
+        }
+        .purchase-limit { color: #777; }
+    }
 }
 
 .artifact-shard-card { 
@@ -651,4 +697,166 @@ $shop-section-title-margin-bottom: 30px; // Увеличенный отступ 
     25% { transform: translateX(-2px); }
     50% { transform: translateX(2px); }
     75% { transform: translateX(-1px); }
+}
+
+// === ГЛОБАЛЬНЫЕ СТИЛИ ДЛЯ МОДАЛЬНОГО ОКНА ИНФОРМАЦИИ О БАНДЛЕ ===
+.global-bundle-tooltip-overlay {
+    position: fixed; // Позиционирование относительно окна браузера
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: $modal-backdrop-bg; // Полупрозрачный фон-затемнение
+    display: flex;
+    align-items: center; // Вертикальное центрирование
+    justify-content: center; // Горизонтальное центрирование
+    z-index: 2500; // Очень высокий z-index, чтобы быть поверх всего
+    padding: 20px; // Отступы для маленьких экранов, чтобы попап не прилипал к краям
+    box-sizing: border-box;
+    // opacity и другие свойства для анимации будут управляться Framer Motion
+    // Если не используете Framer Motion, раскомментируйте и настройте:
+    // opacity: 0;
+    // visibility: hidden;
+    // transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    // &.active {
+    //   opacity: 1;
+    //   visibility: visible;
+    //   transition-delay: 0s;
+    // }
+}
+
+.global-bundle-tooltip-popup {
+    background-color: $modal-tooltip-bg;
+    border: 1px solid $modal-tooltip-border;
+    border-radius: 12px;
+    padding: 25px 30px 30px 30px;
+    color: $modal-tooltip-text-color;
+    box-shadow: $modal-tooltip-shadow;
+    font-size: 15px;
+    line-height: 1.6;
+    text-align: left; // Текст внутри попапа выравниваем по левому краю
+    width: 100%; // Ширина будет ограничена max-width
+    max-width: 520px; // Максимальная ширина модального окна
+    position: relative; // Для позиционирования кнопки закрытия
+    // transform и opacity для анимации будут управляться Framer Motion
+    // Если не используете Framer Motion, раскомментируйте и настройте:
+    // transform: scale(0.9) translateY(-20px);
+    // opacity: 0;
+    // transition: transform 0.3s ease, opacity 0.3s ease;
+    // &.active {
+    //   transform: scale(1) translateY(0);
+    //   opacity: 1;
+    // }
+
+    .tooltip-close-button {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 34px;
+        height: 34px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #fff;
+        font-size: 20px;
+        line-height: 32px;
+        text-align: center;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.2s;
+        &:hover {
+            background: rgba(255,255,255,0.12);
+            transform: rotate(90deg) scale(1.05);
+        }
+    }
+
+    .tooltip-bundle-name { // Главный заголовок с именем бандла
+        font-size: 24px;
+        font-weight: bold;
+        color: #fff; // Яркий белый для основного заголовка
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 25px;
+    }
+
+    // Подзаголовки "Описание", "Содержимое"
+    h5 { 
+        font-size: 18px;
+        font-weight: 600;
+        color: $bundle-tooltip-header-color; 
+        margin-top: 0;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba($bundle-tooltip-header-color, 0.35);
+        // Отступ для второго и последующих h5
+        &:not(:first-of-type) { 
+            margin-top: 25px;
+        }
+    }
+
+    // Если вы используете h4 для "Содержимое набора:" внутри .tooltip-bundle-contents-list
+    // как было в вашем JSX, то лучше его стилизовать отдельно или использовать h5.
+    // Для примера из JSX:
+    .tooltip-bundle-contents-list { // Это был div в вашем JSX
+        h4 { // Стили для "Содержимое набора:"
+            font-size: 18px;
+            font-weight: 600;
+            color: $bundle-tooltip-header-color;
+            margin-top: 25px; // Если это отдельный заголовок
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba($bundle-tooltip-header-color, 0.35);
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+        li {
+            padding: 10px 5px;
+            color: #ced4e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+
+            &::before { // Маркер списка
+                 content: '◉'; 
+                 font-size: 12px;
+                 color: $bundle-tooltip-header-color;
+                 opacity: 0.8;
+            }
+
+            &:not(:last-child) {
+                border-bottom: 1px solid rgba(120, 130, 180, 0.15);
+            }
+        }
+    }
+    // Если h4 для "Содержимое набора:" не нужен, а используется h5 из предыдущего блока,
+    // то блок .tooltip-bundle-contents-list может быть просто ul, и ему нужны только эти стили:
+    // ul.tooltip-contents-list {
+    //     list-style: none;
+    //     padding-left: 0;
+    //     margin-bottom: 0;
+    //     li { ... }
+    // }
+
+
+    .tooltip-bundle-description { // У вас было p.tooltip-bundle-description, переименовал для консистентности
+        margin-bottom: 20px;
+        color: #d8dde8;
+        font-size: 15px;
+    }
+
+    // Дополнительные стили для цены и скидки в попапе, если нужно
+    .tooltip-bundle-discount,
+    .tooltip-bundle-price {
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 20px;
+        color: $rarity-color-uncommon; // Пример цвета для скидки
+    }
+    .tooltip-bundle-price {
+        color: $rarity-color-legendary; // Пример цвета для цены
+    }
 }
