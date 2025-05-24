@@ -45,7 +45,10 @@ export const GEAR_CHESTS = [
         keyToOpenForFree: REWARD_TYPES.EPIC_CHEST_KEY, // <<< МОЖНО ОТКРЫТЬ ЭПИЧЕСКИМ КЛЮЧОМ БЕСПЛАТНО
         possibleRarities: ["Common", "Uncommon", "Rare", "Epic"],
         rarityChances: { "Common": 0.65, "Uncommon": 0.27, "Rare": 0.07, "Epic": 0.01 },
-        pity: [ /* ... */ ],
+        pity: [
+            { rarity: "Rare", limit: 10 },
+            { rarity: "Epic", limit: 50 }
+        ],
         shardPassXp: 50,
     },
 ];

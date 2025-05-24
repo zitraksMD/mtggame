@@ -444,7 +444,7 @@ const Shop = () => {
                     {/* --- 2. СПЕЦИАЛЬНЫЕ ПРЕДЛОЖЕНИЯ (Special Bundles) --- */}
                     {activeSpecialDeals && activeSpecialDeals.length > 0 && (
                         <div className="shop-section special-bundles-section">
-                            <h3 className="shop-section-title">Особые Наборы</h3>
+                            <h3 className="shop-section-title">Unique Deals</h3>
                             <div className="section-content-box">
                                 <div className="bundle-carousel-container special-bundle-carousel">
                                     <AnimatePresence initial={false} custom={directionSpecial} mode="wait">
@@ -496,9 +496,9 @@ const Shop = () => {
 
                     {/* --- 3. ЕЖЕДНЕВНЫЕ ПРЕДЛОЖЕНИЯ (Daily Deals) --- */}
                     <div className="shop-section">
-                        <h3 className="shop-section-title">Ежедневные предложения</h3>
+                        <h3 className="shop-section-title">Daily Deals</h3>
                         <div className="section-content-box">
-                            <div className="shop-timer daily-timer">Обновление через: {refreshTimer}</div>
+                            <div className="shop-timer daily-timer">Refresh in: {refreshTimer}</div>
                             <div className="daily-shop-grid">
                                 {dailyDeals && dailyDeals.length > 0 ? (
                                     dailyDeals.map(deal => {
@@ -530,7 +530,7 @@ const Shop = () => {
 
                     {/* --- 4. СУНДУКИ СНАРЯЖЕНИЯ (Gear Chests) --- */}
                     <div className="shop-section">
-                        <h3 className="shop-section-title">Сундуки Снаряжения</h3>
+                        <h3 className="shop-section-title">Gear Chests</h3>
                         <div className="section-content-box">
                             <div className="chest-carousel-container gear-carousel">
                                 <AnimatePresence initial={false} custom={direction} mode='wait'>
@@ -627,7 +627,7 @@ const Shop = () => {
                                                                         const pityKey = p.rarity.toLowerCase();
                                                                         const currentPityCount = (gearChestPity[chest.id]?.[pityKey]) || 0;
                                                                         const pityRemaining = Math.max(0, p.limit - currentPityCount);
-                                                                        const text = pityRemaining > 0 ? `Гарант. ${p.rarity} через ${pityRemaining}` : `Гарант. ${p.rarity} СЛЕД.!`;
+                                                                        const text = pityRemaining > 0 ? `Guaranteed ${p.rarity} in  ${pityRemaining}` : `Guaranteed ${p.rarity} NEXT!`;
                                                                         return <span key={p.rarity} className={`rarity-${pityKey}`}>{text}</span>;
                                                                     })}
                                                             </div>
@@ -682,7 +682,7 @@ const Shop = () => {
 
                     {/* --- 5. СУНДУКИ АРТЕФАКТОВ (Artifact Chests) --- */}
                     <div className="shop-section">
-                        <h3 className="shop-section-title">Сундуки Артефактов</h3>
+                        <h3 className="shop-section-title">Artifact Chests</h3>
                         <div className="section-content-box">
                             <div className="chest-carousel-container swiper-mode artifact-carousel">
                                 <AnimatePresence initial={false} custom={directionArtifact} mode='wait'>
@@ -723,8 +723,8 @@ const Shop = () => {
                                                 const pityRemaining = Math.max(0, pityLimit - currentArtifactPityCount);
                                                 const guaranteedItemText = "артефакт";
                                                 pityInfoText = pityRemaining > 0
-                                                    ? `Гарантированный ${guaranteedItemText} через ${pityRemaining}`
-                                                    : `Гарантированный ${guaranteedItemText} СЛЕДУЮЩИЙ!`;
+                                                    ? `Guaranteed ${guaranteedItemText} in ${pityRemaining}`
+                                                    : `Guaranteed ${guaranteedItemText} NEXT!`;
                                             }
 
                                             return (
@@ -801,7 +801,7 @@ const Shop = () => {
                     {/* --- 6. ОБЫЧНЫЕ НАБОРЫ (General Bundles) --- */}
                     {GENERAL_BUNDLES && GENERAL_BUNDLES.length > 0 && (
                         <div className="shop-section general-bundles-section">
-                            <h3 className="shop-section-title">Наборы</h3>
+                            <h3 className="shop-section-title">Bundles:</h3>
                             <div className="section-content-box">
                                 <div className="bundle-carousel-container general-bundle-carousel">
                                     <AnimatePresence initial={false} custom={directionGeneral} mode='wait'>
@@ -864,7 +864,7 @@ const Shop = () => {
                     {/* --- 7. ПОКУПКА ВАЛЮТЫ (Currency) --- */}
                     {currencyPacks && currencyPacks.length > 0 && (
                         <div className="shop-section">
-                            <h3 className="shop-section-title">Валюта</h3>
+                            <h3 className="shop-section-title">Currency</h3>
                             <div className="section-content-box">
                                 <div className="daily-shop-grid currency-grid">
                                     {currencyPacks.map(pack => (

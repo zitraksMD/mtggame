@@ -440,6 +440,8 @@ $shop-section-title-margin-bottom: 30px; // Увеличенный отступ 
       .chest-pity-info { 
           font-size: 0.9em; 
           font-weight: bold; line-height: 1.4; width: fit-content;
+                  text-align: center;  // <<< ДОБАВЛЕНО ЭТО СВОЙСТВО
+
       
           span {
               display: inline-block; 
