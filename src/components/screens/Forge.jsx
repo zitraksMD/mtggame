@@ -17,6 +17,8 @@ import itemsDatabase, { getItemById } from '../../data/itemsDatabase';
 import forgeRecipes from '../../data/forgeDatabase';
 import CompactRecipeCard from '../CompactRecipeCard';
 import './Forge.scss';
+import ForgeItemInfoPopup from '../popups/ForgeItemInfoPopup.jsx';
+
 
 // --- >>> Путь к видео (из код 1) <<< ---
 const FORGE_VIDEO_PATH = '/assets/videos/forge_animation.mp4'; // <-- УКАЖИ ПРАВИЛЬНЫЙ ПУТЬ К ВИДЕО!
@@ -48,9 +50,25 @@ const Forge = () => {
     const [isCrafting, setIsCrafting] = useState(false); // Состояние для показа видео (из код 1)
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [lastCraftedItem, setLastCraftedItem] = useState(null);
+    const [showItemInfoPopup, setShowItemInfoPopup] = useState(false);
+    const [itemForInfoPopup, setItemForInfoPopup] = useState(null);
     const videoRef = useRef(null); // Ref для видео (из код 1)
     const recipeToCraftRef = useRef(null); // Ref для рецепта во время видео (из код 1)
     const timerIdRef = useRef(null); // Ref для ID таймера (из код 1 и 2)
+
+
+    const handleOutputItemClick = useCallback((itemData) => {
+    if (isCrafting) return;
+    if (itemData) {
+        setItemForInfoPopup(itemData);
+        setShowItemInfoPopup(true);
+    }
+}, [isCrafting, showItemInfoPopup]);
+
+    const handleCloseItemInfoPopup = useCallback(() => {
+    setShowItemInfoPopup(false);
+    // setItemForInfoPopup(null); // Опционально: сбросить данные при закрытии
+}, []);
 
     // useEffect для логгирования (из код 2)
     useEffect(() => {
@@ -182,7 +200,7 @@ const playerInventoryCounts = {};
         } else if (filteredUpgrades.length === 0 && selectedRecipeData !== null) {
             setSelectedRecipeData(null);
         }
-    }, [filteredUpgrades, selectedRecipeData, isCrafting]); // Добавлена зависимость isCrafting
+    }, [filteredUpgrades, selectedRecipeData, isCrafting, showItemInfoPopup]) // Добавлена зависимость isCrafting
 
 
     // --- >>> ОБНОВЛЕННЫЙ handleForgeClick (запускает видео, из код 1, с проверками из код 2) <<< ---
@@ -199,7 +217,7 @@ const playerInventoryCounts = {};
         setLastCraftedItem(null);
         setShowSuccessPopup(false);
         setIsCrafting(true);
-    }, [isCrafting, executeForgeRecipe]);
+    }, [isCrafting, showItemInfoPopup, executeForgeRecipe]);
 
 
     // --- >>> Обработчик конца видео ИЛИ таймера (из код 2, но триггерит показ попапа из код 1) <<< ---
@@ -303,8 +321,8 @@ const playerInventoryCounts = {};
                 </div>
             )}
 
-            <div style={{ visibility: isCrafting ? 'hidden' : 'visible', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {/* --- >>> НОВАЯ ШАПКА С ВАЛЮТАМИ <<< --- */}
+<div style={{ visibility: (isCrafting || showItemInfoPopup) ? 'hidden' : 'visible', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    {/* --- >>> НОВАЯ ШАПКА С ВАЛЮТАМИ <<< --- */}
                 <div className="forge-currency-header">
                     <div className="currency-display">
                         <img className="currency-icon" src="/assets/coin-icon.png" alt="Золото" /> {/* Укажите правильный путь к иконке золота */}
@@ -338,7 +356,7 @@ const playerInventoryCounts = {};
                              )}
                              {filteredUpgrades.length > 0 && (
                                  <Swiper
-                                     grabCursor={!isCrafting}
+                                     grabCursor={!isCrafting && !showItemInfoPopup}
                                      centeredSlides={true}
                                      slidesPerView={'auto'}
                                      loop={filteredUpgrades.length > 2} // Loop if more than 2 slides (Swiper best practice for loop with centered slides)
@@ -346,7 +364,7 @@ const playerInventoryCounts = {};
                                      className="forge-recipes-swiper centered-swiper"
                                      onSwiper={setSwiperInstance}
                                      onSlideChange={handleSlideChange}
-                                     allowTouchMove={!isCrafting}
+                                     allowTouchMove={!isCrafting && !showItemInfoPopup}
                                      key={activeForgeTab + "_swiper"} // More specific key
                                  >
                                      {filteredUpgrades.map((recipe) => (
@@ -425,11 +443,18 @@ const playerInventoryCounts = {};
                                             })()}
                                         </motion.svg>
 
-                                        <div className="output-item-focus">
+                                        {/* --- >>> 4. ДОБАВЬ onClick НА ВЫХОДНОЙ ПРЕДМЕТ <<< --- */}
+                                        <div
+                                            className="output-item-focus"
+                                            onClick={() => handleOutputItemClick(selectedRecipeData.outputItemData)}
+                                            style={{ cursor: selectedRecipeData.outputItemData ? 'pointer' : 'default' }} // Визуальный индикатор кликабельности
+                                        >
                                             <div className={`recipe-item-display output focus rarity-${selectedRecipeData.outputItemData.rarity.toLowerCase()}`}>
                                                 <img src={selectedRecipeData.outputItemData.image || '/assets/default-item.png'} alt={selectedRecipeData.outputItemData.name} />
                                             </div>
                                         </div>
+
+                                        {/* Входные предметы */}
 
                                         {(Array.isArray(selectedRecipeData.inputItemsData) ? selectedRecipeData.inputItemsData.slice(0, 3) : []).map((inputDisplayData, inputIndex) => (
                 <div
@@ -479,7 +504,7 @@ const playerInventoryCounts = {};
                                             <button
                                                 className="forge-button focus-button"
                                                 onClick={() => handleForgeClick(selectedRecipeData)}
-                                                disabled={!selectedRecipeData.canCraft || isCrafting}
+                                                disabled={!selectedRecipeData.canCraft || isCrafting || showItemInfoPopup}
                                             >
                                                 {isCrafting ? "Создание..." : "Forge"}
                                             </button>
@@ -509,6 +534,17 @@ const playerInventoryCounts = {};
                 )}
             </AnimatePresence>
 
+                {/* --- >>> ВОТ ЭТОТ БЛОК НУЖНО ДОБАВИТЬ <<< --- */}
+            <AnimatePresence>
+                {showItemInfoPopup && itemForInfoPopup && (
+                    <ForgeItemInfoPopup
+                        key="forge-item-info-display-popup" // Уникальный ключ
+                        item={itemForInfoPopup}
+                        onClose={handleCloseItemInfoPopup}
+                    />
+                )}
+            </AnimatePresence>
+            
         </motion.div>
     );
 };
