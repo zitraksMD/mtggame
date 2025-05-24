@@ -30,10 +30,7 @@ const CompactRecipeCard = ({ recipe, onSelect }) => {
         {/* Можно добавить Shimmer сюда, если он нужен в карусели */}
       </div>
 
-      {/* Название предмета */}
-      <div className="compact-recipe-name">
-        {recipe.outputItemData.name}
-      </div>
+
     </motion.button>
   );
 };

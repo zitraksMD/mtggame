@@ -19,13 +19,7 @@
   box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
   box-sizing: border-box;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-  // margin-bottom: -45px; // <<< УБРАТЬ ЭТУ СТРОКУ!
-
-  /* Отступ снизу для безопасной зоны:
-     Раскомментируйте строку ниже, если навбар НЕ должен заезжать
-     на системные элементы (например, полоску "домой" на iPhone) */
-  // padding-bottom: env(safe-area-inset-bottom, 0px);
+ padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 // --- Стиль для каждой ссылки (NavLink -> a.nav-item) ---

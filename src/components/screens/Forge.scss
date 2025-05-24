@@ -1,825 +1,494 @@
 // src/components/Forge.scss
-// --- ПОЛНЫЙ И ИСПРАВЛЕННЫЙ КОД С ЗАМЕНАМИ ИЗ код1 ---
 
 @use 'sass:color'; // Импортируем модуль sass:color
 
-// --- Переменные ---
-$forge-bg-start: #2c303a;
-$forge-bg-end: #1e2128;
-$panel-bg-start: #3a4050;
-$panel-bg-end: #2a2e3c;
-$panel-border: rgba(120, 130, 160, 0.25);
-$text-color: #e2e8f0;
-$text-color-muted: #a0b0c5;
-$text-color-title: #ffffff;
-$divider-color: rgba(120, 130, 160, 0.2);
-$text-color-owned-enough: #68d391;
-$text-color-owned-not-enough: #fc8181;
+// --- Новая палитра для Кузницы (вдохновленная ShardPassScreen) ---
+$forge-theme-bg-dark-purple: #2a0a4a;       // Аналог $sp-bg-start
+$forge-theme-bg-mid-purple: #4a1a6a;        // Аналог $sp-bg-end
+$forge-theme-accent-gold: #FCC200;          // Аналог $sp-text-color (для ярких акцентов)
+$forge-theme-accent-lavender: #d8b4fe;      // Аналог $sp-title-color (для заголовков, границ, светлого текста)
+$forge-theme-panel-bg: rgba(26, 0, 51, 0.65); // Полупрозрачный темный фон для панелей
+$forge-theme-panel-bg-opaque: #3c1f52;     // Непрозрачный фон для панелей, если нужно
+$forge-theme-border-color: rgba($forge-theme-accent-lavender, 0.35); // Рамка
+$forge-theme-text-primary: #f0e6ff;         // Основной светлый текст (чуть теплее белого)
+$forge-theme-text-muted: color.adjust($forge-theme-accent-lavender, $alpha: -0.4); // Приглушенный текст
 
+// Кнопка "Создать"
+$forge-theme-button-bg-start: #7e22ce; // Из $sp-button-buy-bg
+$forge-theme-button-bg-end: #a855f7;   // Из $sp-button-buy-bg
+$forge-theme-button-text: #ffffff;
+
+// --- Старые переменные (многие будут заменены) ---
+$panel-border: $forge-theme-border-color;
+$text-color: $forge-theme-text-primary;
+$text-color-muted: $forge-theme-text-muted;
+$text-color-title: $forge-theme-accent-lavender;
+$divider-color: $forge-theme-border-color;
+
+$text-color-owned-enough: #68d391; // Оставляем для контраста
+$text-color-owned-not-enough: #fc8181; // Оставляем для контраста
+
+// Цвета редкости остаются, они важны для самих предметов
 $rarity-color-common: #a0aec0;
 $rarity-color-uncommon: #68d391;
 $rarity-color-rare: #63b3ed;
 $rarity-color-epic: #b15dff;
-$rarity-color-legendary: #ffc107;
-$rarity-color-mythic: #E53E3E; // << Новый красный (Tailwind Red 600)
+$rarity-color-legendary: #ffc107; // Этот цвет похож на $forge-theme-accent-gold
+$rarity-color-mythic: #E53E3E;
 
-$tab-text: #a0b0c5;
-$tab-text-hover: #e2e8f0;
-$tab-active-text: #1a1d23;
+// Вкладки
+$tab-text: $forge-theme-text-muted;
+$tab-text-hover: $forge-theme-text-primary;
+// Для активных вкладок текст будет преимущественно $forge-theme-accent-gold или $forge-theme-text-primary
+$tab-active-text-on-rarity-bg: $forge-theme-panel-bg-opaque; // Темный текст для светлых фонов редкости (вроде uncommon, legendary)
+$tab-active-text-on-dark-rarity-bg: $forge-theme-text-primary; // Светлый текст для темных фонов редкости
+
+// Используем цвета редкости для фона активных вкладок
 $tab-active-uncommon-bg: $rarity-color-uncommon;
 $tab-active-rare-bg: $rarity-color-rare;
 $tab-active-epic-bg: $rarity-color-epic;
 $tab-active-legendary-bg: $rarity-color-legendary;
 $tab-active-mythic-bg: $rarity-color-mythic;
 
-$button-forge-bg-start: #58a6ff;
-$button-forge-bg-end: #3a8cff;
-$button-forge-bg-hover-start: #70b5ff;
-$button-forge-bg-hover-end: #559eff;
-$button-forge-text: white;
-$button-disabled-bg-start: #6c757d;
-$button-disabled-bg-end: #5a6268;
-$button-disabled-text: #adb5bd;
-$button-forge-shadow-active: rgba($button-forge-bg-start, 0.6);
+// Тень для кнопки
+$button-forge-shadow-active: rgba($forge-theme-button-bg-start, 0.6);
 
-$indicator-craftable-bg: $rarity-color-legendary;
-$indicator-craftable-text: black;
-$indicator-tab-bg: #ffcc00;
-$indicator-tab-text: black;
+$indicator-craftable-bg: $forge-theme-accent-gold;
+$indicator-craftable-text: $forge-theme-bg-dark-purple;
+$indicator-tab-bg: $forge-theme-accent-gold;
+$indicator-tab-text: $forge-theme-bg-dark-purple;
 
-// --- Базовый стиль иконок предметов ---
+// --- Базовый стиль иконок предметов (цвета остаются по редкости) ---
 .recipe-item-display {
-    width: 50px; height: 50px; border: 2px solid;
-    border-radius: 8px;
-    padding: 4px; display: flex; align-items: center; justify-content: center;
-    overflow: hidden; transition: all 0.2s ease;
-    position: relative; box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);
-    
-    &.rarity-common {
-      border-color: rgba($rarity-color-common, 0.7); // Серая рамка
-      // Используем функцию SASS color.adjust для затемнения базового цвета
-      background-color: color.adjust($rarity-color-common, $lightness: -35%, $alpha: 1); // Темно-серый сплошной фон
-  }
-  &.rarity-uncommon {
-      border-color: rgba($rarity-color-uncommon, 0.8); // Зеленая рамка
-      background-color: color.adjust($rarity-color-uncommon, $lightness: -30%, $saturation: -10%, $alpha: 1); // Темно-зеленый сплошной фон
-  }
-  &.rarity-rare {
-      border-color: rgba($rarity-color-rare, 0.8); // Синяя рамка
-      background-color: color.adjust($rarity-color-rare, $lightness: -30%, $saturation: -10%, $alpha: 1); // Темно-синий сплошной фон
-  }
-  &.rarity-epic {
-      border-color: rgba($rarity-color-epic, 0.8); // Фиолетовая рамка
-      background-color: color.adjust($rarity-color-epic, $lightness: -30%, $saturation: -10%, $alpha: 1); // Темно-фиолетовый сплошной фон
-  }
-  &.rarity-legendary {
-      border-color: rgba($rarity-color-legendary, 0.9); // Золотая рамка (ярче)
-      background-color: color.adjust($rarity-color-legendary, $lightness: -30%, $saturation: -10%, $alpha: 1); // Темно-золотой сплошной фон
-  }
-  // --- >>> ИЗМЕНЕНИЯ ДЛЯ MYTHIC <<< ---
-  &.rarity-mythic {
-      border-color: $rarity-color-mythic; // << КРАСНАЯ сплошная рамка
-      // Затемняем КРАСНЫЙ цвет для фона
-      background-color: color.adjust($rarity-color-mythic, $lightness: -30%, $saturation: -5%, $alpha: 1); // << ТЕМНО-КРАСНЫЙ сплошной фон
-  }
+  width: 50px; height: 50px; border: 2px solid;
+  border-radius: 8px;
+  padding: 4px; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; transition: all 0.2s ease;
+  position: relative; box-shadow: inset 0 2px 6px rgba(0,0,0,0.7);
 
-    img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.7)); position: relative; z-index: 1;}
+  &.rarity-common { border-color: rgba($rarity-color-common, 0.7); background-color: color.adjust($rarity-color-common, $lightness: -35%, $alpha: 1); }
+  &.rarity-uncommon { border-color: rgba($rarity-color-uncommon, 0.8); background-color: color.adjust($rarity-color-uncommon, $lightness: -30%, $saturation: -10%, $alpha: 1); }
+  &.rarity-rare { border-color: rgba($rarity-color-rare, 0.8); background-color: color.adjust($rarity-color-rare, $lightness: -30%, $saturation: -10%, $alpha: 1); }
+  &.rarity-epic { border-color: rgba($rarity-color-epic, 0.8); background-color: color.adjust($rarity-color-epic, $lightness: -30%, $saturation: -10%, $alpha: 1); }
+  &.rarity-legendary { border-color: rgba($rarity-color-legendary, 0.9); background-color: color.adjust($rarity-color-legendary, $lightness: -30%, $saturation: -10%, $alpha: 1); }
+  &.rarity-mythic { border-color: $rarity-color-mythic; background-color: color.adjust($rarity-color-mythic, $lightness: -30%, $saturation: -5%, $alpha: 1); }
 
-    // Затемнение неактивных входов
-    &.input.dimmed {
-        opacity: 0.4; filter: grayscale(85%); border-style: dashed;
-        border-color: #555; box-shadow: none;
-        &::after { // Скрываем анимацию у затемненных
-            display: none !important;
-            animation: none !important;
-            opacity: 0 !important;
-        }
-    }
+  img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.7)); position: relative; z-index: 1;}
 
-    // --- АНИМИРОВАННЫЙ фон через псевдоэлемент (Shimmer) ---
-    &::after {
-        content: ''; position: absolute; inset: -2px; z-index: 0;
-        background-size: 250% 100%;
-        background-repeat: no-repeat;
-        animation: shimmer-lines 3.5s infinite linear;
-        opacity: 0; transition: opacity 0.3s ease;
-        border-radius: inherit; pointer-events: none;
-    }
+  &.input.dimmed { opacity: 1; filter: grayscale(85%); border-style: dashed; border-color: #555; box-shadow: none; &::after { display: none !important; animation: none !important; opacity: 0 !important; }}
 
-    // Активация и настройка shimmer по редкости
-    &.rarity-uncommon::after {
-        opacity: 0.5; animation-duration: 4.2s;
-        background: linear-gradient(120deg, transparent 33%, color.change(color.adjust($rarity-color-uncommon, $lightness: 25%), $alpha: 0.3) 48%, color.change(color.adjust($rarity-color-uncommon, $lightness: 15%), $alpha: 0.4) 51%, color.change(color.adjust($rarity-color-uncommon, $lightness: 25%), $alpha: 0.3) 54%, transparent 67%);
-    }
-    &.rarity-rare::after {
-        opacity: 0.6; animation-duration: 4s;
-        background: linear-gradient(110deg, transparent 30%, color.change(color.adjust($rarity-color-rare, $lightness: 25%), $alpha: 0.35) 47%, color.change(color.adjust($rarity-color-rare, $lightness: 15%), $alpha: 0.45) 50%, color.change(color.adjust($rarity-color-rare, $lightness: 25%), $alpha: 0.35) 53%, transparent 70%);
-    }
-    &.rarity-epic::after {
-        opacity: 0.7; animation-duration: 3.8s;
-        background: linear-gradient(105deg, transparent 32%, color.change(color.adjust($rarity-color-epic, $lightness: 25%), $alpha: 0.4) 46%, color.change(color.adjust($rarity-color-epic, $lightness: 15%), $alpha: 0.5) 50%, color.change(color.adjust($rarity-color-epic, $lightness: 25%), $alpha: 0.4) 54%, transparent 68%);
-    }
-    &.rarity-legendary::after {
-        opacity: 0.8; animation-duration: 3.5s;
-        background: linear-gradient(115deg, transparent 30%, color.change(color.adjust($rarity-color-legendary, $lightness: 25%), $alpha: 0.45) 45%, color.change(color.adjust($rarity-color-legendary, $lightness: 10%), $alpha: 0.55) 50%, color.change(color.adjust($rarity-color-legendary, $lightness: 25%), $alpha: 0.45) 55%, transparent 70%);
-    }
-    &.rarity-mythic::after {
-        opacity: 0.9; animation-duration: 2.8s; background-size: 200% 100%;
-        background: linear-gradient(100deg, transparent 35%, color.change(color.adjust($rarity-color-mythic, $lightness: 25%), $alpha: 0.5) 48%, color.change(color.adjust($rarity-color-mythic, $lightness: 15%), $alpha: 0.6) 52%, color.change(color.adjust($rarity-color-mythic, $lightness: 25%), $alpha: 0.5) 56%, transparent 65%);
-    }
-} // --- Конец базового .recipe-item-display ---
-
+  &::after { content: ''; position: absolute; inset: -2px; z-index: 0; background-size: 250% 100%; background-repeat: no-repeat; animation: shimmer-lines 3.5s infinite linear; opacity: 0; transition: opacity 0.3s ease; border-radius: inherit; pointer-events: none; }
+  // Shimmer градиенты остаются на основе цветов редкости, т.к. они специфичны для предметов
+  &.rarity-uncommon::after { opacity: 0.5; animation-duration: 4.2s; background: linear-gradient(120deg, transparent 33%, color.change(color.adjust($rarity-color-uncommon, $lightness: 25%), $alpha: 0.3) 48%, color.change(color.adjust($rarity-color-uncommon, $lightness: 15%), $alpha: 0.4) 51%, color.change(color.adjust($rarity-color-uncommon, $lightness: 25%), $alpha: 0.3) 54%, transparent 67%); }
+  &.rarity-rare::after { opacity: 0.6; animation-duration: 4s; background: linear-gradient(110deg, transparent 30%, color.change(color.adjust($rarity-color-rare, $lightness: 25%), $alpha: 0.35) 47%, color.change(color.adjust($rarity-color-rare, $lightness: 15%), $alpha: 0.45) 50%, color.change(color.adjust($rarity-color-rare, $lightness: 25%), $alpha: 0.35) 53%, transparent 70%); }
+  &.rarity-epic::after { opacity: 0.7; animation-duration: 3.8s; background: linear-gradient(105deg, transparent 32%, color.change(color.adjust($rarity-color-epic, $lightness: 25%), $alpha: 0.4) 46%, color.change(color.adjust($rarity-color-epic, $lightness: 15%), $alpha: 0.5) 50%, color.change(color.adjust($rarity-color-epic, $lightness: 25%), $alpha: 0.4) 54%, transparent 68%); }
+  &.rarity-legendary::after { opacity: 0.8; animation-duration: 3.5s; background: linear-gradient(115deg, transparent 30%, color.change(color.adjust($rarity-color-legendary, $lightness: 25%), $alpha: 0.45) 45%, color.change(color.adjust($rarity-color-legendary, $lightness: 10%), $alpha: 0.55) 50%, color.change(color.adjust($rarity-color-legendary, $lightness: 25%), $alpha: 0.45) 55%, transparent 70%); }
+  &.rarity-mythic::after { opacity: 0.9; animation-duration: 2.8s; background-size: 200% 100%; background: linear-gradient(100deg, transparent 35%, color.change(color.adjust($rarity-color-mythic, $lightness: 25%), $alpha: 0.5) 48%, color.change(color.adjust($rarity-color-mythic, $lightness: 15%), $alpha: 0.6) 52%, color.change(color.adjust($rarity-color-mythic, $lightness: 25%), $alpha: 0.5) 56%, transparent 65%); }
+}
 
 // --- Основной экран Кузницы ---
 .forge-screen {
-  position: relative; // Может понадобиться для дочерних absolute элементов
-  width: 100%;      // Занимаем 100% ширины родителя (.content-area)
-  height: 100%;     // Занимаем 100% высоты родителя (.content-area)
-  background: linear-gradient(180deg, $forge-bg-start, $forge-bg-end);
-  color: $text-color;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, $forge-theme-bg-mid-purple 0%, $forge-theme-bg-dark-purple 100%);
+  color: $forge-theme-text-primary;
   display: flex; flex-direction: column;
-  overflow: hidden; // Весь экран не скроллится (внутренние части могут)
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  box-sizing: border-box; // Убедимся, что padding/border включены в размеры
+  box-sizing: border-box;
 }
 
-// --- Шапка Кузницы ---
-.forge-header {
-    width: 100%; height: 65px;
-    
-    display: flex; justify-content: center; align-items: center;
-    padding: 0 20px; flex-shrink: 0; box-sizing: border-box;
-    background: linear-gradient(to bottom, rgba(40, 45, 60, 0.7), rgba(30, 35, 50, 0.5));
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
+// --- >>> НОВЫЕ СТИЛИ ДЛЯ ШАПКИ С ВАЛЮТАМИ <<< ---
+.forge-currency-header {
+  display: flex;
+  justify-content: center; // <<< ЦЕНТРИРУЕМ группу контейнеров с валютой
+  align-items: center;
+    margin-top: max(
+    35px,
+    calc(5px + env(safe-area-inset-top, 0px))
+  );
+  padding: 10px 0;         // Вертикальный отступ для всей шапки
+  // background-color: transparent; // <<< Основная шапка может быть прозрачной
+  // border-bottom: none;          // <<< или без нижней границы
+  height: 60px; // Высота шапки, чтобы вместить контейнеры (можно подобрать)
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 0px; // Небольшой отступ от вкладок редкости, если нужно
 
-    h2 {
-        margin: 0; font-size: 24px; font-weight: 700;
-        color: $text-color-title; text-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+  .currency-display { // Теперь это отдельный стилизованный контейнер для каждой валюты
+    display: flex;
+    align-items: center;
+    
+    // --- >>> СТИЛИ ДЛЯ КОНТЕЙНЕРА ВАЛЮТЫ <<< ---
+    background-color: $forge-theme-panel-bg-opaque; // Например, непрозрачный фон панели
+    // Или можно взять полупрозрачный: rgba(darken($forge-theme-panel-bg-opaque, 10%), 0.7);
+    padding: 6px 12px;             // Внутренние отступы (меньше, если иконки/текст меньше)
+    border-radius: 8px;            // Скругленные углы
+    border: 1px solid $forge-theme-border-color; // Тонкая рамка
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3); // Легкая тень для объема
+
+    margin: 0 8px; // Отступы МЕЖДУ контейнерами золота и алмазов
+
+    .currency-icon {
+      width: 18px; // Можно сделать иконки чуть меньше
+      height: 18px;
+      margin-right: 6px; // И отступ от иконки до текста
     }
+
+    .currency-amount {
+      font-size: 14px; // И шрифт чуть меньше для компактности
+      font-weight: 600;
+      color: $forge-theme-accent-gold; // Золотой цвет для количества
+      line-height: 1; // Для лучшего вертикального выравнивания, если шрифт крупный
+    }
+  }
 }
 
 // --- Вкладки Редкости ---
 .forge-rarity-tabs {
-    display: flex; overflow-x: auto; white-space: nowrap;
-    padding: 12px 20px; background-color: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    flex-shrink: 0; width: 100%; box-sizing: border-box;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-    -webkit-overflow-scrolling: touch;
+  display: flex; overflow-x: auto; white-space: nowrap;
+  padding: 3px 10px;
+  background-color: rgba($forge-theme-bg-dark-purple, 0.3); // Темнее и прозрачнее
+  border-bottom: 1px solid $forge-theme-border-color;
+  flex-shrink: 0; width: 100%; box-sizing: border-box;
+  scrollbar-width: none;
 
-    .rarity-tab-button {
-        display: inline-block; padding: 9px 20px; margin-right: 12px;
-        border: 2px solid rgba(120, 130, 160, 0.3); border-radius: 22px;
-        font-size: 14px; font-weight: 600; cursor: pointer;
-        transition: all 0.25s ease; position: relative;
-        background-color: rgba(60, 65, 80, 0.5); color: $tab-text;
-        flex-shrink: 0;
-        &:last-child { margin-right: 0; }
+  &::-webkit-scrollbar { display: none; }
+  -webkit-overflow-scrolling: touch;
 
-        // Цвета неактивных
-        &.rarity-uncommon { border-color: rgba($rarity-color-uncommon, 0.4); color: rgba($rarity-color-uncommon, 0.7); }
-        &.rarity-rare { border-color: rgba($rarity-color-rare, 0.4); color: rgba($rarity-color-rare, 0.7); }
-        &.rarity-epic { border-color: rgba($rarity-color-epic, 0.4); color: rgba($rarity-color-epic, 0.7); }
-        &.rarity-legendary { border-color: rgba($rarity-color-legendary, 0.4); color: rgba($rarity-color-legendary, 0.7); }
-        &.rarity-mythic { border-color: rgba($rarity-color-mythic, 0.4); color: rgba($rarity-color-mythic, 0.7); }
+  .rarity-tab-button {
+    display: inline-block; padding: 9px 20px; margin-right: 12px;
+    border: 2px solid $forge-theme-border-color;
+    border-radius: 22px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.25s ease; position: relative;
+    background-color: rgba($forge-theme-panel-bg-opaque, 0.5);
+    color: $tab-text;
+    flex-shrink: 0;
+    &:last-child { margin-right: 0; }
 
-        &:hover:not(.active) {
-            background-color: rgba(80, 85, 100, 0.7); color: $tab-text-hover;
-            &.rarity-uncommon { border-color: $rarity-color-uncommon; }
-            &.rarity-rare { border-color: $rarity-color-rare; }
-            &.rarity-epic { border-color: $rarity-color-epic; }
-            &.rarity-legendary { border-color: $rarity-color-legendary; }
-            &.rarity-mythic { border-color: $rarity-color-mythic; }
-        }
-        // Стиль активной
-        &.active {
-            color: $tab-active-text; font-weight: 700; transform: scale(1.02);
-            &.rarity-uncommon { background-color: $tab-active-uncommon-bg; border-color: lighten($tab-active-uncommon-bg, 10%); box-shadow: 0 0 10px rgba($tab-active-uncommon-bg, 0.6); }
-            &.rarity-rare { background-color: $tab-active-rare-bg; border-color: lighten($tab-active-rare-bg, 10%); box-shadow: 0 0 10px rgba($tab-active-rare-bg, 0.6); }
-            &.rarity-epic { background-color: $tab-active-epic-bg; border-color: lighten($tab-active-epic-bg, 10%); box-shadow: 0 0 12px rgba($tab-active-epic-bg, 0.6); }
-            &.rarity-legendary { background-color: $tab-active-legendary-bg; border-color: lighten($tab-active-legendary-bg, 10%); box-shadow: 0 0 14px rgba($tab-active-legendary-bg, 0.6); }
-            &.rarity-mythic { background-color: $tab-active-mythic-bg; border-color: lighten($tab-active-mythic-bg, 10%); box-shadow: 0 0 14px rgba($tab-active-mythic-bg, 0.6); }
-        }
-        // Индикатор '!'
-        .tab-indicator {
-            position: absolute; top: -5px; right: -5px;
-            background-color: $indicator-tab-bg; color: $indicator-tab-text;
-            width: 18px; height: 18px; border-radius: 50%;
-            font-size: 11px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 7px rgba($indicator-tab-bg, 0.9); line-height: 1;
-        }
+    // Неактивные вкладки по редкости - оставляем цвет рамки, но текст приглушен
+    &.rarity-uncommon { border-color: rgba($rarity-color-uncommon, 0.6); &:not(.active){ color: rgba($rarity-color-uncommon, 0.85);}}
+    &.rarity-rare { border-color: rgba($rarity-color-rare, 0.6); &:not(.active){ color: rgba($rarity-color-rare, 0.85);}}
+    &.rarity-epic { border-color: rgba($rarity-color-epic, 0.6); &:not(.active){ color: rgba($rarity-color-epic, 0.85);}}
+    &.rarity-legendary { border-color: rgba($rarity-color-legendary, 0.7); &:not(.active){ color: rgba($rarity-color-legendary, 0.9);}} // Legendary может быть ярче
+    &.rarity-mythic { border-color: rgba($rarity-color-mythic, 0.6); &:not(.active){ color: rgba($rarity-color-mythic, 0.85);}}
+
+    &:hover:not(.active) {
+      background-color: rgba($forge-theme-panel-bg-opaque, 0.8);
+      color: $forge-theme-accent-lavender; // Светлее при ховере
+      &.rarity-uncommon { border-color: $rarity-color-uncommon; }
+      &.rarity-rare { border-color: $rarity-color-rare; }
+      &.rarity-epic { border-color: $rarity-color-epic; }
+      &.rarity-legendary { border-color: $rarity-color-legendary; }
+      &.rarity-mythic { border-color: $rarity-color-mythic; }
+      &:not(.rarity-uncommon):not(.rarity-rare):not(.rarity-epic):not(.rarity-legendary):not(.rarity-mythic) { // для "All" таба
+         border-color: $forge-theme-accent-lavender;
+      }
     }
+    &.active {
+      // Цвет текста на активной вкладке: если фон вкладки (цвет редкости) светлый - текст темный, и наоборот.
+      font-weight: 700; transform: scale(1.02);
+      // Пример определения цвета текста для активных вкладок
+      &.rarity-uncommon { background-color: $tab-active-uncommon-bg; border-color: lighten($tab-active-uncommon-bg, 10%); box-shadow: 0 0 10px rgba($tab-active-uncommon-bg, 0.6); color: $tab-active-text-on-rarity-bg;}
+      &.rarity-rare { background-color: $tab-active-rare-bg; border-color: lighten($tab-active-rare-bg, 10%); box-shadow: 0 0 10px rgba($tab-active-rare-bg, 0.6); color: $tab-active-text-on-dark-rarity-bg;}
+      &.rarity-epic { background-color: $tab-active-epic-bg; border-color: lighten($tab-active-epic-bg, 10%); box-shadow: 0 0 12px rgba($tab-active-epic-bg, 0.6); color: $tab-active-text-on-dark-rarity-bg;}
+      &.rarity-legendary { background-color: $tab-active-legendary-bg; border-color: lighten($tab-active-legendary-bg, 10%); box-shadow: 0 0 14px rgba($tab-active-legendary-bg, 0.6); color: $tab-active-text-on-rarity-bg;} // Золотой фон - темный текст
+      &.rarity-mythic { background-color: $tab-active-mythic-bg; border-color: lighten($tab-active-mythic-bg, 10%); box-shadow: 0 0 14px rgba($tab-active-mythic-bg, 0.6); color: $tab-active-text-on-dark-rarity-bg;}
+       &:not(.rarity-uncommon):not(.rarity-rare):not(.rarity-epic):not(.rarity-legendary):not(.rarity-mythic) { // для "All" таба
+         background-color: $forge-theme-accent-gold; // Активный таб "All" - золотой
+         border-color: lighten($forge-theme-accent-gold, 10%);
+         color: $forge-theme-bg-dark-purple; // Темный текст на золотом
+         box-shadow: 0 0 10px rgba($forge-theme-accent-gold, 0.6);
+      }
+    }
+    .tab-indicator {
+      background-color: $indicator-tab-bg; color: $indicator-tab-text;
+      /* ... остальные стили индикатора ... */
+      position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 7px rgba($indicator-tab-bg, 0.9); line-height: 1;
+    }
+  }
 }
 
-// --- КОНТЕЙНЕР для Swiper + Деталей (Структура для Forge.jsx) ---
+// --- КОНТЕЙНЕР для Swiper + Деталей ---
 .forge-main-content {
-  flex-grow: 1; // Занимает все оставшееся место
-  display: flex;
-  flex-direction: column; // Swiper над деталями
-  overflow: hidden; // Дочерние элементы будут управлять своим скроллом
-  padding: 0 0 20px 0; // Отступ только снизу
-  box-sizing: border-box;
-  min-height: 0; // Для корректной работы flex и overflow
+  flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0 0 20px 0; box-sizing: border-box; min-height: 0;
 }
 
 // --- Секция Swiper ---
 .forge-swiper-section {
-  flex-shrink: 0; // Не сжимается по высоте
-  position: relative;
-  margin-bottom: 15px;
-  padding: 0 20px; // Боковые отступы для Swiper
-  box-sizing: border-box;
+  flex-shrink: 0; position: relative; margin-bottom: 15px; padding: 0 20px; box-sizing: border-box;
+  .forge-swiper-wrapper { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+  .no-recipes { padding: 40px 0; text-align: center; color: $forge-theme-text-muted; font-style: italic; }
 
-  .forge-swiper-wrapper { // Обертка для Swiper и сообщения "нет рецептов"
-     width: 100%;
-     box-sizing: border-box;
-     display: flex; flex-direction: column;
-  }
-  .no-recipes {
-    padding: 40px 0; text-align: center; color: $text-color-muted; font-style: italic;
-  }
-
-  // Стили для центрированного Swiper
   .forge-recipes-swiper.centered-swiper {
-    padding-top: 5px;      // Вертикальные отступы для scale
-    padding-bottom: 5px;
-    padding-left: 0;       // << Горизонтальных НЕТ
-    padding-right: 0;      // << Горизонтальных НЕТ
-    width: 100%;           // Убедимся, что сам swiper занимает всю ширину секции
-    overflow: hidden;      // Обрежем вылезающие части (если не нужен overflow: visible)
-
-    .swiper-wrapper {
-         align-items: center; // Вертикальное выравнивание слайдов
-    }
-
+    padding-top: 5px; padding-bottom: 5px; padding-left: 0; padding-right: 0; width: 100%; overflow: hidden;
+    .swiper-wrapper { align-items: center; }
     .swiper-slide {
-        // --- >>> ЗАДАЕМ ЯВНУЮ ШИРИНУ <<< ---
-        width: 60%; // Пример: 60%. Попробуйте 50%, 70% и т.д.
-        // width: auto !important; // УБИРАЕМ auto
-        // --- >>> ------------------- <<< ---
-        height: auto;
-        display: flex; justify-content: center; align-items: center; // Это остается
-
-        // Стили для transform, opacity, active/inactive остаются как были
-        transition: transform 0.4s ease, opacity 0.4s ease;
-        opacity: 0.5;
-        transform: scale(0.75);
-
-        &.swiper-slide-active {
-             opacity: 1;
-             transform: scale(1); // Активный - нормальный размер
-             z-index: 1;
-
-             .compact-recipe-card {
-                 box-shadow: 0 8px 25px rgba(0,0,0,0.5); // Активная тень
-                 // Ховер для активной карточки
-                 &:hover:not(.disabled) {
-                   transform: translateY(-2px) scale(1.01);
-                 }
-             }
-        }
-        // Сброс ховера для неактивных
-        &:not(.swiper-slide-active) {
-           .compact-recipe-card:hover {
-             transform: none;
-             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-             border-color: $panel-border;
-             background: linear-gradient(165deg, lighten($panel-bg-start, 5%), lighten($panel-bg-end, 5%));
-           }
-        }
-
-        // Стили самой компактной карточки внутри Swiper
+      width: 60%; height: auto; display: flex; justify-content: center; align-items: center;
+      transition: transform 0.4s ease, opacity 0.4s ease; opacity: 0.5; transform: scale(0.75);
+      &.swiper-slide-active {
+        opacity: 1; transform: scale(1); z-index: 1;
         .compact-recipe-card {
-            display: flex; flex-direction: column; align-items: center;
-            padding: 10px; // Небольшой отступ внутри карточки
-            border-radius: 10px;
-            background: linear-gradient(165deg, lighten($panel-bg-start, 5%), lighten($panel-bg-end, 5%));
-            border: 1px solid $panel-border;
-            cursor: pointer; transition: all 0.2s ease-out;
-            min-width: 110px;
-            position: relative;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3); // Тень по умолчанию
+          box-shadow: 0 8px 25px rgba(0,0,0,0.5); // Тень можно сделать с фиолетовым отливом
+          // box-shadow: 0 6px 20px rgba(darken($forge-theme-bg-dark-purple,15%),0.7), 0 0 10px rgba($forge-theme-accent-lavender, 0.1);
+          &:hover:not(.disabled) { transform: translateY(-2px) scale(1.01); }
+        }
+      }
+      &:not(.swiper-slide-active) {
+        .compact-recipe-card:hover {
+          transform: none;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+          border-color: $forge-theme-border-color;
+          background: $forge-theme-panel-bg; // Фон для неактивных карточек
+        }
+      }
+.compact-recipe-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        // --- >>> УВЕЛИЧИВАЕМ РАЗМЕРЫ КАРТОЧКИ <<< ---
+        min-width: 130px; // Было 110px, увеличиваем
+        padding: 10px;    // Было 10px, увеличиваем внутренние отступы
+        // Если нужна фиксированная высота, можно добавить height: 180px; например
 
-            &.disabled { /* ... стили disabled ... */
-                opacity: 0.5; cursor: not-allowed; filter: grayscale(50%);
-                 &:hover { transform: none; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border-color: $panel-border;}
-            }
-            // Рамки редкости
-            &.rarity-border-common { border-left: 4px solid $rarity-color-common; }
-            &.rarity-border-uncommon { border-left: 4px solid $rarity-color-uncommon; }
-            &.rarity-border-rare { border-left: 4px solid $rarity-color-rare; }
-            &.rarity-border-epic { border-left: 4px solid $rarity-color-epic; }
-            &.rarity-border-legendary { border-left: 4px solid $rarity-color-legendary; }
-            &.rarity-border-mythic { border-left: 4px solid $rarity-color-mythic; }
+        border-radius: 12px; // Было 10px
+        background: $forge-theme-panel-bg;
+        border: 1px solid $forge-theme-border-color;
+        cursor: pointer;
+        transition: all 0.2s ease-out;
+        position: relative;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 
-            // Индикатор крафта '!'
-            .compact-craft-indicator {
-                position: absolute; top: 5px; right: 5px;
-                background-color: $indicator-craftable-bg; color: $indicator-craftable-text;
-                width: 16px; height: 16px; border-radius: 50%;
-                font-size: 10px; font-weight: bold; line-height: 16px; text-align: center;
-                box-shadow: 0 0 6px rgba($indicator-craftable-bg, 0.8);
-                z-index: 2;
-            }
-            // Иконка в карточке
-            .recipe-item-display.output.compact {
-                width: 60px; height: 60px; margin-bottom: 8px;
-                // Наследует фон/рамку от базового .recipe-item-display
-                &::after { display: none; } // Отключаем shimmer
-                border-width: 2px;
-            }
-            // Название в карточке
-            .compact-recipe-name {
-                font-size: 12px; color: $text-color; text-align: center;
-                white-space: normal; line-height: 1.3; max-width: 90px;
-                word-break: break-word;
-            }
-        } // --- Конец .compact-recipe-card ---
-      } // --- Конец .swiper-slide ---
-  } // --- Конец .centered-swiper ---
-} // --- Конец .forge-swiper-section ---
+        &.disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(50%); &:hover { transform: none; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border-color: $forge-theme-border-color;}}
+        // Рамки редкости остаются
+        &.rarity-border-common { border-left: 4px solid $rarity-color-common; }
+        &.rarity-border-uncommon { border-left: 4px solid $rarity-color-uncommon; }
+        &.rarity-border-rare { border-left: 4px solid $rarity-color-rare; }
+        &.rarity-border-epic { border-left: 4px solid $rarity-color-epic; }
+        &.rarity-border-legendary { border-left: 4px solid $rarity-color-legendary; }
+        &.rarity-border-mythic { border-left: 4px solid $rarity-color-mythic; }
+
+        .compact-craft-indicator { background-color: $indicator-craftable-bg; color: $indicator-craftable-text; /* ... */ position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; font-weight: bold; line-height: 16px; text-align: center; box-shadow: 0 0 6px rgba($indicator-craftable-bg, 0.8); z-index: 2;}
+        .recipe-item-display.output.compact { width: 80px; height: 80px; margin-bottom: 0px; &::after { display: none; } border-width: 2px; }
+      }
+    }
+  }
+}
+
 
 
 // --- Секция Деталей Рецепта ---
 .forge-recipe-details-section {
-    flex-grow: 1;
-    overflow-y: auto; overflow-x: hidden;
-    padding: 10px 20px 0 20px;
-    box-sizing: border-box;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: flex-start; // justify-content: flex-start важно для margin-top: auto у .crafting-area-bottom
-    min-height: 0;
-    background: radial-gradient(ellipse at center top, rgba(60, 65, 80, 0.5) 0%, rgba(42, 46, 60, 0.8) 80%, $forge-bg-end 110%);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4);
-    transition: box-shadow 0.4s ease;
-    border-radius: 15px;
-    margin: 0 10px;
+  flex-grow: 0;
+  overflow-y: hidden; // Меняем на hidden, если уверены, что контент не должен скроллиться
+  overflow-x: hidden;
+  // padding: 10px 0; // Оставляем, если нужно немного отступа сверху/снизу для всей секции
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; // Попробуем центрировать .crafting-area
 
+  width: 100%;
+  max-width: 360px;
+  height: 480px; // Фиксированная высота
+  min-height: 480px;
 
-  // Сообщение, если рецепт не выбран или вкладка пуста
-  .no-recipe-selected {
-      margin: auto; // Центрирует текст
-      padding: 40px 20px; // Даем место
-      color: $text-color-muted;
-      font-style: italic;
-      text-align: center;
-  }
+  background: $forge-theme-panel-bg;
+  box-shadow: 0 4px 15px rgba(darken($forge-theme-bg-dark-purple,10%),0.5), inset 0 1px 5px rgba(lighten($forge-theme-bg-mid-purple, 5%),0.1);
+  border: 1px solid $forge-theme-border-color;
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+  border-radius: 15px;
+  margin: 0 auto 20px auto;
 
-  // --- ОБЛАСТЬ КРАФТА (Детали выбранного рецепта) ---
+  .no-recipe-selected { /* ... */ }
+
+  // --- ОБЛАСТЬ КРАФТА ---
   .crafting-area {
     position: relative;
     width: 100%;
-    max-width: 360px; // Ограничиваем макс. ширину
-    // min-height УБИРАЕМ, высота будет определяться контентом и grid
-    margin-bottom: 20px;
-    padding: 20px; // Упрощаем паддинги
-    padding-top: 55px; // Отступ сверху под заголовок (подберите точнее!)
+    height: 100%;
+    background-color: transparent;
+
+    // --- >>> УМЕНЬШАЕМ PADDING-TOP ТАК КАК ТИТУЛА ВНУТРИ НЕТ <<< ---
+    padding: 20px; // Равномерный паддинг со всех сторон
+    // padding-top: 20px; // Или конкретное значение для верха
+
+    margin-bottom: 0;
     box-sizing: border-box;
-    display: flex; // Оставляем flex для общего управления (заголовок сверху, сетка, низ)
+    display: flex;
     flex-direction: column;
     align-items: center;
-    background: radial-gradient(ellipse at center, rgba(60, 65, 80, 0.7) 0%, rgba(42, 46, 60, 0.9) 80%);
-    border-radius: 15px;
-    border: 2px solid $panel-border;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4);
-    transition: border-color 0.4s ease, box-shadow 0.4s ease;
-    flex-grow: 1; // Позволяем этой области растягиваться, если нужно
+    // justify-content: space-between; // Чтобы сетка была ближе к верху, а кнопки к низу
 
-    // --- >>> Стили рамки и свечения по классу редкости (из код2) <<< ---
-    @function rarity-glow($color, $opacity: 0.6, $blur: 15px, $spread: 3px) {
-        @return 0 0 $blur $spread rgba($color, $opacity);
-    }
-    &.rarity-output-common {
-        border-color: rgba($rarity-color-common, 0.8);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4),
-                    rarity-glow($rarity-color-common, 0.4, 10px, 2px);
-    }
-    &.rarity-output-uncommon {
-        border-color: $rarity-color-uncommon;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4),
-                    rarity-glow($rarity-color-uncommon, 0.5);
-    }
-    &.rarity-output-rare {
-        border-color: $rarity-color-rare;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4),
-                    rarity-glow($rarity-color-rare, 0.6);
-    }
-    &.rarity-output-epic {
-        border-color: $rarity-color-epic;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4),
-                    rarity-glow($rarity-color-epic, 0.7, 18px, 4px);
-    }
-    &.rarity-output-legendary {
-        border-color: $rarity-color-legendary;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4),
-                    rarity-glow($rarity-color-legendary, 0.8, 20px, 4px);
-    }
-    &.rarity-output-mythic {
-        border-color: $rarity-color-mythic;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 1px 8px rgba(0,0,0,0.4),
-                    rarity-glow($rarity-color-mythic, 0.8, 22px, 5px);
-    }
-    // --- >>> Конец стилей рамки <<< ---
+    border: 2px solid $forge-theme-border-color;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(darken($forge-theme-bg-dark-purple,15%),0.6), inset 0 1px 8px rgba(0,0,0,0.4);
 
+    // Стили свечения по редкости остаются
+    @function rarity-glow($color, $opacity: 0.6, $blur: 15px, $spread: 3px) { @return 0 0 $blur $spread rgba($color, $opacity); }
+    &.rarity-output-common { border-color: rgba($rarity-color-common, 0.8); /* ... box-shadow ... */ }
+    &.rarity-output-uncommon { border-color: $rarity-color-uncommon; /* ... box-shadow ... */ }
+    &.rarity-output-rare { border-color: $rarity-color-rare; /* ... box-shadow ... */ }
+    &.rarity-output-epic { border-color: $rarity-color-epic; /* ... box-shadow ... */ }
+    &.rarity-output-legendary { border-color: $rarity-color-legendary; /* ... box-shadow ... */ }
+    &.rarity-output-mythic { border-color: $rarity-color-mythic; /* ... box-shadow ... */ }
 
-    // --- ЗАГОЛОВОК (позиционируется абсолютно относительно .crafting-area - из код2) ---
+    // --- >>> УДАЛЯЕМ СТИЛИ ДЛЯ .crafting-area-title-wrapper <<< ---
+    /*
     .crafting-area-title-wrapper {
-      position: absolute;
-      top: 20px; // ИЛИ top: 2% как было в код1 - оставим 20px из код2
-      left: 50%;
-      transform: translateX(-50%); // Только горизонтальное центрирование
-      z-index: 100; // Поверх всего
-      width: auto; min-width: 150px; max-width: 80%;
-      padding: 8px 20px;
-      background: linear-gradient(180deg, lighten($panel-bg-start, 5%), $panel-bg-start);
-      border: 1px solid lighten($panel-border, 10%);
-      border-radius: 15px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      // Стили удалены
+    }
+    */
 
-      .output-name-focus { // Стили для текста внутри рамки
-          font-size: 16px;
-          font-weight: 700;
-          text-align: center;
-          margin: 0;
-          color: $text-color-title;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-
-          // Цвета текста по редкости (из код2)
-          &.rarity-text-common { color: $rarity-color-common; }
-          &.rarity-text-uncommon { color: $rarity-color-uncommon; }
-          &.rarity-text-rare { color: $rarity-color-rare; }
-          &.rarity-text-epic { color: $rarity-color-epic; }
-          &.rarity-text-legendary { color: $rarity-color-legendary; }
-          &.rarity-text-mythic { color: $rarity-color-mythic; }
+    .crafting-items-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 1fr auto 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 350px;
+      aspect-ratio: 1 / 1;
+      // --- >>> Отступы для сетки относительно краев .crafting-area <<< ---
+      // margin: 20px auto; // Старые отступы
+      margin-top: 0; // Меньше отступ сверху, если паддинг родителя уже есть
+      margin-bottom: 10px; // Меньше отступ снизу, чтобы дать место кнопкам
+      margin-left: auto;
+      margin-right: auto;
+      .connector-lines-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+      .connector-line {
+        stroke-width: 3px; stroke-linecap: round; transition: stroke 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+        &.line-inactive { stroke: rgba($forge-theme-text-muted, 0.5); filter: blur(0.5px); animation: none; opacity: 0.7; }
+        &.line-active { stroke: $forge-theme-accent-gold; animation: pulse-line 1.8s infinite ease-in-out; }
+      }
+      .output-item-focus { z-index: 10; width: auto; display: flex; flex-direction: column; align-items: center; grid-column: 2 / 3; grid-row: 2 / 4; // Центр
+        .recipe-item-display.output.focus { width: 80px; height: 80px; margin-bottom: 0; border-width: 3px; }
+      }
+      .input-item-focus { z-index: 2; width: auto; display: flex; flex-direction: column; align-items: center;
+        .recipe-item-display.input.focus { width: 60px; height: 60px; box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 4px rgba(0,0,0,0.6); }
+        .input-count { margin-top: 4px; font-size: 11px; padding: 1px 5px; background-color: rgba(0,0,0,0.7); border-radius: 4px; line-height: 1.2; white-space: nowrap;
+          &.enough { color: $text-color-owned-enough; } &.not-enough { color: $text-color-owned-not-enough; }
+        }
+        // Позиционирование для Y-формы
+        &.input-pos-0 { grid-column: 2 / 3; grid-row: 4 / 4; } // Низ-центр
+        &.input-pos-1 { grid-column: 1 / 2; grid-row: 1 / 2; } // Верх-лево
+        &.input-pos-2 { grid-column: 3 / 4; grid-row: 1 / 2; } // Верх-право
       }
     }
 
-    // --- ▼▼▼ НОВЫЙ КОНТЕЙНЕР ДЛЯ СЕТКИ ПРЕДМЕТОВ (из код1) ▼▼▼ ---
-    .crafting-items-grid {
-        position: relative; // Для позиционирования SVG внутри
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); // 3 равных колонки
-        // 3 ряда: верхние ингредиенты, результат, нижний ингредиент
-        grid-template-rows: 1fr auto 1fr;
-        gap: 10px; // Пространство между ячейками сетки (можно убрать)
-        width: 100%; // Занимает доступную ширину
-        max-width: 250px; // Ограничиваем макс. ширину сетки (подберите!)
-        aspect-ratio: 1 / 1; // Делаем область сетки примерно квадратной (или подберите)
-        margin: 20px auto; // Центрируем сетку и добавляем отступы
-        align-items: center; // Центрируем содержимое ячеек по вертикали
-        justify-items: center; // Центрируем содержимое ячеек по горизонтали
-        z-index: 5; // Убедимся, что сетка под заголовком, но над фоном
-
-        // SVG ЛИНИИ (Теперь позиционируются относительно .crafting-items-grid)
-        .connector-lines-svg {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; // Под иконками
-            pointer-events: none;
-            overflow: visible; // Важно, чтобы линии могли выходить за границы viewBox SVG
-            // ВАЖНО: viewBox="0 0 360 400" и координаты линий нужно будет СКОРРЕКТИРОВАТЬ!
-            // Новые координаты будут зависеть от размера .crafting-items-grid и расположения ячеек.
-        }
-
-        // Стили ЛИНИЙ (из код2, так как там были active/inactive стили и анимация)
-        .connector-line {
-            stroke-width: 3px;
-            stroke-linecap: round;
-            transition: stroke 0.3s ease, filter 0.3s ease, opacity 0.3s ease; // Добавили opacity для анимации
-
-            &.line-inactive { // Неактивная линия
-                stroke: rgba($text-color-muted, 0.3);
-                filter: blur(0.5px);
-                animation: none; // << Убедимся, что нет анимации
-                opacity: 0.7;    // << Можно сделать полупрозрачной
-            }
-
-            &.line-active { // Активная линия
-                // Базовый цвет для активной линии
-                stroke: $rarity-color-legendary; // Используем желтый для примера
-                // ===>>> ПРИМЕНЯЕМ АНИМАЦИЮ <<<===
-                animation: pulse-line 1.8s infinite ease-in-out; // Название, длительность, повтор, плавность
-            }
-        }
-
-
-        // --- ИКОНКИ ПРЕДМЕТОВ (позиционируются внутри сетки - логика из код1) ---
-
-        // РЕЗУЛЬТАТ
-        .output-item-focus {
-            // 🔴 УБИРАЕМ position: absolute и top/left/transform ИЗ КОД2 🔴
-            z-index: 10; // Над линиями и ингредиентами
-            width: auto;
-            display: flex; flex-direction: column; align-items: center;
-            // --- ▼▼▼ ДОБАВЛЯЕМ позиционирование в сетке (из код1) ▼▼▼ ---
-            grid-column: 2 / 3; // Центральная колонка
-            grid-row: 2 / 3;    // Центральный ряд
-
-            .recipe-item-display.output.focus {
-                // Используем размеры из код1 (крупнее)
-                width: 60px; height: 60px;
-                margin-bottom: 0;
-                border-width: 3px;
-                // Наследует стили редкости/фона/shimmer из базового .recipe-item-display
-            }
-        }
-
-        // ИНГРЕДИЕНТЫ
-        .input-item-focus {
-             // 🔴 УБИРАЕМ position: absolute ИЗ КОД2 🔴
-             z-index: 2; // Над линиями
-             width: auto; // Ширина по содержимому (иконка + счетчик) - было 60px в код2, auto из код1 лучше
-             display: flex; flex-direction: column; align-items: center;
-
-             // Иконка ингредиента (стили из код2)
-             .recipe-item-display.input.focus {
-                 width: 42px; height: 42px; // Размер иконки ингредиента (из код2)
-                 box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 4px rgba(0,0,0,0.6);
-                 // Наследует фон/рамку/shimmer от базового .recipe-item-display
-                 // Класс .dimmed применяется из JSX
-                 &.dimmed { /* стили затемнения из базового */ }
-             }
-             // Счетчик под иконкой (стили из код2)
-             .input-count {
-                 margin-top: 4px; font-size: 11px; padding: 1px 5px;
-                 background-color: rgba(0,0,0,0.6); border-radius: 4px; line-height: 1.2;
-                 white-space: nowrap;
-                 // Цвета через классы .enough / .not-enough
-                 &.enough { color: $text-color-owned-enough; }
-                 &.not-enough { color: $text-color-owned-not-enough; }
-             }
-
-             // --- ▼▼▼ ПОЗИЦИОНИРОВАНИЕ В СЕТКЕ через классы input-pos-* (из код1) ▼▼▼ ---
-             &.input-pos-0 { // Нижний центральный
-                 grid-column: 2 / 3;
-                 grid-row: 3 / 4;
-                 // 🔴 УБИРАЕМ top/left/transform ИЗ КОД2 🔴
-             }
-             &.input-pos-1 { // Верхний левый
-                 grid-column: 1 / 2;
-                 grid-row: 1 / 2;
-                 // 🔴 УБИРАЕМ top/left/transform/rotate ИЗ КОД2 🔴
-                 // Можно добавить transform: rotate(-10deg); если нужен наклон
-                 // transform: rotate(-10deg);
-             }
-             &.input-pos-2 { // Верхний правый
-                 grid-column: 3 / 4;
-                 grid-row: 1 / 2;
-                 // 🔴 УБИРАЕМ top/right/transform/rotate ИЗ КОД2 🔴
-                 // Можно добавить transform: rotate(10deg); если нужен наклон
-                 // transform: rotate(10deg);
-             }
-             // Если будет 4й ингредиент, можно добавить .input-pos-3 и разместить в grid-column: 1 / 2; grid-row: 3 / 4; и т.д.
-        }
-
-    } // --- ▲▲▲ КОНЕЦ КОНТЕЙНЕРА ДЛЯ СЕТКИ ПРЕДМЕТОВ ▲▲▲ ---
-
-
-    // --- НИЖНЯЯ ЧАСТЬ (Стоимость + Кнопка) ---
-    // (Остается внутри .crafting-area, но позиционируется через flex родителя - из код2)
-    .crafting-area-bottom {
+.crafting-area-bottom {
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 100%; // Занимает всю ширину для центрирования контента
-        margin-top: auto; // <--- Прижимает к низу .crafting-area (т.к. он flex-column)
-        padding-top: 20px; // Добавляем отступ от сетки предметов
-        z-index: 10; // Над сеткой, если нужно
+        width: 100%;
+        margin-top: auto; // Это прижмет блок к низу .crafting-area
+        padding-top: 10px; // Небольшой отступ от сетки
+        z-index: 10;
     }
+.cost-focus {
+      display: flex; gap: 15px; align-items: center; justify-content: center; width: auto;
+      padding: 6px 15px; margin-bottom: 10px;
+      background: linear-gradient(rgba(darken($forge-theme-panel-bg-opaque,3%),0.85), rgba($forge-theme-panel-bg-opaque,0.75));
+      border: 1px solid $forge-theme-border-color; border-radius: 8px;
+      box-shadow: inset 0 1px 2px rgba(lighten($forge-theme-accent-lavender,10%),0.05), 0 2px 4px rgba(0,0,0,0.4);
+      font-size: 13px; color: $forge-theme-text-primary;
 
-    .cost-focus { // Стили стоимости из код2
-        display: flex; gap: 20px; align-items: center; justify-content: center;
-        width: auto; // Ширина по содержимому + паддинги
-        padding: 8px 20px; // Внутренние отступы рамки
-        margin-bottom: 20px; // << УМЕНЬШИЛИ отступ из код2, был 30px
-        background: linear-gradient(rgba($panel-bg-end, 0.85), rgba($panel-bg-start, 0.7));
-        border: 1px solid $panel-border;
-        border-radius: 8px; // Скругление
-        box-shadow: inset 0 1px 2px rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.4); // Внутренняя и внешняя тень
-        font-size: 14px; color: $text-color;
+      span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 500;
 
-        span { display: flex; align-items: center; gap: 6px; font-weight: 500; }
-        img { width: 18px; height: 18px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));}
-    }
-
-    // Кнопка крафта (Внутри .crafting-area-bottom - стили из код2)
-    .action-focus {
-        width: 100%; display: flex; justify-content: center;
-
-        .forge-button.focus-button {
-            padding: 12px 40px; // Делаем кнопку пошире
-            font-size: 16px; font-weight: 600;
-            // Наследует стили :hover, :active, :disabled от .forge-button
-            // Убираем bottom: 15% из общего .forge-button
-            bottom: auto;
-            position: relative; // Или static, если не нужно позиционирование
+        // --- >>> НОВЫЙ КЛАСС для недостающей валюты <<< ---
+        &.not-enough-currency {
+          color: $text-color-owned-not-enough; // Используем существующий красный цвет
+          // font-weight: bold; // Можно добавить жирность для большего акцента
         }
+      }
+      img.currency-icon { // Добавил класс для img, чтобы стили не пересекались случайно
+        width: 16px;
+        height: 16px;
+        filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));
+      }
     }
-
-  } // --- Конец .crafting-area ---
-} // --- Конец .forge-recipe-details-section ---
-
+    .action-focus { width: 100%; display: flex; justify-content: center;
+      .forge-button.focus-button { padding: 10px 35px; font-size: 15px; font-weight: 600; bottom: auto; position: relative; } // Чуть меньше кнопка
+    }
+  }
+}
 
 // --- Общий стиль кнопки Улучшить/Forge ---
 .forge-button {
-    padding: 12px 35px; border: none; border-radius: 8px;
-    background: linear-gradient(to bottom, $button-forge-bg-start, $button-forge-bg-end);
-    color: $button-forge-text; font-weight: 600; font-size: 17px; // Базовый размер
-    cursor: pointer; transition: all 0.2s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    position: relative; // Оставим relative для общих случаев, но переопределим в .action-focus
-    // bottom: 15%; // << ЗАКОММЕНТИРОВАНО, чтобы не влияло на кнопку крафта
+  padding: 12px 35px; border: none; border-radius: 8px;
+  background: linear-gradient(45deg, $forge-theme-button-bg-start, $forge-theme-button-bg-end);
+  color: $forge-theme-button-text; font-weight: 600; font-size: 17px;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(darken($forge-theme-bg-dark-purple,10%),0.5), 0 0 5px rgba($forge-theme-button-bg-end, 0.3);
+  position: relative;
 
-    &:hover:not(:disabled) {
-        background: linear-gradient(to bottom, $button-forge-bg-hover-start, $button-forge-bg-hover-end);
-        box-shadow: 0 6px 15px rgba(darken($button-forge-bg-start, 20%), 0.5);
-        transform: translateY(-2px) scale(1.02); color: #fff;
-    }
-    &:active:not(:disabled) { transform: translateY(-1px) scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.4); }
-    &:disabled {
-        background: linear-gradient(to bottom, $button-disabled-bg-start, $button-disabled-bg-end);
-        color: $button-disabled-text; cursor: not-allowed; box-shadow: none; transform: none;
-    }
-    // Анимация свечения для кнопки, если нужно
-    // &.can-craft { animation: pulse-button-glow 1.5s infinite ease-in-out; }
+  &:hover:not(:disabled) {
+    background: linear-gradient(45deg, lighten($forge-theme-button-bg-start, 5%), lighten($forge-theme-button-bg-end, 5%));
+    box-shadow: 0 6px 15px rgba(darken($forge-theme-bg-dark-purple,15%),0.6), 0 0 8px rgba($forge-theme-button-bg-end, 0.4);
+    transform: translateY(-2px) scale(1.02);
+  }
+  &:active:not(:disabled) { transform: translateY(-1px) scale(1); box-shadow: 0 2px 5px rgba(darken($forge-theme-bg-dark-purple,10%),0.4); }
+  &:disabled {
+    background: linear-gradient(to bottom, #524561, #413550); // Приглушенный фиолетовый для disabled
+    color: rgba($forge-theme-text-primary, 0.5); cursor: not-allowed; box-shadow: none; transform: none;
+  }
 }
 
-// --- Анимации крафта (из код2) ---
-// Добавляем класс .crafting-in-progress к .crafting-area
+// --- Анимации крафта (логика остается, цвета могут быть адаптированы) ---
 .crafting-area.crafting-in-progress {
-  // Скрываем линии во время анимации
-  .crafting-items-grid .connector-lines-svg { // Уточняем селектор
-    transition: opacity 0.2s ease-out;
-    opacity: 0;
+  .crafting-items-grid .connector-lines-svg { transition: opacity 0.2s ease-out; opacity: 0; }
+  .crafting-items-grid .input-item-focus { animation: input-fly-to-center 0.6s ease-in forwards; animation-delay: calc(var(--input-index, 0) * 0.1s);
+    &.input-pos-1 { --start-rotate: -10deg; } &.input-pos-2 { --start-rotate: 10deg; }
   }
-
-  // Анимация для входных иконок (внутри сетки)
-  .crafting-items-grid .input-item-focus { // Уточняем селектор
-    // Длительность, задержка (var(--input-index) нужно установить в JSX!), функция плавности
-    animation: input-fly-to-center 0.6s ease-in forwards;
-    // Задержка для каждой иконки (0s, 0.1s, 0.2s)
-    animation-delay: calc(var(--input-index, 0) * 0.1s);
-    // Сохраняем начальный поворот для анимации (если добавляли transform: rotate)
-    &.input-pos-1 { --start-rotate: -10deg; }
-    &.input-pos-2 { --start-rotate: 10deg; }
-    // У остальных --start-rotate будет 0 (по умолчанию)
-  }
-
-  // Анимация для выходной иконки (внутри сетки)
-  .crafting-items-grid .output-item-focus { // Уточняем селектор
-      opacity: 0; // Сначала скрыта
-      // Запускается после того, как улетят ингредиенты
-      animation: output-pulse-appear 0.8s 0.5s ease-out forwards; // имя, длительность, задержка, плавность, заполнение
-  }
-
-  // Скрываем нижний блок во время анимации
-  .crafting-area-bottom {
-      transition: opacity 0.3s ease-out;
-      opacity: 0; // Например, скрыть
-      pointer-events: none; // Отключить клики
-  }
+  .crafting-items-grid .output-item-focus { opacity: 0; animation: output-pulse-appear 0.8s 0.5s ease-out forwards; }
+  .crafting-area-bottom { transition: opacity 0.3s ease-out; opacity: 0; pointer-events: none; }
 }
-
-// Восстановление видимости после крафта (когда класс .crafting-in-progress убирается)
 .crafting-area {
-    .crafting-items-grid .connector-lines-svg, // Уточняем селектор
-    .crafting-area-bottom {
-       transition: opacity 0.3s 0.2s ease-in; // Небольшая задержка перед появлением
-       opacity: 1;
-       pointer-events: auto;
-     }
-     .crafting-items-grid .output-item-focus { // Уточняем селектор
-        opacity: 1; // Убедимся, что выходной элемент видим
-        // Сбрасываем анимацию (если она не forwards)
-        animation: none;
-     }
-     .crafting-items-grid .input-item-focus { // Уточняем селектор
-        // Сбрасываем анимацию (если она не forwards)
-        animation: none;
-        opacity: 1; // Убедимся, что входные элементы видимы
-        // transform: rotate(var(--start-rotate, 0deg)); // Возвращаем поворот, если был
-     }
+  .crafting-items-grid .connector-lines-svg, .crafting-area-bottom { transition: opacity 0.3s 0.2s ease-in; opacity: 1; pointer-events: auto; }
+  .crafting-items-grid .output-item-focus { opacity: 1; animation: none; }
+  .crafting-items-grid .input-item-focus { animation: none; opacity: 1; }
 }
 
-// Оверлей для видео (из код2)
 .forge-video-overlay {
-     position: fixed; // Или absolute, если forge-screen родитель
-     top: 0;
-     left: 0;
-     width: 100%;
-     height: 100%;
-     background-color: rgba(0, 0, 0, 0.8); // Полупрозрачный фон
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     z-index: 1000; // Поверх остального контента
-
-     video {
-       max-width: 90%;
-       max-height: 90%;
-       width: auto;
-       height: auto;
-       object-fit: contain; // Чтобы видео не обрезалось
-       border: 2px solid gold; // Пример рамки
-       box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); // Пример свечения
-     }
-}
-
-// --- @keyframes АНИМАЦИИ (из код2 + новые для крафта) ---
-@keyframes pulse-line { // Анимация для активных линий
-  0% {
-    stroke: $rarity-color-legendary; // Начальный цвет
-    filter: drop-shadow(0 0 3px rgba($rarity-color-legendary, 0.6));
-    stroke-width: 3px;
-  }
-  50% {
-    stroke: lighten($rarity-color-legendary, 15%); // Более светлый
-    filter: drop-shadow(0 0 6px rgba($rarity-color-legendary, 0.9));
-    stroke-width: 3.5px;
-  }
-  100% {
-    stroke: $rarity-color-legendary; // Возврат к начальному
-    filter: drop-shadow(0 0 3px rgba($rarity-color-legendary, 0.6));
-    stroke-width: 3px;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(darken($forge-theme-bg-dark-purple, 10%), 0.85);
+  display: flex; justify-content: center; align-items: center; z-index: 1000;
+  video {
+    max-width: 90%; max-height: 90%; width: auto; height: auto; object-fit: contain;
+    border: 2px solid $forge-theme-accent-gold; // Золотая рамка
+    box-shadow: 0 0 25px rgba($forge-theme-accent-gold, 0.5); // Золотое свечение
   }
 }
 
-// Анимация "улетания" ингредиента к центру
-@keyframes input-fly-to-center {
-  0% {
-    // Начальная позиция определяется сеткой
-    // transform: translate(0, 0) rotate(var(--start-rotate, 0deg)); // Используем начальный поворот
-    opacity: 1;
-    scale: 1;
-  }
-  100% {
-    // Конечная позиция - примерно центр сетки (относительно исходной ячейки)
-    // Точные значения нужно будет подбирать, т.к. зависит от gap и размера сетки
-    // Это примерные смещения для полета к центру grid row 2 / col 2
-    // transform: translate( calc( (1 - var(--grid-col, 2)) * 50% ), calc( (1 - var(--grid-row, 2)) * 50% ) ) rotate(0deg);
-    // ПРОЩЕ: просто скрываем и уменьшаем
-    opacity: 0;
-    scale: 0.2;
-    // Можно добавить transform к центру, но с grid это сложнее точно вычислить
-    // transform: translate(0, -50%) rotate(0deg); // Пример для нижнего элемента
-  }
+// --- @keyframes АНИМАЦИИ ---
+@keyframes pulse-line { // Анимация для активных линий (золотые)
+  0% { stroke: $forge-theme-accent-gold; filter: drop-shadow(0 0 3px rgba($forge-theme-accent-gold, 0.6)); stroke-width: 3px; }
+  50% { stroke: lighten($forge-theme-accent-gold, 10%); filter: drop-shadow(0 0 6px rgba($forge-theme-accent-gold, 0.9)); stroke-width: 3.5px; }
+  100% { stroke: $forge-theme-accent-gold; filter: drop-shadow(0 0 3px rgba($forge-theme-accent-gold, 0.6)); stroke-width: 3px; }
 }
 
-// Анимация появления и пульсации результата
-@keyframes output-pulse-appear {
-  0% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  60% { // Появление
-    opacity: 1;
-    transform: scale(1.15); // Немного больше
-  }
-  80% { // Отскок
-    transform: scale(0.95);
-  }
-  100% { // Финальный размер
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes input-fly-to-center { 0% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 0.2; }}
+@keyframes output-pulse-appear { 0% { opacity: 0; transform: scale(0.5); } 60% { opacity: 1; transform: scale(1.15); } 80% { transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); }}
+
+// Анимации границ по редкости можно оставить, они добавляют уникальности
+@keyframes pulse-epic-border {0% { box-shadow: 0 0 10px rgba($rarity-color-epic, 0.3); border-color: rgba($rarity-color-epic, 0.5);} 50% { box-shadow: 0 0 18px rgba($rarity-color-epic, 0.5); border-color: color.adjust($rarity-color-epic, $lightness: 10%);} 100% { box-shadow: 0 0 10px rgba($rarity-color-epic, 0.3); border-color: rgba($rarity-color-epic, 0.5);}}
+@keyframes pulse-legendary-border {0% { box-shadow: 0 0 12px rgba($rarity-color-legendary, 0.3); border-color: rgba($rarity-color-legendary, 0.6);} 50% { box-shadow: 0 0 20px rgba($rarity-color-legendary, 0.6); border-color: color.adjust($rarity-color-legendary, $lightness: 10%);} 100% { box-shadow: 0 0 12px rgba($rarity-color-legendary, 0.3); border-color: rgba($rarity-color-legendary, 0.6);}}
+@keyframes pulse-mythic-border {0% { box-shadow: 0 0 15px rgba($rarity-color-mythic, 0.4); border-color: rgba($rarity-color-mythic, 0.6);} 50% { box-shadow: 0 0 22px rgba($rarity-color-mythic, 0.7); border-color: color.adjust($rarity-color-mythic, $lightness: 10%);} 100% { box-shadow: 0 0 15px rgba($rarity-color-mythic, 0.4); border-color: rgba($rarity-color-mythic, 0.6);}}
+
+@keyframes pulse-button-glow { // Анимация для кнопки (используем $forge-theme-button-bg-end для тени)
+  0% { box-shadow: 0 4px 10px rgba(darken($forge-theme-bg-dark-purple,10%),0.5), 0 0 10px 0px rgba($forge-theme-button-bg-end, 0.4); }
+  50% { box-shadow: 0 6px 12px rgba(darken($forge-theme-bg-dark-purple,10%),0.5), 0 0 16px 2px rgba($forge-theme-button-bg-end, 0.6); }
+  100% { box-shadow: 0 4px 10px rgba(darken($forge-theme-bg-dark-purple,10%),0.5), 0 0 10px 0px rgba($forge-theme-button-bg-end, 0.4); }
 }
 
-// --- АНИМАЦИИ ---
-
-@keyframes pulse-epic-border {
-0% { box-shadow: 0 0 10px rgba($rarity-color-epic, 0.3); border-color: rgba($rarity-color-epic, 0.5);}
-50% { box-shadow: 0 0 18px rgba($rarity-color-epic, 0.5); border-color: color.adjust($rarity-color-epic, $lightness: 10%);}
-100% { box-shadow: 0 0 10px rgba($rarity-color-epic, 0.3); border-color: rgba($rarity-color-epic, 0.5);}   
-    }
-    
-@keyframes pulse-legendary-border {
-0% { box-shadow: 0 0 12px rgba($rarity-color-legendary, 0.3); border-color: rgba($rarity-color-legendary, 0.6);}
-50% { box-shadow: 0 0 20px rgba($rarity-color-legendary, 0.6); border-color: color.adjust($rarity-color-legendary, $lightness: 10%);}
-100% { box-shadow: 0 0 12px rgba($rarity-color-legendary, 0.3); border-color: rgba($rarity-color-legendary, 0.6);}
-     }
-    
-@keyframes pulse-mythic-border {
-0% { box-shadow: 0 0 15px rgba($rarity-color-mythic, 0.4); border-color: rgba($rarity-color-mythic, 0.6);}
-50% { box-shadow: 0 0 22px rgba($rarity-color-mythic, 0.7); border-color: color.adjust($rarity-color-mythic, $lightness: 10%);}
-100% { box-shadow: 0 0 15px rgba($rarity-color-mythic, 0.4); border-color: rgba($rarity-color-mythic, 0.6);} 
-    }
-    
-@keyframes pulse-button-glow { // Анимация для кнопки
-0% { box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 12px 0px $button-forge-shadow-active; }
-50% { box-shadow: 0 6px 12px rgba(0,0,0,0.4), 0 0 18px 3px $button-forge-shadow-active; }
-100% { box-shadow: 0 4px 10px rgba(0,0,0,0.4), 0 0 12px 0px $button-forge-shadow-active; } 
-    }
-    
-@keyframes shimmer-lines { // Анимация Shimmer для иконок
-0% { background-position: -150% 0; }
-100% { background-position: 150% 0; }
-    }
-
+@keyframes shimmer-lines { 0% { background-position: -150% 0; } 100% { background-position: 150% 0; }}
 
 // --- Конец файла ---

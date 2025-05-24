@@ -1,335 +1,536 @@
-/* src/components/CraftingSuccessPopup.scss */
-
-// --- Переменные и цвета редкости ---
-$popup-border-radius: 12px;
-$popup-padding: 18px;
-// ИЗМЕНЕНО: Цвета текста для темного фона
-$text-color-primary: #f0f4f8;   // Основной светлый текст (чуть холоднее)
-$text-color-secondary: #a0b0c0; // Второстепенный, более тусклый светлый текст
-$text-color-stat-value: #ffffff; // Значения статов - белые
-
-// Фоны и рамки для темного фона
-$header-banner-bg-opaque: #daa520;     // Золотистый (Goldenrod)
-$header-banner-border-opaque: #b8860b; // Темно-золотистый для рамки
-$header-banner-text-color: #4d3a00;   // Темно-коричневый текст для контраста с золотым
-$close-button-bg: rgba(255, 255, 255, 0.08);
-$close-button-border: rgba(255, 255, 255, 0.15);
-$close-button-text: $text-color-primary;
-$section-bg: rgba(0, 0, 0, 0.15); // Полупрозрачный темный для секций
-$section-border: rgba(255, 255, 255, 0.1); // Светлая рамка секций
-$button-bg: rgba(255, 255, 255, 0.1);
-$button-border: rgba(255, 255, 255, 0.3);
-$button-hover-bg: rgba(255, 255, 255, 0.18);
-$button-hover-border: rgba(255, 255, 255, 0.4);
-
-// ИЗМЕНЕНО: Градиент для фона попапа
-$popup-gradient: linear-gradient(160deg, #1a2a4a 0%, #0f1a30 100%);
-// ИЗМЕНЕНО: Фон оверлея - стандартный полупрозрачный темный
-$overlay-bg: rgba(0, 0, 0, 0.75); // Сделал чуть темнее
-
-$rarity-colors: (
-  common: #b0b0b0,
-  uncommon: #5cb85c,
-  rare: #4285f4,
-  epic: #a042f4,
-  legendary: #f0ad4e,
-  mythic: #d9534f
-);
-
-// Миксин для фона/рамки иконки по редкости
-@mixin rarity-style($color) {
-  border-color: lighten($color, 10%); // Светлая рамка для иконки
-  // Полупрозрачный фон иконки с цветом редкости
-  background-color: rgba(lighten(desaturate($color, 15%), 20%), 0.5);
-}
-
-// --- Стили ---
-
-.popup-overlay.new-style {
-  position: fixed;
-  inset: 0;
-  background: $overlay-bg; // Стандартный темный фон оверлея
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.popup-container {
-  background: $popup-gradient; // Градиентный фон попапа
-  border-radius: $popup-border-radius;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  border: 3px solid; // Рамка по цвету редкости
-  position: relative;
-  padding-top: 55px;
-
-  @each $rarity, $color in $rarity-colors {
-    &.rarity-#{$rarity} {
-      border-color: lighten($color, 15%); // Осветляем цвет рамки
-    }
-  }
-}
-
-.popup-header-banner {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: $header-banner-bg-opaque;        // Используем золотистый фон
-  border: 1px solid $header-banner-border-opaque; // Используем темно-золотистую рамку
-  color: $header-banner-text-color;            // Используем темный цвет текста
-  padding: 8px 25px;
-  border-radius: 20px;
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.25);
-  z-index: 2;
-
-  h3 {
-    margin: 0;
-    font-size: 1.1em;
-    font-weight: 600;
-    text-align: center;
-    white-space: nowrap;
-  }
-}
-
-.popup-close-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: $close-button-bg;
-  border: 1px solid $close-button-border;
-  color: $close-button-text; // Светлый текст
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-size: 20px;
-  line-height: 26px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 3;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
-  }
-}
-
-.item-name-centered {
-  position: absolute;
-  top: 35px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  padding: 0 45px;
-  font-size: 1.4em;
-  font-weight: bold;
-  margin: 0;
-  z-index: 1;
-  line-height: 1.2;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.5); // Тень для читаемости на градиенте
-
-   @each $rarity, $color in $rarity-colors {
-      &.rarity-text-#{$rarity} {
-        color: lighten($color, 25%); // Осветляем цвет для имени
-      }
-   }
-   color: $text-color-primary; // Светлый по умолчанию
-}
-
-.popup-content-area {
-  padding: $popup-padding;
-  padding-top: 25px;
-}
-
-.item-main-info {
-  display: flex;
-  align-items: center;
-  gap: $popup-padding;
-  margin-bottom: $popup-padding;
-
-  .item-icon-wrapper {
-    padding: 6px;
-    border-radius: 8px;
-    border: 2px solid;
-    flex-shrink: 0;
-
-     @each $rarity, $color in $rarity-colors {
-        &.rarity-#{$rarity} {
-          @include rarity-style($color); // Применяем миксин
-        }
-     }
-
-    .item-icon {
-      display: block;
-      width: 65px;
-      height: 65px;
-      object-fit: contain;
-      border-radius: 4px;
-      // Добавим фильтр для яркости иконки на темном фоне, если нужно
-      // filter: brightness(1.1);
-    }
-  }
-
-  .item-details {
+    // Новый контейнер для всех элементов шапки
+.custom-popup-header {
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-
-    .item-rarity-badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 0.8em;
-      font-weight: 600;
-      border: 1px solid;
-      margin-bottom: 5px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.3); // Тень для текста на значке
-
-      @each $rarity, $color in $rarity-colors {
-        &.rarity-#{$rarity} {
-          background-color: $color;
-          border-color: darken($color, 15%);
-          color: if(lightness($color) > 60%, #222, #fff); // Чуть темнее текст для светлых значков
-        }
-      }
-    }
-
-    .item-type {
-      display: block;
-      font-size: 0.85em;
-      color: $text-color-secondary; // Второстепенный светлый
-      text-transform: capitalize;
-    }
-  }
+    align-items: center;
+    // Этот padding-top создает "воздух" НАД следующим элементом (item-type-banner),
+    // ПОСЛЕ того как item-name-banner сместится вверх.
+    // Например, если item-name-banner сместится вверх на 30px, 
+    // а вы хотите 10px отступа от него до item-type-banner, то padding-top ~40px.
+    // Но проще управлять этим через margin-bottom у .item-name-banner или gap.
+    // Оставим padding-top для позиционирования абсолютно размещенных элементов (уровень, кнопка X)
+    // и для общего вида, если баннер не сильно "выезжает".
+    padding: 25px 15px 15px 15px; // Верхний отступ для пространства, куда "поднимется" баннер
+    gap: 8px; // Отступ между исходным местом баннера имени и баннером типа
+    border-bottom: 1px solid $divider-color-dark; // Опционально
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
-.item-section {
-  background-color: $section-bg; // Полупрозрачный темный
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  border: 1px solid $section-border; // Светлая рамка
+.item-name-banner {
+    display: inline-block;
+    padding: 5px 1px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    // Усилим тень для эффекта "отрыва" от фона
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.45); 
+    position: relative; 
+   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5); // Более выраженная тень для "отрыва"
+    z-index: 3; // Должен быть выше фона/рамки .custom-popup-header, но ниже кнопки X
+    max-width: 70%;
 
-  &:last-of-type {
-    margin-bottom: $popup-padding;
-  }
+    // --- ЭФФЕКТ "НАВИСАНИЯ" ---
+    // Смещаем баннер вверх. Величина смещения зависит от того, насколько он должен "торчать".
+    // Если высота баннера с паддингами около 40-45px, и вы хотите, чтобы он наполовину (20-22px)
+    // выступал над верхней границей .item-popup-content (которая теперь не имеет своего padding-top),
+    // то смещение должно быть примерно таким.
+    // transform: translateY(-22px); // Сдвигает баннер вверх на 22px
 
-  h4 {
-    font-size: 1em;
-    font-weight: bold;
-    color: $text-color-primary; // Светлый текст
-    margin: 0 0 10px 0;
-    padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15); // Светлый разделитель
+    // Альтернатива с margin-top (сильнее влияет на поток):
+    margin-top: -50px; // Подберите это значение. Например, половина высоты баннера.
+                       // Это поднимет баннер.
+    
+    // Чтобы следующий элемент (.item-type-banner) не подлез под смещенный баннер слишком сильно,
+    // можно добавить margin-bottom к .item-name-banner или настроить gap на .custom-popup-header.
+    // Так как margin-top сдвигает и поток, gap на .custom-popup-header будет отсчитываться от нового положения.
+    // Возможно, gap уже будет достаточным. Если нет:
 
-     &.set-name {
-         font-weight: bold;
-         text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-         @each $rarity, $color in $rarity-colors {
-              &.rarity-text-#{$rarity} {
-                color: lighten($color, 25%);
-              }
-         }
-         color: $text-color-primary;
-      }
-  }
+    // Применение фона по редкости остается как было
+    @each $rarity, $color in $rarity-colors {
+        &.rarity-bg-#{$rarity} {
+            background-color: $color;
+            @if (lightness($color) > 65%) {
+                color: #2c3e50;
+            } @else {
+                color: white;
+            }
+        }
+    }
 
-  p {
-      color: $text-color-secondary; // Второстепенный светлый
-      font-size: 0.9em;
-      line-height: 1.45;
-      margin: 0;
-  }
+        // Опционально: для текстового индикатора редкости внутри баннера
+        .rarity-text-indicator {
+            display: block;
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.8;
+            margin-top: 3px;
+            @each $rarity, $color in $rarity-colors {
+                &.rarity-#{$rarity} {
+                    @if (lightness($color) > 65%) { color: darken($color, 40%); }
+                    @else { color: lighten($color, 40%); }
+                }
+            }
+        }
+    }
 
-  .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 5px 15px;
-      font-size: 0.85em;
-      line-height: 1.5;
+    // Баннер с типом предмета
+    .item-type-banner {
+        display: inline-block;
+        background-color: $golden-banner-bg;
+        color: $golden-banner-text-dark;
+        padding: 6px 18px;
+        border-radius: 6px;
+        font-size: 18px;
+        font-weight: 500;
+        text-transform: capitalize;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
 
-     .stat-item {
+    // Баннер с текущим уровнем
+    .current-level-banner {
+        position: absolute;
+        top: 5px;    // Отступ сверху (под кнопкой X или рядом)
+        left: 1px;   // Отступ слева
+        background-color: $golden-banner-bg;
+        color: $golden-banner-text-dark;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 18px;
+        font-weight: 600;
+        z-index: 5; // Выше основного контента шапки, но ниже кнопки X
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        
+
+        span { display: block; }
+    }
+
+        // 2. Основное тело попапа
+.popup-body {
+    padding: 15px 20px; // Внешние отступы тела попапа
+    // overflow-y: auto; // Если контент может стать очень длинным
+
+    // Новый главный вертикальный контейнер для блоков контента
+    .popup-content-stack {
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: center; // Центрируем блоки контента (строки), если они не на всю ширину
+        gap: 18px; // Вертикальный отступ между "этажами"
+        width: 100%;
+        max-width: 380px; // Максимальная ширина всего стека контента, можно настроить
+        margin: 0 auto;   // Центрирует сам стек, если .popup-body шире
+    }
 
-        .stat-name {
-          color: $text-color-secondary; // Второстепенный светлый
-          margin-right: 5px;
-          white-space: nowrap;
-        }
-        .stat-value {
-          font-weight: 600;
-          color: $text-color-stat-value; // Белый
-          text-align: right;
-          white-space: nowrap;
-        }
-     }
-  }
+    // --- ЭТАЖ 1: Иконка и Описание ---
+    .icon-description-row {
+        display: flex;
+        flex-direction: row;   // Иконка слева, описание справа
+        align-items: flex-start; // Выравнивание по верху
+        gap: 15px;             // Отступ между иконкой и описанием
+        width: 100%;           // Занимает всю ширину .popup-content-stack
 
-  .stats-list.set-bonus-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    font-size: 0.85em;
-    line-height: 1.5;
+        .icon-column { // Обертка для иконки
+            flex: 0 0 90px; // Фиксированная ширина для области иконки
 
-     .stat-item.set-bonus-item {
-        padding: 4px 0;
-        border-bottom: 1px dotted rgba(255, 255, 255, 0.15);
-
-        &:last-child { border-bottom: none; }
-
-        .set-pieces {
-          font-weight: 600;
-          color: $text-color-primary; // Основной светлый
-          margin-right: 6px;
-        }
-        .set-description {
-           color: $text-color-secondary; // Второстепенный светлый
-        }
-     }
-  }
-}
-
-
-.popup-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 0;
-  padding: 0 $popup-padding $popup-padding;
-
-  .popup-button.close-only {
-    padding: 10px 40px;
+           .popup-icon-area {
+    width: 90px;
+    height: 90px;
+    padding: 6px; // Оставляем отступы, чтобы иконка не прилипала к краям
+    // background-color: $background-element-dark; // Этот общий фон будет переопределен ниже для каждой редкости
     border-radius: 6px;
-    border: 1px solid $button-border; // Светлая рамка
-    background: $button-bg;        // Полупрозрачный светлый фон
-    color: $text-color-primary;     // Светлый текст
-    font-size: 0.95em;
+    border: 2px solid transparent; // Базовая рамка, цвет которой уже меняется в зависимости от редкости
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    @each $rarity, $color in $rarity-colors {
+        &.rarity-#{$rarity} {
+            border-color: $color; // Рамка уже красится в цвет редкости
+
+            // --- НОВЫЙ ФОН НА ОСНОВЕ ЦВЕТА РЕДКОСТИ ---
+            // Используем радиальный градиент, похожий на тот, что у вас в Inventory.scss для слотов
+            background: radial-gradient(ellipse at center, lighten($color, 15%), darken($color, 20%));
+
+            // --- АЛЬТЕРНАТИВНЫЕ ВАРИАНТЫ ФОНА (если градиент не понравится): ---
+            // 1. Сплошной цвет редкости (как вы изначально просили):
+            // background-color: $color;
+
+            // 2. Полупрозрачный цвет редкости (поверх существующего темного фона, если он есть у родителя):
+            // background-color: rgba($color, 0.3); // Настройте прозрачность (0.3 = 30%)
+
+            // 3. Затемненный сплошной цвет редкости:
+            // background-color: darken($color, 30%); // Настройте степень затемнения
+        }
+    }
+
+    .popup-icon { // Стили для самого изображения внутри .popup-icon-area
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        // image-rendering: pixelated; // если у вас пиксель-арт
+    }
+}
+        }
+
+        .description-column { // Обертка для описания
+            flex: 1; // Занимает оставшееся пространство рядом с иконкой
+            min-width: 0; // Для предотвращения проблем с переполнением flex-элементов
+
+            .popup-description-area { // Стили для самого блока описания
+                    // --- НОВЫЕ СТИЛИ ДЛЯ ФОНА И ОФОРМЛЕНИЯ БЛОКА ---
+                    background-color: rgba(0, 0, 0, 0.15); // Пример фона, такой же как мы обсуждали для блока статов
+                                                          // Можете выбрать другой, например, чуть светлее или темнее основного фона попапа
+                    padding: 12px 15px;                   // Внутренние отступы для текста описания
+                    border-radius: 6px;                   // Скругление углов блока
+                    // border: 1px solid rgba(120, 130, 160, 0.1); // Опционально: очень тонкая рамка
+                    width: 100%;                          // Занимает всю ширину родителя (.description-column)
+                    box-sizing: border-box;
+                    // --- КОНЕЦ НОВЫХ СТИЛЕЙ ---
+
+                    // Существующие или предлагаемые стили для текста описания:
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: $text-secondary-light; // Используем основной цвет текста для лучшей читаемости на фоне
+                                                 // (вместо $text-muted-light, если он был слишком тусклым)
+                    
+                    p {
+                        margin: 0; // Убираем стандартные отступы параграфа
+                    }
+                }
+    }
+      }
+
+     .stats-block {
+        background-color: rgba(0, 0, 0, 0.15); // Пример: темный полупрозрачный фон
+        padding: 15px;                         // Внутренние отступы блока
+        border-radius: 8px;                     // Скругление углов (по желанию)
+        margin-bottom: 5px;                    // Отступ снизу, чтобы отделить от следующего блока (например, бонусов сета)
+        width: 100%;                           // Занимает всю ширину .popup-content-stack
+        box-sizing: border-box; 
+
+.stats-comparison-table {
+    display: grid;
+    grid-template-columns: minmax(100px, 1.6fr) 1fr auto 1fr; // Название | Текущее | Стрелка | Следующее
+    column-gap: 8px;
+    row-gap: 5px;
+    font-size: 13px;
+    width: 100%;
+    align-items: center;
+
+    .stat-cell, .stat-name-cell, .current-value-cell, .arrow-cell, .next-value-cell {
+        padding: 3px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .stat-name-cell {
+        justify-content: flex-start; // Названия статов остаются слева
+    }
+
+    .current-value-cell {
+        justify-content: center;   // --- ИЗМЕНЕНИЕ: ВСЕ текущие значения по центру ---
+        font-weight: 700;
+        color: $text-primary-light;
+        // Класс .is-level-value больше не нужен для специального выравнивания здесь
+    }
+
+    .arrow-cell {
+        justify-content: center;   // Стрелка остается по центру своей колонки
+        color: $bright-green-arrow;
+        font-weight: 700;
+    }
+
+    .next-value-cell {
+        justify-content: center;  // --- ИЗМЕНЕНИЕ: ВСЕ следующие значения по центру ---
+        font-weight: 700;
+
+        // Класс .is-level-value больше не нужен для специального выравнивания здесь
+
+        &.has-value { // Если есть реальное следующее значение (не "-" или "Макс.")
+            color: $bright-green-arrow;
+        }
+        &.no-value { // Если значение "-", например, стат не улучшается дальше
+            color: $text-primary-light; // Таким же цветом, как текущее значение, или $text-muted-light
+        }
+        &.no-upgrade { // Для отображения "Макс." на строке Уровня
+            color: $text-muted-light;
+            font-weight: 500; // Обычный вес для "Макс."
+        }
+    }
+}
+     }
+
+    // --- ЭТАЖ 3: Бонус Комплекта ---
+    .popup-set-bonus-area {
+        width: 100%;
+        max-width: 340px; // Совпадает с таблицей для выравнивания
+        margin: 0 auto;   // Центрирование
+        font-size: 13px;
+        line-height: 1.5;
+        color: $text-muted-light;
+        h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: $text-secondary-light;
+            margin: 0 0 6px 0;
+        }
+        p { margin: 0; &:not(:last-child) { margin-bottom: 5px; } }
+    }
+
+    // --- Разделители ---
+    // Предполагается, что <hr class="popup-divider content-divider" /> будет вставляться
+    // в JSX/HTML между "этажами" внутри .popup-content-stack
+    .popup-divider {
+        border: none;
+        height: 1px;
+        background-color: $divider-color-dark;
+        // margin: 8px 0; // Базовый отступ, если разделитель используется вне стека
+
+        // Если разделитель является прямым потомком .popup-content-stack,
+        // то gap у .popup-content-stack уже обеспечивает отступы.
+        // Если <hr /> добавляется как отдельный элемент, ему могут понадобиться свои margin.
+        // Для разделителей МЕЖДУ блоками в .popup-content-stack, их собственные margin могут быть не нужны
+        // или должны быть скорректированы, так как .popup-content-stack уже имеет 'gap'.
+
+        // Этот вариант стилей для <hr /> который будет помещен как дочерний элемент в .popup-content-stack
+        &.content-divider {
+            width: 100%;
+            // max-width: 360px; // Задаем максимальную ширину, если нужно, чтобы он был чуть уже контента
+                               // Если align-items: center у родителя, он будет центрирован.
+                               // Если .popup-content-stack имеет max-width: 380px,
+                               // то этот divider будет на всю его ширину.
+            margin: 0; // Убираем margin, если gap родителя достаточен
+                       // или оставляем margin: 8px 0 (или меньше) если нужен дополнительный отступ от gap
+                       // В "изменениях" было margin: 8px 0; и gap: 18px; Это значит, что отступы суммировались бы
+                       // или margin разделителя должен быть основным, а gap: 0.
+                       // Я предполагаю, что gap: 18px в .popup-content-stack является основным,
+                       // а разделитель просто линия без доп. отступов.
+        }
+        &.thin {
+           // margin: 4px 0; // Если нужен меньший отступ для тонкого разделителя
+           // Этот модификатор может регулировать `height` или `background-color` если нужно
+        }
+    }
+}
+        // --- Конец стилей Правой Колонки ---
+
+        // 3. Футер с кнопками
+.popup-buttons {
+    padding: 12px;
+    border-top: 1px solid rgba(120, 130, 160, 0.3);
+    border-radius: 0 0 11px 11px;
+
+    // --- ДВЕ СТРОКИ (одна группа над другой) ---
+    display: flex;
+    flex-direction: column; // Располагаем дочерние группы (.upgrade-action-group, .action-button-row) в столбец
+    align-items: center;    // Центрируем эти группы-строки по горизонтали
+    gap: 12px;              // Отступ между первой и второй строкой (группами)
+
+    // Общие стили для групп, которые теперь выступают в роли "строк"
+    .upgrade-action-group,
+    .action-button-row,
+    .button-group-placeholder {
+        width: 90%; // Каждая группа-строка занимает большую часть ширины попапа
+        max-width: 320px; // Максимальная ширина для контента в строке
+        display: flex;
+        flex-direction: column; // Элементы внутри каждой группы также располагаются в столбец
+        align-items: stretch;   // Растягиваем элементы внутри группы на всю ее ширину
+        gap: 8px; // Отступ между элементами внутри группы (например, между кнопкой улучшения и панелью валюты)
+    }
+
+    // Заглушка для первой строки (группы улучшения), если предмет не улучшаемый
+    .button-group-placeholder {
+        // Примерная высота группы улучшения (кнопка ~50px + панель ~30px + gap ~8px)
+        min-height: 88px;
+        // Можно также сделать ее прозрачной или с легким фоном для отладки
+        // background-color: rgba(255,255,255,0.05);
+    }
+
+.button-upgrade {
+    width: 100%;
+    background: linear-gradient(to bottom, hsl(195, 70%, 60%), hsl(195, 70%, 45%));
+    border: 1px solid hsl(195, 70%, 40%);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.25;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    min-height: 50px;
 
-    &:hover {
-      background: $button-hover-bg;
-      border-color: $button-hover-border;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    &:hover:not(:disabled) {
+        background: linear-gradient(to bottom, hsl(195, 70%, 65%), hsl(195, 70%, 50%));
     }
-    &:active {
-      transform: translateY(0px);
-      box-shadow: none;
-      background: rgba(255, 255, 255, 0.15);
+    &:disabled {
+        background: linear-gradient(to bottom, #777, #555) !important;
+        border-color: #444 !important;
+        color: #aaa !important;
+        cursor: default;
+        opacity: 0.8;
     }
-  }
+
+    .upgrade-action-text { // Стили для основного текста кнопки ("Улучшить" / "Макс. Уровень")
+        font-size: 14px;
+        font-weight: bold;
+        // Если нужно, можно добавить margin-bottom, если между текстом и стоимостью нужен больший отступ
+        // margin-bottom: 2px; 
+    }
+
+    // Удаляем или заменяем старый .upgrade-cost-text, если он был:
+    // .upgrade-cost-text { /* ...старые стили... */ }
+
+    // --- НОВЫЕ СТИЛИ для блока стоимости с иконками ---
+    .upgrade-cost-display { 
+        font-size: 12px;       // Размер шрифта для строки стоимости
+        opacity: 0.95;         // Немного прозрачности, как вы и хотели
+        white-space: nowrap;
+        margin-top: 3px;       // Отступ от основного текста кнопки
+        display: flex;         // Для расположения нескольких валют (золото/алмазы) в ряд
+        align-items: center;
+        justify-content: center; // Центрируем, если несколько валют
+        gap: 8px;              // Отступ между стоимостью золота и алмазов, если оба есть
+
+        .cost-item { // Общий контейнер для числа и иконки ОДНОЙ валюты
+            display: inline-flex; // Число и иконка в одну строку
+            align-items: center;
+            gap: 3px;          // Отступ между числом и иконкой
+
+            span { // Стили для ЧИСЛА стоимости
+                font-weight: 600; // Можно сделать цифры пожирнее
+            }
+        }
+
+        .cost-gold {
+        span { // Стили для ЧИСЛА стоимости золота
+            color: $golden-color; // Ваш золотой цвет по умолчанию
+
+            &.insufficient-funds { // Если золота не хватает
+                color: #E74C3C; // --- КРАСНЫЙ ЦВЕТ ТЕКСТА ---
+                                  // Можете использовать переменную $warning-red-color
+            }
+        }
+    }
+        .cost-diamonds {
+            span { // Стили для ЧИСЛА стоимости алмазов
+                // color: #85D2F2; // Пример: можно задать свой цвет для алмазов
+            &.insufficient-funds { // Если золота не хватает
+                color: #E74C3C; // --- КРАСНЫЙ ЦВЕТ ТЕКСТА ---
+                                  // Можете использовать переменную $warning-red-color
+            }
+        }
+    }
+
+        .cost-icon { // Стили для тегов <img> иконок
+            width: 1em;  // Размер иконки будет ~12px, если font-size у .upgrade-cost-display = 12px
+            height: 1em;
+            // vertical-align: middle; // Обычно не нужен, если родитель .cost-item это inline-flex с align-items: center
+        }
+
+        .cost-info-text { // Для текста "Бесплатно" или "N/A"
+            color: white; // Или другой цвет по вашему выбору
+            opacity: 0.8;
+        }
+    }
+    // --- КОНЕЦ НОВЫХ СТИЛЕЙ для блока стоимости ---
 }
 
-// Цвет текста по редкости (для имени и названия сета)
-@each $rarity, $color in $rarity-colors {
-  .rarity-text-#{$rarity} {
-    color: lighten($color, 25%);
-  }
+    // --- ИЗМЕНЕНИЕ СТИЛЕЙ для Панели с валютой игрока ---
+    .player-currency-panel {
+        width: 100%; // Занимает всю ширину родительской группы .upgrade-action-group
+        background-color: rgba(0, 0, 0, 0.25); // Отдельный фон, например, полупрозрачный темный
+        color: #e0e5f0;
+        padding: 8px 10px; // Немного увеличим вертикальный padding для баланса
+        border: 1px solid rgba(120, 130, 160, 0.25); // Тонкая рамка
+        border-radius: 8px; // Все углы скруглены
+        box-sizing: border-box;
+        font-size: 12px; // Шрифт чуть крупнее для отдельной панели
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px; // Немного увеличим отступ между элементами
+        min-height: 30px; // Минимальная высота панели
+        // box-shadow: inset 0 1px 1px rgba(0,0,0,0.1); // Можно добавить внутреннюю тень
+        .currency-display {
+        display: inline-flex; // Для расположения текста и иконки в ряд
+        align-items: center;
+        gap: 4px; // Отступ между текстом и иконкой
+    }
+
+    .currency-icon {
+        width: 14px;
+        height: 14px;
+        // vertical-align: middle; // Если не используется flex
+    }
+
+    .currency-separator {
+        margin: 0 2px; // Небольшие отступы для разделителя
+    }
+}
+
+    // Стили для второй строки (кнопки действия)
+    .action-button-row {
+        // width, max-width, display, flex-direction, align-items, gap уже заданы выше
+
+        button.button-action {
+            width: 100%; // Кнопка занимает всю ширину .action-button-row
+            padding: 10px 15px;
+            font-size: 14px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 8px;
+            box-sizing: border-box;
+            border-style: solid;
+            border-width: 1px;
+
+            &:disabled {
+                background: linear-gradient(to bottom, #777, #555) !important;
+                border-color: #444 !important;
+                color: #aaa !important;
+                cursor: default;
+                opacity: 0.8;
+            }
+        }
+
+        .button-equip {
+            background: linear-gradient(to bottom, #5cb85c, #449d44);
+            border-color: #398439;
+            color: white;
+            &:hover:not(:disabled) {
+                background: linear-gradient(to bottom, #6fca6f, #55b055);
+            }
+        }
+        .button-unequip {
+            background: linear-gradient(to bottom, #d9534f, #c9302c);
+            border-color: #ac2925;
+            color: white;
+            &:hover:not(:disabled) {
+                background: linear-gradient(to bottom, #e0635f, #d43f3a);
+            }
+        }
+        .button-change {
+            background: linear-gradient(to bottom, #f0ad4e, #ec971f);
+            border-color: #d58512;
+            color: white;
+            &:hover:not(:disabled) {
+                background: linear-gradient(to bottom, #f3bd6a, #f0a73e);
+            }
+        }
+    }
 }
