@@ -106,7 +106,7 @@ $indicator-tab-text: $forge-theme-bg-dark-purple;
   align-items: center;
     margin-top: max(
     35px,
-    calc(5px + env(safe-area-inset-top, 0px))
+    calc(0px + env(safe-area-inset-top, 0px))
   );
   padding: 10px 0;         // Вертикальный отступ для всей шапки
   // background-color: transparent; // <<< Основная шапка может быть прозрачной
@@ -124,12 +124,12 @@ $indicator-tab-text: $forge-theme-bg-dark-purple;
     // --- >>> СТИЛИ ДЛЯ КОНТЕЙНЕРА ВАЛЮТЫ <<< ---
     background-color: $forge-theme-panel-bg-opaque; // Например, непрозрачный фон панели
     // Или можно взять полупрозрачный: rgba(darken($forge-theme-panel-bg-opaque, 10%), 0.7);
-    padding: 6px 12px;             // Внутренние отступы (меньше, если иконки/текст меньше)
+    padding: 6px 5px;             // Внутренние отступы (меньше, если иконки/текст меньше)
     border-radius: 8px;            // Скругленные углы
     border: 1px solid $forge-theme-border-color; // Тонкая рамка
     box-shadow: 0 1px 3px rgba(0,0,0,0.3); // Легкая тень для объема
 
-    margin: 0 8px; // Отступы МЕЖДУ контейнерами золота и алмазов
+    margin: 0 4px; // Отступы МЕЖДУ контейнерами золота и алмазов
 
     .currency-icon {
       width: 18px; // Можно сделать иконки чуть меньше

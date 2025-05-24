@@ -1,12 +1,11 @@
 // src/components/popups/ForgeItemInfoPopup.jsx
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import './ForgeItemInfoPopup.scss'; // <--- ВОТ ЭТОТ ИМПОРТ
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import './ForgeItemInfoPopup.scss';
+import { calculateItemStat } from '../../data/itemsDatabase';
+import { getItemSetById } from '../../data/itemSets'; // <-- Импорт для работы с сетами
 
-// calculateItemStat может понадобиться, если базовые статы не хранятся напрямую в объекте предмета
-// import { calculateItemStat } from '../../data/itemsDatabase';
-
-// Анимации можно оставить, они универсальны для попапов
+// Анимации для попапа (основные)
 const popupBackdropVariants = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
@@ -20,30 +19,33 @@ const popupContentVariants = {
     transition: { duration: 0.2, delay: 0.05 }
 };
 
-// Упрощенный форматер статов (если стат 0 или отсутствует, не показываем)
+// Анимации для переключения контента (статы/бонусы сета)
+const contentSwitchVariants = {
+    initial: { opacity: 0, y: 15 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
+    exit: { opacity: 0, y: -15, transition: { duration: 0.2, ease: "easeInOut" } },
+};
+
+
+// Форматер статов (без изменений)
 const formatBaseStatValue = (value, isPercent) => {
     if (value === undefined || value === null || Number(value) === 0) return null;
-
     const numValue = Number(value);
     if (isNaN(numValue)) return null;
-
     const fixedValue = isPercent ?
         (numValue * 100).toFixed(1) :
         (Number.isInteger(numValue) ? numValue.toString() : numValue.toFixed(1));
-
     return `${fixedValue}${isPercent ? '%' : ''}`;
 };
 
-// Упрощенный рендерер строки стата
+// Рендерер строки стата (без изменений)
 const renderBaseStatRow = (label, value, isPercent = false) => {
     const displayValue = formatBaseStatValue(value, isPercent);
-    if (!displayValue) return null; // Не рендерим строку, если значение нулевое или отсутствует
-
+    if (!displayValue) return null;
     return (
         <React.Fragment key={label}>
             <div className="stat-name-cell">{label}</div>
-            <div className="current-value-cell" style={{ justifyContent: 'flex-start', paddingLeft: '10px' }}>{displayValue}</div> {/* Выравниваем значение по левому краю для наглядности */}
-            {/* Пустые ячейки для сохранения структуры грида, если используется тот же CSS */}
+            <div className="current-value-cell">{displayValue}</div>
             <div className="arrow-cell"></div>
             <div className="next-value-cell"></div>
         </React.Fragment>
@@ -53,48 +55,52 @@ const renderBaseStatRow = (label, value, isPercent = false) => {
 const ForgeItemInfoPopup = ({ item, onClose }) => {
     if (!item) return null;
 
-    // Предполагаем, что объект 'item' (который будет selectedRecipeData.outputItemData)
-    // уже содержит все необходимые базовые характеристики.
-    // Если нет, их нужно будет получить или рассчитать здесь.
-    // Например, item.hpBonus, item.attackBonus и т.д.
+    const [showingView, setShowingView] = useState('stats'); // 'stats' или 'setBonuses'
+
     const itemStats = useMemo(() => {
-        // Эта часть зависит от структуры вашего объекта item.
-        // Если статы в item.stats:
-        // return {
-        //     hpBonus: item.stats?.hpBonus || 0,
-        //     attackBonus: item.stats?.attackBonus || 0,
-        //     // ... и т.д.
-        // };
-        // Если статы прямо в item:
+        if (!item || !item.type || !item.rarity) {
+            return { hpBonus: 0, attackBonus: 0, attackSpeedBonus: 0, critChanceBonus: 0, doubleStrikeChanceBonus: 0, };
+        }
+        const baseLevel = item.level || 1;
         return {
-            hpBonus: item.hpBonus || 0,
-            attackBonus: item.attackBonus || 0,
-            attackSpeedBonus: item.attackSpeedBonus || 0,
-            critChanceBonus: item.critChanceBonus || 0,
-            doubleStrikeChanceBonus: item.doubleStrikeChanceBonus || 0,
+            hpBonus: calculateItemStat(item.type, "hpBonus", item.rarity, baseLevel),
+            attackBonus: calculateItemStat(item.type, "attackBonus", item.rarity, baseLevel),
+            attackSpeedBonus: calculateItemStat(item.type, "attackSpeedBonus", item.rarity, baseLevel),
+            critChanceBonus: calculateItemStat(item.type, "critChanceBonus", item.rarity, baseLevel),
+            doubleStrikeChanceBonus: calculateItemStat(item.type, "doubleStrikeChanceBonus", item.rarity, baseLevel),
         };
     }, [item]);
 
     const hasAnyStats = Object.values(itemStats).some(stat => stat && Number(stat) !== 0);
 
+    const setDetails = useMemo(() => {
+        if (item.setId) {
+            return getItemSetById(item.setId);
+        }
+        return null;
+    }, [item.setId]);
+
+    const handleToggleView = () => {
+        setShowingView(prev => prev === 'stats' ? 'setBonuses' : 'stats');
+    };
+
     return (
         <motion.div
             key="forge-item-info-popup-backdrop"
-            className="item-popup-backdrop" // Используем существующие стили
+            className="item-popup-backdrop"
             variants={popupBackdropVariants}
             initial="initial"
             animate="animate"
             exit="exit"
-            onClick={onClose} // Закрытие по клику на фон
+            onClick={onClose}
         >
             <motion.div
-                className="item-popup-content" // Используем существующие стили
-                onClick={(e) => e.stopPropagation()} // Предотвращаем закрытие по клику на сам попап
+                className="item-popup-content forge-info-popup-fixed-height"
+                onClick={(e) => e.stopPropagation()}
                 variants={popupContentVariants}
             >
-                {/* --- Шапка --- */}
+                {/* Шапка */}
                 <div className="custom-popup-header">
-                    {/* Крестик убран по запросу */}
                     <div className={`item-name-banner rarity-bg-${item.rarity?.toLowerCase() || 'common'}`}>
                         <h2>{item.name}</h2>
                     </div>
@@ -105,8 +111,8 @@ const ForgeItemInfoPopup = ({ item, onClose }) => {
                     )}
                 </div>
 
-                {/* --- Тело попапа --- */}
-                <div className="popup-body">
+                {/* Тело попапа */}
+                <div className="popup-body-scrollable-area">
                     <div className="popup-content-stack">
                         {/* Иконка и Описание */}
                         <div className="icon-description-row">
@@ -123,55 +129,95 @@ const ForgeItemInfoPopup = ({ item, onClose }) => {
                                 </div>
                             )}
                         </div>
+                        
+                        {/* Разделитель может быть не нужен, если отступы блоков достаточны */}
+                        {/* {(item.description || hasAnyStats || setDetails) && <hr className="popup-divider content-divider thick-divider" />} */}
 
-                        {/* Разделитель и Блок Статов */}
-                        {(item.description && hasAnyStats) && <hr className="popup-divider content-divider" />}
+                        {/* Блок для переключения статов и бонусов сета */}
+                        <div className="toggleable-content-area">
+                            <AnimatePresence mode="wait" initial={false}>
+                                {showingView === 'stats' && (
+                                    <motion.div
+                                        key="statsView"
+                                        className="stats-view-wrapper"
+                                        variants={contentSwitchVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                    >
+                                        {/* --- >>> НОВЫЙ ЗАГОЛОВОК "Характеристики" <<< --- */}
+                                        <h4 className="content-section-title left-aligned-title">Stats:</h4>
+                                        {hasAnyStats && (
+                                            <div className="stats-block">
+                                                <div className="stats-comparison-table">
+                                                    {renderBaseStatRow("Health", itemStats.hpBonus, false)}
+                                                    {renderBaseStatRow("Attack", itemStats.attackBonus, false)}
+                                                    {renderBaseStatRow("Attack Speed", itemStats.attackSpeedBonus, true)}
+                                                    {renderBaseStatRow("Crit Strike", itemStats.critChanceBonus, true)}
+                                                    {renderBaseStatRow("Double Strike", itemStats.doubleStrikeChanceBonus, true)}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!hasAnyStats && (
+                                            <div className="no-stats-message">
+                                                <p>Предмет не имеет базовых характеристик.</p>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
 
-                        {hasAnyStats && (
-                            <div className="stats-block">
-                                <div className="stats-comparison-table"> {/* Можно переименовать CSS класс, если смущает "comparison" */}
-                                    {renderBaseStatRow("Health", itemStats.hpBonus, false)}
-                                    {renderBaseStatRow("Attack", itemStats.attackBonus, false)}
-                                    {renderBaseStatRow("Attack Speed", itemStats.attackSpeedBonus, true)}
-                                    {renderBaseStatRow("Crit Strike", itemStats.critChanceBonus, true)}
-                                    {renderBaseStatRow("Double Strike", itemStats.doubleStrikeChanceBonus, true)}
-                                </div>
-                            </div>
-                        )}
-                         {!hasAnyStats && item.description && !Object.values(itemStats).some(s => s) && (
-                             <div className="no-stats-message" style={{padding: '10px 0', textAlign: 'center'}}>
-                                <p>Предмет не имеет дополнительных характеристик.</p>
-                            </div>
-                         )}
+                                {showingView === 'setBonuses' && setDetails && (
+                                    <motion.div
+                                        key="setBonusesView"
+                                        className="set-bonuses-view-wrapper"
+                                        variants={contentSwitchVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                    >
+                                        {/* Заголовок для бонусов сета уже есть внутри .popup-set-bonus-area (h4) */}
+                                        <div className="popup-set-bonus-area actual-set-bonuses">
+                                            <h4>{setDetails.name}</h4>
+                                            {setDetails.bonuses.map(bonus => (
+                                                <div key={bonus.requiredCount} className="set-bonus-entry">
+                                                    <span className="set-bonus-count">({bonus.requiredCount} шт.):</span>
+                                                    <span className="set-bonus-desc">{bonus.description}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
-
-                        {/* Бонус комплекта (если есть) */}
-                        {item.setId && (
-                            <>
-                                <hr className="popup-divider content-divider" />
-                                <div className="popup-set-bonus-area">
-                                    <h4>Бонус Комплекта (Placeholder)</h4> {/* Заменить на реальные данные */}
-                                    <p>Принадлежит к комплекту: {item.setId}</p>
-                                </div>
-                            </>
+                        {/* --- >>> КНОПКА ПЕРЕКЛЮЧЕНИЯ ПЕРЕМЕЩЕНА СЮДА <<< --- */}
+                        {setDetails && (
+                            <button
+                                className="button-action button-toggle-view-standalone" // Новый класс для стилизации
+                                onClick={handleToggleView}
+                            >
+                                {showingView === 'stats' ? 'Set bonuses' : 'Stats'}
+                            </button>
                         )}
                     </div>
                 </div>
 
-                {/* --- Футер с кнопкой "Закрыть" --- */}
-                <div className="popup-buttons">
-                    <div className="action-button-row" style={{justifyContent: 'center'}}> {/* Добавлен стиль для центрирования кнопки, если она одна */}
-                        <button
-                            className="button-action button-close-forge-info" // Новый класс для стилизации
-                            onClick={onClose}
-                        >
-                            Закрыть
-                        </button>
-                    </div>
+                {/* Футер (теперь только с кнопкой "Закрыть") */}
+                <div className="popup-buttons item-info-footer">
+                    {/* Кнопка переключения вида была перемещена выше */}
+                    <button
+                        className="button-action button-close-forge-info"
+                        onClick={onClose}
+                        // Стиль для растягивания кнопки "Закрыть", если кнопка переключения вида отсутствует (setDetails === null)
+                        // Если setDetails есть, кнопка переключения будет выше, и эта кнопка "Закрыть" не будет растягиваться.
+                        // Если setDetails нет, кнопки переключения не будет, и кнопка "Закрыть" растянется.
+                        style={!setDetails ? { width: '100%', maxWidth: '300px', margin: '0 auto' } : {}} 
+                    >
+                        Закрыть
+                    </button>
                 </div>
             </motion.div>
         </motion.div>
     );
 };
-
 export default ForgeItemInfoPopup;

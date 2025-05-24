@@ -2,19 +2,17 @@
 // === СТИЛИ ДЛЯ ForgeItemInfoPopup.jsx (информация о предмете из кузницы) ===
 // ===========================================================
 
-// Переменные (если они не определены глобально, определи их здесь или в отдельном файле _variables.scss)
-// Примерный набор переменных, который мог использоваться в твоих оригинальных стилях:
+// Переменные
 $item-popup-bg-start: #2f3949;
 $item-popup-bg-end: #212833;
 $divider-color-dark: rgba(120, 130, 160, 0.2);
 $text-primary-light: #e0e5f0;
 $text-secondary-light: #c0c8d4;
 $text-muted-light: #9098a8;
-$golden-banner-bg: #daa520; // Пример золотого цвета
-$golden-banner-text-dark: #2c3e50; // Темный текст для золотого фона
+$golden-banner-bg: #daa520;
+$golden-banner-text-dark: #2c3e50;
 $background-element-dark: rgba(0, 0, 0, 0.2);
 
-// Цвета редкости (пример)
 $rarity-colors: (
     common: #9e9e9e,
     uncommon: #64b5f6,
@@ -30,19 +28,19 @@ $rarity-colors: (
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100dvh; // Используем dvh для мобильных устройств
-    background: rgba(0, 0, 0, 0.85); // Фон чуть темнее
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 200; // Убедись, что z-index достаточно высокий
+    z-index: 200;
     padding: 15px;
     box-sizing: border-box;
 }
 
 // Основной контейнер контента попапа
 .item-popup-content {
-    width: 370px; // Немного стандартная ширина для информационных попапов
+    width: 370px;
     max-width: 95vw;
     background: linear-gradient(160deg, $item-popup-bg-start, $item-popup-bg-end);
     border: 1px solid rgba(120, 130, 160, 0.3);
@@ -52,40 +50,43 @@ $rarity-colors: (
     position: relative;
     display: flex;
     flex-direction: column;
-    max-height: 90vh; // Максимальная высота с учетом отступов
-    overflow: hidden; // Важно, чтобы внутренний скролл работал корректно
+    max-height: 90vh; 
+    overflow: hidden;
 
-    // Шапка попапа (баннеры имени и типа)
+    &.forge-info-popup-fixed-height {
+        max-height: 600px; // <<<--- ЗАДАЙ ЗДЕСЬ ЖЕЛАЕМУЮ ФИКСИРОВАННУЮ ВЫСОТУ ПОПАПА
+                       // Например: 580px, 600px, 620px. Подбери под свой контент.
+    }
+
+    // Шапка попапа
     .custom-popup-header {
         position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 25px 15px 15px 15px; // Верхний отступ для "выезжающего" баннера
+        padding: 25px 15px 15px 15px;
         gap: 8px;
         border-bottom: 1px solid $divider-color-dark;
         width: 100%;
         box-sizing: border-box;
-        flex-shrink: 0; // Шапка не должна сжиматься
+        flex-shrink: 0;
 
         .item-name-banner {
             display: inline-block;
-            padding: 8px 20px; // Паддинги для баннера
+            padding: 8px 0px;
             border-radius: 8px;
             color: white;
-            font-size: 18px; // Размер шрифта для имени
+            font-size: 18px;
             font-weight: 700;
             text-align: center;
             box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5);
             z-index: 3;
-            max-width: 80%; // Ограничение ширины баннера
-            margin-top: -45px; // "Выезд" баннера вверх (подбери значение)
-                               // Это значение должно быть примерно равно (padding-top .custom-popup-header + половина высоты баннера)
-
+            max-width: 80%;
+            margin-top: -45px; 
             @each $rarity, $color in $rarity-colors {
                 &.rarity-bg-#{$rarity} {
                     background-color: $color;
-                    color: if(lightness($color) > 60%, #111, white); // Контрастный цвет текста
+                    color: if(lightness($color) > 60%, #111, white);
                 }
             }
         }
@@ -103,17 +104,18 @@ $rarity-colors: (
         }
     }
 
-    // Тело попапа (основной контент со скроллом)
-    .popup-body {
-        padding: 15px 20px;
-        overflow-y: auto; // Включаем скролл для тела, если контента много
-        flex-grow: 1; // Тело занимает все доступное пространство
+    .popup-body-scrollable-area {
+        padding: 5px 10px;
+        overflow-y: hidden;  // ИЗМЕНЕНО: с hidden на auto
+        overflow-x: hidden;
+        flex-grow: 1; 
+        min-height: 150px;
 
         .popup-content-stack {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 18px; // Отступы между блоками контента
+            align-items: center; // Центрируем дочерние элементы
+            gap: 18px; // ИЗМЕНЕНО: Общий отступ между блоками в стеке
             width: 100%;
         }
 
@@ -125,70 +127,106 @@ $rarity-colors: (
             width: 100%;
 
             .icon-column {
-                flex: 0 0 90px; // Фиксированная ширина для колонки с иконкой
-
+                flex: 0 0 90px;
                 .popup-icon-area {
                     width: 90px;
                     height: 90px;
                     padding: 6px;
-                    border-radius: 8px; // Скругление углов
+                    border-radius: 8px;
                     border: 2px solid transparent;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     box-sizing: border-box;
-
                     @each $rarity, $color in $rarity-colors {
                         &.rarity-#{$rarity} {
                             border-color: $color;
                             background: radial-gradient(ellipse at center, lighten($color, 18%), darken($color, 22%));
                         }
                     }
-
                     .popup-icon {
                         max-width: 100%;
                         max-height: 100%;
                         object-fit: contain;
-                        // image-rendering: pixelated; // Если пиксель-арт
                     }
                 }
             }
-
             .description-column {
                 flex: 1;
                 min-width: 0;
-
                 .popup-description-area {
-                    background-color: rgba(0, 0, 0, 0.2); // Фон для блока описания
+                    background-color: rgba(0, 0, 0, 0.2);
                     padding: 12px 15px;
                     border-radius: 6px;
                     width: 100%;
                     box-sizing: border-box;
-                    font-size: 14px; // Размер шрифта описания
+                    font-size: 14px;
                     line-height: 1.5;
                     color: $text-secondary-light;
-
-                    p {
-                        margin: 0;
-                    }
+                    p { margin: 0; }
                 }
             }
         }
+        
+        .popup-divider {
+            border: none;
+            height: 1px;
+            background-color: $divider-color-dark;
+            width: 100%;
+            margin: 0; 
+            &.thick-divider { // Стили для толстого разделителя, если используется
+                height: 2px;
+                background-color: rgba(120, 130, 160, 0.35);
+                margin: 5px 0; 
+            }
+        }
+
+        .toggleable-content-area {
+            position: relative;
+            width: 100%;
+            min-height: 170px; // ИЗМЕНЕНО: Подбери высоту, чтобы вмещались и статы, и бонусы сета
+                               // или чтобы высота не сильно "прыгала"
+        }
+
+        .stats-view-wrapper,
+        .set-bonuses-view-wrapper {
+            width: 100%;
+            // Если хочешь, чтобы блоки были абсолютно позиционированы для более гладкой анимации "на одном месте":
+            // position: absolute;
+            // top: 0;
+            // left: 0;
+        }
+
+        // --- НОВОЕ: Стили для заголовков секций контента ---
+        .content-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: $text-secondary-light;
+            margin-bottom: 10px; // Отступ снизу от заголовка до контента
+            width: 100%; // Заголовок на всю ширину родителя
+            
+            &.left-aligned-title {
+                text-align: left;
+            }
+            // Если нужен будет центрированный (как для имени сета, но имя сета уже стилизовано в .actual-set-bonuses h4)
+            // &.centered-title {
+            //   text-align: center;
+            // }
+        }
 
         .stats-block {
-            background-color: rgba(0, 0, 0, 0.2); // Фон для блока статов
+            background-color: rgba(0, 0, 0, 0.2);
             padding: 15px;
             border-radius: 8px;
             width: 100%;
             box-sizing: border-box;
 
-            .stats-comparison-table { // Название класса можно оставить, но это уже не сравнение
+            .stats-comparison-table {
                 display: grid;
-                // Оставляем 4 колонки, т.к. renderBaseStatRow генерирует пустые ячейки для выравнивания
                 grid-template-columns: minmax(100px, 1.7fr) 1fr auto 1fr;
                 column-gap: 8px;
                 row-gap: 6px;
-                font-size: 14px; // Размер шрифта для статов
+                font-size: 14px;
                 width: 100%;
                 align-items: center;
 
@@ -196,24 +234,18 @@ $rarity-colors: (
                     justify-content: flex-start;
                     color: $text-muted-light;
                 }
-
                 .current-value-cell {
-                    // Инлайн стиль из JSX был: style={{ justifyContent: 'flex-start', paddingLeft: '10px' }}
-                    justify-content: flex-start; // Выравниваем значение по левому краю
-                    padding-left: 10px;         // Отступ слева для значения
+                    justify-content: flex-start; // Убедимся, что это здесь
+                    padding-left: 10px;         // И это тоже
                     font-weight: 600;
                     color: $text-primary-light;
                 }
-
-                // .arrow-cell и .next-value-cell будут пустыми, но занимают место в гриде
-                .arrow-cell, .next-value-cell {
-                    // Можно добавить visibility: hidden; если они не должны влиять на расчеты, но это обычно не нужно
-                }
+                .arrow-cell, .next-value-cell { /* Остаются для сетки, но пустые */ }
             }
         }
-        
+         
         .no-stats-message {
-            padding: 10px 0;
+            padding: 20px 0;
             text-align: center;
             color: $text-muted-light;
             font-size: 14px;
@@ -221,77 +253,170 @@ $rarity-colors: (
         }
 
         .popup-set-bonus-area {
-            width: 100%;
-            font-size: 13px;
-            line-height: 1.5;
-            color: $text-muted-light;
-            padding: 10px 15px;
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 6px;
+            &.actual-set-bonuses {
+                padding: 10px 5px; // ИЗМЕНЕНО
+                width: 100%;
+                box-sizing: border-box;
+                background-color: rgba(0,0,0,0.15); // ИЗМЕНЕНО
+                border-radius: 6px; // ИЗМЕНЕНО
 
-            h4 {
-                font-size: 14px;
-                font-weight: 600;
-                color: $text-secondary-light;
-                margin: 0 0 6px 0;
+                h4 { // Имя сета - оно уже центрированное и стилизованное
+                    font-size: 17px;
+                    font-weight: 700;
+                    color: $golden-banner-bg;
+                    margin: 0 0 12px 0;
+                    text-align: center;
+                }
+                .set-bonus-entry {
+                    display: flex;
+                    align-items: flex-start; 
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: $text-secondary-light;
+                    padding: 6px 0;
+                    border-bottom: 1px dashed rgba(120, 130, 160, 0.2);
+                    &:last-child {
+                        border-bottom: none;
+                    }
+
+                    .set-bonus-count {
+                        font-weight: 600;
+                        color: $text-primary-light;
+                        margin-right: 10px;
+                        white-space: nowrap;
+                        flex-shrink: 0;
+                    }
+                    .set-bonus-desc {
+                        // text-align: right; // Если используется justify-content: space-between;
+                    }
+                }
             }
-            p { margin: 0; &:not(:last-child) { margin-bottom: 5px; } }
         }
-
-        .popup-divider { // Разделитель между блоками
-            border: none;
-            height: 1px;
-            background-color: $divider-color-dark;
-            width: 100%;
-            margin: 0; // gap в .popup-content-stack уже дает отступы
-        }
-    }
-
-    // Футер попапа (кнопка "Закрыть")
-    .popup-buttons {
-        padding: 15px 20px; // Отступы для футера
-        border-top: 1px solid $divider-color-dark;
-        background-color: rgba(0, 0, 0, 0.1); // Легкий фон для футера
-        flex-shrink: 0; // Футер не должен сжиматься
-        border-radius: 0 0 11px 11px; // Скругление только нижних углов, если шапка тоже скруглена
-
-
-        .action-button-row {
-            width: 100%;
+        
+        // --- НОВОЕ: Стиль для кнопки переключения, когда она вне футера ---
+        .button-toggle-view-standalone {
+            // Наследуем общие стили кнопки (если .button-action определен глобально или выше)
+            // Если .button-action определен только в футере, нужно скопировать его свойства или вынести в общий миксин/класс
+            // В данном случае, предположим, что .button-action из футера - это базовый стиль
+            // Копируем и адаптируем стили из .popup-buttons .button-action (см. ниже в футере)
+            // и применяем специфичные для этой кнопки.
+            // Для чистоты можно вынести общие стили кнопки в @mixin button-base { ... } и использовать @include button-base;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;
             display: flex;
-            justify-content: center; // Центрируем кнопку, если она не на всю ширину
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            color: $text-primary-light;
 
-            .button-close-forge-info {
-                min-width: 180px; // Минимальная ширина кнопки
-                width: auto;      // Ширина по контенту + паддинги
-                padding: 10px 30px; // Увеличенные паддинги для "большой" кнопки
-                font-size: 16px;
-                font-weight: 600;
-                color: $text-primary-light;
-                background: linear-gradient(180deg, #5a6268, #495057); // Темно-серый градиент
-                border: 1px solid #41464b;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            &:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+            &:active{
+                transform: translateY(0px);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            }
+            &:focus {
+                outline: none;
+            }
+            // Теперь специфичные стили для button-toggle-view-standalone
+            width: 90%; 
+            max-width: 280px; 
+            margin-top: 5px; 
+            background: linear-gradient(180deg, #3a6278, #2e4f60);
+            border-color: #294554;
+            color: $text-primary-light; // Уже есть, но для ясности
+            &:hover {
+                background: linear-gradient(180deg, #437088, #355b6e);
+                border-color: #315263;
+                 // Важно сохранить transform и box-shadow из общих стилей
+                transform: translateY(-1px);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+            &:focus {
+                box-shadow: 0 0 0 3px rgba(58, 98, 120, 0.5);
+                 // outline: none; уже есть
+            }
+        }
 
-                &:hover {
-                    background: linear-gradient(180deg, #646c74, #52585e);
-                    border-color: #4a5056;
-                    transform: translateY(-1px); // Небольшой эффект при наведении
-                    box-shadow: 0 3px 6px rgba(0,0,0,0.25);
-                }
+    } // Конец .popup-body-scrollable-area
 
-                &:active {
-                    background: linear-gradient(180deg, #495057, #5a6268);
-                    transform: translateY(0px);
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-                }
+    .popup-buttons {
+        // border-top: 1px solid $divider-color-dark; // Уже было, но теперь в item-info-footer
+        // background-color: rgba(0, 0, 0, 0.15);    // Уже было, но теперь в item-info-footer
+        flex-shrink: 0;
+        // border-radius: 0 0 11px 11px; // Уже было, но теперь в item-info-footer
 
-                &:focus {
-                    outline: none;
-                    box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.4); // Фокус как у Bootstrap
-                }
+        &.item-info-footer {
+            padding: 12px 15px; // ИЗМЕНЕНО: Можно сделать чуть меньше
+            display: flex;
+            // gap: 10px; // Убрано, т.к. кнопка одна или стилизуется инлайн для одной кнопки
+            justify-content: center; // ИЗМЕНЕНО: Центрируем единственную кнопку "Закрыть"
+            align-items: center;
+            border-top: 1px solid $divider-color-dark; // ИЗМЕНЕНО: Разделитель сверху футера
+            background-color: rgba(0, 0, 0, 0.15);    // ИЗМЕНЕНО
+            border-radius: 0 0 11px 11px;              // ИЗМЕНЕНО
+        }
+
+        // Общие стили для кнопок, если они понадобятся еще где-то в футере
+        // Эти стили теперь более базовые, специфичные стили для .button-close-forge-info и .button-toggle-view-standalone (выше)
+        .button-action {
+            padding: 10px 20px;   // Стандартные паддинги
+            font-size: 15px;      // Стандартный размер шрифта
+            font-weight: 600;
+            border-radius: 7px;   // Стандартное скругление
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 44px;     // Стандартная высота
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            color: $text-primary-light;
+            // flex-grow: 1; // Убрано из общего, т.к. кнопка "Закрыть" может быть одна и не должна растягиваться
+            // flex-basis: 0; // Убрано
+
+            &:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+            &:active{
+                transform: translateY(0px);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            }
+            &:focus {
+                outline: none;
+            }
+        }
+        
+        // Кнопка переключения вида (.button-toggle-view) удалена отсюда, т.к. она перемещена и стилизуется как .button-toggle-view-standalone
+        
+        .button-close-forge-info {
+            // Наследует .button-action (через класс в JSX)
+            background: linear-gradient(180deg, #5a6268, #495057);
+            border-color: #41464b;
+            min-width: 180px;    // Минимальная ширина для кнопки "Закрыть"
+            width: auto;         // Ширина по контенту + паддинги
+            flex-grow: 0;        // Не растягиваем, если она одна и центрирована
+                                 // Инлайн-стиль из JSX ({ width: '100%', maxWidth: '300px', margin: '0 auto' })
+                                 // применится, если !setDetails (т.е. нет кнопки переключения ВООБЩЕ, и Закрыть одна)
+
+            &:hover {
+                background: linear-gradient(180deg, #646c74, #52585e);
+                border-color: #4a5056;
+                // transform и box-shadow наследуются от .button-action:hover
+            }
+            &:focus {
+                box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.4);
+                // outline: none; наследуется от .button-action:focus
             }
         }
     }
