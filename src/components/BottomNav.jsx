@@ -18,7 +18,7 @@ const BottomNav = () => {
   // Определяем, какой путь является "главным" для точного совпадения NavLink
   const mainGamePath = "/campaign"; // Предполагаем, что "/campaign" теперь главный игровой экран
 
-  return (
+ return (
     <nav className="bottom-nav">
       {navLinks.map((link) => (
         <NavLink
@@ -27,15 +27,11 @@ const BottomNav = () => {
           className={({ isActive }) =>
             `nav-item ${isActive ? "active" : ""}`
           }
-          title={link.alt} // Подсказка для десктопа
-          // `end` используется для того, чтобы NavLink был активен только при точном совпадении пути,
-          // что обычно нужно для "домашней" или главной ссылки.
+          title={link.alt}
           end={link.path === mainGamePath}
         >
           {/* Иконка */}
-          {/* TODO: Замените пути к иконкам на актуальные для вашего проекта */}
-          <img src={link.icon} alt="" className="nav-icon" /> {/* alt можно оставить пустым для декоративных иконок, если есть label */}
-
+          <img src={link.icon} alt="" className="nav-icon" />
           {/* Подпись под иконкой */}
           <span className="nav-label">{link.label}</span>
         </NavLink>
