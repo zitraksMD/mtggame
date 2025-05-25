@@ -1,72 +1,184 @@
 // src/components/BottomNav.scss
 
+// --- Переменные ---
+$nav-item-diameter: 68px; // Увеличенный диаметр круглой кнопки
+$nav-icon-size: 30px;    // Размер иконки внутри кнопки
+$nav-label-font-size: 10px;
+$nav-label-margin-top: 4px;
+
+$nav-item-background: #483D8B; 
+$nav-item-background-active: #4A90E2; 
+$nav-item-text-color: #c5c0e0;     
+$nav-item-text-color-active: #ffffff;
+$nav-item-spacing: 6px; 
+
+$nav-bar-padding-vertical: 12px; 
+$nav-bar-padding-horizontal: 8px;
+
+$active-scale-factor: 1.15;
+
 // --- Контейнер Навбара ---
 .bottom-nav {
-  position: fixed;      // <<< ДОБАВИТЬ! Фиксируем на экране
-  bottom: 0;          // <<< ДОБАВИТЬ! Прижимаем к низу
-  left: 0;            // <<< ДОБАВИТЬ! Прижимаем к левому краю
-  right: 0;           // <<< ДОБАВИТЬ! Прижимаем к правому краю
-  // width: 100%;     // Можно оставить или использовать left/right: 0
-
-  height: 70px;       // Ваша высота навбара
-  z-index: 100;       // <<< ИЗМЕНИТЬ! Поверх контента и на уровне верхних блоков
-
+  position: fixed;
+  bottom: 0; 
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
-  justify-content: space-around;
-  align-items: stretch;
-  background: linear-gradient(to top, #1a1d2b, #2a3045);
-  flex-shrink: 0; // Это свойство больше не так важно для fixed элемента
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+  justify-content: space-around; 
+  align-items: center; 
+  background: transparent !important; 
+  padding: $nav-bar-padding-vertical $nav-bar-padding-horizontal calc(env(safe-area-inset-bottom, 0px) + #{$nav-bar-padding-vertical});
   box-sizing: border-box;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
- padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-// --- Стиль для каждой ссылки (NavLink -> a.nav-item) ---
+// --- Стиль для каждой круглой кнопки ---
 .nav-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; 
   align-items: center;
-  justify-content: center;
-  flex: 1;
-  padding: 5px 2px; // Убедитесь, что эти отступы не делают иконки/текст слишком большими для height: 70px
+  justify-content: center; 
+  width: $nav-item-diameter;   
+  height: $nav-item-diameter;  
+  padding: 8px 4px; 
   text-decoration: none;
-  color: #8b94a3;
-  background: none;
-  border: none;
+  color: $nav-item-text-color; 
+  background-color: $nav-item-background; 
+  border-radius: 50%; 
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-  position: relative;
-  transition: transform 0.2s ease-out, color 0.2s ease;
+  position: relative; 
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              background-color 0.2s ease, 
+              box-shadow 0.2s ease,
+              color 0.2s ease;
 
   .nav-icon {
-    width: 28px;
-    height: 28px;
+    width: $nav-icon-size; 
+    height: $nav-icon-size;
     object-fit: contain;
-    margin-bottom: 4px;
-    transition: transform 0.2s ease;
   }
 
   .nav-label {
-    font-size: 10px;
+    display: block; 
+    font-size: $nav-label-font-size; 
     font-weight: 500;
-    line-height: 1.1;
+    line-height: 1.2; 
     text-align: center;
+    margin-top: $nav-label-margin-top; 
   }
 
   &.active {
-    color: #ffffff;
-    transform: scale(1.1);
-    z-index: 1; // Достаточно 1, т.к. он внутри .bottom-nav
+    background-color: $nav-item-background-active; 
+    color: $nav-item-text-color-active;          
+    transform: scale($active-scale-factor) translateY(-5px); 
+    transform-origin: center center; 
+    z-index: 10; 
+    box-shadow: 0 5px 15px rgba(darken($nav-item-background-active, 15%), 0.45); 
 
     .nav-label {
-      font-weight: 600;
+      font-weight: 700; 
     }
   }
 
-  &:active {
-     transform: scale(0.92);
-     transition-duration: 0.05s;
+  &:hover:not(.active) {
+    background-color: lighten($nav-item-background, 6%);
+    transform: translateY(-2px) scale(1.05); 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+  }
+  
+  &:active:not(.active) { 
+    transform: scale(0.95) translateY(0px); 
+    background-color: darken($nav-item-background, 8%); 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition-duration: 0.05s;
+  }
+  &.active:active { 
+    transform: scale($active-scale-factor * 0.95) translateY(-4px); 
+    background-color: darken($nav-item-background-active, 8%); 
+    box-shadow: 0 4px 12px rgba(darken($nav-item-background-active, 15%), 0.4);
+    transition-duration: 0.05s;
+  }
+}
+
+// --- Адаптивность ---
+
+// Для экранов <= 410px (типичные узкие смартфоны)
+@media (max-width: 410px) {
+  // Переопределяем переменные для этого медиа-запроса
+  $nav-item-diameter-small: 60px;
+  $nav-icon-size-small: 26px;
+  $nav-label-font-size-small: 9px;
+  $nav-label-margin-top-small: 3px;
+  $nav-bar-padding-vertical-small: $nav-bar-padding-vertical / 1.5; // Используем уже определенную переменную
+
+  .bottom-nav {
+     padding-left: $nav-item-spacing / 2; // Уменьшаем боковые отступы самого навбара
+     padding-right: $nav-item-spacing / 2;
+     padding-top: $nav-bar-padding-vertical-small;
+     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + #{$nav-bar-padding-vertical-small});
+  }
+
+  .nav-item {
+    width: $nav-item-diameter-small;
+    height: $nav-item-diameter-small;
+    padding: 5px 2px; // Скорректированные внутренние отступы
+    
+    .nav-icon {
+      width: $nav-icon-size-small;   
+      height: $nav-icon-size-small;
+    }
+    .nav-label {
+      font-size: $nav-label-font-size-small; 
+      margin-top: $nav-label-margin-top-small;
+    }
+    &.active {
+      // Уменьшаем эффект для активной кнопки, чтобы не так сильно выпирала
+      transform: scale($active-scale-factor * 0.92) translateY(-3px); 
+    }
+  }
+}
+
+// Для ОЧЕНЬ узких экранов, например <= 360px (скрываем текст у неактивных)
+@media (max-width: 360px) {
+  $nav-item-diameter-tiny: 50px; // Еще меньше кнопки
+  $nav-icon-size-tiny: 28px;    // Но иконки можно чуть крупнее относительно кнопки
+  $nav-bar-padding-vertical-tiny: $nav-bar-padding-vertical / 2;
+
+  .bottom-nav {
+     padding-top: $nav-bar-padding-vertical-tiny;
+     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + #{$nav-bar-padding-vertical-tiny});
+  }
+
+  .nav-item {
+    width: $nav-item-diameter-tiny;
+    height: $nav-item-diameter-tiny;
+    padding: 6px; // Равномерный небольшой отступ, т.к. текста почти нет
+
+    .nav-label {
+      display: none; // Скрываем текст у всех неактивных по умолчанию
+    }
+    .nav-icon {
+      width: $nav-icon-size-tiny; 
+      height: $nav-icon-size-tiny;
+      margin-bottom: 0; // Текста нет, отступ не нужен
+    }
+
+    // Для активной кнопки можно оставить текст или тоже скрыть
+    &.active {
+      transform: scale($active-scale-factor * 0.88) translateY(-2px); // Еще меньше эффект
+      .nav-label {
+         display: block; // Показываем у активной (если нужно)
+         font-size: 8px; 
+         margin-top: 2px; // Если текст есть, нужен небольшой отступ
+      }
+      // Если и у активной текст скрыт, то иконка может быть еще больше
+      // .nav-icon {
+      //   width: $nav-icon-size-tiny * 1.1; 
+      //   height: $nav-icon-size-tiny * 1.1;
+      // }
+    }
   }
 }

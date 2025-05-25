@@ -340,7 +340,7 @@
         const showAnyFixedUIBaseConditions = !isInitialLoading && !needsRaceSelection && !isFullScreenMapActive;
 
         // Обновленные условия видимости с учетом ShardPassScreen и других экранов
-        const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading', '/discovery', '/shop', '/forge', '/achievements', '/inventory'];
+        const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading', '/discovery', '/shop', '/forge', '/glory', '/inventory'];
         const shouldShowNewGameHeaderUpdated = showAnyFixedUIBaseConditions && 
                                             !screensWithoutHeader.some(p => path.startsWith(p) || path === p) &&
                                             path !== '/global-map';
@@ -382,7 +382,7 @@
                             <Route path="/inventory" element={<motion.div key="inventory" {...routeContentVariants}><Inventory /></motion.div>} />
                             <Route path="/shop" element={<motion.div key="shop" {...routeContentVariants}><Shop /></motion.div>} />
                             <Route path="/forge" element={<motion.div key="forge" {...routeContentVariants}><Forge /></motion.div>} />
-                            <Route path="/achievements" element={<motion.div key="achievements" {...routeContentVariants}><Achievements /></motion.div>} />
+                            <Route path="/glory" element={<motion.div key="achievements" {...routeContentVariants}><Achievements /></motion.div>} />
                             <Route path="/rewards" element={<motion.div key="rewards" {...routeContentVariants}><RewardsScreen /></motion.div>} />
                             <Route path="/global-map" element={<motion.div key="globalmap" {...routeContentVariants}><GlobalMap onSelectContinent={handleSelectContinentOnGlobalMap} onGoBackToChapterMap={handleGoBackToMainFromGlobalMap} /></motion.div>} />
                             <Route path="/discovery" element={<motion.div key="discovery" {...routeContentVariants}><DiscoveryScreen /></motion.div>} />
