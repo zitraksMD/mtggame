@@ -9,7 +9,7 @@ $nav-item-content-padding-top: 10px;
 $nav-label-margin-top: 4px;
 
 // ▼▼▼ Новые переменные для управления нижним отступом контента ▼▼▼
-$content_bottom_clearance_above_system_bar: 10px; // Желаемый зазор МЕЖДУ текстом/иконкой и началом системной панели/safe area
+$content_bottom_clearance_above_system_bar: 18px; // Желаемый зазор МЕЖДУ текстом/иконкой и началом системной панели/safe area
 $android_fallback_navigation_bar_height: 48px; // Предполагаемая высота экранных кнопок Android, если safe-area-inset-bottom = 0.
                                                 // Это значение - компромисс. Стандартной высоты нет, она варьируется.
                                                 // 48dp - частый размер для touch targets.
