@@ -1,41 +1,37 @@
 // src/components/BottomNav.scss
 
 // --- Переменные ---
-$nav-item-height: 75px; // Общая высота кнопки (фон будет такой высоты)
+$nav-item-height: 75px;
 $nav-item-min-width: 55px;
-
-// Отступы для контента ВНУТРИ кнопки от ее краев
-$content-padding-top: 10px;    // Отступ сверху до иконки
-$content-padding-bottom: 25px; // !!! Важно: Увеличиваем нижний отступ для контента,
-                               // чтобы он "приподнялся" над системными элементами.
-                               // Это значение должно быть примерно равно высоте safe-area/системных кнопок.
-                               // Можно использовать env(safe-area-inset-bottom) + небольшой доп. отступ.
-
-$nav-icon-size: 28px;
+$nav-icon-size: 28px; // Уменьшил немного, так как кнопка стала выше, а контент прижат кверху
 $nav-label-font-size: 10px;
-$nav-label-margin-top: 3px;
+$nav-item-content-padding-top: 10px; 
+$nav-label-margin-top: 4px;
+
+// ▼▼▼ Новые переменные для управления нижним отступом контента ▼▼▼
+$content_bottom_clearance_above_system_bar: 10px; // Желаемый зазор МЕЖДУ текстом/иконкой и началом системной панели/safe area
+$android_fallback_navigation_bar_height: 48px; // Предполагаемая высота экранных кнопок Android, если safe-area-inset-bottom = 0.
+                                                // Это значение - компромисс. Стандартной высоты нет, она варьируется.
+                                                // 48dp - частый размер для touch targets.
+// ▲▲▲-------------------------------------------------------------▲▲▲
 
 $nav-item-background: #483D8B;
 $nav-item-background-active: #4A90E2;
 $nav-item-text-color: #d0cce9;
 $nav-item-text-color-active: #ffffff;
-$nav-item-border-radius: 0px; // Квадратные, как вы хотели
+$nav-item-border-radius: 0px;
 
-$nav-bar-padding-horizontal: 0px; // Убираем горизонтальные отступы у контейнера, если кнопки от края до края
+$nav-bar-padding-horizontal: 0px; // Если кнопки от края до края
 
 // --- Контейнер Навбара ---
 .bottom-nav {
   display: flex;
-  align-items: stretch; // Растягиваем кнопки на всю высоту контейнера
-  background: transparent; // Фон самого навбара не нужен, кнопки будут иметь свой фон
-  
-  // ▼▼▼ Контейнер прижат к низу, БЕЗ учета safe-area в своем padding ▼▼▼
-  padding: 0 $nav-bar-padding-horizontal; 
-  // ▲▲▲-----------------------------------------------------------▲▲▲
-  
+  align-items: stretch; 
+  background: transparent;
+  padding: 0 $nav-bar-padding-horizontal;
   box-sizing: border-box;
   width: 100%;
-  height: $nav-item-height; // Высота навбара равна высоте кнопок
+  height: $nav-item-height;
 }
 
 // --- Стиль для каждой кнопки-плашки ---
@@ -43,27 +39,34 @@ $nav-bar-padding-horizontal: 0px; // Убираем горизонтальные
   display: flex;
   flex-direction: column;
   align-items: center;
-  // ▼▼▼ justify-content теперь будет управлять вертикальным распределением контента ▼▼▼
-  // justify-content: flex-start; // Если хотим просто прижать кверху с учетом padding-top
-  justify-content: space-between; // Чтобы растянуть контент и пустое пространство
-  // ▲▲▲-----------------------------------------------------------------------▲▲▲
-  
+  justify-content: flex-start;
+
   flex-basis: 0;
   flex-grow: 1;
   min-width: $nav-item-min-width;
-  height: 100%; // Занимает всю высоту родителя (.bottom-nav)
+  height: 100%;
   margin: 0;
   
-  // ▼▼▼ Управляем отступами ВНУТРИ кнопки для контента ▼▼▼
-  padding: $content-padding-top 2px $content-padding-bottom 2px;
-  // ▲▲▲----------------------------------------------------▲▲▲
-  box-sizing: border-box; // Важно, чтобы padding не увеличивал общую высоту
+  // ▼▼▼ Используем вычисляемый padding-bottom ▼▼▼
+  padding: $nav-item-content-padding-top 
+           2px 
+           calc(env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}) + #{$content_bottom_clearance_above_system_bar})
+           2px;
+  // Пояснение calc:
+  // 1. env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}):
+  //    - Если env(safe-area-inset-bottom) > 0 (например, на iPhone или Android с жестовой навигацией, где система это сообщает), используется это значение.
+  //    - Если env(safe-area-inset-bottom) = 0 (или не поддерживается/не возвращается, что часто на Android с экранными кнопками),
+  //      то используется #{$android_fallback_navigation_bar_height} как запасное значение.
+  // 2. + #{$content_bottom_clearance_above_system_bar}:
+  //    - К полученной высоте системной панели/безопасной зоны добавляется наш желаемый зазор.
+  // ▲▲▲---------------------------------------------▲▲▲
 
+  box-sizing: border-box;
   text-decoration: none;
   color: $nav-item-text-color;
   background-color: $nav-item-background;
   border-radius: $nav-item-border-radius;
-  // box-shadow: 0 1px 3px rgba(0,0,0,0.1); // Можно убрать, если дизайн "плоский"
+  // box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 
   cursor: pointer;
   outline: none;
@@ -71,13 +74,7 @@ $nav-bar-padding-horizontal: 0px; // Убираем горизонтальные
   position: relative;
   transition: background-color 0.2s ease,
               color 0.2s ease;
-              // box-shadow 0.2s ease; // если есть тень
-
-  .nav-icon-label-wrapper { // Новая обертка для иконки и текста
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+              // box-shadow 0.2s ease;
 
   .nav-icon {
     width: $nav-icon-size;
@@ -94,22 +91,18 @@ $nav-bar-padding-horizontal: 0px; // Убираем горизонтальные
     margin-top: $nav-label-margin-top;
   }
 
-  // Стили для активной кнопки (только цвет)
   &.active {
     background-color: $nav-item-background-active;
     color: $nav-item-text-color-active;
-
     .nav-label {
       font-weight: 600;
     }
   }
 
-  // Стиль для наведения (только цвет)
   &:hover:not(.active) {
     background-color: lighten($nav-item-background, 6%);
   }
 
-  // Стиль для нажатия (только цвет)
   &:active {
     transition-duration: 0.05s;
     &:not(.active) {
@@ -122,24 +115,23 @@ $nav-bar-padding-horizontal: 0px; // Убираем горизонтальные
 }
 
 // --- Адаптивность ---
-// Придется подбирать $content-padding-bottom для разных экранов, если он не через env()
-// Либо использовать env(safe-area-inset-bottom) прямо в $content-padding-bottom
-// $content-padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); // Например
-
+// В медиа-запросах можно будет корректировать $android_fallback_navigation_bar_height и $content_bottom_clearance_above_system_bar, если нужно.
 @media (max-width: 410px) {
-  $nav-item-height-small: 70px; // Базовая высота остается значительной
-  $content-padding-top-small: 8px;
-  $content-padding-bottom-small: calc(env(safe-area-inset-bottom, 0px) + 10px); // Учитываем safe area здесь
+  $nav-item-height-small: 70px; 
   $nav-icon-size-small-mq: 26px;
-  $nav-label-font-size-small-mq: 9px;
+  $nav-label-font-size-small-mq: 9px; // Уменьшил, чтобы помещалось
+  $content-padding-top-small: 8px;
+  // Для $android_fallback_navigation_bar_height можно оставить глобальное значение или переопределить
+  // $content_bottom_clearance_above_system_bar_small: 8px;
 
   .bottom-nav {
-    height: $nav-item-height-small; // Навбар равен высоте кнопок
+    height: $nav-item-height-small;
   }
 
   .nav-item {
-    // height остается 100% от родителя
-    padding: $content-padding-top-small 1px $content-padding-bottom-small 1px;
+    // padding-bottom будет использовать те же переменные, если их не переопределить здесь
+    // padding-bottom: calc(env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}) + #{$content_bottom_clearance_above_system_bar_small});
+    padding-top: $content-padding-top-small;
     min-width: 48px;
 
     .nav-icon {
@@ -155,18 +147,21 @@ $nav-bar-padding-horizontal: 0px; // Убираем горизонтальные
 }
 
 @media (max-width: 360px) {
-  $nav-item-height-tiny: 65px; // Еще немного можно уменьшить
-  $content-padding-top-tiny: 6px;
-  $content-padding-bottom-tiny: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  $nav-item-height-tiny: 65px; 
   $nav-icon-size-tiny-mq: 28px;
+  $content-padding-top-tiny: 6px;
+  // $android_fallback_navigation_bar_height_tiny: 40px; // Можно сделать еще меньше
+  // $content_bottom_clearance_above_system_bar_tiny: 6px;
+
 
   .bottom-nav {
     height: $nav-item-height-tiny;
   }
 
   .nav-item {
-    padding: $content-padding-top-tiny 2px $content-padding-bottom-tiny 2px;
-    justify-content: center; // Если только иконка, то центрируем ее в доступном пространстве
+    // padding-bottom будет использовать те же переменные, если их не переопределить здесь
+    padding-top: $content-padding-top-tiny;
+    justify-content: center; // Если только иконка
 
     .nav-label {
       display: none;
