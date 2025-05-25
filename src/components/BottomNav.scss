@@ -1,171 +1,163 @@
 // src/components/BottomNav.scss
 
 // --- Переменные ---
-$nav-bar-container-height: 80px; // Новая, увеличенная высота всего контейнера навбара
-$nav-item-actual-height: 70px;  // Высота самой кнопки (может быть чуть меньше контейнера, если есть отступы сверху/снизу внутри контейнера)
+// ▼▼▼ Увеличиваем высоты на ~10px ▼▼▼
+$nav-bar-container-height: 90px; // Было 80px
+$nav-item-actual-height: 80px;  // Было 70px
+// ▲▲▲-----------------------------▲▲▲
 
-$nav-item-min-width: 55px; 
-$nav-icon-size: 30px;            // Сделаем иконки чуть больше
-$nav-label-font-size: 11px;      // И текст чуть больше
-$nav-item-content-padding-top: 8px; // Отступ от верхнего края кнопки до иконки
-$nav-label-margin-top: 3px;      // Отступ между иконкой и текстом
+$nav-item-min-width: 55px;
+$nav-icon-size: 32px;            // Можно еще немного увеличить иконки
+$nav-label-font-size: 11px;
+// ▼▼▼ Увеличиваем отступ сверху, чтобы контент был хорошо виден в более высокой кнопке ▼▼▼
+$nav-item-content-padding-top: 12px; 
+$nav-label-margin-top: 4px;      // И отступ между иконкой и текстом
 
-$nav-item-background: #483D8B;        
-$nav-item-background-active: #4A90E2; 
-$nav-item-text-color: #d0cce9; // Немного осветлим текст для лучшего контраста на фиолетовом   
+$nav-item-background: #483D8B;
+$nav-item-background-active: #4A90E2;
+$nav-item-text-color: #d0cce9;
 $nav-item-text-color-active: #ffffff;
-$nav-item-border-radius: 12px; // Чуть больше скругление для более крупных кнопок
+// ▼▼▼ Убираем скругление углов ▼▼▼
+$nav-item-border-radius: 0px; 
+// ▲▲▲-------------------------▲▲▲
 
 $nav-bar-padding-horizontal: 4px;
 
 // --- Контейнер Навбара ---
 .bottom-nav {
   display: flex;
-  // justify-content: center; // flex-grow на .nav-item распределит их
-  align-items: flex-end;     // Прижимаем кнопки к низу контейнера .bottom-nav
-  background: transparent;   // Оставляем фон навбара прозрачным или задаем нужный
-  // background: #1f2333;   // Пример фона для самого навбара, если он нужен
-  
-  // ▼▼▼ Убираем safe-area-inset-bottom из padding самого навбара ▼▼▼
-  // Вертикальные padding теперь могут быть не нужны, если высота фиксирована и кнопки занимают ее
-  padding: 0 $nav-bar-padding-horizontal; 
-  // ▲▲▲-----------------------------------------------------------▲▲▲
-  
+  align-items: flex-end;
+  background: transparent;
+  padding: 0 $nav-bar-padding-horizontal;
   box-sizing: border-box;
   width: 100%;
-  height: $nav-bar-container-height; // Задаем новую, общую высоту для всего навбара
+  height: $nav-bar-container-height;
 }
 
 // --- Стиль для каждой кнопки-плашки ---
 .nav-item {
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   align-items: center;
-  // ▼▼▼ Прижимаем контент (иконка+текст) к верху кнопки ▼▼▼
-  justify-content: flex-start; 
-  // ▲▲▲-------------------------------------------------▲▲▲
-  
+  justify-content: flex-start;
+
   flex-basis: 0;
-  flex-grow: 1; 
+  flex-grow: 1;
   min-width: $nav-item-min-width;
-  height: $nav-item-actual-height; // Новая высота для самих кнопок
-  margin: 0; 
-  
-  // ▼▼▼ Управляем отступами внутри кнопки ▼▼▼
-  padding: $nav-item-content-padding-top 2px 5px 2px; // Основной отступ сверху, остальное по минимуму
-                                                      // Нижний padding (5px) даст небольшой зазор под текстом
-  // ▲▲▲------------------------------------▲▲▲
+  height: $nav-item-actual-height;
+  margin: 0;
+  padding: $nav-item-content-padding-top 2px 8px 2px; // Увеличил нижний padding для баланса
 
   text-decoration: none;
-  color: $nav-item-text-color; 
-  background-color: $nav-item-background; 
-  border-radius: $nav-item-border-radius; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+  color: $nav-item-text-color;
+  background-color: $nav-item-background;
+  border-radius: $nav-item-border-radius; // Теперь будет 0px
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-  position: relative; 
+  position: relative;
   transition: background-color 0.2s ease,
               color 0.2s ease,
               box-shadow 0.2s ease;
 
   .nav-icon {
-    width: $nav-icon-size; 
+    width: $nav-icon-size;
     height: $nav-icon-size;
     object-fit: contain;
-    // margin-bottom не обязателен, если есть margin-top у .nav-label
   }
 
   .nav-label {
-    display: block; 
-    font-size: $nav-label-font-size; 
+    display: block;
+    font-size: $nav-label-font-size;
     font-weight: 500;
-    line-height: 1.2; 
+    line-height: 1.2;
     text-align: center;
-    margin-top: $nav-label-margin-top; 
+    margin-top: $nav-label-margin-top;
   }
 
-  // Стили для активной кнопки (только цвет)
   &.active {
-    background-color: $nav-item-background-active; 
-    color: $nav-item-text-color-active;          
-    // box-shadow: 0 2px 5px rgba(darken($nav-item-background-active, 15%), 0.3); // Можно добавить тень поярче
+    background-color: $nav-item-background-active;
+    color: $nav-item-text-color-active;
 
     .nav-label {
-      font-weight: 600; 
+      font-weight: 600;
     }
   }
 
-  // Стиль для наведения (только цвет)
   &:hover:not(.active) {
     background-color: lighten($nav-item-background, 6%);
   }
-  
-  // Стиль для нажатия (только цвет)
-  &:active { 
+
+  &:active {
     transition-duration: 0.05s;
-    &:not(.active) { 
+    &:not(.active) {
       background-color: darken($nav-item-background, 8%);
     }
-    &.active { 
+    &.active {
       background-color: darken($nav-item-background-active, 8%);
     }
   }
 }
 
 // --- Адаптивность ---
-// Нужно будет пересмотреть значения под новые базовые размеры
 @media (max-width: 410px) {
-  $nav-bar-container-height-small: 70px;
-  $nav-item-actual-height-small: 62px;
-  $nav-icon-size-small-mq: 26px; 
+  // Увеличиваем базовые высоты и для маленьких экранов на ~10px
+  $nav-bar-container-height-small: 80px; // было 70px
+  $nav-item-actual-height-small: 72px; // было 62px
+  $nav-icon-size-small-mq: 28px;    // было 26px
   $nav-label-font-size-small-mq: 10px;
-  $nav-item-content-padding-top-small: 6px;
+  $nav-item-content-padding-top-small: 10px; // было 6px
 
   .bottom-nav {
-    height: $nav-bar-container-height-small;
-    padding: 0 ($nav-bar-padding-horizontal / 2); // Уменьшаем только боковые, если нужно
+     height: $nav-bar-container-height-small;
+     padding: 0 ($nav-bar-padding-horizontal / 2);
+     // justify-content: space-between; // Оставляем растягивание по flex-grow
   }
 
   .nav-item {
     height: $nav-item-actual-height-small;
     padding-top: $nav-item-content-padding-top-small;
-    min-width: 48px; 
-    
+    min-width: 48px; // Можно оставить или немного увеличить, если позволяет ширина
+
     .nav-icon {
-      width: $nav-icon-size-small-mq;   
+      width: $nav-icon-size-small-mq;
       height: $nav-icon-size-small-mq;
-      margin-bottom: 1px; // Уменьшаем если текст близко
+      margin-bottom: 2px;
     }
     .nav-label {
-      font-size: $nav-label-font-size-small-mq; 
-      margin-top: 2px;
+      font-size: $nav-label-font-size-small-mq;
+      margin-top: 3px;
     }
   }
 }
 
 @media (max-width: 360px) {
-  $nav-bar-container-height-tiny: 60px;
-  $nav-item-actual-height-tiny: 60px; // Кнопки могут занимать всю высоту контейнера
-  $nav-icon-size-tiny-mq: 28px; 
+  $nav-bar-container-height-tiny: 70px; // было 60px
+  $nav-item-actual-height-tiny: 70px; // было 60px
+  $nav-icon-size-tiny-mq: 30px;     // было 28px
+  $nav-item-content-padding-top-tiny: 8px; // Отступ сверху для иконки, т.к. текста нет
 
   .bottom-nav {
     height: $nav-bar-container-height-tiny;
-    padding: 0; // Можно убрать боковые падинги у контейнера, если кнопки должны быть от края до края
+    padding: 0;
   }
 
   .nav-item {
     height: $nav-item-actual-height-tiny;
-    padding-top: 6px; // Настроить, чтобы иконка была по центру, если нет текста
+    padding-top: $nav-item-content-padding-top-tiny; 
+    // Центрируем иконку, если текста нет
+    justify-content: center; 
+
 
     .nav-label {
-      display: none; 
+      display: none;
     }
     .nav-icon {
-      width: $nav-icon-size-tiny-mq; 
+      width: $nav-icon-size-tiny-mq;
       height: $nav-icon-size-tiny-mq;
-      margin-bottom: 0; 
+      margin-bottom: 0;
     }
   }
 }
