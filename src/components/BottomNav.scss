@@ -16,9 +16,6 @@ $nav-item-border-radius: 10px;
 $nav-bar-padding-vertical: 8px;
 $nav-bar-padding-horizontal: 4px;
 
-// $active-scale-factor: 1.1; // Больше не используется
-// $active-translateY: -4px;  // Больше не используется
-
 // --- Контейнер Навбара ---
 .bottom-nav {
   display: flex;
@@ -28,6 +25,7 @@ $nav-bar-padding-horizontal: 4px;
   padding: $nav-bar-padding-vertical $nav-bar-padding-horizontal calc(env(safe-area-inset-bottom, 0px) + #{$nav-bar-padding-vertical});
   box-sizing: border-box;
   width: 100%;
+  z-index: 1000000;
 }
 
 // --- Стиль для каждой кнопки-плашки ---
@@ -48,7 +46,7 @@ $nav-bar-padding-horizontal: 4px;
   color: $nav-item-text-color;
   background-color: $nav-item-background;
   border-radius: $nav-item-border-radius;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1); // Уменьшаем тень для более плоского вида
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 
   cursor: pointer;
   outline: none;
@@ -56,7 +54,7 @@ $nav-bar-padding-horizontal: 4px;
   position: relative;
   transition: background-color 0.2s ease,
               color 0.2s ease,
-              box-shadow 0.2s ease; // Убрали transform из transition
+              box-shadow 0.2s ease;
 
   .nav-icon {
     width: $nav-icon-size;
@@ -77,8 +75,6 @@ $nav-bar-padding-horizontal: 4px;
   &.active {
     background-color: $nav-item-background-active;
     color: $nav-item-text-color-active;
-    // Убраны transform, z-index, и активный box-shadow для упрощения
-    // box-shadow: 0 2px 5px rgba(darken($nav-item-background-active, 20%), 0.3); // Если нужна тень для активной
 
     .nav-label {
       font-weight: 600;
@@ -88,23 +84,28 @@ $nav-bar-padding-horizontal: 4px;
   // Стиль для наведения (только цвет)
   &:hover:not(.active) {
     background-color: lighten($nav-item-background, 6%);
-    // Убраны transform и z-index
   }
 
-  // Стиль для нажатия (только цвет)
-  &:active { // Теперь применяется ко всем кнопкам, включая активную
-    // transform: scale(0.97); // Убрано
-    background-color: darken(if(&.active, $nav-item-background-active, $nav-item-background), 8%); // Затемняем текущий фон
-    // box-shadow: 0 1px 2px rgba(0,0,0,0.1); // Убрано
-    transition-duration: 0.05s;
+  // Стиль для нажатия
+  // ▼▼▼ ИСПРАВЛЕНИЕ ЗДЕСЬ ▼▼▼
+  &:active {
+    transition-duration: 0.05s; // Быстрая смена цвета при нажатии
+
+    &:not(.active) { // Если кнопка НЕ активна в момент нажатия
+      background-color: darken($nav-item-background, 8%);
+    }
+
+    &.active { // Если кнопка УЖЕ активна в момент нажатия
+      background-color: darken($nav-item-background-active, 8%);
+    }
   }
+  // ▲▲▲-------------------▲▲▲
 }
 
 // --- Адаптивность ---
 @media (max-width: 410px) {
-  // Переопределяем переменные для этого медиа-запроса
   $nav-item-height-small: 56px;
-  $nav-icon-size-small-mq: 24px; // Локальная переменная для этого блока
+  $nav-icon-size-small-mq: 24px;
   $nav-label-font-size-small-mq: 9px;
   $nav-bar-padding-vertical-small: $nav-bar-padding-vertical - 2px;
   $nav-bar-padding-horizontal-small: $nav-bar-padding-horizontal / 2;
@@ -127,17 +128,13 @@ $nav-bar-padding-horizontal: 4px;
     .nav-label {
       font-size: $nav-label-font-size-small-mq;
     }
-    // &.active { // transform убран
-    // }
   }
 }
 
 @media (max-width: 360px) {
-  // Переменные для этого медиа-запроса
   $nav-item-height-tiny: 50px;
-  $nav-icon-size-tiny-mq: 26px; // Используем новую локальную переменную
+  $nav-icon-size-tiny-mq: 26px;
   $nav-bar-padding-vertical-tiny: $nav-bar-padding-vertical / 1.5;
-
 
   .bottom-nav {
      padding-top: $nav-bar-padding-vertical-tiny;
@@ -152,11 +149,9 @@ $nav-bar-padding-horizontal: 4px;
       display: none;
     }
     .nav-icon {
-      width: $nav-icon-size-tiny-mq; // Исправлено: используется локальная переменная
-      height: $nav-icon-size-tiny-mq; // Исправлено: используется локальная переменная
+      width: $nav-icon-size-tiny-mq;
+      height: $nav-icon-size-tiny-mq;
       margin-bottom: 0;
     }
-    // &.active { // transform убран
-    // }
   }
 }
