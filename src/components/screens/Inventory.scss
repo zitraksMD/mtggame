@@ -309,18 +309,33 @@ html, body {
         justify-content: space-between; 
         align-items: center;
 
-        .inventory-sort-button, .inventory-forge-button {
-            border-radius: 8px; padding: 6px 15px; font-size: 14px; font-weight: 500;
-            height: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: none;
-            cursor: pointer; transition: background 0.2s ease, transform 0.1s ease;
-            display: inline-flex; align-items: center; justify-content: center; position: relative;
-            &:active { transform: scale(0.97); }
-        }
+        .inventory-sort-button,
+.inventory-forge-button {
+  background-color: var(--button-secondary-bg, #4A5568); // Пример цвета фона
+  color: var(--button-secondary-text, #E2E8F0);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px; // Пространство между иконкой и текстом
+
+  &:hover {
+    background-color: var(--button-secondary-bg-hover, #2D3748);
+  }
+
+  .button-icon {
+    width: 18px; // Настройте размер иконки
+    height: 18px;
+  }
+}
         .inventory-sort-button { background-color: #667eea; color: white; &:hover { background-color: #7f8ff5; } }
         .inventory-forge-button {
             background-color: #A1887F; color: white; &:hover { background-color: #bcaaa4; }
             .forge-indicator {
-                position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; font-size: 12px;
+                position: relative; top: -15px; right: -18px; width: 20px; height: 20px; font-size: 12px;
                 background-color: #ef4444; color: white; font-weight: bold; border-radius: 50%;
                 display: flex; align-items: center; justify-content: center; line-height: 1;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); pointer-events: none;

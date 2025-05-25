@@ -8,7 +8,7 @@ import MainMenu from "./components/screens/MainMenu";
 import Level from "./components/Level";
 import Inventory from "./components/screens/Inventory";
 import Shop from "./components/screens/Shop";
-import BottomNav from "./components/BottomNav";
+import BottomNav from "./components/BottomNav"; // Используется для BottomNav
 import UsernamePopup from "./components/popups/UsernamePopup";
 import Forge from "./components/screens/Forge";
 import Achievements from "./components/screens/Achievements";
@@ -19,7 +19,7 @@ import GlobalMap from "./components/GlobalMap";
 import TransitionOverlay from './components/TransitionOverlay';
 import GameHeader from './components/GameHeader';
 import DiscoveryScreen from "./components/screens/DiscoveryScreen";
-import ShardPassScreen from './components/screens/ShardPassScreen'; // ИМПОРТ ДЛЯ НОВОГО SHARDPASS
+import ShardPassScreen from './components/screens/ShardPassScreen';
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
@@ -28,7 +28,7 @@ import './App.scss';
 const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000;
 
 const routeContentVariants = {
-    initial: { opacity: 1 }, // Было opacity: 0, но для mode="wait" лучше 1, чтобы старый контент не исчезал до завершения exit
+    initial: { opacity: 1 },
     animate: { opacity: 1 },
     exit: { opacity: 0, transition: { duration: 0.15 } }
 };
@@ -57,7 +57,9 @@ const App = () => {
         transitionAction,
         onTransitionCloseCompleteCallback,
         onTransitionOpenCompleteCallback,
-        startScreenTransition
+        startScreenTransition,
+        // ▼▼▼ ПОЛУЧАЕМ НОВОЕ СОСТОЯНИЕ ИЗ useGameStore ДЛЯ ИНДИКАТОРА FORGE ▼▼▼
+        isAnyRecipeCraftable // Предполагается, что это состояние будет добавлено в useGameStore
     } = useGameStore(
         useCallback(state => ({
             username: state.username, gold: state.gold, diamonds: state.diamonds, toncoinShards: state.toncoinShards,
@@ -69,8 +71,18 @@ const App = () => {
             onTransitionCloseCompleteCallback: state.onTransitionCloseCompleteCallback,
             onTransitionOpenCompleteCallback: state.onTransitionOpenCompleteCallback,
             startScreenTransition: state.startScreenTransition,
+            // ▼▼▼ ДОБАВЛЯЕМ ПОЛУЧЕНИЕ showForgeIndicator ИЗ ГЛОБАЛЬНОГО ХРАНИЛИЩА ▼▼▼
+            // Важно: свойство 'showForgeIndicator' должно быть определено в вашем useGameStore
+            isAnyRecipeCraftable: state.isAnyRecipeCraftable() 
         }), [])
     );
+
+       // Для отладки в App.jsx:
+    useEffect(() => {
+        console.log('[App.jsx] Value from store for indicator:', isAnyRecipeCraftable);
+        // ИЛИ console.log('[App.jsx] Value from store for indicator:', showForgeIndicator);
+    }, [isAnyRecipeCraftable]); // или [showForgeIndicator]
+
 
     const setUsernameAction = useGameStore((s) => s.setUsername);
     const initializeCharacterStats = useGameStore((s) => s.initializeCharacterStats);
@@ -189,7 +201,7 @@ const App = () => {
     }, [
         navigate, initializeCharacterStats, setUsernameAction, checkAndRefreshDailyDeals,
         checkAndResetTreasureChestAttempts, checkAndResetDailyTasks, checkAndResetWeeklyTasks,
-        checkAndResetMonthlyTasks, trackTaskEvent, location.pathname // Добавил location.pathname для повторного запуска при необходимости
+        checkAndResetMonthlyTasks, trackTaskEvent, location.pathname
     ]);
 
     useEffect(() => {
@@ -201,7 +213,7 @@ const App = () => {
                 console.warn("ensureScreenIsOpening action not found in store via getState().");
             }
         }
-    }, [location.pathname, isInitialLoading]); // Зависимость от location.pathname и isInitialLoading
+    }, [location.pathname, isInitialLoading]);
 
     const getChapterIdFromLevelId = (levelId) => {
         if (typeof levelId === 'string') levelId = parseInt(levelId, 10); 
@@ -395,14 +407,13 @@ const App = () => {
                 </AnimatePresence>
             </main>
 
-            {/* ▼▼▼ Анимация для BottomNav ▼▼▼ */}
             <AnimatePresence>
                 {shouldShowBottomNavUpdated && (
                     <motion.div
                         key="bottom-nav-wrapper" 
                         initial={{ y: "100%" }}    
                         animate={{ y: "0%" }}      
-                        exit={{ y: "100%" }}       
+                        exit={{ y: "100%" }}      
                         transition={{ duration: 0.3, ease: "easeInOut" }} 
                         style={{
                             position: 'fixed', 
@@ -412,19 +423,16 @@ const App = () => {
                             zIndex: 10000 
                         }}
                     >
-                        <BottomNav />
+                        {/* ▼▼▼ ПЕРЕДАЕМ ПРОП showForgeIndicator В BottomNav ▼▼▼ */}
+<BottomNav showForgeIndicator={isAnyRecipeCraftable} />
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* ▲▲▲ Конец анимации для BottomNav ▲▲▲ */}
             
             <AnimatePresence>
                 {isScreenTransitioning && (
                     <motion.div 
                         key="app-global-transition-overlay"
-                        // initial={{ opacity: 1 }} // Эти initial/animate/exit здесь можно убрать, если TransitionOverlay сам управляет своим появлением/исчезновением через playOpen/playClose
-                        // animate={{ opacity: 1 }}
-                        // exit={{ opacity: 0, transition: { duration: 0.05 } }} // Управление жизненным циклом через isScreenTransitioning достаточно
                         style={{
                             position: 'fixed', 
                             top:0, left:0, 

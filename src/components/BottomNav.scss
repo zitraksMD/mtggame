@@ -3,17 +3,13 @@
 // --- Переменные ---
 $nav-item-height: 75px;
 $nav-item-min-width: 55px;
-$nav-icon-size: 28px; // Уменьшил немного, так как кнопка стала выше, а контент прижат кверху
+$nav-icon-size: 28px;
 $nav-label-font-size: 10px;
-$nav-item-content-padding-top: 10px; 
+$nav-item-content-padding-top: 10px;
 $nav-label-margin-top: 4px;
 
-// ▼▼▼ Новые переменные для управления нижним отступом контента ▼▼▼
-$content_bottom_clearance_above_system_bar: 18px; // Желаемый зазор МЕЖДУ текстом/иконкой и началом системной панели/safe area
-$android_fallback_navigation_bar_height: 48px; // Предполагаемая высота экранных кнопок Android, если safe-area-inset-bottom = 0.
-                                                // Это значение - компромисс. Стандартной высоты нет, она варьируется.
-                                                // 48dp - частый размер для touch targets.
-// ▲▲▲-------------------------------------------------------------▲▲▲
+$content_bottom_clearance_above_system_bar: 18px;
+$android_fallback_navigation_bar_height: 48px;
 
 $nav-item-background: #483D8B;
 $nav-item-background-active: #4A90E2;
@@ -21,12 +17,12 @@ $nav-item-text-color: #d0cce9;
 $nav-item-text-color-active: #ffffff;
 $nav-item-border-radius: 0px;
 
-$nav-bar-padding-horizontal: 0px; // Если кнопки от края до края
+$nav-bar-padding-horizontal: 0px;
 
 // --- Контейнер Навбара ---
 .bottom-nav {
   display: flex;
-  align-items: stretch; 
+  align-items: stretch;
   background: transparent;
   padding: 0 $nav-bar-padding-horizontal;
   box-sizing: border-box;
@@ -40,46 +36,65 @@ $nav-bar-padding-horizontal: 0px; // Если кнопки от края до к
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-
   flex-basis: 0;
   flex-grow: 1;
   min-width: $nav-item-min-width;
   height: 100%;
   margin: 0;
-  
-  // ▼▼▼ Используем вычисляемый padding-bottom ▼▼▼
-  padding: $nav-item-content-padding-top 
-           2px 
-           calc(env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}) + #{$content_bottom_clearance_above_system_bar})
-           2px;
-  // Пояснение calc:
-  // 1. env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}):
-  //    - Если env(safe-area-inset-bottom) > 0 (например, на iPhone или Android с жестовой навигацией, где система это сообщает), используется это значение.
-  //    - Если env(safe-area-inset-bottom) = 0 (или не поддерживается/не возвращается, что часто на Android с экранными кнопками),
-  //      то используется #{$android_fallback_navigation_bar_height} как запасное значение.
-  // 2. + #{$content_bottom_clearance_above_system_bar}:
-  //    - К полученной высоте системной панели/безопасной зоны добавляется наш желаемый зазор.
-  // ▲▲▲---------------------------------------------▲▲▲
 
   box-sizing: border-box;
   text-decoration: none;
   color: $nav-item-text-color;
   background-color: $nav-item-background;
   border-radius: $nav-item-border-radius;
-  // box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-  position: relative;
+  position: relative; // Остается здесь, так как .nav-item может иметь другие абсолютно позиционированные элементы
   transition: background-color 0.2s ease,
               color 0.2s ease;
-              // box-shadow 0.2s ease;
+
+  // ▼▼▼ СТИЛИ ДЛЯ ОБЕРТКИ ИКОНКИ И ИНДИКАТОРА ▼▼▼
+  .nav-item-content-wrapper {
+    position: relative; // Для позиционирования абсолютного индикатора
+    display: inline-block; // Чтобы обертка была по размеру содержимого (иконки)
+    line-height: 0;     // Убирает лишнее пространство под inline-block элементами (если иконка img)
+    // Можно задать размеры, если иконка должна быть вписана в определенную область
+    // width: $nav-icon-size;
+    // height: $nav-icon-size;
+  }
+  // ▲▲▲---------------------------------------------▲▲▲
 
   .nav-icon {
     width: $nav-icon-size;
     height: $nav-icon-size;
     object-fit: contain;
+    display: block; // Помогает избежать лишнего пространства под img, если wrapper inline-block
+  }
+
+  .nav-item-indicator {
+    position: absolute;
+    // ▼▼▼ Настройте эти значения для идеального положения относительно .nav-item-content-wrapper ▼▼▼
+    top: 0px;
+    right: 0px;
+    transform: translate(50%, -50%); // Сдвигает на половину своей ширины вправо и половину высоты вверх
+                                     // Это хороший вариант для размещения на углу.
+                                     // Альтернатива: (40%, -40%) как было, если так лучше смотрится.
+    // ▲▲▲-----------------------------------------------▲▲▲
+    background-color: #ef4444;
+    color: white;
+    font-weight: bold;
+    font-size: 10px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); // Чуть более выраженная тень
+    pointer-events: none;
+    z-index: 1; // Чтобы был поверх иконки
   }
 
   .nav-label {
@@ -115,30 +130,42 @@ $nav-bar-padding-horizontal: 0px; // Если кнопки от края до к
 }
 
 // --- Адаптивность ---
-// В медиа-запросах можно будет корректировать $android_fallback_navigation_bar_height и $content_bottom_clearance_above_system_bar, если нужно.
 @media (max-width: 410px) {
-  $nav-item-height-small: 70px; 
+  $nav-item-height-small: 70px;
   $nav-icon-size-small-mq: 26px;
-  $nav-label-font-size-small-mq: 9px; // Уменьшил, чтобы помещалось
+  $nav-label-font-size-small-mq: 9px;
   $content-padding-top-small: 8px;
-  // Для $android_fallback_navigation_bar_height можно оставить глобальное значение или переопределить
-  // $content_bottom_clearance_above_system_bar_small: 8px;
 
   .bottom-nav {
     height: $nav-item-height-small;
   }
 
   .nav-item {
-    // padding-bottom будет использовать те же переменные, если их не переопределить здесь
-    // padding-bottom: calc(env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}) + #{$content_bottom_clearance_above_system_bar_small});
     padding-top: $content-padding-top-small;
     min-width: 48px;
+
+    .nav-item-content-wrapper {
+      // Если размеры иконок меняются (как здесь .nav-icon),
+      // и wrapper display: inline-block, он сам сожмется/расширится под иконку.
+      // Если wrapper имел бы фиксированные размеры, их тут тоже нужно было бы менять.
+    }
 
     .nav-icon {
       width: $nav-icon-size-small-mq;
       height: $nav-icon-size-small-mq;
-      margin-bottom: 1px;
+      margin-bottom: 1px; // Если нужно, можно оставить
     }
+
+    .nav-item-indicator {
+      // Можно немного уменьшить индикатор и его смещение для маленьких экранов
+      top: -1px; // Или 0px, в зависимости от того, как смотрится с transform
+      right: -1px; // Или 0px
+      transform: translate(50%, -50%); // Можно оставить тот же принцип смещения
+      width: 14px;
+      height: 14px;
+      font-size: 9px;
+    }
+
     .nav-label {
       font-size: $nav-label-font-size-small-mq;
       margin-top: 2px;
@@ -147,29 +174,40 @@ $nav-bar-padding-horizontal: 0px; // Если кнопки от края до к
 }
 
 @media (max-width: 360px) {
-  $nav-item-height-tiny: 65px; 
-  $nav-icon-size-tiny-mq: 28px;
+  $nav-item-height-tiny: 65px;
+  $nav-icon-size-tiny-mq: 28px; // Иконка чуть больше на очень маленьких экранах, т.к. текст исчезает
   $content-padding-top-tiny: 6px;
-  // $android_fallback_navigation_bar_height_tiny: 40px; // Можно сделать еще меньше
-  // $content_bottom_clearance_above_system_bar_tiny: 6px;
-
 
   .bottom-nav {
     height: $nav-item-height-tiny;
   }
 
   .nav-item {
-    // padding-bottom будет использовать те же переменные, если их не переопределить здесь
     padding-top: $content-padding-top-tiny;
-    justify-content: center; // Если только иконка
+    justify-content: center; // Центрируем содержимое, так как нет текста
 
-    .nav-label {
-      display: none;
+    .nav-item-content-wrapper {
+      // Аналогично предыдущему медиа-запросу, подстроится под размер .nav-icon
     }
+
     .nav-icon {
       width: $nav-icon-size-tiny-mq;
       height: $nav-icon-size-tiny-mq;
-      margin-bottom: 0;
+      margin-bottom: 0; // Текста нет, отступ снизу не нужен
+    }
+
+    .nav-item-indicator {
+      // Можно оставить значения из предыдущего @media, или немного скорректировать,
+      // если иконка стала единственным элементом и нужно другое позиционирование.
+      // Например, если иконка стала крупнее, а индикатор остался прежним,
+      // transform: translate(50%, -50%) все еще должен хорошо работать.
+      // Если что, подстройте top/right или сами значения translate.
+      // width: 15px; // Пример, если нужно чуть крупнее
+      // height: 15px;
+    }
+
+    .nav-label {
+      display: none;
     }
   }
 }
