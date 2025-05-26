@@ -254,17 +254,44 @@ const sortedInventory = useMemo(() => {
                     >
                         <div className="character-section">
                             <div className="character-equip">
-                                <div className="left-column">
-                                    <div className={`equipment-slot ${equipped.weapon ? 'rarity-' + equipped.weapon.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.weapon && setSelectedItem(equipped.weapon)}>
-                                        {equipped.weapon ? <img src={equipped.weapon.image || "/assets/default-item.png"} alt="weapon"/> : <div className="empty-slot">⚔️</div>}
-                                    </div>
-                                    <div className={`equipment-slot ${equipped.amulet ? 'rarity-' + equipped.amulet.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.amulet && setSelectedItem(equipped.amulet)}>
-                                        {equipped.amulet ? <img src={equipped.amulet.image || "/assets/default-item.png"} alt="amulet"/> : <div className="empty-slot">📿</div>}
-                                    </div>
-                                    <div className={`equipment-slot ${equipped.ring ? 'rarity-' + equipped.ring.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.ring && setSelectedItem(equipped.ring)}>
-                                        {equipped.ring ? <img src={equipped.ring.image || "/assets/default-item.png"} alt="ring"/> : <div className="empty-slot">💍</div>}
-                                    </div>
-                                </div>
+    <div className="left-column">
+        <div className={`equipment-slot ${equipped.weapon ? 'rarity-' + equipped.weapon.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.weapon && setSelectedItem(equipped.weapon)}>
+            {equipped.weapon ? (
+                <>
+                    <img src={equipped.weapon.image || "/assets/default-item.png"} alt="weapon"/>
+                    {equipped.weapon.level > 0 && (
+                        <div className="equipped-item-level-badge">
+                            Lvl {equipped.weapon.level}
+                        </div>
+                    )}
+                </>
+            ) : <div className="empty-slot">⚔️</div>}
+        </div>
+        <div className={`equipment-slot ${equipped.amulet ? 'rarity-' + equipped.amulet.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.amulet && setSelectedItem(equipped.amulet)}>
+            {equipped.amulet ? (
+                <>
+                    <img src={equipped.amulet.image || "/assets/default-item.png"} alt="amulet"/>
+                    {equipped.amulet.level > 0 && (
+                        <div className="equipped-item-level-badge">
+                            Lvl {equipped.amulet.level}
+                        </div>
+                    )}
+                </>
+            ) : <div className="empty-slot">📿</div>}
+        </div>
+        <div className={`equipment-slot ${equipped.ring ? 'rarity-' + equipped.ring.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.ring && setSelectedItem(equipped.ring)}>
+            {equipped.ring ? (
+                <>
+                    <img src={equipped.ring.image || "/assets/default-item.png"} alt="ring"/>
+                    {equipped.ring.level > 0 && (
+                        <div className="equipped-item-level-badge">
+                            Lvl {equipped.ring.level}
+                        </div>
+                    )}
+                </>
+            ) : <div className="empty-slot">💍</div>}
+        </div>
+    </div>
                                 <div className="character-model">
                                     <CharacterViewer modelPath={playerStats?.skin || "/Models/character.glb"} />
                                     <AnimatePresence>
@@ -300,17 +327,44 @@ const sortedInventory = useMemo(() => {
                                     </AnimatePresence>
                                 </div>
                                 <div className="right-column">
-                                    <div className={`equipment-slot ${equipped.helmet ? 'rarity-' + equipped.helmet.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.helmet && setSelectedItem(equipped.helmet)}>
-                                        {equipped.helmet ? <img src={equipped.helmet.image || "/assets/default-item.png"} alt="helmet"/> : <div className="empty-slot">🪖</div>}
-                                    </div>
-                                    <div className={`equipment-slot ${equipped.armor ? 'rarity-' + equipped.armor.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.armor && setSelectedItem(equipped.armor)}>
-                                        {equipped.armor ? <img src={equipped.armor.image || "/assets/default-item.png"} alt="armor"/> : <div className="empty-slot">🛡️</div>}
-                                    </div>
-                                    <div className={`equipment-slot ${equipped.boots ? 'rarity-' + equipped.boots.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.boots && setSelectedItem(equipped.boots)}>
-                                        {equipped.boots ? <img src={equipped.boots.image || "/assets/default-item.png"} alt="boots"/> : <div className="empty-slot">🥾</div>}
-                                    </div>
-                                </div>
-                            </div> {/* Конец .character-equip */}
+        <div className={`equipment-slot ${equipped.helmet ? 'rarity-' + equipped.helmet.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.helmet && setSelectedItem(equipped.helmet)}>
+            {equipped.helmet ? (
+                <>
+                    <img src={equipped.helmet.image || "/assets/default-item.png"} alt="helmet"/>
+                    {equipped.helmet.level > 0 && (
+                        <div className="equipped-item-level-badge">
+                            Lvl {equipped.helmet.level}
+                        </div>
+                    )}
+                </>
+            ) : <div className="empty-slot">🪖</div>}
+        </div>
+        <div className={`equipment-slot ${equipped.armor ? 'rarity-' + equipped.armor.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.armor && setSelectedItem(equipped.armor)}>
+            {equipped.armor ? (
+                <>
+                    <img src={equipped.armor.image || "/assets/default-item.png"} alt="armor"/>
+                    {equipped.armor.level > 0 && (
+                        <div className="equipped-item-level-badge">
+                            Lvl {equipped.armor.level}
+                        </div>
+                    )}
+                </>
+            ) : <div className="empty-slot">🛡️</div>}
+        </div>
+        <div className={`equipment-slot ${equipped.boots ? 'rarity-' + equipped.boots.rarity.toLowerCase() : 'empty'}`} onClick={() => equipped.boots && setSelectedItem(equipped.boots)}>
+            {equipped.boots ? (
+                <>
+                    <img src={equipped.boots.image || "/assets/default-item.png"} alt="boots"/>
+                    {equipped.boots.level > 0 && (
+                        <div className="equipped-item-level-badge">
+                            Lvl {equipped.boots.level}
+                        </div>
+                    )}
+                </>
+            ) : <div className="empty-slot">🥾</div>}
+        </div>
+    </div>
+</div> {/* Конец .character-equip */}
 
                             <div className="inventory-power-display">
                                 <span className="inventory-power-label">Power: </span>
@@ -330,17 +384,17 @@ const sortedInventory = useMemo(() => {
                                 position="middle"
                             />
                            {internalActiveTab === 'gear' && (
-                <div className="inventory-action-buttons-wrapper">
-                    {/* ▼▼▼ ОБНОВЛЕННАЯ КНОПКА СОРТИРОВКИ ▼▼▼ */}
-                    <button onClick={handleSortChange} className="inventory-sort-button">
-                        by {sortConfig.label}
-                    </button>
-                    {/* ▲▲▲ КОНЕЦ ОБНОВЛЕННОЙ КНОПКИ ▲▲▲ */}
-                    <button onClick={handleGoToForge} className="inventory-forge-button">
-                        <img src="/assets/forge-icon.png" alt="Кузница" className="button-icon" /> Кузница
-                        {canForge && <span className="forge-indicator">!</span>}
-                    </button>
-                </div>
+               <div className="inventory-action-buttons-wrapper">
+    <button onClick={handleSortChange} className="inventory-sort-button">
+        by {sortConfig.label} 
+    </button>
+    {/* ▼▼▼ КНОПКА "FORGE" БЕЗ ИЗОБРАЖЕНИЯ ▼▼▼ */}
+    <button onClick={handleGoToForge} className="inventory-forge-button">
+        Forge {/* Текст кнопки */}
+        {canForge && <span className="forge-indicator">!</span>} {/* Индикатор крафта, если нужен */}
+    </button>
+    {/* ▲▲▲ КОНЕЦ КНОПКИ "FORGE" БЕЗ ИЗОБРАЖЕНИЯ ▲▲▲ */}
+</div>
             )}
                             <div 
     className={`
