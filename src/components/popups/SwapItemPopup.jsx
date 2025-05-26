@@ -85,18 +85,17 @@ const StatComparisonRow = ({ label, currentValue, valueToCompare, isPercent }) =
 };
 
 const SwapItemPopup = ({
-    isOpen, // isOpen будет управлять AnimatePresence в родительском компоненте
+    isOpen,
     onClose,
     currentlyEquippedItem,
     candidateItem,
     inventory,
     slotType,
     onConfirmSwap
-    // onUnequipCurrentItem ПРОП УДАЛЕН
 }) => {
-    // if (!isOpen) return null; // Не нужен, если управляется AnimatePresence в родителе
-
     const [selectedForSwap, setSelectedForSwap] = useState(candidateItem);
+    const [isConfirming, setIsConfirming] = useState(false); // <<< НОВОЕ СОСТОЯНИЕ
+
 
     const getFullStatsForItem = (item) => {
         if (!item) return null;
@@ -119,9 +118,18 @@ const SwapItemPopup = ({
         ).sort(/* Ваша логика сортировки */);
     }, [inventory, slotType, currentlyEquippedItem]);
 
-    const handleConfirm = () => {
-        if (selectedForSwap) {
+ const handleConfirm = () => {
+        console.log("[SwapItemPopup] Confirm button clicked. isConfirming:", isConfirming, "selectedForSwap:", selectedForSwap);
+        if (selectedForSwap && !isConfirming) {
+            setIsConfirming(true); // <<< УСТАНАВЛИВАЕМ ФЛАГ ПЕРЕД ВЫЗОВОМ
+            console.log("[SwapItemPopup] Calling onConfirmSwap with:", selectedForSwap.name);
             onConfirmSwap(selectedForSwap);
+            // setIsConfirming(false) здесь не нужен, т.к. попап должен закрыться.
+            // Если бы он мог остаться открытым при ошибке, тогда нужно было бы сбрасывать.
+        } else if (isConfirming) {
+            console.log("[SwapItemPopup] Confirm clicked, but already confirming.");
+        } else {
+            console.log("[SwapItemPopup] Confirm clicked, but no selectedForSwap or button should be disabled.");
         }
     };
     
@@ -133,7 +141,7 @@ const SwapItemPopup = ({
         { key: 'doubleStrike', label: 'Двойной Удар', isPercent: true },
     ];
 
-    return (
+return ( // Полный JSX return, включая изменения в кнопке
         <motion.div 
             className="item-popup-backdrop swap-popup-backdrop" 
             variants={popupBackdropVariants}
@@ -148,27 +156,24 @@ const SwapItemPopup = ({
                 onClick={(e) => e.stopPropagation()}
             >
                 <button className="popup-close-x" onClick={onClose}>✖</button>
-                <h3 className="swap-popup-title">Swap item</h3>
+                <h3 className="swap-popup-title">Замена предмета</h3>
                 
                 <div className="swap-main-display-area">
-                    {/* Левая колонка: Сейчас надето */}
+                    {/* ... Колонки с предметами и статами ... */}
+                    {/* Левая колонка */}
                     <div className="item-display-column">
-                        <h4 className="panel-title">Equipped</h4>
+                        <h4 className="panel-title">Сейчас надето</h4>
                         <ItemDisplayCard item={currentlyEquippedItem} isSelected={false} showMinimalStats={false} />
                         {equippedItemFullStats && (
                             <div className="stats-preview-column">
                                 {statDefinitions.map(statDef => {
                                     const val = equippedItemFullStats[statDef.key];
-                                    // ▼▼▼ 1. Не отображаем стат, если его значение 0 (или null/undefined) ▼▼▼
                                     if (val === 0 || val === null || val === undefined) return null; 
-                                    
                                     const compareVal = selectedForSwapFullStats ? selectedForSwapFullStats[statDef.key] : null;
                                     return (
                                         <StatComparisonRow 
-                                            key={`eq-${statDef.key}`}
-                                            label={statDef.label} 
-                                            currentValue={val} 
-                                            valueToCompare={compareVal}
+                                            key={`eq-${statDef.key}`} label={statDef.label} 
+                                            currentValue={val} valueToCompare={compareVal}
                                             isPercent={statDef.isPercent} 
                                         />
                                     );
@@ -176,32 +181,25 @@ const SwapItemPopup = ({
                             </div>
                         )}
                     </div>
-                    
                     <div className="swap-arrow-indicator">⇄</div>
-
-                    {/* Правая колонка: Будет надето */}
+                    {/* Правая колонка */}
                     <div className="item-display-column">
-                        <h4 className="panel-title">Equip</h4>
+                        <h4 className="panel-title">Будет надето</h4>
                         {selectedForSwap ? (
                             <ItemDisplayCard item={selectedForSwap} isSelected={true} showMinimalStats={false} />
                         ) : (
-                            // Используем ItemDisplayCard с пропсами для плейсхолдера
                             <ItemDisplayCard isPlaceholder={true} placeholderText="Выберите предмет" />
                         )}
                          {selectedForSwapFullStats && selectedForSwap && (
                             <div className="stats-preview-column">
                                 {statDefinitions.map(statDef => {
                                      const val = selectedForSwapFullStats[statDef.key];
-                                     // ▼▼▼ 1. Не отображаем стат, если его значение 0 (или null/undefined) ▼▼▼
                                      if (val === 0 || val === null || val === undefined) return null;
-                                     
                                      const compareVal = equippedItemFullStats ? equippedItemFullStats[statDef.key] : null;
                                      return (
                                         <StatComparisonRow 
-                                            key={`sel-${statDef.key}`}
-                                            label={statDef.label} 
-                                            currentValue={val} 
-                                            valueToCompare={compareVal} // Здесь сравниваем значение выбранного предмета с текущим надетым
+                                            key={`sel-${statDef.key}`} label={statDef.label} 
+                                            currentValue={val} valueToCompare={compareVal}
                                             isPercent={statDef.isPercent} 
                                         />
                                     );
@@ -211,26 +209,25 @@ const SwapItemPopup = ({
                     </div>
                 </div>
 
-               <div className="swap-inventory-grid-title">Replace with:</div>
+                <div className="swap-inventory-grid-title">Заменить на (из инвентаря):</div>
                 <div className="swap-inventory-grid">
                     {swappableItems.map(item => (
                         <ItemDisplayCard 
-                            key={item.uid} 
-                            item={item} 
+                            key={item.uid} item={item} 
                             isSelected={selectedForSwap?.uid === item.uid}
                             onClick={() => setSelectedForSwap(item)}
-                            displayMode="iconOnly" // <<< УКАЗЫВАЕМ РЕЖИМ ДЛЯ СЕТКИ
+                            displayMode="iconOnly"
                         />
-                    ))} : <p className="no-items-message">Нет подходящих предметов.</p> 
+                    ))}
+                    {swappableItems.length === 0 && <p className="no-items-message">Нет подходящих предметов.</p>}
                 </div>
 
                 <div className="popup-buttons swap-popup-buttons">
                     <button className="button-action button-secondary" onClick={onClose}>Отмена</button>
-                    {/* ▼▼▼ 3. Кнопка "Снять текущий" УДАЛЕНА ▼▼▼ */}
                     <button 
                         className="button-action button-primary" 
                         onClick={handleConfirm}
-                        disabled={!selectedForSwap || (currentlyEquippedItem && selectedForSwap.uid === currentlyEquippedItem.uid)}
+                        disabled={!selectedForSwap || (currentlyEquippedItem && selectedForSwap.uid === currentlyEquippedItem.uid) || isConfirming}
                     >
                         Подтвердить
                     </button>

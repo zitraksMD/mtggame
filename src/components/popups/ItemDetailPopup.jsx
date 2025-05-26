@@ -207,9 +207,23 @@ const ItemDetailPopup = ({
     };
 
     const handleConfirmSwapFromPopup = (newItemToEquip) => {
-        onEquipItem(newItemToEquip); // Вызываем оригинальный onEquipItem
-        setShowSwapPopup(false);
-        // onClose(); // Оставляем ItemDetailPopup открытым после свапа, если нужно
+        console.log("[ItemDetailPopup] handleConfirmSwapFromPopup called with:", newItemToEquip?.name);
+
+        // 1. Сначала явно даем команду закрыть SwapItemPopup
+        console.log("[ItemDetailPopup] Setting showSwapPopup to false.");
+        setShowSwapPopup(false); 
+        
+        // 2. Затем выполняем действие экипировки.
+        // Эта функция (onEquipItem) должна обновить глобальное состояние
+        // и также вызвать закрытие ItemDetailPopup (через setSelectedItem(null) в Inventory.jsx).
+        console.log("[ItemDetailPopup] Calling props.onEquipItem for actual equip.");
+        onEquipItem(newItemToEquip); 
+
+        // Вызов props.onClose() здесь, вероятно, избыточен, так как onEquipItem (через handleEquip в Inventory)
+        // уже должен вызывать setSelectedItem(null), что эквивалентно onClose.
+        // Если его оставить, убедитесь, что это не вызывает конфликтов. Пока закомментируем.
+        // console.log("[ItemDetailPopup] Calling props.onClose (to close ItemDetailPopup).");
+        // onClose(); 
     };
 
     const handleUnequipFromSwapPopup = () => {
@@ -409,21 +423,22 @@ const ItemDetailPopup = ({
                         {/* <<< ИЗМЕНЕННЫЙ БЛОК КНОПОК ДЕЙСТВИЙ >>> */}
                         <div className="action-button-row">
                             {isEquipped ? (
-                                // Если предмет УЖЕ НАДЕТ, кнопка "Сменить" открывает SwapItemPopup
-                                <button
-                                    className="button-action button-change" // Можно использовать класс button-change или свой
-                                    onClick={handleOpenSwapPopup}
-                                >
-                                    Сменить {/* Или "Swap" */}
-                                </button>
-                            ) : (
-                                // Если предмет НЕ НАДЕТ (из инвентаря), кнопка "Equip" просто экипирует
-                                <button
-                                    className={`button-action ${currentlyEquippedInSlot ? "button-change" : "button-equip"}`}
-                                    onClick={() => onEquipItem(item)} // Прямой вызов onEquipItem
-                                >
-                                    {currentlyEquippedInSlot ? "Сменить на это" : "Экипировать"}
-                                </button>
+                        <button 
+                            className="button-action button-change"
+                            onClick={handleOpenSwapPopup} // handleOpenSwapPopup просто делает setShowSwapPopup(true)
+                        >
+                            Сменить
+                        </button>
+                    ) : (
+                        <button
+                            className={`button-action ${currentlyEquippedInSlot ? "button-change" : "button-equip"}`}
+                            onClick={() => {
+                                console.log("[ItemDetailPopup] Equip button clicked for item:", item?.name);
+                                onEquipItem(item); // Прямой вызов, если это не экипированный предмет
+                            }}
+                        >
+                            {currentlyEquippedInSlot ? "Сменить на это" : "Экипировать"}
+                        </button>
                             )}
                         </div>
                          {/* <<< КОНЕЦ ИЗМЕНЕННОГО БЛОКА КНОПОК ДЕЙСТВИЙ >>> */}
@@ -433,15 +448,27 @@ const ItemDetailPopup = ({
 
             {/* Рендерим SwapItemPopup здесь, если он должен быть показан */}
             <AnimatePresence>
-                {showSwapPopup && item && ( // Убедимся, что 'item' (currentlyEquippedItem для SwapPopup) существует
+                {showSwapPopup && item && (
                     <SwapItemPopup
-                        isOpen={showSwapPopup}
-                        onClose={() => setShowSwapPopup(false)}
-                        currentlyEquippedItem={item} // 'item' из пропсов ItemDetailPopup - это и есть текущий надетый, если isEquipped
+                        isOpen={showSwapPopup} // Этот проп больше для информации, AnimatePresence управляет появлением/исчезновением
+                        onClose={() => {
+                            console.log("[ItemDetailPopup] SwapItemPopup onClose triggered.");
+                            setShowSwapPopup(false);
+                        }}
+                        currentlyEquippedItem={item}
+                        candidateItem={item} // Изначально кандидат = текущий предмет (для выбора нового)
+                                             // Хотя, если Swap открывается для СУЩЕСТВУЮЩЕГО, то candidateItem
+                                             // должен быть null или первым из списка альтернатив.
+                                             // В вашем SwapItemPopup: useState(candidateItem), где candidateItem - проп
+                                             // Этот проп `candidateItem` в `SwapItemPopup` из `ItemDetailPopup` должен быть `item`,
+                                             // а затем внутри `SwapItemPopup` `selectedForSwap` инициализируется им и меняется.
+                                             // ВАЖНО: Когда SwapItemPopup открывается для экипированного item,
+                                             // selectedForSwap изначально может быть равен currentlyEquippedItem (т.е. item).
+                                             // Кнопка "Подтвердить" должна быть задизейблена, пока не выбран ДРУГОЙ предмет.
                         inventory={inventory}
                         slotType={item.type}
                         onConfirmSwap={handleConfirmSwapFromPopup}
-                        onUnequipCurrentItem={handleUnequipFromSwapPopup} // Для кнопки "Снять текущий" внутри SwapPopup
+                        // onUnequipCurrentItem - мы его удалили
                     />
                 )}
             </AnimatePresence>

@@ -220,27 +220,68 @@ $stat-worse-color: #F44336 !default;
         }
     }
 
-    .item-display-card.fixed-size.icon-only-mode {
-        width: 68px;
-        height: 68px;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+  .item-display-card.fixed-size.icon-only-mode {
+    width: 68px;
+    height: 68px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer; // Делаем курсор указывающим на кликабельность
+    // Добавляем transition для плавности эффектов hover и selected
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; 
+    // Базовая рамка, которая будет меняться при наведении/выделении
+    // Цвет может наследоваться от .item-display-card или быть специфичным
+    border: 2px solid transparent; // Начальная прозрачная рамка или рамка по умолчанию
+                                  // Если у вас уже есть border на .item-display-card.fixed-size, этот можно убрать
+                                  // или сделать border-width: 2px; и менять только border-color.
 
-        .item-card-icon-area {
-            width: 100%;
-            height: 100%;
-            margin-bottom: 0;
-        }
-        .item-card-name-wrapper, .item-card-name, .item-card-level {
-             display: none;
-        }
-        &.empty.placeholder, &.explicit-placeholder {
-            height: 68px;
-            font-size: 10px;
-        }
+    .item-card-icon-area {
+        width: 100%;
+        height: 100%;
+        margin-bottom: 0;
+        border-radius: 6px; // Немного скруглим саму область иконки
+        // Стили для фона по редкости должны быть здесь или наследоваться
+        // Например, из общих стилей для .item-card-icon-area .rarity-*
     }
+
+    // Название и уровень скрываются через JSX с помощью displayMode="iconOnly".
+    // Строки ниже можно оставить для дополнительной гарантии или убрать, если JSX всегда корректен.
+    .item-card-name-wrapper, .item-card-name, .item-card-level {
+        display: none; 
+    }
+
+    &.empty.placeholder, &.explicit-placeholder { // Ваш существующий стиль для плейсхолдера
+        height: 68px; 
+        font-size: 10px;
+        cursor: default; // Плейсхолдер не кликабельный
+        border-color: $text-muted-light; // Пример рамки для плейсхолдера
+        // ... другие стили плейсхолдера
+    }
+
+    // ▼▼▼ ДОБАВЛЯЕМ/ОБНОВЛЯЕМ СТИЛИ ДЛЯ ВЫДЕЛЕНИЯ И НАВЕДЕНИЯ ▼▼▼
+
+    // Стиль при наведении на НЕВЫБРАННЫЙ и НЕПУСТОЙ предмет в сетке
+    &:not(.selected):not(.empty):not(.placeholder):hover { 
+        // border-color: lighten($text-muted-light, 25%); // Светло-серая рамка при наведении
+        border-color: #718096; // Альтернативный цвет для ховера (прохладный серый)
+        transform: scale(1.05); // Немного увеличиваем
+        // box-shadow: 0 0 5px rgba(lighten($text-muted-light, 25%), 0.5); // Легкая тень
+    }
+
+    // Стиль для ВЫБРАННОГО предмета в сетке
+    &.selected { 
+        border-width: 2px; // Убедимся, что рамка есть и она заметна
+        border-color: $golden-banner-bg; // Яркий акцентный цвет (ваш золотой или другой)
+        
+        // Эффект свечения для выделенного предмета
+        box-shadow: 0 0 10px 2px rgba($golden-banner-bg, 0.7), 
+                    inset 0 0 5px rgba(lighten($golden-banner-bg, 20%), 0.5); 
+
+        transform: scale(1.1); // Увеличиваем сильнее, чем при простом наведении
+    }
+    // ▲▲▲ КОНЕЦ СТИЛЕЙ ДЛЯ ВЫДЕЛЕНИЯ И НАВЕДЕНИЯ ▲▲▲
+}
 
     .item-display-card.fixed-size.clickable {
         cursor: pointer;

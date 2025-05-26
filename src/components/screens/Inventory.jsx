@@ -9,6 +9,8 @@ import CharacterViewer from "../CharacterViewer";
 import ArtifactsPanel from "./ArtifactsPanel";
 import InventoryTabs from "../InventoryTabs";
 import ItemDetailPopup from "../popups/ItemDetailPopup"; // <--- Убедитесь, что путь правильный, если он был изменен
+import SwapItemPopup from '../popups/SwapItemPopup'; // <<< --- ВОТ ЭТА СТРОКА ДОБАВЛЕНА ---
+
 import {
     MAX_ITEM_LEVEL,
     getGoldUpgradeCost,    // <<< Убедитесь, что это используется или удалите, если нет
