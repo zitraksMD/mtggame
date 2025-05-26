@@ -1,6 +1,6 @@
 // src/store/useGameStore.js
 import { create } from "zustand";
-import itemsDatabase, { getItemById, getGoldUpgradeCost, getDiamondUpgradeCost, MAX_ITEM_LEVEL } from '../data/itemsDatabase.js'; 
+import itemsDatabase, { getItemById, getGoldUpgradeCost, getDiamondUpgradeCost, MAX_ITEM_LEVEL, calculateItemStat } from '../data/itemsDatabase.js'; 
 
 import { LEVEL_CHEST_TYPES, getLevelChestTypeById } from '../data/levelChestData';
 import forgeRecipes from "../data/forgeDatabase";
@@ -108,21 +108,23 @@ const createItemInstance = (itemTemplateInput) => {
         return null;
     }
 
-    // Проверяем, является ли itemTemplateInput массивом, и берем первый элемент, если да
     const actualItemTemplate = Array.isArray(itemTemplateInput) && itemTemplateInput.length > 0
         ? itemTemplateInput[0]
         : itemTemplateInput;
 
-    // Дополнительная проверка, что actualItemTemplate теперь действительно объект
     if (!actualItemTemplate || typeof actualItemTemplate !== 'object' || Array.isArray(actualItemTemplate)) {
         console.warn("Invalid actual item template after processing:", actualItemTemplate, "Original input:", itemTemplateInput);
         return null;
     }
 
     return {
-        ...actualItemTemplate, // Копируем все свойства из фактического шаблона предмета
+        ...actualItemTemplate,
         uid: uuidv4(),
-        level: 1,
+        level: actualItemTemplate.level || 1, // Используем уровень из шаблона, если есть, иначе 1
+        // ▼▼▼ ДОБАВЛЕННЫЕ СВОЙСТВА ▼▼▼
+        isNew: true,             // Помечаем как новый при создании
+        receivedTimestamp: Date.now() // Записываем время получения
+        // ▲▲▲ КОНЕЦ ДОБАВЛЕННЫХ СВОЙСТВ ▲▲▲
     };
 };
 
@@ -134,9 +136,18 @@ const getDefaultEquippedSet = () => {
         const commonItemTemplate = itemsDatabase.find(
             item => item.type === type && item.rarity === 'Common'
         );
-        // Здесь используется createItemInstance. Если она теперь возвращает level: 1, 
-        // то и предметы по умолчанию будут с level: 1.
-        defaultSet[type] = commonItemTemplate ? createItemInstance(commonItemTemplate) : null; 
+        if (commonItemTemplate) {
+            const instance = createItemInstance(commonItemTemplate);
+            if (instance) {
+                instance.isNew = false; // Предметы по умолчанию НЕ новые
+                instance.receivedTimestamp = 0; // Очень старая метка времени
+                defaultSet[type] = instance;
+            } else {
+                defaultSet[type] = null;
+            }
+        } else {
+             defaultSet[type] = null;
+        }
     });
      const missing = types.filter(type => defaultSet[type] === null);
      if (missing.length > 0) {
@@ -210,6 +221,30 @@ const loadFromLocalStorage = () => {
             Object.keys(DEFAULT_BASE_STATS).forEach(key => { updatedStats[key] = updatedStats[key] ?? DEFAULT_BASE_STATS[key]; });
             parsed.playerBaseStats = updatedStats;
             console.log("Миграция playerBaseStats завершена.");
+        }
+
+        const migrateItem = (item, index = 0, totalItems = 1) => {
+            if (!item) return null;
+            return {
+                ...item,
+                level: item.level || 1,
+                isNew: typeof item.isNew === 'boolean' ? item.isNew : false, // Старые предметы не новые
+                receivedTimestamp: typeof item.receivedTimestamp === 'number' ? item.receivedTimestamp : (Date.now() - (totalItems - index) * 60000) // Старым даем временные метки с разницей в минуту
+            };
+        };
+
+        if (parsed.inventory && Array.isArray(parsed.inventory)) {
+            parsed.inventory = parsed.inventory.map((item, idx, arr) => migrateItem(item, idx, arr.length)).filter(Boolean);
+        } else {
+            parsed.inventory = [];
+        }
+
+        if (parsed.equipped && typeof parsed.equipped === 'object') {
+            for (const slot in parsed.equipped) {
+                if (parsed.equipped[slot]) {
+                    parsed.equipped[slot] = migrateItem(parsed.equipped[slot]);
+                }
+            }
         }
 
         const defaultFullStateForNewKeys = { // Объединенный из КОД1 и КОД2
@@ -529,8 +564,8 @@ const useGameStore = create((set, get) => ({
     shardPassTasksProgress: savedState.shardPassTasksProgress,
     shardPassSeasonStartDateUTC: savedState.shardPassSeasonStartDateUTC,
 
-    // ================== Селекторы (Computed/Getters) ==================
-    computedStats: () => { // из КОД2, т.к. более полная реализация с дебаффами
+   // ================== Селекторы (Computed/Getters) ==================
+    computedStats: () => {
         const state = get();
         const now = Date.now();
         const currentActiveDebuffs = (state.activeDebuffs || []).filter(debuff => now < debuff.endTime);
@@ -559,36 +594,37 @@ const useGameStore = create((set, get) => ({
         totalOtherMaxHpReductionPercent = Math.min(totalOtherMaxHpReductionPercent, 80);
 
         let finalStats = { ...DEFAULT_BASE_STATS, ...(state.playerBaseStats || {}) };
-        let totalGearAttackSpeedPercentBonus = 0;
+        
+        // Аккумулятор для суммарного ДЕСЯТИЧНОГО бонуса скорости атаки (от снаряжения, артефактов, сетов)
+        let totalDecimalAttackSpeedBonus = 0;
 
+        // --- ОБНОВЛЕННАЯ ЛОГИКА ДЛЯ СТАТОВ ОТ ЭКИПИРОВКИ ---
         for (const slot in state.equipped) {
-            const item = state.equipped[slot];
-            if (item) {
-                finalStats.hp = (finalStats.hp || 0) + (item.hpBonus || 0);
-                finalStats.attack = (finalStats.attack || 0) + (item.attackBonus || 0);
-                totalGearAttackSpeedPercentBonus += item.attackSpeedBonus || 0;
-                finalStats.critChance = (finalStats.critChance || 0) + (item.critChanceBonus || 0);
-                finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + (item.doubleStrikeChanceBonus || 0);
-                finalStats.speed = (finalStats.speed || 0) + (item.speedBonus || 0);
-                finalStats.range = (finalStats.range || 0) + (item.rangeBonus || 0);
-                finalStats.defense = (finalStats.defense || 0) + (item.defenseBonus || 0);
-                finalStats.luck = (finalStats.luck || 0) + (item.luckBonus || 0);
-                finalStats.hpRegen = (finalStats.hpRegen || 0) + (item.hpRegenBonus || 0);
-                finalStats.evasion = (finalStats.evasion || 0) + (item.evasionBonus || 0);
-                finalStats.maxMana = (finalStats.maxMana || 0) + (item.maxManaBonus || 0);
-                finalStats.elementalDmgPercent = (finalStats.elementalDmgPercent || 0) + (item.elementalDmgPercentBonus || 0);
-                finalStats.goldFind = (finalStats.goldFind || 0) + (item.goldFindBonus || 0);
-                finalStats.bossDmg = (finalStats.bossDmg || 0) + (item.bossDmgBonus || 0);
-                finalStats.shardFind = (finalStats.shardFind || 0) + (item.shardFindBonus || 0);
-                finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + (item.atkPercentBonus || 0);
-                finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + (item.moveSpeedPercentBonus || 0);
-                finalStats.bonusProjectiles = (finalStats.bonusProjectiles || 0) + (item.bonusProjectiles || 0);
+            const itemInstance = state.equipped[slot];
+            if (itemInstance) {
+                const itemType = itemInstance.type;
+                const itemRarity = itemInstance.rarity;
+                const itemLevel = itemInstance.level || 1;
+
+                finalStats.hp = (finalStats.hp || 0) + calculateItemStat(itemType, "hpBonus", itemRarity, itemLevel);
+                finalStats.attack = (finalStats.attack || 0) + calculateItemStat(itemType, "attackBonus", itemRarity, itemLevel);
+                
+                totalDecimalAttackSpeedBonus += calculateItemStat(itemType, "attackSpeedBonus", itemRarity, itemLevel);
+
+                finalStats.critChance = (finalStats.critChance || 0) + (calculateItemStat(itemType, "critChanceBonus", itemRarity, itemLevel) * 100);
+                finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + (calculateItemStat(itemType, "doubleStrikeChanceBonus", itemRarity, itemLevel) * 100);
+                
+                // Остальные статы от экипировки (speedBonus, rangeBonus, defenseBonus, etc.)
+                // теперь НЕ ДОБАВЛЯЮТСЯ здесь напрямую из itemInstance.
+                // Они должны обрабатываться через calculateItemStat ИЛИ поступать из других источников (база, артефакты, сеты).
             }
         }
+        // --- КОНЕЦ ОБНОВЛЕННОЙ ЛОГИКИ ДЛЯ СТАТОВ ОТ ЭКИПИРОВКИ ---
 
         const { artifactLevels, collectedArtifacts } = state;
         let totalArtifactHp = 0, totalArtifactAttack = 0, totalArtifactDefense = 0, totalArtifactHpRegen = 0,
-            totalArtifactAttackSpeed = 0, totalArtifactEvasion = 0, totalArtifactMoveSpeedBonus = 0,
+            totalArtifactRawAttackSpeedBonus = 0, // Сумма бонусов AS от артефактов (предполагаем, что это % значение, например, 5 для 5%)
+            totalArtifactEvasion = 0, totalArtifactMoveSpeedBonus = 0, // % бонус
             totalArtifactAtkPercentBonus = 0, totalArtifactMaxMana = 0, totalArtifactElementalDmgPercent = 0,
             totalArtifactCritChance = 0, totalArtifactDoubleStrikeChance = 0, totalArtifactGoldFind = 0,
             totalArtifactLuck = 0, totalArtifactBossDmg = 0, totalArtifactShardFind = 0, totalArtifactBonusProjectiles = 0;
@@ -608,7 +644,7 @@ const useGameStore = create((set, get) => ({
                                 case "attack": totalArtifactAttack += baseValue; break;
                                 case "defense": totalArtifactDefense += baseValue; break;
                                 case "hpRegen": totalArtifactHpRegen += baseValue; break;
-                                case "attackSpeed": totalArtifactAttackSpeed += baseValue; break;
+                                case "attackSpeed": totalArtifactRawAttackSpeedBonus += baseValue; break;
                                 case "evasion": totalArtifactEvasion += baseValue; break;
                                 case "moveSpeedPercentBonus": totalArtifactMoveSpeedBonus += baseValue; break;
                                 case "atkPercentBonus": totalArtifactAtkPercentBonus += baseValue; break;
@@ -634,7 +670,7 @@ const useGameStore = create((set, get) => ({
                                 case "attack": totalArtifactAttack += bonus; break;
                                 case "defense": totalArtifactDefense += bonus; break;
                                 case "hpRegen": totalArtifactHpRegen += bonus; break;
-                                case "attackSpeed": totalArtifactAttackSpeed += bonus; break;
+                                case "attackSpeed": totalArtifactRawAttackSpeedBonus += bonus; break;
                                 case "evasion": totalArtifactEvasion += bonus; break;
                                 case "moveSpeedPercentBonus": totalArtifactMoveSpeedBonus += bonus; break;
                                 case "atkPercentBonus": totalArtifactAtkPercentBonus += bonus; break;
@@ -660,9 +696,11 @@ const useGameStore = create((set, get) => ({
         finalStats.attack += totalArtifactAttack;
         finalStats.defense += totalArtifactDefense;
         finalStats.hpRegen += totalArtifactHpRegen;
-        totalGearAttackSpeedPercentBonus += totalArtifactAttackSpeed;
-        finalStats.critChance += totalArtifactCritChance;
-        finalStats.doubleStrikeChance += totalArtifactDoubleStrikeChance;
+        
+        totalDecimalAttackSpeedBonus += (totalArtifactRawAttackSpeedBonus / 100); // Конвертируем % бонус от артефактов в десятичный
+
+        finalStats.critChance += totalArtifactCritChance; // Предполагаем, что артефакты дают крит шанс уже в % (например, 5 для 5%)
+        finalStats.doubleStrikeChance += totalArtifactDoubleStrikeChance; // Аналогично для двойного удара
         finalStats.evasion += totalArtifactEvasion;
         finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + totalArtifactMoveSpeedBonus;
         finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + totalArtifactAtkPercentBonus;
@@ -695,17 +733,18 @@ const useGameStore = create((set, get) => ({
                         if (desc.includes('%')) finalStats.atkPercentBonus = (finalStats.atkPercentBonus || 0) + value; else finalStats.attack += value;
                         applied = true;
                     } else if (desc.includes('скорость атаки')) {
-                        if (desc.includes('%')) totalGearAttackSpeedPercentBonus += value; applied = true;
+                        if (desc.includes('%')) totalDecimalAttackSpeedBonus += value / 100; // value это % (напр. 5 для 5%), добавляем как десятичное
+                        applied = true;
                     } else if (desc.includes('регенерация hp')) {
                         finalStats.hpRegen = (finalStats.hpRegen || 0) + value; applied = true;
                     } else if (desc.includes('шанс двойного удара') || desc.includes('двойной удар')) {
-                        finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + value; applied = true;
+                        finalStats.doubleStrikeChance = (finalStats.doubleStrikeChance || 0) + value; applied = true; // value должно быть %
                     } else if (desc.includes('шанс найти золото') || desc.includes('поиск золота')) {
                         finalStats.goldFind = (finalStats.goldFind || 0) + value; applied = true;
                     } else if (desc.includes('шанс найти осколки') || desc.includes('поиск осколков')) {
                         finalStats.shardFind = (finalStats.shardFind || 0) + value; applied = true;
                     } else if (desc.includes('шанс крит. удара') || desc.includes('крит. шанс')) {
-                        finalStats.critChance = (finalStats.critChance || 0) + value; applied = true;
+                        finalStats.critChance = (finalStats.critChance || 0) + value; applied = true; // value должно быть %
                     } else if (desc.includes('защита')) {
                         finalStats.defense = (finalStats.defense || 0) + value; applied = true;
                     } else if (desc.includes('удача')) {
@@ -721,7 +760,8 @@ const useGameStore = create((set, get) => ({
                     } else if (desc.includes('скорость передвижения')) {
                         finalStats.moveSpeedPercentBonus = (finalStats.moveSpeedPercentBonus || 0) + value; applied = true;
                     } else if (desc.includes('+1 доп. снаряд при атаке') || desc.includes('доп. снаряд')) {
-                         finalStats.bonusProjectiles = (finalStats.bonusProjectiles || 0) + 1; applied = true;
+                         finalStats.bonusProjectiles = (finalStats.bonusProjectiles || 0) + (value !== 0 ? value : 1) ; // Если value есть, используем его, иначе +1
+                         applied = true;
                     }
                     if (!applied) console.warn(`[WARN] Не удалось распознать бонус сета '${set.name}': ${bonus.description}`);
                 }
@@ -729,7 +769,7 @@ const useGameStore = create((set, get) => ({
         });
 
         finalStats.attack = (finalStats.attack || 0) * (1 + (finalStats.atkPercentBonus || 0) / 100);
-        finalStats.attackSpeed = (finalStats.attackSpeed || DEFAULT_BASE_STATS.attackSpeed || 1.0) * (1 + totalGearAttackSpeedPercentBonus / 100);
+        finalStats.attackSpeed = (finalStats.attackSpeed || DEFAULT_BASE_STATS.attackSpeed || 1.0) * (1 + totalDecimalAttackSpeedBonus);
         finalStats.speed = (finalStats.speed || DEFAULT_BASE_STATS.speed || 5) * (1 + (finalStats.moveSpeedPercentBonus || 0) / 100);
 
         let debuffLogMessages = [];
@@ -779,14 +819,16 @@ const useGameStore = create((set, get) => ({
         finalStats.hp = Math.max(1, Math.round(finalStats.hp || 0));
         finalStats.attack = Math.max(0, Math.round(finalStats.attack || 0));
         finalStats.attackSpeed = parseFloat(Math.max(0.1, (finalStats.attackSpeed || 0)).toFixed(2));
-        finalStats.critChance = Math.min(100, Math.max(0, Math.round(finalStats.critChance || 0)));
-        finalStats.doubleStrikeChance = Math.min(100, Math.max(0, Math.round(finalStats.doubleStrikeChance || 0)));
+        
+        finalStats.critChance = Math.min(100, Math.max(0, parseFloat((finalStats.critChance || 0).toFixed(1)) ));
+        finalStats.doubleStrikeChance = Math.min(100, Math.max(0, parseFloat((finalStats.doubleStrikeChance || 0).toFixed(1)) ));
+
         finalStats.speed = parseFloat(Math.max(0.1, (finalStats.speed || 0)).toFixed(2));
         finalStats.range = Math.max(1, Math.round(finalStats.range || 0));
         finalStats.skin = finalStats.skin || DEFAULT_BASE_STATS.skin;
         finalStats.defense = Math.max(0, Math.round(finalStats.defense || 0));
         finalStats.hpRegen = Math.max(0, parseFloat((finalStats.hpRegen || 0).toFixed(1)));
-        finalStats.evasion = Math.min(90, Math.max(0, Math.round(finalStats.evasion || 0)));
+        finalStats.evasion = Math.min(90, Math.max(0, Math.round(finalStats.evasion || 0))); // evasion обычно целое число процентов
         finalStats.maxMana = Math.max(0, Math.round(finalStats.maxMana || 0));
         finalStats.elementalDmgPercent = Math.max(0, Math.round(finalStats.elementalDmgPercent || 0));
         finalStats.goldFind = Math.max(0, Math.round(finalStats.goldFind || 0));
@@ -796,42 +838,93 @@ const useGameStore = create((set, get) => ({
         finalStats.bonusProjectiles = Math.max(0, Math.round(finalStats.bonusProjectiles || 0));
 
         for (const key in finalStats) {
-            if (typeof finalStats[key] === 'number' && isNaN(finalStats[key])) {
-                console.warn(`Computed stat ${key} was NaN. Resetting to default.`);
-                finalStats[key] = DEFAULT_BASE_STATS[key] ?? 0;
+            if (finalStats.hasOwnProperty(key) && typeof finalStats[key] === 'number' && isNaN(finalStats[key])) {
+                console.warn(`Computed stat ${key} was NaN. Resetting to default or 0.`);
+                finalStats[key] = DEFAULT_BASE_STATS[key] === undefined ? 0 : DEFAULT_BASE_STATS[key];
             }
         }
         return finalStats;
     },
-    isAnyRecipeCraftable: () => { // из КОД2
-        const { inventory, gold, diamonds } = get();
-        const inventoryCounts = {};
-        inventory.forEach(item => {
-            if (item?.id && item?.rarity) {
-                const key = `${item.id}_${item.rarity}`;
-                inventoryCounts[key] = (inventoryCounts[key] || 0) + 1;
-            } else if (item?.id) {
-                inventoryCounts[item.id] = (inventoryCounts[item.id] || 0) + 1;
-            }
-        });
+isAnyRecipeCraftable: () => {
+    const { inventory, gold, diamonds } = get();
+    // import forgeRecipes from "../../data/forgeDatabase"; 
 
-        for (const recipe of forgeRecipes) {
-            let hasEnoughItems = true;
+    // console.log('[isAnyRecipeCraftable] Checking. Gold:', gold, 'Diamonds:', diamonds, 'Inventory items:', inventory.length);
+    
+    // 1. Сначала считаем, сколько всего каждого типа предмета есть у игрока
+    const playerInventoryCounts = {};
+    inventory.forEach(item => {
+        if (item?.id && item?.rarity) {
+            const key = `${item.id}_${item.rarity}`;
+            playerInventoryCounts[key] = (playerInventoryCounts[key] || 0) + (item.quantity || 1);
+        } else if (item?.id) {
+            playerInventoryCounts[item.id] = (playerInventoryCounts[item.id] || 0) + (item.quantity || 1);
+        }
+    });
+
+    if (!forgeRecipes || forgeRecipes.length === 0) {
+        // console.warn("[isAnyRecipeCraftable] forgeRecipes is empty or not loaded!");
+        return false;
+    }
+
+    for (const recipe of forgeRecipes) {
+        if (!recipe || !recipe.id || !recipe.inputItems || !recipe.cost) {
+            // console.warn("[isAnyRecipeCraftable] Skipping invalid recipe:", recipe);
+            continue;
+        }
+
+        // console.log(`[isAnyRecipeCraftable] Checking recipe ID: ${recipe.id}, Output: ${recipe.outputItemId}`);
+        
+        // ▼▼▼ ИЗМЕНЕНИЕ ЗДЕСЬ: Создаем временную копию счетчиков для КАЖДОГО рецепта ▼▼▼
+        const tempAvailableItems = { ...playerInventoryCounts }; 
+        let hasEnoughItems = true; 
+        // ▲▲▲--------------------------------------------------------------------▲▲▲
+
+        if (recipe.inputItems.length === 0) {
+            // console.log(`  Recipe ${recipe.id} requires no items.`);
+        } else {
             for (const input of recipe.inputItems) {
-                const key = input.rarity ? `${input.itemId}_${input.rarity}` : input.itemId;
-                if ((inventoryCounts[key] || 0) < input.quantity) {
-                    hasEnoughItems = false;
+                if (!input || !input.itemId || typeof input.quantity !== 'number' || input.quantity <= 0) {
+                    // console.warn(`  Recipe ${recipe.id} has invalid input item:`, input);
+                    hasEnoughItems = false; 
                     break;
                 }
-            }
-            if (!hasEnoughItems) continue;
-
-            if (gold >= recipe.cost.gold && diamonds >= recipe.cost.diamonds) {
-                return true;
+                const key = input.rarity ? `${input.itemId}_${input.rarity}` : input.itemId;
+                
+                // ▼▼▼ ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем и "расходуем" из tempAvailableItems ▼▼▼
+                const neededQuantity = input.quantity;
+                if ((tempAvailableItems[key] || 0) >= neededQuantity) {
+                    tempAvailableItems[key] -= neededQuantity; // "Расходуем" из временной копии
+                    // console.log(`  Input: ${input.itemId} (Rarity: ${input.rarity || 'any'}), Needed: ${neededQuantity}, Available for this slot: YES. Remaining temp: ${tempAvailableItems[key]}`);
+                } else {
+                    // console.log(`  Input: ${input.itemId} (Rarity: ${input.rarity || 'any'}), Needed: ${neededQuantity}, Available for this slot: NO. (Player total: ${playerInventoryCounts[key] || 0}, Temp has: ${tempAvailableItems[key] || 0})`);
+                    hasEnoughItems = false;
+                    break; 
+                }
+                // ▲▲▲-----------------------------------------------------------------▲▲▲
             }
         }
-        return false;
-    },
+        // console.log(`  For recipe ${recipe.id} - Has enough items: ${hasEnoughItems}`);
+
+        if (!hasEnoughItems) {
+            continue; 
+        }
+
+        const recipeGoldCost = recipe.cost.gold || 0;
+        const recipeDiamondCost = recipe.cost.diamonds || 0;
+        const canAfford = gold >= recipeGoldCost && diamonds >= recipeDiamondCost;
+        
+        // console.log(`  For recipe ${recipe.id} - Can afford: ${canAfford} (Player Gold: ${gold}/${recipeGoldCost}, Player Diamonds: ${diamonds}/${recipeDiamondCost})`);
+
+        if (canAfford) { // hasEnoughItems уже true на этом этапе
+            // console.log(`  !!! CRAFTABLE RECIPE FOUND: ${recipe.id} !!!`);
+            return true; 
+        }
+    }
+
+    // console.log("[isAnyRecipeCraftable] No craftable recipes found after checking all.");
+    return false; 
+},
     getAchievementXpNeededForNextLevel: () => getXpNeededForLevel(get().achievementLevel), // из КОД1, также в КОД2
     getCurrentLevelXpProgress: () => Math.max(0, get().achievementXp - (ACHIEVEMENT_LEVEL_XP_THRESHOLDS[get().achievementLevel] ?? 0)), // из КОД1, также в КОД2
     getXpNeededForCurrentLevelUp: () => { // из КОД1, также в КОД2
@@ -1013,10 +1106,11 @@ const useGameStore = create((set, get) => ({
     },
     setEquipped: (payload) => set({ equipped: payload }),
 
-    addItemToInventory: (itemId, quantity = 1) => { // Из КОД1 (с trackTaskEvent и eventDetails)
+ addItemToInventory: (itemId, quantity = 1) => {
         const baseItem = getItemById(itemId);
         if (baseItem) {
             const newItems = Array.from({ length: quantity }).map(() => createItemInstance(baseItem));
+            // createItemInstance уже добавляет isNew: true и receivedTimestamp
             set((state) => ({ inventory: [...state.inventory, ...newItems] }));
             get().checkAllAchievements();
             get().trackTaskEvent('collect_item', quantity, { itemId, rarity: baseItem.rarity, type: baseItem.type });
@@ -1024,6 +1118,71 @@ const useGameStore = create((set, get) => ({
             console.warn(`Предмет ${itemId} не найден в базе данных!`);
         }
     },
+
+  // Действие для пометки одного предмета как просмотренного (можно оставить, если нужно)
+    markItemAsSeen: (itemUid) => {
+        set((state) => {
+            let inventoryChanged = false;
+            const newInventory = state.inventory.map(item => {
+                if (item.uid === itemUid && item.isNew) {
+                    inventoryChanged = true;
+                    return { ...item, isNew: false };
+                }
+                return item;
+            });
+
+            let equippedChanged = false;
+            const newEquipped = { ...state.equipped };
+            for (const slot in newEquipped) {
+                if (newEquipped[slot] && newEquipped[slot].uid === itemUid && newEquipped[slot].isNew) {
+                    equippedChanged = true;
+                    newEquipped[slot] = { ...newEquipped[slot], isNew: false };
+                }
+            }
+
+            if (inventoryChanged || equippedChanged) {
+                const changes = {};
+                if (inventoryChanged) changes.inventory = newInventory;
+                if (equippedChanged) changes.equipped = newEquipped;
+                return changes;
+            }
+            return {};
+        });
+    },
+
+    // ▼▼▼ НОВОЕ ДЕЙСТВИЕ ДЛЯ СБРОСА ВСЕХ МЕТОК "NEW" ▼▼▼
+    markAllDisplayedNewItemsAsOld: () => {
+        set((state) => {
+            let inventoryNeedsUpdate = false;
+            const updatedInventory = state.inventory.map(item => {
+                if (item.isNew) {
+                    inventoryNeedsUpdate = true;
+                    // Важно сохранить остальные свойства предмета
+                    return { ...item, isNew: false };
+                }
+                return item;
+            });
+
+            let equippedNeedsUpdate = false;
+            const updatedEquipped = { ...state.equipped };
+            for (const slot in updatedEquipped) {
+                if (updatedEquipped[slot] && updatedEquipped[slot].isNew) {
+                    equippedNeedsUpdate = true;
+                    updatedEquipped[slot] = { ...updatedEquipped[slot], isNew: false };
+                }
+            }
+            
+            if (inventoryNeedsUpdate || equippedNeedsUpdate) {
+                // console.log('[Store] Marking all displayed new items as old.');
+                const changes = {};
+                if (inventoryNeedsUpdate) changes.inventory = updatedInventory;
+                if (equippedNeedsUpdate) changes.equipped = updatedEquipped;
+                return changes;
+            }
+            return {}; // Нет изменений
+        });
+    },
+    // ▲▲▲ КОНЕЦ НОВОГО ДЕЙСТВИЯ ▲▲▲
     removeItemFromInventory: (uid) => {
         set((state) => ({
             inventory: state.inventory.filter(item => item.uid !== uid)
@@ -1297,6 +1456,14 @@ equipItem: (itemToEquip) => {
         }));
         get().checkAllAchievements();
     },
+
+    setHasClaimableRewardsIndicator: (hasRewards) => {
+        // Необязательная проверка, чтобы избежать лишних обновлений, если значение не изменилось
+        if (get().hasClaimableRewardsIndicator !== hasRewards) {
+            set({ hasClaimableRewardsIndicator: hasRewards });
+        }
+    },
+    
     checkAllAchievements: () => { // из КОД2
         const state = get();
         let changed = false;
@@ -2687,63 +2854,126 @@ openArtifactChest: (chestId) => {
     setIsFullScreenMapActive: (isActive) => { // из КОД2
         set({ isFullScreenMapActive: isActive });
     },
-    startScreenTransition: (navigationOrContentChangeCallback, postOpenCallback = null) => { // из КОД2
-        if (get().isScreenTransitioning && get().transitionAction === 'closing') {
+    startScreenTransition: (navigationOrContentChangeCallback, options = {}) => {
+        // options может содержать:
+        // options.preservesBottomNav: boolean (по умолчанию false)
+        // options.onScreenOpened: function (колбэк после полного открытия экрана)
+
+        const { isScreenTransitioning, transitionAction: currentAction } = get();
+
+        // Если уже идет закрытие, и мы пытаемся начать новое закрытие - игнорируем, чтобы не было конфликтов.
+        if (isScreenTransitioning && currentAction === 'closing') {
+            console.warn("startScreenTransition: Transition 'closing' already in progress. New request ignored.");
             return;
         }
+
+        // Если идет открытие, новый вызов startScreenTransition (который всегда начинает с 'closing')
+        // должен его прервать и начать новый цикл закрытия-открытия.
+        // Framer Motion AnimatePresence и ключи должны помочь справиться с этим,
+        // но важно правильно управлять состоянием в сторе.
+
+        // console.log("startScreenTransition: Phase 1 - Setting to 'closing'. Options:", options);
         set({
             isScreenTransitioning: true,
             transitionAction: 'closing',
-            onTransitionOpenCompleteCallback: null,
-            onTransitionCloseCompleteCallback: () => {
-                if (navigationOrContentChangeCallback) {
-                    navigationOrContentChangeCallback();
+            transitionPreservesBottomNav: !!options.preservesBottomNav, // Приводим к boolean
+            onTransitionOpenCompleteCallback: null, // Сбрасываем предыдущий колбэк открытия
+            onTransitionCloseCompleteCallback: () => { // Этот колбэк будет вызван из TransitionOverlay
+                // console.log("startScreenTransition: Phase 2 - 'closing' complete. Navigating.");
+                
+                // Получаем актуальный объект колбэка из состояния перед его сбросом
+                const currentCloseCallback = get().onTransitionCloseCompleteCallback;
+                if (currentCloseCallback) { // Проверяем, что он еще существует (на случай быстрых последовательных вызовов)
+                    set({ onTransitionCloseCompleteCallback: null }); // Сбрасываем колбэк в состоянии
                 }
+
+                if (typeof navigationOrContentChangeCallback === 'function') {
+                    navigationOrContentChangeCallback(); // Выполняем навигацию или смену контента
+                }
+
+                // Небольшая задержка перед началом фазы открытия,
+                // чтобы React успел обработать изменения после навигации.
                 setTimeout(() => {
+                    // console.log("startScreenTransition: Phase 3 - Setting to 'opening'.");
                     set({
+                        isScreenTransitioning: true, // Переход все еще активен
                         transitionAction: 'opening',
-                        onTransitionCloseCompleteCallback: null,
-                        onTransitionOpenCompleteCallback: () => {
-                            if (postOpenCallback) {
-                                postOpenCallback();
+                        // onTransitionCloseCompleteCallback уже null
+                        onTransitionOpenCompleteCallback: () => { // Этот колбэк будет вызван из TransitionOverlay
+                            // console.log("startScreenTransition: Phase 4 - 'opening' complete.");
+                            
+                            const currentOpenCallback = get().onTransitionOpenCompleteCallback;
+                            if (currentOpenCallback) {
+                                set({ onTransitionOpenCompleteCallback: null }); // Сбрасываем колбэк
                             }
+
+                            if (typeof options.onScreenOpened === 'function') {
+                                // console.log("startScreenTransition: Calling options.onScreenOpened");
+                                options.onScreenOpened();
+                            }
+                            
+                            // console.log("startScreenTransition: Resetting transition state flags.");
                             set({
                                 isScreenTransitioning: false,
                                 transitionAction: null,
-                                onTransitionOpenCompleteCallback: null
+                                // transitionPreservesBottomNav: false, // Сбрасываем, если нужно (или пусть остается до следующего вызова startScreenTransition)
                             });
                         }
                     });
-                }, 50);
+                }, 50); // 50ms задержка, можно подобрать
             }
         });
     },
-    ensureScreenIsOpening: (postOpenCallback = null) => { // из КОД2
+
+    ensureScreenIsOpening: (options = {}) => {
+        // options может содержать:
+        // options.onScreenOpened: function (колбэк после полного открытия экрана)
+        
         const state = get();
-        if (!state.isScreenTransitioning || state.transitionAction !== 'opening') {
-            set({
-                isScreenTransitioning: true,
-                transitionAction: 'opening',
-                onTransitionCloseCompleteCallback: null,
-                onTransitionOpenCompleteCallback: () => {
-                    if (postOpenCallback) postOpenCallback();
-                    set({
-                        isScreenTransitioning: false,
-                        transitionAction: null,
-                        onTransitionOpenCompleteCallback: null
-                    });
+
+        // Если экран не в процессе перехода ИЛИ если он "застрял" в закрытом состоянии,
+        // ИЛИ если он уже открывается, но мы хотим "присоединить" или "переопределить" onScreenOpened.
+        // Эта функция полезна, если нужно убедиться, что шторки открыты, например, при первой загрузке экрана.
+        
+        if (state.isScreenTransitioning && state.transitionAction === 'opening') {
+            // console.log("ensureScreenIsOpening: Screen is already in the process of opening.");
+            // Если уже открывается, и есть новый options.onScreenOpened,
+            // то текущая логика set() ниже переопределит onTransitionOpenCompleteCallback.
+            // Это может быть желаемым поведением, если ensureScreenIsOpening вызывается позже
+            // и его колбэк более актуален.
+        } else if (state.isScreenTransitioning && state.transitionAction === 'closing') {
+            // console.warn("ensureScreenIsOpening: Screen is currently closing. Cannot force open yet.");
+            // Не стоит пытаться открыть, пока идет закрытие, это может вызвать конфликт.
+            // Лучше дождаться завершения закрытия.
+            return;
+        }
+
+        // console.log("ensureScreenIsOpening: Setting to 'opening'. Options:", options);
+        set({
+            isScreenTransitioning: true,
+            transitionAction: 'opening',
+            onTransitionCloseCompleteCallback: null, // Закрытие не предполагается
+            onTransitionOpenCompleteCallback: () => {
+                // console.log("ensureScreenIsOpening: 'opening' complete.");
+                const currentOpenCallback = get().onTransitionOpenCompleteCallback;
+                if (currentOpenCallback) {
+                    set({ onTransitionOpenCompleteCallback: null }); // Сбрасываем
                 }
-            });
-        }
+
+                if (typeof options.onScreenOpened === 'function') {
+                    // console.log("ensureScreenIsOpening: Calling options.onScreenOpened");
+                    options.onScreenOpened();
+                }
+                
+                // console.log("ensureScreenIsOpening: Resetting transition state flags.");
+                set({
+                    isScreenTransitioning: false,
+                    transitionAction: null,
+                });
+            }
+        });
     },
-    setCurrentChapter: (chapterId) => { // из КОД2
-        set({ currentChapterId: chapterId });
-    },
-    setHasClaimableRewardsIndicator: (hasRewards) => { // из КОД2 (но логика в checkAllAchievements и claim обновляет)
-        if (get().hasClaimableRewardsIndicator !== hasRewards) {
-            set({ hasClaimableRewardsIndicator: hasRewards });
-        }
-    },
+
     checkAndResetTreasureChestAttempts: () => set((state) => { // из КОД2
         const nowTs = Date.now();
         const lastResetTs = state.treasureChestLastReset;

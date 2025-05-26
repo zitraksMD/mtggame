@@ -77,11 +77,6 @@ const App = () => {
         }), [])
     );
 
-       // Для отладки в App.jsx:
-    useEffect(() => {
-        console.log('[App.jsx] Value from store for indicator:', isAnyRecipeCraftable);
-        // ИЛИ console.log('[App.jsx] Value from store for indicator:', showForgeIndicator);
-    }, [isAnyRecipeCraftable]); // или [showForgeIndicator]
 
 
     const setUsernameAction = useGameStore((s) => s.setUsername);

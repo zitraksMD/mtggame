@@ -94,6 +94,8 @@ const Inventory = () => { // ▲▲▲------------------------------------------
         }),
         shallow
     );
+        const markItemAsSeen = useGameStore(state => state.markItemAsSeen); // Получаем действие
+            const markAllDisplayedNewItemsAsOld = useGameStore(state => state.markAllDisplayedNewItemsAsOld);
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [powerChangeEffect, setPowerChangeEffect] = useState({ type: null, key: 0 });
@@ -128,6 +130,15 @@ const Inventory = () => { // ▲▲▲------------------------------------------
         }
     }
 
+    useEffect(() => {
+        // Эта функция (возвращаемая из useEffect) будет вызвана, 
+        // когда компонент Inventory будет размонтирован (например, при переходе на другой экран).
+        return () => {
+            // console.log('[Inventory.jsx] Unmounting. Marking all new items as "seen".');
+            markAllDisplayedNewItemsAsOld();
+        };
+    }, [markAllDisplayedNewItemsAsOld]); // Зависимость нужна, чтобы ESLint не ругался и для стабильности
+    // ▲▲▲ КОНЕЦ useEffect ▲▲▲
     const handleEquip = (item) => {
         const oldPower = useGameStore.getState().powerLevel;
         equipItem(item);
@@ -168,18 +179,55 @@ const Inventory = () => { // ▲▲▲------------------------------------------
         }
     };
 
-    // Этот useEffect дублировался, оставляем один
-    // useEffect(() => {
-    //  console.log('[Inventory.jsx] Received inventory update:', JSON.parse(JSON.stringify(inventory)));
-    //  console.log('[Inventory.jsx] Inventory length:', inventory.length);
-    // }, [inventory]);
+const sortConfigurations = useMemo(() => [
+        { type: 'newness', direction: 'desc', label: 'Newness' }, // <-- Это будет по умолчанию
+        { type: 'rarity',  direction: 'desc', label: 'Quality' },
+        { type: 'level',   direction: 'desc', label: 'Level' },
+    ], []);
 
-    const sortedInventory = useMemo(() => {
+    // Индекс начальной конфигурации (Новизна, новые сверху)
+    const initialSortConfigIndex = 0; 
+
+    const [currentSortConfigIndex, setCurrentSortConfigIndex] = useState(initialSortConfigIndex);
+    const [sortConfig, setSortConfig] = useState(sortConfigurations[initialSortConfigIndex]);
+
+    const handleSortChange = useCallback(() => {
+        setCurrentSortConfigIndex(prevIndex => {
+            const nextIndex = (prevIndex + 1) % sortConfigurations.length;
+            setSortConfig(sortConfigurations[nextIndex]);
+            return nextIndex;
+        });
+    }, [sortConfigurations]); // Добавили sortConfigurations в зависимости useCallback
+    // ▲▲▲ КОНЕЦ ОБНОВЛЕННОЙ КОНФИГУРАЦИИ СОРТИРОВОК ▲▲▲
+
+
+const sortedInventory = useMemo(() => {
+        // Эта функция остается без изменений, т.к. она уже использует sortConfig.type и sortConfig.direction
+        // и включает логику для 'rarity', 'level' и 'newness'.
         return [...inventory].sort((itemA, itemB) => {
-            const valueA = getRarityValue(itemA); const valueB = getRarityValue(itemB);
-            return sortOrder === 'desc' ? valueB - valueA : valueA - valueB; });
-    }, [inventory, sortOrder]);
-    const toggleSortOrder = () => { setSortOrder(prevOrder => prevOrder === 'desc' ? 'asc' : 'desc'); };
+            let comparison = 0;
+            switch (sortConfig.type) {
+                case 'rarity':
+                    const valueA_rarity = getRarityValue(itemA);
+                    const valueB_rarity = getRarityValue(itemB);
+                    comparison = valueA_rarity - valueB_rarity;
+                    break;
+                case 'level':
+                    const levelA = itemA.level || 0;
+                    const levelB = itemB.level || 0;
+                    comparison = levelA - levelB;
+                    break;
+                case 'newness':
+                    const timeA = itemA.receivedTimestamp || 0;
+                    const timeB = itemB.receivedTimestamp || 0;
+                    comparison = timeA - timeB;
+                    break;
+                default:
+                    comparison = 0;
+            }
+            return sortConfig.direction === 'desc' ? comparison * -1 : comparison;
+        });
+    }, [inventory, sortConfig]);
 
     // ▼▼▼ НОВАЯ ФУНКЦИЯ ДЛЯ ПЕРЕХОДА В КУЗНИЦУ ▼▼▼
     const handleGoToForge = useCallback(() => {
@@ -270,28 +318,37 @@ const Inventory = () => { // ▲▲▲------------------------------------------
                             </div>
                         </div> {/* Конец .character-section */}
 
-                        <div className="content-section">
-                            <InventoryTabs
+<div 
+        className={`
+            content-section 
+            ${internalActiveTab === 'stats' ? 'content-section--fit-content' : ''}
+        `}
+    >                            <InventoryTabs
                                 className="inventory-tabs"
                                 activeTab={internalActiveTab}
                                 setActiveTab={setInternalActiveTab}
                                 position="middle"
                             />
-                            {internalActiveTab === 'gear' && (
-                                <div className="inventory-action-buttons-wrapper">
-                                    <button onClick={toggleSortOrder} className="inventory-sort-button">
-                                        {sortOrder === 'desc' ? 'По Редкости 🔽' : 'По Редкости🔼'}
-                                    </button>
-                                    {/* ▼▼▼ НОВАЯ КНОПКА "КУЗНИЦА" ▼▼▼ */}
-                                    <button onClick={handleGoToForge} className="inventory-forge-button">
-                                        <img src="/assets/forge-icon.png" alt="Кузница" className="button-icon" /> Кузница
-                                        {/* Опционально: индикатор крафта, если нужно */}
-                                        {canForge && <span className="forge-indicator">!</span>}
-                                    </button>
-                                    {/* ▲▲▲ КОНЕЦ НОВОЙ КНОПКИ ▲▲▲ */}
-                                </div>
-                            )}
-                            <div className="inventory-main-area inventory-main-area--normal">
+                           {internalActiveTab === 'gear' && (
+                <div className="inventory-action-buttons-wrapper">
+                    {/* ▼▼▼ ОБНОВЛЕННАЯ КНОПКА СОРТИРОВКИ ▼▼▼ */}
+                    <button onClick={handleSortChange} className="inventory-sort-button">
+                        by {sortConfig.label}
+                    </button>
+                    {/* ▲▲▲ КОНЕЦ ОБНОВЛЕННОЙ КНОПКИ ▲▲▲ */}
+                    <button onClick={handleGoToForge} className="inventory-forge-button">
+                        <img src="/assets/forge-icon.png" alt="Кузница" className="button-icon" /> Кузница
+                        {canForge && <span className="forge-indicator">!</span>}
+                    </button>
+                </div>
+            )}
+                            <div 
+    className={`
+        inventory-main-area 
+        inventory-main-area--normal 
+        ${internalActiveTab === 'stats' ? 'inventory-main-area--fit-content' : ''}
+    `}
+>
                                 <AnimatePresence initial={false} mode="wait">
                                     {internalActiveTab === 'stats' && (
                                         <motion.div
@@ -300,13 +357,12 @@ const Inventory = () => { // ▲▲▲------------------------------------------
                                             initial="initial" animate="animate" exit="exit"
                                             className="stats-panel"
                                         >
-                                            <p data-icon="💖"> <span className="stat-label">ХП:</span> <span className="stat-value">{playerStats?.hp ?? '-'}</span> </p>
-                                            <p data-icon="⚔️"> <span className="stat-label">Урон:</span> <span className="stat-value">{playerStats?.attack ?? '-'}</span> </p>
-                                            <p data-icon="💨"> <span className="stat-label">Скор. атаки:</span> <span className="stat-value">{(playerStats?.attackSpeed ?? 0).toFixed ? (playerStats.attackSpeed).toFixed(2) : '-'}</span> </p>
-                                            <p data-icon="💥"> <span className="stat-label">Крит. шанс:</span> <span className="stat-value">{playerStats?.critChance ?? '-'}%</span> </p>
-                                            <p data-icon="✌️"> <span className="stat-label">Двойной удар:</span> <span className="stat-value">{playerStats?.doubleStrikeChance ?? '-'}%</span> </p>
-                                            <hr className="popup-divider thin stats-divider" />
-                                            <p data-icon="⚡"> <span className="stat-label">Уровень Силы:</span> <span className="stat-value power-level-value">{powerLevel ?? '-'}</span> </p>
+                                            <p data-icon="💖"> <span className="stat-label">Health</span> <span className="stat-value">{playerStats?.hp ?? '-'}</span> </p>
+                                            <p data-icon="⚔️"> <span className="stat-label">Attack</span> <span className="stat-value">{playerStats?.attack ?? '-'}</span> </p>
+                                            <p data-icon="💨"> <span className="stat-label">Attack Speed</span> <span className="stat-value">{(playerStats?.attackSpeed ?? 0).toFixed ? (playerStats.attackSpeed).toFixed(2) : '-'}</span> </p>
+                                            <p data-icon="💥"> <span className="stat-label">Crit Strike</span> <span className="stat-value">{playerStats?.critChance ?? '-'}%</span> </p>
+                                            <p data-icon="✌️"> <span className="stat-label">Double Strike</span> <span className="stat-value">{playerStats?.doubleStrikeChance ?? '-'}%</span> </p>
+                                           
                                         </motion.div>
                                     )}
                                     {internalActiveTab === 'gear' && (
@@ -316,20 +372,34 @@ const Inventory = () => { // ▲▲▲------------------------------------------
                                             initial="initial" animate="animate" exit="exit"
                                             className="inventory-gear-wrapper"
                                         >
-                                            <div className="inventory-scroll-wrapper">
-                                                <div className="inventory-items">
-                                                    {sortedInventory.map((item) => (
-                                                        <div
-                                                            key={item.uid || item.id}
-                                                            className={`inventory-item rarity-${(item.rarity || "common").toLowerCase()}`}
-                                                            onClick={() => setSelectedItem(item)}
-                                                        >
-                                                            <img src={item.image || "/assets/default-item.png"} alt={item.name} />
-                                                            {equipped[item.type]?.uid === item.uid && <div className="equipped-indicator">E</div>}
-                                                        </div>
-                                                    ))}
-                                                    {sortedInventory.length === 0 && <p className="empty-inventory-message">Инвентарь пуст</p>}
-                                                </div>
+                                             <div className="inventory-scroll-wrapper">
+                        <div className="inventory-items">
+                           {sortedInventory.map((item) => (
+    <div
+        key={item.uid || item.id}
+        className={`inventory-item rarity-${(item.rarity || "common").toLowerCase()}`}
+        onClick={() => {
+            setSelectedItem(item);
+            if (item.isNew && item.uid) {
+                // Если вы оставили индивидуальную пометку, она здесь
+                // markItemAsSeen(item.uid); 
+            }
+        }}
+    >
+        <img src={item.image || "/assets/default-item.png"} alt={item.name} />
+        {equipped[item.type]?.uid === item.uid && <div className="equipped-indicator">E</div>}
+        {item.isNew && <div className="new-item-label">NEW</div>}
+        {/* ▼▼▼ ДОБАВЛЕНИЕ ОТОБРАЖЕНИЯ УРОВНЯ ▼▼▼ */}
+        {item.level && item.level > 0 && ( // Показываем, если уровень есть и больше 0 (или просто item.level, если он всегда есть)
+            <div className="item-level-badge">
+                <span className="level-text">Lvl</span> {item.level}
+            </div>
+        )}
+        {/* ▲▲▲ КОНЕЦ ОТОБРАЖЕНИЯ УРОВНЯ ▲▲▲ */}
+    </div>
+))}
+                            {sortedInventory.length === 0 && <p className="empty-inventory-message">Инвентарь пуст</p>}
+                        </div>
                                             </div>
                                         </motion.div>
                                     )}

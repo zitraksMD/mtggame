@@ -1,13 +1,11 @@
-// src/components/popups/ItemDetailPopup.jsx
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-// import useGameStore from '../../store/useGameStore'; // Оставляем, если onUpgradeItem требует его контекста или если он используется для других целей
-import {
-    calculateItemStat,
-    MAX_ITEM_LEVEL
-} from '../../data/itemsDatabase'; // Убедитесь, что путь правильный
+// src/components/popups/CraftingSuccessPopup.jsx
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import './CraftingSuccessPopup.scss';
+import { getItemSetById } from '../../data/itemSets';
+import { calculateItemStat } from '../../data/itemsDatabase'; // <-- ВАЖНО: Импорт для calculateItemStat
 
-// Анимации для попапа (можно вынести в общий файл анимаций, если используются еще где-то)
+// Анимации для попапа (основные - без изменений)
 const popupBackdropVariants = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
@@ -21,207 +19,101 @@ const popupContentVariants = {
     transition: { duration: 0.2, delay: 0.05 }
 };
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ИЗ КОД1 (остаются без изменений, т.к. идентичны в обоих версиях) ---
+// Анимации для переключения контента (статы/бонусы сета - из ForgeItemInfoPopup)
+const contentSwitchVariants = {
+    initial: { opacity: 0, y: 15 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
+    exit: { opacity: 0, y: -15, transition: { duration: 0.2, ease: "easeInOut" } },
+};
 
-// Хелпер для форматирования значений статов для таблицы
-const formatStatValueForTable = (value, isPercent, addSign = false, isLevelValue = false) => {
-    if (value === undefined || value === null) return '-';
-
-    if (isLevelValue) {
-        return String(addSign ? value : (value === 0 ? 1 : value));
+// Хелпер форматирования статов (из вашего CraftingSuccessPopup.jsx - без изменений)
+const formatBaseStatValue = (value, isPercent) => {
+    // Изменено: теперь если значение равно 0, функция вернет null
+    if (value === undefined || value === null || Number(value) === 0) {
+        return null;
     }
-
     const numValue = Number(value);
-    if (isNaN(numValue)) return '-';
+    if (isNaN(numValue)) {
+        return null;
+    }
+    
+    // Для процентных значений, если они все-таки не равны 0, но очень малы (например, после округления до 0.0%)
+    // Эта часть опциональна, если calculateItemStat уже дает корректные значения или 0.
+    // const potentiallyZeroPercent = isPercent && (numValue * 100).toFixed(1) === "0.0";
+    // if (potentiallyZeroPercent) return null; // Если хотим скрыть и "0.0%"
 
-    const sign = addSign && numValue > 0 ? '+' : '';
     const fixedValue = isPercent ?
         (numValue * 100).toFixed(1) :
         (Number.isInteger(numValue) ? numValue.toString() : numValue.toFixed(1));
+    
+    // Если после форматирования процентное значение стало "0.0", но исходное было не 0, то показываем.
+    // Если же исходное было 0, оно отсеется первым if.
+    // Это значит, что "0.0%" будет показано, если это действительно 0.0%, а не просто 0.
+    // Если вы хотите скрыть и "0.0%", то используйте закомментированную логику выше.
 
-    return `${sign}${fixedValue}${isPercent ? '%' : ''}`;
+    return `${fixedValue}${isPercent ? '%' : ''}`;
 };
 
-// Функция для рендеринга строки в 3-колоночной таблице характеристик
-const renderStatComparisonRow = (labelWithIcon, currentValue, nextValue, showNextValueColumn, isPercent = false, isLevelRow = false) => {
-    let currentDisplay;
-    if (isLevelRow) {
-        // Для строки уровня, форматируем число и добавляем "Lvl. "
-        currentDisplay = `Lvl. ${formatStatValueForTable(currentValue, false, false, true)}`; // true для isLevelNumberOnly
-    } else {
-        // Для остальных статов добавляем знак "+" если нужно
-        currentDisplay = formatStatValueForTable(currentValue, isPercent, false); 
+// Рендерер строки стата (без изменений, он уже корректно работает с null)
+const renderBaseStatRow = (label, value, isPercent = false) => {
+    const displayValue = formatBaseStatValue(value, isPercent);
+    if (!displayValue) { // Это условие эквивалентно displayValue === null
+        return null;
     }
-
-    let nextDisplayContent = "-";
-    let arrowContent = "";
-    let nextValueExtraClass = "no-value";
-
-    if (showNextValueColumn) {
-        let formattedNextValue;
-        if (isLevelRow) {
-            // Для следующего уровня также форматируем число и добавляем "Lvl. "
-            formattedNextValue = `Lvl. ${formatStatValueForTable(nextValue, false, false, true)}`; // true для isLevelNumberOnly
-        } else {
-            formattedNextValue = formatStatValueForTable(nextValue, isPercent, false);
-        }
-
-        // Показываем стрелку и значение, только если отформатированное значение не просто "-"
-        if (formattedNextValue !== "-") {
-            nextDisplayContent = formattedNextValue;
-            arrowContent = "→";
-            nextValueExtraClass = "has-value";
-        } else {
-            // nextDisplayContent останется "-", если отформатированное значение "-"
-        }
-    } else if (isLevelRow) { // Если это строка уровня и улучшение невозможно
-        nextDisplayContent = "Макс."; // Отображаем "Макс." без "Lvl. "
-        nextValueExtraClass = "no-upgrade";
-    }
-    // Для остальных статов, если showNextValueColumn=false, nextDisplayContent останется "-", стрелка пустая
-
-    const key = typeof labelWithIcon === 'string' ? labelWithIcon : JSON.stringify(labelWithIcon);
-    const currentValCellClasses = `current-value-cell ${isLevelRow ? 'is-level-value' : ''}`; // is-level-value для центрирования
-    const nextValCellClasses = `next-value-cell ${nextValueExtraClass} ${isLevelRow ? 'is-level-value' : ''}`;
-
     return (
-        <React.Fragment key={key}>
-            <div className="stat-name-cell">{labelWithIcon}</div> {/* Будет пустым для строки уровня */}
-            <div className={currentValCellClasses}>{currentDisplay}</div>
-            <div className="arrow-cell">{arrowContent}</div>
-            <div className={nextValCellClasses}>{nextDisplayContent}</div>
+        <React.Fragment key={label}>
+            <div className="stat-name-cell">{label}</div>
+            <div className="current-value-cell">{displayValue}</div>
+            {/* Для CraftingSuccessPopup эти ячейки должны быть скрыты через SCSS */}
+            <div className="arrow-cell"></div> 
+            <div className="next-value-cell"></div>
         </React.Fragment>
     );
 };
-;
-// --- КОНЕЦ ВСПОМОГАТЕЛЬНЫХ ФУНКЦИЙ ---
 
 
-const ItemDetailPopup = ({
-    item,
-    equippedItems,
-    onClose,
-    onEquipItem,
-    onUnequipItem,
-    onUpgradeItem,
-    getGoldUpgradeCost,
-    getDiamondUpgradeCost,
-    playerGold,
-    playerDiamonds
-}) => {
-    if (!item) return null;
+const CraftingSuccessPopup = ({ itemData, onClose, onNavigateToInventory }) => {
+    if (!itemData) return null;
 
-    const currentlyEquippedInSlot = equippedItems[item.type] || null;
-    const isEquipped = equippedItems[item.type]?.uid === item.uid;
+    const [showingView, setShowingView] = useState('stats');
 
-    // Текущие статы выбранного предмета (как в код2)
-    const selectedItemStats = useMemo(() => ({ // Добавлен useMemo для консистентности, хотя зависимости простые
-        hpBonus: calculateItemStat(item.type, "hpBonus", item.rarity, item.level || 0),
-        attackBonus: calculateItemStat(item.type, "attackBonus", item.rarity, item.level || 0),
-        attackSpeedBonus: calculateItemStat(item.type, "attackSpeedBonus", item.rarity, item.level || 0),
-        critChanceBonus: calculateItemStat(item.type, "critChanceBonus", item.rarity, item.level || 0),
-        doubleStrikeChanceBonus: calculateItemStat(item.type, "doubleStrikeChanceBonus", item.rarity, item.level || 0),
-    }), [item.type, item.rarity, item.level]);
-
-    // Статы экипированного предмета в том же слоте (как в код2)
-    const equippedInSlotStats = useMemo(() => {
-        if (!currentlyEquippedInSlot) return null;
-        return {
-            hpBonus: calculateItemStat(currentlyEquippedInSlot.type, "hpBonus", currentlyEquippedInSlot.rarity, currentlyEquippedInSlot.level || 0),
-            attackBonus: calculateItemStat(currentlyEquippedInSlot.type, "attackBonus", currentlyEquippedInSlot.rarity, currentlyEquippedInSlot.level || 0),
-            attackSpeedBonus: calculateItemStat(currentlyEquippedInSlot.type, "attackSpeedBonus", currentlyEquippedInSlot.rarity, currentlyEquippedInSlot.level || 0),
-            critChanceBonus: calculateItemStat(currentlyEquippedInSlot.type, "critChanceBonus", currentlyEquippedInSlot.rarity, currentlyEquippedInSlot.level || 0),
-            doubleStrikeChanceBonus: calculateItemStat(currentlyEquippedInSlot.type, "doubleStrikeChanceBonus", currentlyEquippedInSlot.rarity, currentlyEquippedInSlot.level || 0),
-        };
-    }, [currentlyEquippedInSlot]);
-
-    // Разница в статах (как в код2)
-    const statDiffs = useMemo(() => {
-        if (!currentlyEquippedInSlot || item.uid === currentlyEquippedInSlot.uid) return null;
-        const diffs = {};
-        const statKeys = ["hpBonus", "attackBonus", "attackSpeedBonus", "critChanceBonus", "doubleStrikeChanceBonus"];
-        statKeys.forEach(key => {
-            const selectedVal = selectedItemStats[key] || 0;
-            const equippedVal = equippedInSlotStats?.[key] || 0;
-            diffs[key.replace('Bonus', '')] = selectedVal - equippedVal;
-        });
-        return diffs;
-    }, [item.uid, currentlyEquippedInSlot, selectedItemStats, equippedInSlotStats]);
-
-
-    // --- НОВАЯ ЛОГИКА из КОД1 для расчета canUpgrade и nextLevelStats ---
-    const isLevelable = useMemo(() => item.maxLevel !== undefined, [item.maxLevel]); // Взято из код1 (было в код2 похожее)
-
-    const itemMaxActualLevel = useMemo(() => (item.maxLevel !== undefined && item.maxLevel > 0) ? item.maxLevel : MAX_ITEM_LEVEL, [item.maxLevel]);
-    const currentActualLevel = useMemo(() => item.level || 0, [item.level]); // Фактический текущий уровень (0 для нового предмета)
-
-    const canUpgrade = useMemo(() => isLevelable && currentActualLevel < itemMaxActualLevel, [isLevelable, currentActualLevel, itemMaxActualLevel]);
-    const nextLevelValueForCalc = useMemo(() => currentActualLevel + 1, [currentActualLevel]);
-
-    const nextLevelStats = useMemo(() => {
-        if (!canUpgrade) {
-            // Если улучшение невозможно, характеристики следующего уровня равны текущим
-            // или можно возвращать null/undefined, чтобы renderStatComparisonRow отображал прочерки
-            // Для соответствия код1, возвращаем selectedItemStats, что логично
-            return selectedItemStats;
+    const itemStats = useMemo(() => {
+        // Используем calculateItemStat, как в ForgeItemInfoPopup
+        // Предполагается, что itemData содержит itemData.type, itemData.rarity и itemData.level
+        if (!itemData || !itemData.type || !itemData.rarity) {
+            // Возвращаем статы по умолчанию или пустые, если данных не хватает
+            return { hpBonus: 0, attackBonus: 0, attackSpeedBonus: 0, critChanceBonus: 0, doubleStrikeChanceBonus: 0 };
         }
+        const baseLevel = itemData.level || 1; // Уровень по умолчанию 1, если не указан
+
         return {
-            hpBonus: calculateItemStat(item.type, "hpBonus", item.rarity, nextLevelValueForCalc),
-            attackBonus: calculateItemStat(item.type, "attackBonus", item.rarity, nextLevelValueForCalc),
-            attackSpeedBonus: calculateItemStat(item.type, "attackSpeedBonus", item.rarity, nextLevelValueForCalc),
-            critChanceBonus: calculateItemStat(item.type, "critChanceBonus", item.rarity, nextLevelValueForCalc),
-            doubleStrikeChanceBonus: calculateItemStat(item.type, "doubleStrikeChanceBonus", item.rarity, nextLevelValueForCalc),
+            hpBonus: calculateItemStat(itemData.type, "hpBonus", itemData.rarity, baseLevel),
+            attackBonus: calculateItemStat(itemData.type, "attackBonus", itemData.rarity, baseLevel),
+            attackSpeedBonus: calculateItemStat(itemData.type, "attackSpeedBonus", itemData.rarity, baseLevel),
+            critChanceBonus: calculateItemStat(itemData.type, "critChanceBonus", itemData.rarity, baseLevel),
+            doubleStrikeChanceBonus: calculateItemStat(itemData.type, "doubleStrikeChanceBonus", itemData.rarity, baseLevel),
         };
-    }, [item.type, item.rarity, nextLevelValueForCalc, canUpgrade, selectedItemStats]);
-    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+    }, [itemData]); // Зависимость от itemData (которое должно содержать type, rarity, level)
 
+    const hasAnyStats = Object.values(itemStats).some(stat => stat && Number(stat) !== 0);
 
-    // Отображение стоимости улучшения (логика из код2, но использует itemMaxActualLevel)
-const displayUpgradeCost = () => { // Если у вас эта функция так называется
-    if (!item || typeof getGoldUpgradeCost !== 'function' || typeof getDiamondUpgradeCost !== 'function') {
-        return { isNa: true, textNa: "(N/A)" };
-    }
-
-    if (currentActualLevel >= itemMaxActualLevel) {
+    const setDetails = useMemo(() => {
+        if (itemData.setId) {
+            return getItemSetById(itemData.setId);
+        }
         return null;
-    }
+    }, [itemData.setId]);
 
-    const goldCost = getGoldUpgradeCost(currentActualLevel, item.rarity);
-    const diamondCost = getDiamondUpgradeCost(currentActualLevel, item.rarity);
-
-    const goldIsUnavailable = goldCost === Infinity || goldCost === undefined;
-    const diamondIsUnavailable = diamondCost === Infinity || diamondCost === undefined;
-
-    if (goldIsUnavailable && diamondIsUnavailable) {
-        return { isNa: true, textNa: "(N/A)" };
-    }
-    if ((goldIsUnavailable || goldCost <= 0) && (diamondIsUnavailable || diamondCost <= 0)) {
-        return { isFree: true, textFree: "Бесплатно" };
-    }
-
-    // --- НОВОЕ: Проверка достаточности золота ---
-    let hasSufficientGold = true; // По умолчанию считаем, что золота достаточно
-    if (goldCost > 0 && !goldIsUnavailable) {
-        // playerGold приходит как проп в компонент ItemDetailPopup
-        if (typeof playerGold !== 'number' || playerGold < goldCost) {
-            hasSufficientGold = false;
-        }
-    }
-    // Аналогично можно добавить hasSufficientDiamonds, если нужно
-
-    return {
-        gold: (goldCost > 0 && !goldIsUnavailable) ? goldCost : null,
-        diamonds: (diamondCost > 0 && !diamondIsUnavailable) ? diamondCost : null,
-        hasSufficientGold: hasSufficientGold, // Добавляем флаг в результат
-        // hasSufficientDiamonds: hasSufficientDiamonds, // Если нужно
+    const handleToggleView = () => {
+        setShowingView(prev => prev === 'stats' ? 'setBonuses' : 'stats');
     };
-};
 
+    const itemRarity = itemData.rarity?.toLowerCase() || 'common';
 
     return (
         <motion.div
-            key="item-popup-backdrop"
-            className="item-popup-backdrop"
+            key="crafting-success-popup-backdrop"
+            className="popup-backdrop-new"
             variants={popupBackdropVariants}
             initial="initial"
             animate="animate"
@@ -229,229 +121,119 @@ const displayUpgradeCost = () => { // Если у вас эта функция �
             onClick={onClose}
         >
             <motion.div
-                className="item-popup-content"
+                className="popup-content-new forge-info-popup-fixed-height"
                 onClick={(e) => e.stopPropagation()}
                 variants={popupContentVariants}
             >
-               <div className="custom-popup-header"> {/* Новый класс для области шапки */}
-    <button className="popup-close-x" onClick={onClose}>✖</button>
+                
 
-    {/* Баннер с текущим уровнем (слева вверху) */}
-    {isLevelable && ( // Показываем, только если предмет имеет уровни
-        <div className="current-level-banner">
-            <span>Lvl. {(item.level && item.level > 0) ? item.level : 1}</span>
-        </div>
-    )}
-
-    {/* Баннер с названием предмета (по центру, с фоном по редкости) */}
-    <div className={`item-name-banner rarity-bg-${item.rarity?.toLowerCase() || 'common'}`}>
-        {/* Используйте h1, h2 или h3 для семантики, стили будут применены к .item-name-banner */}
-        <h2>{item.name}</h2>
-        {/* Сюда же можно добавить текстовое отображение редкости, если цвет фона не единственный индикатор */}
-        {/* <span className={`rarity-text-indicator rarity-${item.rarity?.toLowerCase() || 'common'}`}>{item.rarity || 'Common'}</span> */}
-    </div>
-
-    {/* Баннер с типом предмета (под названием, золотистый) */}
-    {item.type && (
-        <div className="item-type-banner">
-            <span>{item.type}</span>
-        </div>
-    )}
-</div>
-
-
-                <div className="popup-body">
-    {/* Этот div теперь будет главным вертикальным контейнером для блоков контента */}
-    <div className="popup-content-stack"> {/* Раньше это был .popup-main-row, можно переименовать или изменить стили .popup-main-row */}
-
-        {/* --- ЭТАЖ 1: Иконка и Описание --- */}
-        <div className="icon-description-row"> {/* Новый контейнер для иконки и описания */}
-            <div className="icon-column"> {/* Обертка для иконки (раньше .popup-left-col) */}
-                <div className={`popup-icon-area rarity-${item.rarity?.toLowerCase() || 'common'}`}>
-                    <img src={item.image || "/assets/default-item.png"} alt={item.name} className="popup-icon"/>
-                </div>
-            </div>
-
-            {item.description && (
-                <div className="description-column"> {/* Обертка для описания */}
-                    <div className="popup-description-area">
-                        <p>{item.description}</p>
+                <div className="popup-header-new">
+                    <div className={`item-name-banner-new rarity-bg-${itemRarity}`}>
+                        {itemData.name}
                     </div>
-                </div>
-            )}
-        </div> {/* Конец icon-description-row */}
-
-        {/* Разделитель между [Иконка+Описание] и [Статы] */}
-        {/* Показываем, если есть описание ИЛИ если будут показаны статы (т.е. предмет улучшаемый или уже есть статы) */}
-        {(item.description || isLevelable || Object.values(selectedItemStats).some(stat => stat !== undefined && stat !== 0)) &&
-         (isLevelable || Object.values(selectedItemStats).some(stat => stat !== undefined && stat !== 0)) &&
-            <hr className="popup-divider content-divider" />
-        }
-<div className="stats-block"> {/* НОВАЯ ОБЕРТКА */}
-       {(isLevelable || Object.values(selectedItemStats).some(stat => stat !== undefined && stat !== 0)) && (
-    <div className="stats-comparison-table">
-        {/* Строка для УРОВНЯ (обычно отображается всегда, если предмет улучшаемый) */}
-        {isLevelable && renderStatComparisonRow(
-            "",
-            currentActualLevel,
-            nextLevelValueForCalc,
-            canUpgrade,
-            false, // isPercent
-            true   // isLevelRow
-        )}
-
-        {/* --- УСЛОВНОЕ ОТОБРАЖЕНИЕ СТАТОВ --- */}
-
-        {/* Показываем ХП, только если значение не 0 */}
-        {selectedItemStats.hpBonus !== 0 && renderStatComparisonRow(
-            "Health",
-            selectedItemStats.hpBonus,
-            nextLevelStats.hpBonus,
-            canUpgrade,
-            false
-        )}
-
-        {/* Показываем Урон, только если значение не 0 */}
-        {selectedItemStats.attackBonus !== 0 && renderStatComparisonRow(
-            "Attack",
-            selectedItemStats.attackBonus,
-            nextLevelStats.attackBonus,
-            canUpgrade,
-            false
-        )}
-
-        {/* Показываем Скор. атаки, только если значение не 0 */}
-        {selectedItemStats.attackSpeedBonus !== 0 && renderStatComparisonRow(
-            "Attack Speed",
-            selectedItemStats.attackSpeedBonus,
-            nextLevelStats.attackSpeedBonus,
-            canUpgrade,
-            true // isPercent = true
-        )}
-
-        {/* Показываем Крит. шанс, только если значение не 0 */}
-        {selectedItemStats.critChanceBonus !== 0 && renderStatComparisonRow(
-            "Crit Strike",
-            selectedItemStats.critChanceBonus,
-            nextLevelStats.critChanceBonus,
-            canUpgrade,
-            true
-        )}
-
-        {/* Показываем Двойной удар, только если значение не 0 */}
-        {selectedItemStats.doubleStrikeChanceBonus !== 0 && renderStatComparisonRow(
-            "Double Strike",
-            selectedItemStats.doubleStrikeChanceBonus,
-            nextLevelStats.doubleStrikeChanceBonus,
-            canUpgrade,
-            true
-        )}
-    </div>
-)}
-        {/* Сообщение "Нет базовых характеристик" */}
-        {![selectedItemStats.hpBonus, /* ...остальные selectedItemStats... */ ].some(s => s) && !isLevelable && (
-            <div className="no-stats-message"><p>Нет базовых характеристик</p></div>
-        )}
-</div>
-
-        {/* --- ЭТАЖ 3: Бонус Комплекта --- */}
-        {item.setId && (
-            <>
-                <hr className="popup-divider content-divider" />
-                <div className="popup-set-bonus-area">
-                    <h4>Бонус Комплекта (Placeholder)</h4>
-                    <p>Принадлежит к комплекту: {item.setId}</p>
-                </div>
-            </>
-        )}
-    </div> {/* Конец popup-content-stack */}
-</div> 
-
-                <div className="popup-buttons">
-                    {isLevelable && (
-                        <div className="upgrade-action-group">
-                            <button
-    className="button-upgrade main-action"
-    onClick={() => {
-        if (canUpgrade) {
-            onUpgradeItem(item);
-        }
-    }}
-    disabled={!canUpgrade}
->
-    <span className="upgrade-action-text">
-        {/* Убираем отображение уровня в скобках из основного текста кнопки */}
-        {!canUpgrade ? "Max." : "Upgrade"}
-    </span>
-{canUpgrade && (() => {
-    const costInfo = displayUpgradeCost(); // Вызываем вашу обновленную функцию
-    if (!costInfo) return null;
-
-    return (
-        <span className="upgrade-cost-display">
-            {costInfo.isNa && <span className="cost-info-text">{costInfo.textNa}</span>}
-            {costInfo.isFree && <span className="cost-info-text">{costInfo.textFree}</span>}
-            
-            {costInfo.gold && (
-                <span className="cost-item cost-gold">
-                    {/* Оборачиваем число в span и добавляем класс, если золота не хватает */}
-                    <span className={!costInfo.hasSufficientGold ? 'insufficient-funds' : ''}>
-                        {costInfo.gold.toLocaleString()}
-                    </span>
-                    <img src="/assets/coin-icon.png" alt="" className="cost-icon" />
-                </span>
-            )}
-
-            {/* Разделитель, если есть и золото, и алмазы */}
-            {costInfo.gold && costInfo.diamonds && <span style={{margin: '0 3px'}}></span>} 
-
-            {costInfo.diamonds && (
-                <span className="cost-item cost-diamonds">
-                    {/* Здесь также можно добавить проверку для алмазов, если нужно */}
-                    <span>{costInfo.diamonds.toLocaleString()}</span>
-                    <img src="/assets/diamond-image.png" alt="" className="cost-icon" />
-                </span>
-            )}
-        </span>
-    );
-})()}
-</button>
-
-                            {canUpgrade &&
-                                playerGold !== undefined && playerDiamonds !== undefined && (
-                                    <div className="player-currency-panel">
-                                        <span className="currency-display">
-                                            <span className="player-gold-text">{typeof playerGold === 'number' ? playerGold.toLocaleString() : '--'}</span>
-                                            <img src="/assets/coin-icon.png" alt="Золото" className="currency-icon" />
-                                        </span>
-                                        <span className="currency-separator">/</span>
-                                        <span className="currency-display">
-                                            <span className="player-diamonds-text">{typeof playerDiamonds === 'number' ? playerDiamonds.toLocaleString() : '--'}</span>
-                                            <img src="/assets/diamond-image.png" alt="Алмазы" className="currency-icon" />
-                                        </span>
-                                    </div>
-                                )}
+                    {itemData.type && (
+                        <div className="item-type-banner-new">
+                            {itemData.type}
                         </div>
                     )}
-                    {!isLevelable && <div className="button-group-placeholder"></div>} {/* Заглушка, если предмет не улучшаемый */}
+                </div>
 
+                <div className="popup-body-new popup-body-scrollable-area">
+                    <div className="popup-content-stack">
+                        <div className="icon-description-row">
+                            <div className="icon-column">
+                                <div className={`popup-icon-area rarity-${itemRarity}`}>
+                                    <img src={itemData.image || "/assets/default-item.png"} alt={itemData.name} className="popup-icon"/>
+                                </div>
+                            </div>
+                            {itemData.description && (
+                                <div className="description-column">
+                                    <div className="popup-description-area">
+                                        <p>{itemData.description}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="toggleable-content-area">
+                            <AnimatePresence mode="wait" initial={false}>
+                                {showingView === 'stats' && (
+                                    <motion.div
+                                        key="statsViewCraft"
+                                        className="stats-view-wrapper"
+                                        variants={contentSwitchVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                    >
+                                        <h4 className="content-section-title left-aligned-title stats-title-new">Stats:</h4>
+                                        {hasAnyStats ? (
+                                            <div className="stats-block">
+                                                <div className="stats-comparison-table stats-list-wrapper-new">
+                                                    {renderBaseStatRow("Health", itemStats.hpBonus, false)}
+                                                    {renderBaseStatRow("Attack", itemStats.attackBonus, false)}
+                                                    {renderBaseStatRow("Attack Speed", itemStats.attackSpeedBonus, true)}
+                                                    {renderBaseStatRow("Crit Strike", itemStats.critChanceBonus, true)}
+                                                    {renderBaseStatRow("Double Strike", itemStats.doubleStrikeChanceBonus, true)}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="no-stats-message">
+                                                <p>Предмет не имеет базовых характеристик.</p>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
 
-                    <div className="action-button-row">
-                        {isEquipped ? (
-                            <button className="button-action button-unequip" onClick={() => onUnequipItem(item.type)}>Swap</button>
-                        ) : (
+                                {showingView === 'setBonuses' && setDetails && (
+                                    <motion.div
+                                        key="setBonusesViewCraft"
+                                        className="set-bonuses-view-wrapper"
+                                        variants={contentSwitchVariants}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                    >
+                                        <div className="popup-set-bonus-area actual-set-bonuses set-bonus-block-new">
+                                            <h4 className="set-name-new">{setDetails.name}</h4>
+                                            {setDetails.bonuses.map(bonus => (
+                                                <div key={bonus.requiredCount} className="set-bonus-entry set-bonus-entry-new">
+                                                    <span className="set-bonus-count set-bonus-count-new">({bonus.requiredCount} шт.):</span>
+                                                    <span className="set-bonus-desc set-bonus-desc-new">{bonus.description}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {setDetails && (
                             <button
-                                className={`button-action ${currentlyEquippedInSlot ? "button-change" : "button-equip"}`}
-                                onClick={() => onEquipItem(item)}
+                                className="button-action button-toggle-view-standalone"
+                                onClick={handleToggleView}
                             >
-                                {currentlyEquippedInSlot ? "Equip" : "Экипировать"}
+                                {showingView === 'stats' ? 'Set bonuses' : 'Stats'}
                             </button>
                         )}
+                        
+<div className="success-message-container">
+    <p className="success-creation-message-new">Предмет успешно создан!</p>
+</div>
                     </div>
+                </div>
+
+                <div className="popup-footer-new">
+                    <button
+                        className="action-button-new navigate-button-new"
+                        onClick={onNavigateToInventory}
+                    >
+                        Перейти в Инвентарь
+                    </button>
                 </div>
             </motion.div>
         </motion.div>
     );
 };
 
-export default ItemDetailPopup;
+export default CraftingSuccessPopup;

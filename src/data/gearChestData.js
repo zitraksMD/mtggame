@@ -44,7 +44,7 @@ export const GEAR_CHESTS = [
         cost: { currency: 'diamonds', price: 250 }, // Стандартная цена в алмазах
         keyToOpenForFree: REWARD_TYPES.EPIC_CHEST_KEY, // <<< МОЖНО ОТКРЫТЬ ЭПИЧЕСКИМ КЛЮЧОМ БЕСПЛАТНО
         possibleRarities: ["Common", "Uncommon", "Rare", "Epic"],
-        rarityChances: { "Common": 0.65, "Uncommon": 0.27, "Rare": 0.07, "Epic": 0.01 },
+        rarityChances: { "Common": 0, "Uncommon": 0, "Rare":0, "Epic": 100 },
         pity: [
             { rarity: "Rare", limit: 10 },
             { rarity: "Epic", limit: 50 }

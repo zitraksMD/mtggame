@@ -1,536 +1,548 @@
-    // Новый контейнер для всех элементов шапки
-.custom-popup-header {
+// =====================================================================
+// === СТИЛИ ДЛЯ CraftingSuccessPopup.scss (успешное создание предмета) ===
+// =====================================================================
+
+// Переменные (те же, что и в ForgeItemInfoPopup)
+$item-popup-bg-start: #2f3949;
+$item-popup-bg-end: #212833;
+$divider-color-dark: rgba(120, 130, 160, 0.2);
+$text-primary-light: #e0e5f0;
+$text-secondary-light: #c0c8d4;
+$text-muted-light: #9098a8;
+$golden-banner-bg: #daa520; // Используется для item-type-banner
+$golden-banner-text-dark: #2c3e50;
+$success-color: #4CAF50; // Цвет для успешных уведомлений
+$button-primary-bg-start: #3a6fa0; // Для основной кнопки действия (Перейти в Инвентарь)
+$button-primary-bg-end: #2e5a80;
+$button-primary-border: #294554;
+
+
+$rarity-colors: (
+    common: #9e9e9e,
+    uncommon: #64b5f6,
+    rare: #42a5f5,
+    epic: #ab47bc,
+    legendary: #ff9800,
+    mythic: #f44336
+);
+
+// Оверлей попапа (адаптировано)
+.popup-backdrop-new { // БЫЛ: .item-popup-backdrop
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+// Основной контейнер контента попапа (адаптировано)
+.popup-content-new { // БЫЛ: .item-popup-content
+    width: 380px; // Можно немного шире для заголовка "Успех!"
+    max-width: 95vw;
+    background: linear-gradient(160deg, $item-popup-bg-start, $item-popup-bg-end);
+    border: 1px solid rgba(120, 130, 160, 0.3);
+    border-radius: 12px;
+    color: $text-primary-light;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    // Этот padding-top создает "воздух" НАД следующим элементом (item-type-banner),
-    // ПОСЛЕ того как item-name-banner сместится вверх.
-    // Например, если item-name-banner сместится вверх на 30px, 
-    // а вы хотите 10px отступа от него до item-type-banner, то padding-top ~40px.
-    // Но проще управлять этим через margin-bottom у .item-name-banner или gap.
-    // Оставим padding-top для позиционирования абсолютно размещенных элементов (уровень, кнопка X)
-    // и для общего вида, если баннер не сильно "выезжает".
-    padding: 25px 15px 15px 15px; // Верхний отступ для пространства, куда "поднимется" баннер
-    gap: 8px; // Отступ между исходным местом баннера имени и баннером типа
-    border-bottom: 1px solid $divider-color-dark; // Опционально
-    width: 100%;
-    box-sizing: border-box;
-    flex-shrink: 0;
-}
+    max-height: 90vh; 
+    overflow: visible;
 
-.item-name-banner {
-    display: inline-block;
-    padding: 5px 1px;
-    border-radius: 8px;
-    color: white;
-    font-size: 14px;
-    font-weight: 700;
-    text-align: center;
-    // Усилим тень для эффекта "отрыва" от фона
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.45); 
-    position: relative; 
-   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5); // Более выраженная тень для "отрыва"
-    z-index: 3; // Должен быть выше фона/рамки .custom-popup-header, но ниже кнопки X
-    max-width: 70%;
-
-    // --- ЭФФЕКТ "НАВИСАНИЯ" ---
-    // Смещаем баннер вверх. Величина смещения зависит от того, насколько он должен "торчать".
-    // Если высота баннера с паддингами около 40-45px, и вы хотите, чтобы он наполовину (20-22px)
-    // выступал над верхней границей .item-popup-content (которая теперь не имеет своего padding-top),
-    // то смещение должно быть примерно таким.
-    // transform: translateY(-22px); // Сдвигает баннер вверх на 22px
-
-    // Альтернатива с margin-top (сильнее влияет на поток):
-    margin-top: -50px; // Подберите это значение. Например, половина высоты баннера.
-                       // Это поднимет баннер.
-    
-    // Чтобы следующий элемент (.item-type-banner) не подлез под смещенный баннер слишком сильно,
-    // можно добавить margin-bottom к .item-name-banner или настроить gap на .custom-popup-header.
-    // Так как margin-top сдвигает и поток, gap на .custom-popup-header будет отсчитываться от нового положения.
-    // Возможно, gap уже будет достаточным. Если нет:
-
-    // Применение фона по редкости остается как было
-    @each $rarity, $color in $rarity-colors {
-        &.rarity-bg-#{$rarity} {
-            background-color: $color;
-            @if (lightness($color) > 65%) {
-                color: #2c3e50;
-            } @else {
-                color: white;
-            }
-        }
+    // Общий класс для фиксированной высоты, если используется
+    &.forge-info-popup-fixed-height {
+        max-height: 620px; // Немного увеличено, т.к. есть доп. элементы (Успех!, сообщение)
+                           // Подберите под свой контент.
     }
 
-        // Опционально: для текстового индикатора редкости внутри баннера
-        .rarity-text-indicator {
-            display: block;
-            font-size: 11px;
-            font-weight: normal;
-            opacity: 0.8;
-            margin-top: 3px;
-            @each $rarity, $color in $rarity-colors {
-                &.rarity-#{$rarity} {
-                    @if (lightness($color) > 65%) { color: darken($color, 40%); }
-                    @else { color: lighten($color, 40%); }
-                }
-            }
-        }
-    }
-
-    // Баннер с типом предмета
-    .item-type-banner {
-        display: inline-block;
-        background-color: $golden-banner-bg;
-        color: $golden-banner-text-dark;
-        padding: 6px 18px;
-        border-radius: 6px;
-        font-size: 18px;
-        font-weight: 500;
-        text-transform: capitalize;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-
-    // Баннер с текущим уровнем
-    .current-level-banner {
+    // Кнопка "X" для закрытия (НОВОЕ для CraftingSuccessPopup)
+    .popup-close-button-x-new {
         position: absolute;
-        top: 5px;    // Отступ сверху (под кнопкой X или рядом)
-        left: 1px;   // Отступ слева
-        background-color: $golden-banner-bg;
-        color: $golden-banner-text-dark;
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-size: 18px;
-        font-weight: 600;
-        z-index: 5; // Выше основного контента шапки, но ниже кнопки X
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        
+        top: 10px;
+        right: 12px;
+        background: transparent;
+        border: none;
+        color: $text-muted-light;
+        font-size: 28px;
+        font-weight: bold;
+        line-height: 1;
+        padding: 0 5px;
+        cursor: pointer;
+        z-index: 10; // Поверх шапки
+        transition: color 0.2s ease;
 
-        span { display: block; }
+        &:hover {
+            color: $text-primary-light;
+        }
     }
 
-        // 2. Основное тело попапа
-.popup-body {
-    padding: 15px 20px; // Внешние отступы тела попапа
-    // overflow-y: auto; // Если контент может стать очень длинным
-
-    // Новый главный вертикальный контейнер для блоков контента
-    .popup-content-stack {
+    // Шапка попапа (адаптировано)
+.popup-header-new {
+        position: relative; // Необходимо для корректного позиционирования дочерних элементов
         display: flex;
         flex-direction: column;
-        align-items: center; // Центрируем блоки контента (строки), если они не на всю ширину
-        gap: 18px; // Вертикальный отступ между "этажами"
+        align-items: center;
+        // ВАЖНО: padding-top здесь влияет на то, насколько баннер "выйдет" за пределы.
+        // Если баннер должен сильно нависать, padding-top может быть больше,
+        // а margin-top у баннера еще более отрицательным.
+        // Либо, если баннер должен перекрывать самый верх попапа,
+        // возможно, overflow: visible для header и точное позиционирование.
+        // Для начала оставим padding как есть и используем margin-top.
+        padding: 25px 15px 15px 15px; // Увеличим верхний паддинг, чтобы было "место" для нависания
+        gap: 10px;
+        border-bottom: 1px solid $divider-color-dark;
         width: 100%;
-        max-width: 380px; // Максимальная ширина всего стека контента, можно настроить
-        margin: 0 auto;   // Центрирует сам стек, если .popup-body шире
-    }
+        box-sizing: border-box;
+        flex-shrink: 0;
+        // overflow: visible; // Раскомментируйте, если баннер должен выходить за границы этого блока без обрезки
 
-    // --- ЭТАЖ 1: Иконка и Описание ---
-    .icon-description-row {
-        display: flex;
-        flex-direction: row;   // Иконка слева, описание справа
-        align-items: flex-start; // Выравнивание по верху
-        gap: 15px;             // Отступ между иконкой и описанием
-        width: 100%;           // Занимает всю ширину .popup-content-stack
+        .success-main-title-new {
+            font-size: 26px;
+            font-weight: 700;
+            color: $success-color;
+            margin-bottom: 5px; // Отступ до названия предмета, если оно ниже
+            text-align: center; // Чтобы заголовок "Успех" был по центру
+            width: 100%;      // И занимал всю ширину
+            // Если "Успех!" не должно быть видно в этом дизайне, его можно скрыть через display: none;
+            // или удалить из JSX для этого варианта отображения.
+            // Либо, если он должен быть под баннером, поменять порядок в JSX.
+        }
 
-        .icon-column { // Обертка для иконки
-            flex: 0 0 90px; // Фиксированная ширина для области иконки
+        .item-name-banner-new {
+            display: inline-block;
+            padding: 8px 25px; // Немного другие паддинги для лучшего вида
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5); // Тень для эффекта "нависания"
+            
+            position: relative; // Для z-index и правильной работы margin
+            z-index: 5;         // Чтобы баннер был над другими элементами шапки (кроме кнопки X)
+            
+            // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ДЛЯ "НАВИСАНИЯ" ---
+            // Это значение (-50px) подбирается.
+            // Оно зависит от padding-top родителя (.popup-header-new)
+            // и от того, насколько баннер должен "выйти" вверх.
+            // Если .success-main-title-new отображается ПЕРЕД баннером в DOM,
+            // и вы хотите, чтобы баннер все равно был наверху,
+            // то отрицательный margin должен быть достаточно большим,
+            // чтобы "перекрыть" высоту заголовка "Успех!".
+            // Например, если высота "Успех!" ~30px, то margin-top: - (30px + желаемое_смещение_баннера_вверх)
+            // Если же "Успех!" нет или он ПОД баннером, то margin-top может быть меньше.
+            // Судя по скриншоту, "Успех!" не видно, баннер очень высоко.
+            // Попробуем значение, похожее на исходное в ForgeItemInfoPopup, но скорректированное.
+            // padding-top у .popup-header-new сейчас 25px.
+            // Чтобы баннер был на 20px выше начала контентной области (т.е. -20px от линии паддинга),
+            // margin-top должен быть -(25px + 20px) = -45px, если он первый.
+            // Если же "Успех!" есть и занимает ~35px + 5px margin = 40px, то
+            // баннер будет на 40px ниже в потоке. Чтобы поднять его на ту же позицию (-20px от линии паддинга),
+            // нужно будет margin-top: -(40px + 45px) = -85px. Это много.
+            //
+            // Проще всего предположить, что для дизайна как на скриншоте,
+            // "Успех!" либо скрыт, либо баннер идет первым в JSX.
+            // Если баннер первый (или "Успех!" скрыт):
+            margin-top: -50px; // Подберите это значение. -50px должно дать сильный эффект нависания.
+                               // Оно поднимет баннер на 50px от его нормального положения.
+                               // Если header padding-top 25px, то баннер поднимется на 25px над верхней границей контента хедера.
 
-           .popup-icon-area {
-    width: 90px;
-    height: 90px;
-    padding: 6px; // Оставляем отступы, чтобы иконка не прилипала к краям
-    // background-color: $background-element-dark; // Этот общий фон будет переопределен ниже для каждой редкости
-    border-radius: 6px;
-    border: 2px solid transparent; // Базовая рамка, цвет которой уже меняется в зависимости от редкости
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
+            width: auto; // Чтобы ширина была по содержимому + padding
+            min-width: 60%; // Минимальная ширина, чтобы не был слишком узким
+            max-width: calc(100% - 50px); // Чтобы не налезал на кнопку "X", если она широкая
+                                          // 50px - примерная ширина кнопки X + отступы
 
-    @each $rarity, $color in $rarity-colors {
-        &.rarity-#{$rarity} {
-            border-color: $color; // Рамка уже красится в цвет редкости
+            @each $rarity, $color in $rarity-colors {
+                &.rarity-bg-#{$rarity} {
+                    background-color: $color;
+                    color: if(lightness($color) > 60%, #111, white);
+                }
+            }
+        }
 
-            // --- НОВЫЙ ФОН НА ОСНОВЕ ЦВЕТА РЕДКОСТИ ---
-            // Используем радиальный градиент, похожий на тот, что у вас в Inventory.scss для слотов
-            background: radial-gradient(ellipse at center, lighten($color, 15%), darken($color, 20%));
 
-            // --- АЛЬТЕРНАТИВНЫЕ ВАРИАНТЫ ФОНА (если градиент не понравится): ---
-            // 1. Сплошной цвет редкости (как вы изначально просили):
-            // background-color: $color;
-
-            // 2. Полупрозрачный цвет редкости (поверх существующего темного фона, если он есть у родителя):
-            // background-color: rgba($color, 0.3); // Настройте прозрачность (0.3 = 30%)
-
-            // 3. Затемненный сплошной цвет редкости:
-            // background-color: darken($color, 30%); // Настройте степень затемнения
+        .item-type-banner-new { // БЫЛ: .item-type-banner
+            display: inline-block;
+            background-color: $golden-banner-bg;
+            color: $golden-banner-text-dark;
+            padding: 5px 15px;
+            border-radius: 6px;
+            font-size: 14px; // Может быть меньше, чем имя
+            font-weight: 500;
+            text-transform: capitalize;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
     }
 
-    .popup-icon { // Стили для самого изображения внутри .popup-icon-area
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        // image-rendering: pixelated; // если у вас пиксель-арт
-    }
-}
-        }
+    // Тело попапа (адаптировано)
+    .popup-body-new { // Добавляем этот класс, если он есть в JSX
+        &.popup-body-scrollable-area { // Стили из ForgeItemInfoPopup
+            padding: 15px 15px 10px 15px; // Внутренние отступы для тела
+            overflow-y: auto; // Для прокрутки, если контента много
+            overflow-x: hidden;
+            flex-grow: 1; 
+            min-height: 200px; // Минимальная высота для основного контента
 
-        .description-column { // Обертка для описания
-            flex: 1; // Занимает оставшееся пространство рядом с иконкой
-            min-width: 0; // Для предотвращения проблем с переполнением flex-элементов
+            .popup-content-stack { // Стили из ForgeItemInfoPopup
+                display: flex;
+                flex-direction: column;
+                align-items: center; 
+                gap: 18px; // Общий отступ между блоками в стеке
+                width: 100%;
+            }
 
-            .popup-description-area { // Стили для самого блока описания
-                    // --- НОВЫЕ СТИЛИ ДЛЯ ФОНА И ОФОРМЛЕНИЯ БЛОКА ---
-                    background-color: rgba(0, 0, 0, 0.15); // Пример фона, такой же как мы обсуждали для блока статов
-                                                          // Можете выбрать другой, например, чуть светлее или темнее основного фона попапа
-                    padding: 12px 15px;                   // Внутренние отступы для текста описания
-                    border-radius: 6px;                   // Скругление углов блока
-                    // border: 1px solid rgba(120, 130, 160, 0.1); // Опционально: очень тонкая рамка
-                    width: 100%;                          // Занимает всю ширину родителя (.description-column)
-                    box-sizing: border-box;
-                    // --- КОНЕЦ НОВЫХ СТИЛЕЙ ---
+            .icon-description-row { // Стили из ForgeItemInfoPopup
+                display: flex;
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 15px;
+                width: 100%;
 
-                    // Существующие или предлагаемые стили для текста описания:
-                    font-size: 13px;
-                    line-height: 1.5;
-                    color: $text-secondary-light; // Используем основной цвет текста для лучшей читаемости на фоне
-                                                 // (вместо $text-muted-light, если он был слишком тусклым)
-                    
-                    p {
-                        margin: 0; // Убираем стандартные отступы параграфа
+                .icon-column { // Стили из ForgeItemInfoPopup
+                    flex: 0 0 90px;
+                    .popup-icon-area { // Стили из ForgeItemInfoPopup
+                        width: 90px;
+                        height: 90px;
+                        padding: 6px;
+                        border-radius: 8px;
+                        border: 2px solid transparent;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-sizing: border-box;
+                        @each $rarity, $color in $rarity-colors {
+                            &.rarity-#{$rarity} { // Убедитесь, что класс .rarity-* есть в JSX
+                                border-color: $color;
+                                background: radial-gradient(ellipse at center, lighten($color, 18%), darken($color, 22%));
+                            }
+                        }
+                        .popup-icon { // Стили из ForgeItemInfoPopup (был .popup-icon)
+                            max-width: 100%;
+                            max-height: 100%;
+                            object-fit: contain;
+                        }
                     }
                 }
-    }
-      }
-
-     .stats-block {
-        background-color: rgba(0, 0, 0, 0.15); // Пример: темный полупрозрачный фон
-        padding: 15px;                         // Внутренние отступы блока
-        border-radius: 8px;                     // Скругление углов (по желанию)
-        margin-bottom: 5px;                    // Отступ снизу, чтобы отделить от следующего блока (например, бонусов сета)
-        width: 100%;                           // Занимает всю ширину .popup-content-stack
-        box-sizing: border-box; 
-
-.stats-comparison-table {
-    display: grid;
-    grid-template-columns: minmax(100px, 1.6fr) 1fr auto 1fr; // Название | Текущее | Стрелка | Следующее
-    column-gap: 8px;
-    row-gap: 5px;
-    font-size: 13px;
-    width: 100%;
-    align-items: center;
-
-    .stat-cell, .stat-name-cell, .current-value-cell, .arrow-cell, .next-value-cell {
-        padding: 3px 0;
-        display: flex;
-        align-items: center;
-    }
-
-    .stat-name-cell {
-        justify-content: flex-start; // Названия статов остаются слева
-    }
-
-    .current-value-cell {
-        justify-content: center;   // --- ИЗМЕНЕНИЕ: ВСЕ текущие значения по центру ---
-        font-weight: 700;
-        color: $text-primary-light;
-        // Класс .is-level-value больше не нужен для специального выравнивания здесь
-    }
-
-    .arrow-cell {
-        justify-content: center;   // Стрелка остается по центру своей колонки
-        color: $bright-green-arrow;
-        font-weight: 700;
-    }
-
-    .next-value-cell {
-        justify-content: center;  // --- ИЗМЕНЕНИЕ: ВСЕ следующие значения по центру ---
-        font-weight: 700;
-
-        // Класс .is-level-value больше не нужен для специального выравнивания здесь
-
-        &.has-value { // Если есть реальное следующее значение (не "-" или "Макс.")
-            color: $bright-green-arrow;
-        }
-        &.no-value { // Если значение "-", например, стат не улучшается дальше
-            color: $text-primary-light; // Таким же цветом, как текущее значение, или $text-muted-light
-        }
-        &.no-upgrade { // Для отображения "Макс." на строке Уровня
-            color: $text-muted-light;
-            font-weight: 500; // Обычный вес для "Макс."
-        }
-    }
-}
-     }
-
-    // --- ЭТАЖ 3: Бонус Комплекта ---
-    .popup-set-bonus-area {
-        width: 100%;
-        max-width: 340px; // Совпадает с таблицей для выравнивания
-        margin: 0 auto;   // Центрирование
-        font-size: 13px;
-        line-height: 1.5;
-        color: $text-muted-light;
-        h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: $text-secondary-light;
-            margin: 0 0 6px 0;
-        }
-        p { margin: 0; &:not(:last-child) { margin-bottom: 5px; } }
-    }
-
-    // --- Разделители ---
-    // Предполагается, что <hr class="popup-divider content-divider" /> будет вставляться
-    // в JSX/HTML между "этажами" внутри .popup-content-stack
-    .popup-divider {
-        border: none;
-        height: 1px;
-        background-color: $divider-color-dark;
-        // margin: 8px 0; // Базовый отступ, если разделитель используется вне стека
-
-        // Если разделитель является прямым потомком .popup-content-stack,
-        // то gap у .popup-content-stack уже обеспечивает отступы.
-        // Если <hr /> добавляется как отдельный элемент, ему могут понадобиться свои margin.
-        // Для разделителей МЕЖДУ блоками в .popup-content-stack, их собственные margin могут быть не нужны
-        // или должны быть скорректированы, так как .popup-content-stack уже имеет 'gap'.
-
-        // Этот вариант стилей для <hr /> который будет помещен как дочерний элемент в .popup-content-stack
-        &.content-divider {
-            width: 100%;
-            // max-width: 360px; // Задаем максимальную ширину, если нужно, чтобы он был чуть уже контента
-                               // Если align-items: center у родителя, он будет центрирован.
-                               // Если .popup-content-stack имеет max-width: 380px,
-                               // то этот divider будет на всю его ширину.
-            margin: 0; // Убираем margin, если gap родителя достаточен
-                       // или оставляем margin: 8px 0 (или меньше) если нужен дополнительный отступ от gap
-                       // В "изменениях" было margin: 8px 0; и gap: 18px; Это значит, что отступы суммировались бы
-                       // или margin разделителя должен быть основным, а gap: 0.
-                       // Я предполагаю, что gap: 18px в .popup-content-stack является основным,
-                       // а разделитель просто линия без доп. отступов.
-        }
-        &.thin {
-           // margin: 4px 0; // Если нужен меньший отступ для тонкого разделителя
-           // Этот модификатор может регулировать `height` или `background-color` если нужно
-        }
-    }
-}
-        // --- Конец стилей Правой Колонки ---
-
-        // 3. Футер с кнопками
-.popup-buttons {
-    padding: 12px;
-    border-top: 1px solid rgba(120, 130, 160, 0.3);
-    border-radius: 0 0 11px 11px;
-
-    // --- ДВЕ СТРОКИ (одна группа над другой) ---
-    display: flex;
-    flex-direction: column; // Располагаем дочерние группы (.upgrade-action-group, .action-button-row) в столбец
-    align-items: center;    // Центрируем эти группы-строки по горизонтали
-    gap: 12px;              // Отступ между первой и второй строкой (группами)
-
-    // Общие стили для групп, которые теперь выступают в роли "строк"
-    .upgrade-action-group,
-    .action-button-row,
-    .button-group-placeholder {
-        width: 90%; // Каждая группа-строка занимает большую часть ширины попапа
-        max-width: 320px; // Максимальная ширина для контента в строке
-        display: flex;
-        flex-direction: column; // Элементы внутри каждой группы также располагаются в столбец
-        align-items: stretch;   // Растягиваем элементы внутри группы на всю ее ширину
-        gap: 8px; // Отступ между элементами внутри группы (например, между кнопкой улучшения и панелью валюты)
-    }
-
-    // Заглушка для первой строки (группы улучшения), если предмет не улучшаемый
-    .button-group-placeholder {
-        // Примерная высота группы улучшения (кнопка ~50px + панель ~30px + gap ~8px)
-        min-height: 88px;
-        // Можно также сделать ее прозрачной или с легким фоном для отладки
-        // background-color: rgba(255,255,255,0.05);
-    }
-
-.button-upgrade {
-    width: 100%;
-    background: linear-gradient(to bottom, hsl(195, 70%, 60%), hsl(195, 70%, 45%));
-    border: 1px solid hsl(195, 70%, 40%);
-    color: white;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    line-height: 1.25;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    min-height: 50px;
-
-    &:hover:not(:disabled) {
-        background: linear-gradient(to bottom, hsl(195, 70%, 65%), hsl(195, 70%, 50%));
-    }
-    &:disabled {
-        background: linear-gradient(to bottom, #777, #555) !important;
-        border-color: #444 !important;
-        color: #aaa !important;
-        cursor: default;
-        opacity: 0.8;
-    }
-
-    .upgrade-action-text { // Стили для основного текста кнопки ("Улучшить" / "Макс. Уровень")
-        font-size: 14px;
-        font-weight: bold;
-        // Если нужно, можно добавить margin-bottom, если между текстом и стоимостью нужен больший отступ
-        // margin-bottom: 2px; 
-    }
-
-    // Удаляем или заменяем старый .upgrade-cost-text, если он был:
-    // .upgrade-cost-text { /* ...старые стили... */ }
-
-    // --- НОВЫЕ СТИЛИ для блока стоимости с иконками ---
-    .upgrade-cost-display { 
-        font-size: 12px;       // Размер шрифта для строки стоимости
-        opacity: 0.95;         // Немного прозрачности, как вы и хотели
-        white-space: nowrap;
-        margin-top: 3px;       // Отступ от основного текста кнопки
-        display: flex;         // Для расположения нескольких валют (золото/алмазы) в ряд
-        align-items: center;
-        justify-content: center; // Центрируем, если несколько валют
-        gap: 8px;              // Отступ между стоимостью золота и алмазов, если оба есть
-
-        .cost-item { // Общий контейнер для числа и иконки ОДНОЙ валюты
-            display: inline-flex; // Число и иконка в одну строку
-            align-items: center;
-            gap: 3px;          // Отступ между числом и иконкой
-
-            span { // Стили для ЧИСЛА стоимости
-                font-weight: 600; // Можно сделать цифры пожирнее
+                .description-column { // Стили из ForgeItemInfoPopup
+                    flex: 1;
+                    min-width: 0;
+                    .popup-description-area { // Стили из ForgeItemInfoPopup
+                        background-color: rgba(0, 0, 0, 0.2);
+                        padding: 12px 15px;
+                        border-radius: 6px;
+                        width: 100%;
+                        box-sizing: border-box;
+                        font-size: 14px;
+                        line-height: 1.5;
+                        color: $text-secondary-light;
+                        p { margin: 0; }
+                    }
+                }
             }
-        }
-
-        .cost-gold {
-        span { // Стили для ЧИСЛА стоимости золота
-            color: $golden-color; // Ваш золотой цвет по умолчанию
-
-            &.insufficient-funds { // Если золота не хватает
-                color: #E74C3C; // --- КРАСНЫЙ ЦВЕТ ТЕКСТА ---
-                                  // Можете использовать переменную $warning-red-color
+            
+            // .popup-divider - не используется в CraftingSuccessPopup.jsx, можно удалить или закомментировать
+            // Если разделитель все же нужен, раскомментируйте и добавьте <hr className="popup-divider" /> в JSX.
+            /*
+            .popup-divider { 
+                border: none;
+                height: 1px;
+                background-color: $divider-color-dark;
+                width: 100%;
+                margin: 0; 
+                &.thick-divider {
+                    height: 2px;
+                    background-color: rgba(120, 130, 160, 0.35);
+                    margin: 5px 0; 
+                }
             }
-        }
-    }
-        .cost-diamonds {
-            span { // Стили для ЧИСЛА стоимости алмазов
-                // color: #85D2F2; // Пример: можно задать свой цвет для алмазов
-            &.insufficient-funds { // Если золота не хватает
-                color: #E74C3C; // --- КРАСНЫЙ ЦВЕТ ТЕКСТА ---
-                                  // Можете использовать переменную $warning-red-color
+            */
+
+            .toggleable-content-area { // Стили из ForgeItemInfoPopup
+                position: relative;
+                width: 100%;
+                min-height: 170px; // Подберите высоту
             }
-        }
+
+            .stats-view-wrapper,
+            .set-bonuses-view-wrapper { // Стили из ForgeItemInfoPopup
+                width: 100%;
+                // Для более плавной анимации "на одном месте" можно использовать:
+                // position: absolute;
+                // top: 0;
+                // left: 0;
+            }
+
+            .content-section-title { // Стили из ForgeItemInfoPopup
+                font-size: 16px;
+                font-weight: 600;
+                color: $text-secondary-light;
+                margin-bottom: 10px;
+                width: 100%;
+                
+                &.left-aligned-title {
+                    text-align: left;
+                }
+                // Класс .stats-title-new может использоваться для специфичных для CraftingSuccessPopup отступов/стилей, если нужно
+                &.stats-title-new { 
+                    // например, text-align: center; если заголовок "Stats" должен быть по центру здесь
+                }
+            }
+
+            .stats-block { // Стили из ForgeItemInfoPopup
+                background-color: rgba(0, 0, 0, 0.2);
+                padding: 15px;
+                border-radius: 8px;
+                width: 100%;
+                box-sizing: border-box;
+
+                // Адаптация .stats-comparison-table для CraftingSuccessPopup (.stats-list-wrapper-new)
+                .stats-comparison-table, .stats-list-wrapper-new { // .stats-list-wrapper-new из CraftingSuccessPopup
+                    display: grid;
+                    // В CraftingSuccessPopup только 2 колонки ("Имя стата", "Значение")
+                    // arrow-cell и next-value-cell скрываются
+                    grid-template-columns: minmax(100px, 1.7fr) 1fr; // Адаптировано для 2 колонок
+                    column-gap: 8px;
+                    row-gap: 6px;
+                    font-size: 14px;
+                    width: 100%;
+                    align-items: center;
+
+                    .stat-name-cell { // Стили из ForgeItemInfoPopup
+                        justify-content: flex-start;
+                        color: $text-muted-light;
+                    }
+                    .current-value-cell { // Стили из ForgeItemInfoPopup
+                        justify-content: flex-start;
+                        padding-left: 10px;
+                        font-weight: 600;
+                        color: $text-primary-light;
+                    }
+                    // Скрываем ненужные ячейки для CraftingSuccessPopup
+                    .arrow-cell, .next-value-cell { 
+                        display: none;
+                    }
+                }
+            }
+                
+            .no-stats-message { // Стили из ForgeItemInfoPopup
+                padding: 20px 0;
+                text-align: center;
+                color: $text-muted-light;
+                font-size: 14px;
+                font-style: italic;
+            }
+
+            // Адаптация .popup-set-bonus-area для CraftingSuccessPopup (.set-bonus-block-new)
+            .popup-set-bonus-area, .set-bonus-block-new { // .set-bonus-block-new из CraftingSuccessPopup
+                &.actual-set-bonuses { // Этот класс тоже используется
+                    padding: 10px 5px;
+                    width: 100%;
+                    box-sizing: border-box;
+                    background-color: rgba(0,0,0,0.15);
+                    border-radius: 6px;
+
+                    // h4 для имени сета (.set-name-new)
+                    h4, .set-name-new { // .set-name-new из CraftingSuccessPopup
+                        font-size: 17px;
+                        font-weight: 700;
+                        color: $golden-banner-bg;
+                        margin: 0 0 12px 0;
+                        text-align: center;
+                    }
+                    // Адаптация .set-bonus-entry (.set-bonus-entry-new)
+                    .set-bonus-entry, .set-bonus-entry-new { // .set-bonus-entry-new из CraftingSuccessPopup
+                        display: flex;
+                        align-items: flex-start; 
+                        font-size: 14px;
+                        line-height: 1.5;
+                        color: $text-secondary-light;
+                        padding: 6px 0;
+                        border-bottom: 1px dashed rgba(120, 130, 160, 0.2);
+                        &:last-child {
+                            border-bottom: none;
+                        }
+
+                        // Адаптация .set-bonus-count (.set-bonus-count-new)
+                        .set-bonus-count, .set-bonus-count-new { // .set-bonus-count-new из CraftingSuccessPopup
+                            font-weight: 600;
+                            color: $text-primary-light;
+                            margin-right: 10px;
+                            white-space: nowrap;
+                            flex-shrink: 0;
+                        }
+                        // Адаптация .set-bonus-desc (.set-bonus-desc-new)
+                        .set-bonus-desc, .set-bonus-desc-new { // .set-bonus-desc-new из CraftingSuccessPopup
+                            // text-align: right; // Если нужно
+                        }
+                    }
+                }
+            }
+            
+            // Стиль для кнопки переключения вида (.button-toggle-view-standalone)
+            // Этот класс используется в обоих компонентах, поэтому стили общие
+            .button-toggle-view-standalone {
+                padding: 10px 20px;
+                font-size: 15px;
+                font-weight: 600;
+                border-radius: 7px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid transparent;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+                color: $text-primary-light;
+
+                &:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                }
+                &:active{
+                    transform: translateY(0px);
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+                }
+                &:focus {
+                    outline: none;
+                }
+                // Специфичные стили для button-toggle-view-standalone
+                width: 90%; 
+                max-width: 280px; 
+                margin-top: 5px; 
+                background: linear-gradient(180deg, #3a6278, #2e4f60);
+                border-color: #294554;
+                color: $text-primary-light;
+                &:hover {
+                    background: linear-gradient(180deg, #437088, #355b6e);
+                    border-color: #315263;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                }
+                &:focus {
+                    box-shadow: 0 0 0 3px rgba(58, 98, 120, 0.5);
+                }
+            }
+
+            // Сообщение об успешном создании (НОВОЕ)
+           .success-message-container {
+        // --- Вариант 1: Более насыщенный и "металлический" золотой градиент ---
+        // background: linear-gradient(160deg, #FAD670, #D4AF37 60%, #F0E68C); // От светлого к более темному "старому" золоту и обратно к светлому
+        // background-size: 100% 150%; // Для более интересного перелива градиента
+
+        // --- Вариант 2: Теплый золотисто-кремовый градиент (возможно, мягче) ---
+        background: linear-gradient(to bottom, #FFEFBA, #FFE082); // От очень светлого золота/пшеничного к более теплому желтому
+
+        border: 1px solid #B88A0B; // Более выраженная золотая рамка
+        // Либо более мягкая: border: 1px solid rgba(184, 134, 11, 0.5);
+
+        border-radius: 10px; // Чуть более скругленные углы
+        padding: 12px 25px;  // Внутренние отступы
+        margin-top: 20px;    // Отступ сверху
+        
+        // Центрирование самого контейнера, если он не должен занимать всю ширину:
+        // Родительский .popup-content-stack уже имеет align-items: center,
+        // поэтому если у .success-message-container не задана ширина 100%, он будет по центру.
+        // Можно добавить эти свойства для большей уверенности или если родитель не flex-центрует.
+        display: inline-block; // Чтобы ширина была по контенту + padding, и он центрировался флексом родителя
+        // Либо, если родитель не flex:
+        // display: block;
+        // width: fit-content; // Или max-width
+        // margin-left: auto;
+        // margin-right: auto;
+
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),  // Основная тень
+                    0 1px 2px rgba(0, 0, 0, 0.1);   // Мягкая дополнительная тень
+                    // inset 0 1px 1px rgba(255, 255, 255, 0.3); // Легкий внутренний блик сверху для объема
+
+        text-align: center;
     }
 
-        .cost-icon { // Стили для тегов <img> иконок
-            width: 1em;  // Размер иконки будет ~12px, если font-size у .upgrade-cost-display = 12px
-            height: 1em;
-            // vertical-align: middle; // Обычно не нужен, если родитель .cost-item это inline-flex с align-items: center
-        }
+    .success-creation-message-new {
+        font-size: 17px; // Немного крупнее
+        font-weight: 600; // Более жирный шрифт
+        
+        // Цвет текста:
+        // Вариант 1: Темно-зеленый (хорошо контрастирует с желто-золотым)
+        color: #2E7D32; // Более глубокий зеленый
+        // Вариант 2: Темно-коричневый (элегантный вариант на золотом)
+        // color: #4E342E; 
+        
+        margin: 0; // Убираем внешние отступы у параграфа
 
-        .cost-info-text { // Для текста "Бесплатно" или "N/A"
-            color: white; // Или другой цвет по вашему выбору
-            opacity: 0.8;
-        }
+        // Тень для текста, чтобы сделать его более читаемым и объемным:
+        text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6); // Светлая тень снизу (эффект легкого тиснения)
+        // Либо темная тень:
+        // text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
-    // --- КОНЕЦ НОВЫХ СТИЛЕЙ для блока стоимости ---
-}
 
-    // --- ИЗМЕНЕНИЕ СТИЛЕЙ для Панели с валютой игрока ---
-    .player-currency-panel {
-        width: 100%; // Занимает всю ширину родительской группы .upgrade-action-group
-        background-color: rgba(0, 0, 0, 0.25); // Отдельный фон, например, полупрозрачный темный
-        color: #e0e5f0;
-        padding: 8px 10px; // Немного увеличим вертикальный padding для баланса
-        border: 1px solid rgba(120, 130, 160, 0.25); // Тонкая рамка
-        border-radius: 8px; // Все углы скруглены
-        box-sizing: border-box;
-        font-size: 12px; // Шрифт чуть крупнее для отдельной панели
+        } // Конец .popup-body-scrollable-area
+    } // Конец .popup-body-new
+
+    // Футер попапа (адаптировано)
+    .popup-footer-new { // БЫЛ: .popup-buttons / .item-info-footer
+        padding: 15px; // Увеличены отступы для крупной кнопки
         display: flex;
-        align-items: center;
         justify-content: center;
-        gap: 6px; // Немного увеличим отступ между элементами
-        min-height: 30px; // Минимальная высота панели
-        // box-shadow: inset 0 1px 1px rgba(0,0,0,0.1); // Можно добавить внутреннюю тень
-        .currency-display {
-        display: inline-flex; // Для расположения текста и иконки в ряд
         align-items: center;
-        gap: 4px; // Отступ между текстом и иконкой
-    }
+        border-top: 1px solid $divider-color-dark;
+        background-color: rgba(0, 0, 0, 0.15);
+        border-radius: 0 0 11px 11px;
+        flex-shrink: 0; // Чтобы футер не сжимался
 
-    .currency-icon {
-        width: 14px;
-        height: 14px;
-        // vertical-align: middle; // Если не используется flex
-    }
-
-    .currency-separator {
-        margin: 0 2px; // Небольшие отступы для разделителя
-    }
-}
-
-    // Стили для второй строки (кнопки действия)
-    .action-button-row {
-        // width, max-width, display, flex-direction, align-items, gap уже заданы выше
-
-        button.button-action {
-            width: 100%; // Кнопка занимает всю ширину .action-button-row
-            padding: 10px 15px;
-            font-size: 14px;
-            min-height: 50px;
+        // Базовые стили для кнопок действия в этом попапе
+        // .action-button-new - это класс для кнопки "Перейти в Инвентарь"
+        .action-button-new { // БЫЛ: .button-action
+            padding: 12px 25px; // Кнопка может быть крупнее
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 8px;
-            box-sizing: border-box;
-            border-style: solid;
-            border-width: 1px;
+            border: 1px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            color: $text-primary-light;
+            width: 80%; // Ширина кнопки "Перейти в Инвентарь"
+            max-width: 300px; // Максимальная ширина
 
-            &:disabled {
-                background: linear-gradient(to bottom, #777, #555) !important;
-                border-color: #444 !important;
-                color: #aaa !important;
-                cursor: default;
-                opacity: 0.8;
+            &:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 3px 7px rgba(0,0,0,0.25);
+            }
+            &:active{
+                transform: translateY(0px);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            }
+            &:focus {
+                outline: none;
             }
         }
+        
+        // Специфичные стили для кнопки "Перейти в Инвентарь"
+        .navigate-button-new { // Этот класс используется вместе с .action-button-new
+            background: linear-gradient(180deg, $button-primary-bg-start, $button-primary-bg-end);
+            border-color: $button-primary-border;
+            color: white; // Яркий текст на темном фоне
 
-        .button-equip {
-            background: linear-gradient(to bottom, #5cb85c, #449d44);
-            border-color: #398439;
-            color: white;
-            &:hover:not(:disabled) {
-                background: linear-gradient(to bottom, #6fca6f, #55b055);
+            &:hover {
+                background: linear-gradient(180deg, lighten($button-primary-bg-start, 5%), lighten($button-primary-bg-end, 5%));
+                border-color: lighten($button-primary-border, 5%);
+            }
+            &:focus {
+                box-shadow: 0 0 0 3px rgba($button-primary-bg-start, 0.5);
             }
         }
-        .button-unequip {
-            background: linear-gradient(to bottom, #d9534f, #c9302c);
-            border-color: #ac2925;
-            color: white;
-            &:hover:not(:disabled) {
-                background: linear-gradient(to bottom, #e0635f, #d43f3a);
-            }
-        }
-        .button-change {
-            background: linear-gradient(to bottom, #f0ad4e, #ec971f);
-            border-color: #d58512;
-            color: white;
-            &:hover:not(:disabled) {
-                background: linear-gradient(to bottom, #f3bd6a, #f0a73e);
-            }
-        }
-    }
-}
+    } // Конец .popup-footer-new
+} // Конец .popup-content-new
