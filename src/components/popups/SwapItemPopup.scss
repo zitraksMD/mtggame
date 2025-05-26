@@ -1,0 +1,393 @@
+// src/components/popups/SwapItemPopup.scss
+
+// --- ПЕРЕМЕННЫЕ (из вашего SCSS) ---
+$rarity-color-common: #b0b0b0 !default;
+$rarity-color-uncommon: #66bb66 !default;
+$rarity-color-rare: #5599ff !default;
+$rarity-color-epic: #A020F0 !default;
+$rarity-color-legendary: #ffaa44 !default;
+$rarity-color-mythic: #cc66ff !default;
+
+$rarity-colors: (
+    common: $rarity-color-common,
+    uncommon: $rarity-color-uncommon,
+    rare: $rarity-color-rare,
+    epic: $rarity-color-epic,
+    legendary: $rarity-color-legendary,
+    mythic: $rarity-color-mythic
+) !default;
+
+$text-primary-light: #ebebeb !default;
+$text-secondary-light: #c5c5c5 !default;
+$text-muted-light: #a0a0a0 !default;
+$golden-banner-bg: $rarity-color-legendary !default;
+$divider-color-dark: rgba(120, 130, 160, 0.2) !default; // Используем эту переменную для border-top
+
+$stat-better-color: #4CAF50 !default;
+$stat-worse-color: #F44336 !default;
+// --- КОНЕЦ ПЕРЕМЕННЫХ ---
+
+.swap-popup-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.swap-popup-content {
+    width: 620px;
+    max-width: 95vw;
+    background-color: #283141;
+    padding: 15px; // Общий паддинг для контента
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    height: auto;
+    max-height: 85vh;
+    position: relative;
+    color: $text-primary-light;
+    display: flex;
+    flex-direction: column;
+
+    .popup-close-x {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        font-size: 22px;
+        color: $text-secondary-light;
+        background: none;
+        border: none;
+        cursor: pointer;
+        line-height: 1;
+        padding: 5px;
+        &:hover { color: $text-primary-light; }
+    }
+
+    .swap-popup-title {
+        text-align: center;
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 15px; // Отступ после заголовка
+        flex-shrink: 0;
+    }
+
+    .swap-popup-main-content-area {
+        flex-grow: 1;
+        overflow-y: auto;
+        // Убираем padding-right, так как общий padding на .swap-popup-content уже есть
+        // Если скроллбар перекрывает контент, можно добавить padding-right здесь,
+        // но тогда убрать его из общего .swap-popup-content или сделать его меньше.
+        // padding-right: 5px; // Для скроллбара, если он есть
+        margin-bottom: 15px; // Отступ до кнопок
+
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
+        &::-webkit-scrollbar-thumb:hover { background: lighten(#4a5568, 10%); }
+    }
+
+    .swap-main-display-area {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        gap: 15px;
+    }
+
+    .item-display-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+
+        .panel-title {
+            font-size: 14px;
+            color: $text-secondary-light;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+    }
+
+    .swap-arrow-indicator {
+        font-size: 28px;
+        color: $text-primary-light;
+        align-self: center;
+        padding: 0 10px;
+        flex-shrink: 0;
+        font-weight: bold;
+        margin-top: calc(160px / 2 + 22px); // Примерный расчет для .full-mode
+    }
+
+    .item-display-card.fixed-size {
+        box-sizing: border-box;
+        border: 1px solid #4a5568;
+        border-radius: 6px;
+        background-color: rgba(30, 30, 55, 0.6);
+        text-align: center;
+        transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        position: relative;
+
+        .item-card-icon-area {
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0,0,0,0.2);
+
+            @each $rarity, $color in $rarity-colors {
+                &.rarity-#{$rarity} {
+                    border: 1px solid darken($color, 20%);
+                    background: radial-gradient(ellipse at center, lighten($color, 15%), darken($color, 15%));
+                }
+            }
+        }
+
+        .item-card-icon {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .item-card-name-wrapper {
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .item-card-name {
+            color: $text-primary-light;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .item-card-level {
+            color: $golden-banner-bg;
+            font-weight: 500;
+        }
+        .item-card-minimal-stats { display: none; }
+
+        &.empty.placeholder, &.explicit-placeholder {
+            border: 2px dashed #555;
+            color: $text-muted-light;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            background-color: rgba(0,0,0,0.1);
+            span { display: block; max-width: 90%; }
+        }
+    }
+
+    .item-display-card.fixed-size.full-mode {
+        width: 120px;
+        height: 160px;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        cursor: default;
+
+        .item-card-icon-area {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 5px;
+        }
+        .item-card-name-wrapper {
+            height: 2.6em;
+            margin-bottom: 3px;
+        }
+        .item-card-name {
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .item-card-level {
+            font-size: 10px;
+            margin-top: auto;
+            padding-bottom: 2px;
+        }
+        &.empty.placeholder, &.explicit-placeholder {
+            height: 160px;
+        }
+    }
+
+    .item-display-card.fixed-size.icon-only-mode {
+        width: 68px;
+        height: 68px;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .item-card-icon-area {
+            width: 100%;
+            height: 100%;
+            margin-bottom: 0;
+        }
+        .item-card-name-wrapper, .item-card-name, .item-card-level {
+             display: none;
+        }
+        &.empty.placeholder, &.explicit-placeholder {
+            height: 68px;
+            font-size: 10px;
+        }
+    }
+
+    .item-display-card.fixed-size.clickable {
+        cursor: pointer;
+
+        &:hover:not(.selected) {
+            border-color: lighten(#4a5568, 20%);
+            transform: scale(1.03);
+            box-shadow: 0 0 5px rgba(lighten(#4a5568, 20%), 0.5);
+        }
+        &.selected {
+            border-color: $golden-banner-bg;
+            box-shadow: 0 0 8px rgba($golden-banner-bg, 0.6);
+        }
+    }
+
+    .stats-preview-column {
+        width: 100%;
+        max-width: 160px;
+        margin-top: 8px;
+        padding: 6px 8px;
+        background-color: rgba(0,0,0,0.15);
+        border-radius: 4px;
+        min-height: 100px;
+
+        .stat-comparison-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            font-size: 11px;
+
+            &:not(:last-child) {
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .stat-label {
+                color: $text-secondary-light;
+                opacity: 0.8;
+                margin-right: 5px;
+                white-space: nowrap;
+            }
+            .stat-value {
+                font-weight: 500;
+                text-align: right;
+                min-width: 35px;
+
+                &.better { color: lighten($stat-better-color, 5%); }
+                &.worse { color: lighten($stat-worse-color, 5%); }
+                &.neutral { color: $text-primary-light; }
+            }
+        }
+        .no-stats-message {
+            text-align: center;
+            color: $text-muted-light;
+            font-style: italic;
+            font-size: 10px;
+            padding: 10px 0;
+        }
+    }
+
+    .swap-inventory-grid-title {
+        font-size: 12px;
+        margin-top: 15px;
+        margin-bottom: 8px;
+        color: $text-secondary-light;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .swap-inventory-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+        gap: 8px;
+        max-height: 140px;
+        overflow-y: auto;
+        padding: 8px;
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 6px;
+
+        .no-items-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 10px;
+            color: $text-muted-light;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
+        &::-webkit-scrollbar-thumb:hover { background: lighten(#4a5568, 10%); }
+    }
+} // Конец .swap-popup-content
+
+// --- НАЧАЛО ЗАМЕНЕННОГО БЛОКА ДЛЯ КНОПОК ---
+.popup-buttons.swap-popup-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    
+    // padding: 10px 0; // УМЕНЬШАЕМ вертикальный padding футера (горизонтальный будет на кнопках или родительском .swap-popup-content)
+                      // Если .swap-popup-content имеет общий padding: 15px;, то здесь 0 по горизонтали нормально.
+                      // И 10px сверху (или больше) для отступа от контента выше.
+    padding-top: 10px; // Отступ сверху от скроллируемой области. Горизонтальные и нижний паддинги будут от .swap-popup-content
+    margin-top: auto; // Прижимает блок кнопок к низу, если контент не занимает всю высоту
+    border-top: 1px solid $divider-color-dark; // Используем переменную
+    flex-shrink: 0; // Не сжимать футер
+
+    .button-action { // Общие стили для кнопок в этом футере, если нужно
+        // Убираем flex-grow, чтобы кнопки не растягивались непропорционально,
+        // их ширина будет зависеть от padding и текста.
+        flex-grow: 0; 
+        padding-top: 8px;    // Вертикальный паддинг кнопки
+        padding-bottom: 8px;
+        padding-left: 25px;  // Горизонтальный паддинг для ширины кнопки
+        padding-right: 25px;
+        font-weight: 600;
+        font-size: 14px; // Можно настроить
+        border-radius: 6px; // Или ваш стандартный радиус
+        border: 1px solid transparent; // Базовый бордер для консистентности с :hover
+        // Остальные стили (cursor, transition) должны наследоваться от глобального .button-action
+    }
+    
+    // Кнопка "Отмена" (слева)
+    .button-secondary { 
+        background: $stat-worse-color; // Красный цвет
+        border-color: darken($stat-worse-color, 10%);
+        color: white;
+
+        &:hover:not(:disabled) {
+            background: lighten($stat-worse-color, 7%);
+            border-color: darken($stat-worse-color, 5%);
+        }
+    }
+
+    // Кнопка "Подтвердить" (справа)
+    .button-primary { 
+        background: $stat-better-color; // Зеленый цвет
+        border-color: darken($stat-better-color, 10%);
+        color: white;
+
+        &:hover:not(:disabled) {
+            background: lighten($stat-better-color, 7%);
+            border-color: darken($stat-better-color, 5%);
+        }
+    }
+}
+// --- КОНЕЦ ЗАМЕНЕННОГО БЛОКА ДЛЯ КНОПОК ---

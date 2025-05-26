@@ -96,7 +96,12 @@ const Inventory = () => { // ▲▲▲------------------------------------------
     );
         const markItemAsSeen = useGameStore(state => state.markItemAsSeen); // Получаем действие
             const markAllDisplayedNewItemsAsOld = useGameStore(state => state.markAllDisplayedNewItemsAsOld);
-
+    const [showSwapPopup, setShowSwapPopup] = useState(false);
+const [swapData, setSwapData] = useState({
+    candidateItem: null,        // Предмет, который мы хотим надеть
+    currentlyEquippedItem: null, // Предмет, который сейчас в слоте
+    slotType: null
+});
     const [selectedItem, setSelectedItem] = useState(null);
     const [powerChangeEffect, setPowerChangeEffect] = useState({ type: null, key: 0 });
     const [internalActiveTab, setInternalActiveTab] = useState("gear");
@@ -139,15 +144,44 @@ const Inventory = () => { // ▲▲▲------------------------------------------
         };
     }, [markAllDisplayedNewItemsAsOld]); // Зависимость нужна, чтобы ESLint не ругался и для стабильности
     // ▲▲▲ КОНЕЦ useEffect ▲▲▲
-    const handleEquip = (item) => {
+const handleEquip = (itemToEquipFromDetailPopup) => { // itemToEquipFromDetailPopup - это 'item' из ItemDetailPopup
+    const slotType = itemToEquipFromDetailPopup.type;
+    const currentlyEquippedInSlot = equipped[slotType]; // 'equipped' из useGameStore
+
+    if (currentlyEquippedInSlot && currentlyEquippedInSlot.uid !== itemToEquipFromDetailPopup.uid) {
+        // Если слот занят другим предметом, открываем SwapPopup
+        setSwapData({
+            candidateItem: itemToEquipFromDetailPopup,
+            currentlyEquippedItem: currentlyEquippedInSlot,
+            slotType: slotType
+        });
+        setShowSwapPopup(true);
+        setSelectedItem(null); // Закрываем ItemDetailPopup
+    } else if (!currentlyEquippedInSlot) {
+        // Если слот пуст, просто экипируем
         const oldPower = useGameStore.getState().powerLevel;
-        equipItem(item);
-        setSelectedItem(null);
+        equipItem(itemToEquipFromDetailPopup); // 'equipItem' - экшен из useGameStore
+        setSelectedItem(null); // Закрываем ItemDetailPopup
         requestAnimationFrame(() => {
             const newPower = useGameStore.getState().powerLevel;
             triggerPowerChangeEffect(oldPower, newPower, Date.now() + '_equip');
         });
-    };
+    }
+    // Если currentlyEquippedInSlot.uid === itemToEquipFromDetailPopup.uid, ничего не делаем (предмет уже надет)
+};
+
+const handleConfirmSwapActual = (newItemToEquip) => {
+    const oldPower = useGameStore.getState().powerLevel;
+    equipItem(newItemToEquip); // Экшен equipItem из useGameStore должен сам позаботиться о возврате старого предмета в инвентарь
+
+    setShowSwapPopup(false);
+    setSwapData({ candidateItem: null, currentlyEquippedItem: null, slotType: null }); // Сбрасываем данные
+
+    requestAnimationFrame(() => {
+        const newPower = useGameStore.getState().powerLevel;
+        triggerPowerChangeEffect(oldPower, newPower, Date.now() + '_swap_equip_confirm');
+    });
+};
 
     const handleUnequip = (slot) => {
         const oldPower = useGameStore.getState().powerLevel;
@@ -394,7 +428,7 @@ const sortedInventory = useMemo(() => {
         {canForge && <span className="forge-indicator">!</span>} {/* Индикатор крафта, если нужен */}
     </button>
     {/* ▲▲▲ КОНЕЦ КНОПКИ "FORGE" БЕЗ ИЗОБРАЖЕНИЯ ▲▲▲ */}
-</div>
+</div>  
             )}
                             <div 
     className={`
@@ -482,12 +516,13 @@ const sortedInventory = useMemo(() => {
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {selectedItem && (
-                    <ItemDetailPopup
+                  <AnimatePresence>
+                    {selectedItem && (
+                     <ItemDetailPopup
                         key="item-detail-popup"
                         item={selectedItem}
-                        equippedItems={equipped}
+                        equippedItems={equipped} // Это уже есть
+                        inventory={inventory}    // <<< ДОБАВЬТЕ ЭТОТ ПРОП
                         onClose={() => setSelectedItem(null)}
                         onEquipItem={handleEquip}
                         onUnequipItem={handleUnequip}
@@ -499,6 +534,22 @@ const sortedInventory = useMemo(() => {
                     />
                 )}
             </AnimatePresence>
+            <AnimatePresence>
+    {showSwapPopup && swapData.currentlyEquippedItem && swapData.candidateItem && (
+        <SwapItemPopup
+            isOpen={showSwapPopup}
+            onClose={() => {
+                setShowSwapPopup(false);
+                setSwapData({ candidateItem: null, currentlyEquippedItem: null, slotType: null });
+            }}
+            currentlyEquippedItem={swapData.currentlyEquippedItem}
+            candidateItem={swapData.candidateItem}
+            inventory={inventory} // Передаем весь инвентарь для фильтрации
+            slotType={swapData.slotType}
+            onConfirmSwap={handleConfirmSwapActual}
+        />
+    )}
+</AnimatePresence>
         </div> // Конец .inventory
     );
 };
