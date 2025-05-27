@@ -1,35 +1,46 @@
-// src/components/ArtifactsPanel.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react'; // Добавлен useCallback
 import useGameStore from '../../store/useGameStore.js';
-import { ARTIFACT_SETS, getArtifactById } from '../../data/artifactsData'; // Путь к данным
+import { ARTIFACT_SETS, getArtifactById } from '../../data/artifactsData';
 import ArtifactPopup from '../popups/ArtifactPopup.jsx';
 import './ArtifactsPanel.scss';
 
-// --- ИЗМЕНЕНО: Принимаем onPowerChange как пропс ---
 const ArtifactsPanel = ({ onPowerChange }) => {
-    // Получаем уровни артефактов для определения активности
     const artifactLevels = useGameStore(state => state.artifactLevels);
-
-    // Состояние для отслеживания выбранного артефакта для попапа
     const [selectedArtifactData, setSelectedArtifactData] = useState(null);
+    const [expandedSets, setExpandedSets] = useState(new Set());
 
-    // Мемоизированная функция для проверки активности бонуса сета (без изменений)
+    // Мемоизируем getOwnedArtifactsCount с useCallback
+    const getOwnedArtifactsCount = useCallback((set) => {
+        return set.artifacts.filter(artifact => {
+            const state = artifactLevels[artifact.id];
+            return state && state.level > 0;
+        }).length;
+    }, [artifactLevels]); // Зависит от artifactLevels
+
     const isBonusActive = useMemo(() => {
         return (set, bonusCondition) => {
-            // ... (логика проверки бонуса как и была) ...
-             const match = bonusCondition.match(/\[\s*Собрано\s*(\d+)\s*\]/i);
-             if (!match || !match[1]) return false;
-             const requiredCount = parseInt(match[1], 10);
-             if (isNaN(requiredCount) || requiredCount <= 0) return false;
-             const activeOwnedCount = set.artifacts.filter(artifact => {
-                 const state = artifactLevels[artifact.id];
-                 return state && state.level > 0;
-             }).length;
-             return activeOwnedCount >= requiredCount;
+            const match = bonusCondition.match(/\[\s*Собрано\s*(\d+)\s*\]/i);
+            if (!match || !match[1]) return false;
+            const requiredCount = parseInt(match[1], 10);
+            if (isNaN(requiredCount) || requiredCount <= 0) return false;
+            
+            const activeOwnedCount = getOwnedArtifactsCount(set); // Используем мемоизированную версию
+            return activeOwnedCount >= requiredCount;
         };
-    }, [artifactLevels]);
+    }, [getOwnedArtifactsCount]); // Теперь зависим от мемоизированной getOwnedArtifactsCount
 
-    // Функция для открытия попапа (без изменений)
+    const toggleSetExpansion = (setId) => {
+        setExpandedSets(prevExpandedSets => {
+            const newExpandedSets = new Set(prevExpandedSets);
+            if (newExpandedSets.has(setId)) {
+                newExpandedSets.delete(setId);
+            } else {
+                newExpandedSets.add(setId);
+            }
+            return newExpandedSets;
+        });
+    };
+
     const handleArtifactClick = (artifactBaseData) => {
         const fullArtifactData = getArtifactById(artifactBaseData.id);
         if (fullArtifactData) {
@@ -39,12 +50,10 @@ const ArtifactsPanel = ({ onPowerChange }) => {
         }
     };
 
-    // Функция для закрытия попапа (без изменений)
     const handleClosePopup = () => {
         setSelectedArtifactData(null);
     };
 
-    // --- Рендер компонента ---
     return (
         <>
             <div className="artifacts-panel-content-only">
@@ -52,68 +61,129 @@ const ArtifactsPanel = ({ onPowerChange }) => {
                     {!ARTIFACT_SETS || ARTIFACT_SETS.length === 0 ? (
                         <p>Данные об артефактах не найдены.</p>
                     ) : (
-                        ARTIFACT_SETS.map((set) => (
-                            <div key={set.id} className="artifact-set">
-                                <h3 className="set-title">{set.name}</h3>
-                                <div className="set-items">
-                                    {set.artifacts.map((artifact) => {
-                                        const artifactState = artifactLevels[artifact.id] || { level: 0 };
-                                        const isActive = artifactState.level > 0;
-                                        const itemClasses = [
-                                            'artifact-item',
-                                            isActive ? 'owned' : 'not-owned',
-                                            `rarity-${artifact.rarity || 'common'}`
-                                        ].join(' ');
+                        ARTIFACT_SETS.map((set) => {
+                            const ownedInThisSetCount = getOwnedArtifactsCount(set);
+                            const totalArtifactsInSet = set.artifacts.length;
+                            const isSetFullyCollected = ownedInThisSetCount >= totalArtifactsInSet && totalArtifactsInSet > 0;
+                            const isCurrentlyExpanded = expandedSets.has(set.id);
 
-                                        return (
-                                            <div
-                                                key={artifact.id}
-                                                className={itemClasses}
-                                                title={artifact.name}
-                                                onClick={() => handleArtifactClick(artifact)}
-                                            >
-                                                <div className="artifact-icon-wrapper">
-                                                    <img src={artifact.icon} alt={artifact.name} />
-                                                </div>
-                                                <span className="artifact-name">{artifact.name}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                            const artifactSetClasses = [
+                                'artifact-set',
+                                isSetFullyCollected ? 'fully-collected-set-glow' : ''
+                            ].join(' ').trim();
 
-                                {/* Отображение бонусов сета (без изменений) */}
-                                {set.bonuses && set.bonuses.length > 0 && (
-                                    <div className="set-bonuses">
-                                        <h4>Бонусы набора:</h4>
-                                        <ul>
-                                            {set.bonuses.map((bonus, index) => {
-                                                const active = isBonusActive(set, bonus.condition);
+                            // --- НОВЫЙ БЛОК: ГРУППИРОВКА БОНУСОВ ---
+                            const groupedBonuses = useMemo(() => {
+                                if (!set.bonuses || set.bonuses.length === 0) {
+                                    return {};
+                                }
+                                return set.bonuses.reduce((acc, bonus) => {
+                                    const conditionKey = bonus.condition; // Например, "[Собрано 2]"
+                                    if (!acc[conditionKey]) {
+                                        acc[conditionKey] = {
+                                            descriptions: [],
+                                            isActive: isBonusActive(set, conditionKey)
+                                        };
+                                    }
+                                    acc[conditionKey].descriptions.push(bonus.description);
+                                    return acc;
+                                }, {});
+                            }, [set, isBonusActive]); // Убрали set.bonuses и artifactLevels т.к. isBonusActive уже их учитывает косвенно
+                                                     // set добавлен, т.к. он используется в isBonusActive
+                            // --- КОНЕЦ НОВОГО БЛОКА ---
+
+                            return (
+                                <div key={set.id} className="artifact-set-container">
+                                    <h3 className="set-title-banner">{set.name}</h3>
+                                    <div className={artifactSetClasses}>
+                                        <div className="set-items">
+                                            {set.artifacts.map((artifact) => {
+                                                const artifactState = artifactLevels[artifact.id] || { level: 0 };
+                                                const isActive = artifactState.level > 0;
+                                                const itemClasses = [
+                                                    'artifact-item',
+                                                    isActive ? 'owned' : 'not-owned',
+                                                    `rarity-${artifact.rarity || 'common'}`
+                                                ].join(' ');
+
                                                 return (
-                                                    <li key={index} className={active ? 'active-bonus' : ''}>
-                                                        <span className="bonus-condition">{bonus.condition}:</span>
-                                                        <span className="bonus-description">{bonus.description}</span>
-                                                    </li>
+                                                    <div
+                                                        key={artifact.id}
+                                                        className={itemClasses}
+                                                        title={artifact.name}
+                                                        onClick={() => handleArtifactClick(artifact)}
+                                                    >
+                                                        <div className="artifact-icon-wrapper">
+                                                            <img src={artifact.icon} alt={artifact.name} />
+                                                        </div>
+                                                    </div>
                                                 );
                                             })}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div> // Конец .artifact-set
-                        )) // Конец map по сетам
-                    )}
-                </div> {/* Конец .artifacts-list */}
-            </div> {/* Конец .artifacts-panel-content-only */}
+                                        </div>
 
-            {/* Условный рендеринг попапа */}
+                                        {set.bonuses && set.bonuses.length > 0 && (
+                                            <div className="set-bonuses-section">
+                                                <h4
+                                                    onClick={() => toggleSetExpansion(set.id)}
+                                                    className="set-bonus-toggle"
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSetExpansion(set.id);}}
+                                                >
+                                                    Бонусы набора:
+                                                    <span className={`expand-indicator ${isCurrentlyExpanded ? 'expanded' : ''}`}>
+                                                        {isCurrentlyExpanded ? '▲' : '▼'}
+                                                    </span>
+                                                </h4>
+                                                <div className={`set-bonuses-content ${isCurrentlyExpanded ? 'expanded' : 'collapsed'}`}>
+                                                    <ul>
+                                                        {/* --- ИЗМЕНЕННЫЙ ЦИКЛ ОТОБРАЖЕНИЯ БОНУСОВ --- */}
+                                                        {Object.entries(groupedBonuses).map(([conditionString, bonusGroupData]) => {
+                                                            const match = conditionString.match(/\[\s*Собрано\s*(\d+)\s*\]/i);
+                                                            const requiredCountForDisplay = match ? parseInt(match[1], 10) : null;
+                                                            const conditionTextLabel = requiredCountForDisplay 
+                                                                ? `${requiredCountForDisplay}/${requiredCountForDisplay}` 
+                                                                : conditionString;
+
+                                                            return (
+                                                                <li 
+                                                                    key={conditionString} 
+                                                                    className={bonusGroupData.isActive ? 'active-bonus-group' : 'inactive-bonus-group'}
+                                                                >
+                                                                    <div className="bonus-condition-header">
+                                                                        <span className="bonus-condition-label">{conditionTextLabel}:</span>
+                                                                    </div>
+                                                                    <div className="bonus-description-list">
+                                                                        {bonusGroupData.descriptions.map((desc, descIndex) => (
+                                                                            <div key={descIndex} className="bonus-description-item">
+                                                                                {desc}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                        {/* --- КОНЕЦ ИЗМЕНЕННОГО ЦИКЛА --- */}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+
             {selectedArtifactData && (
                 <ArtifactPopup
                     artifact={selectedArtifactData}
                     onClose={handleClosePopup}
-                    // --- ИЗМЕНЕНО: Передаем onPowerChange дальше в ArtifactPopup ---
                     onPowerChange={onPowerChange}
                 />
             )}
-        </> // Конец React Fragment
+        </>
     );
 };
 

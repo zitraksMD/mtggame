@@ -632,7 +632,7 @@ html, body {
     .content-section--artifacts {
         flex-grow: 1; width: 100%; max-width: 580px; margin: 0 auto;
         display: flex; flex-direction: column; overflow: hidden;
-        background: linear-gradient(180deg, rgba(50, 40, 70, 0.85), rgba(40, 30, 55, 0.9));
+    background-color: rgba(20, 25, 60, 0.7); // Ваш фон
         border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px;
         padding: 0; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); box-sizing: border-box;
 

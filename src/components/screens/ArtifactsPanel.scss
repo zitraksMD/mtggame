@@ -1,71 +1,153 @@
-// src/components/ArtifactsPanel.scss
-
 // Переменные для цветов редкости
 $rarity-common-color: #888;
 $rarity-rare-color: #3a7ac0;
 $rarity-legendary-color: #d08000;
 $rarity-mythic-color: #c03050;
-$artifact-item-bg: rgba(15, 23, 42, 0.6);       // Фон обертки иконки
-$artifact-item-border: rgba(120, 130, 150, 0.3); // Цвет рамки обертки иконки
+$artifact-item-bg: rgba(15, 23, 42, 0.6);
+$artifact-item-border: rgba(120, 130, 150, 0.3);
 
-// Основной контейнер контента артефактов
-.artifacts-panel-content-only {
-    width: 100%;
-    height: 100%; // Занимает всю высоту родителя
-    display: flex;
-    flex-direction: column;
-    background-color: rgba(0, 0, 0, 0.2); // Фон под списком
-    border-radius: 8px;
-    color: white;
-    box-sizing: border-box;
-    // overflow-y: auto; // Скролл перенесен на .artifacts-list
-}
+// --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ АНИМИРОВАННОЙ РАМКИ ---
+$dash-length-animated: 7px;      // Длина золотого штриха
+$gap-length-animated: 5px;       // Длина промежутка
+// Полная длина одного повторяющегося элемента (штрих + промежуток)
+$pattern-unit-length-animated: $dash-length-animated + $gap-length-animated;
+// Расчетный размер для background-size и background-position в анимации
+$bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Примерно P * 2 * sqrt(2)
 
-// Список сетов артефактов (скроллируемый)
+// --- КОНЕЦ ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ ДЛЯ АНИМИРОВАННОЙ РАМКИ ---
+
+
 .artifacts-list {
-    flex-grow: 1;             // Занимает доступное место
-    overflow-y: auto;         // Включаем вертикальный скролл
-    // Пример паддинга с большим отступом снизу:
-    padding: 15px 15px 30px 15px; // 15px сверху, по 15px по бокам, 30px снизу
+    flex-grow: 1;
+    overflow-y: auto;
+    // Текущий padding-top: 25px. Баннер с top: -15px нависает,
+    // и его верхняя точка оказывается на 25px - 15px = 10px от верха .artifacts-list.
+    padding: 25px 5px 110px 5px; 
     display: flex;
     flex-direction: column;
-    gap: 25px;                // Отступ между сетами
+    // gap: 35px; // Этот gap будет между .artifact-set-container, если margin-bottom у него убрать
+                  // или можно оставить и то, и то, если нужно больше пространства.
 
     // Стилизация скроллбара (WebKit)
     &::-webkit-scrollbar { width: 8px; }
     &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
     &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
     &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
+
+    // --- ДОБАВЛЕНО: Отступ для первого сета ---
+    > .artifact-set-container:first-child {
+        margin-top: 15px; // Добавляем дополнительный отступ сверху только для первого сета.
+                          // Это сдвинет его вниз. Если баннер нависает на 15px (top: -15px),
+                          // то теперь его верхний край будет примерно на уровне padding-top родителя .artifacts-list.
+                          // (25px padding + 15px margin) - 15px overhang = 25px от верха списка.
+                          // Можете настроить это значение (15px) для желаемого отступа.
+    }
+    // --- КОНЕЦ ДОБАВЛЕНИЯ ---
 }
+
+// Контейнер для сета, включающий баннер и сам блок артефактов
+.artifact-set-container {
+    position: relative; // Для позиционирования баннера
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 35px; // Отступ между сетами
+}
+
+// Нависающий баннер для названия сета
+.set-title-banner {
+    background-color: rgba(20, 30, 55, 0.9);
+    color: #f0f0f0;
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    white-space: nowrap;
+    border: 1px solid rgba(100, 110, 140, 0.5);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
 
 // Блок отдельного сета артефактов
 .artifact-set {
-    background-color: rgba(10, 15, 30, 0.5); // Фон блока сета
+    background-color: rgba(10, 15, 30, 0.6);
     border-radius: 8px;
-    padding: 15px;
-    border: 1px solid rgba(100, 110, 140, 0.3); // Рамка блока сета
+    padding: 35px 15px 15px 15px;
+    border: 1px solid rgba(100, 110, 140, 0.3);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    flex-shrink: 0; // Предотвращает сжатие по вертикали
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 450px;
+    box-sizing: border-box;
+    margin-top: 0;
+    position: relative;
+    transition: box-shadow 0.5s ease; // Плавный переход для тени
+
+    $gold-color-animated-local: #FFD700;
+    $border-thickness-animated-local: 2px;
+    $glow-color-animated-local: rgba(255, 215, 0, 0.6);
+
+    &.fully-collected-set-glow {
+        border: $border-thickness-animated-local solid transparent;
+        box-shadow: 0 0 7px $glow-color-animated-local,
+                    0 0 12px $glow-color-animated-local,
+                    0 0 18px rgba(255, 215, 0, 0.3);
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            border: $border-thickness-animated-local solid transparent;
+            background: repeating-linear-gradient(
+                45deg,
+                $gold-color-animated-local,
+                $gold-color-animated-local $dash-length-animated,
+                transparent $dash-length-animated,
+                transparent $pattern-unit-length-animated
+            );
+            background-clip: border-box;
+            background-size: $bg-anim-size-component $bg-anim-size-component;
+            animation: animated-gold-border-flow 0.7s linear infinite;
+            -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+            -webkit-mask-clip: content-box, border-box;
+            -webkit-mask-composite: destination-out;
+            mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+            mask-clip: content-box, border-box;
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: 0;
+        }
+    }
 }
 
-// Заголовок сета
-.set-title {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #eee;
-    margin: 0 0 15px 0;
-    text-align: left;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); // Линия под заголовком
+// Анимация для движущейся золотой рамки
+@keyframes animated-gold-border-flow {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: $bg-anim-size-component 0;
+    }
 }
 
 // Контейнер для иконок артефактов внутри сета
 .set-items {
     display: flex;
-    justify-content: center; // Или flex-start, если нужно выравнивание по левому краю
-    gap: 5px;               // Отступ между иконками
-    flex-wrap: nowrap;         // Перенос на новую строку, если не влезают
-    margin-bottom: 20px;     // Отступ перед бонусами сета
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    // margin-bottom: 20px; // Этот отступ теперь будет управляться set-bonuses-section или отсутствием бонусов
 }
 
 // Элемент одного артефакта
@@ -73,137 +155,179 @@ $artifact-item-border: rgba(120, 130, 150, 0.3); // Цвет рамки обер
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 75px;             // Ширина элемента
-    text-align: center;
-    cursor: pointer;         // Показываем, что можно кликнуть
-    transition: transform 0.2s ease; // Плавный переход для hover-эффекта
+    cursor: pointer;
+    transition: transform 0.2s ease;
 
     .artifact-icon-wrapper {
-        width: 38px; height: 38px; // Размер обертки иконки
-        padding: 4px;              // Отступ от рамки до иконки
-        border: 2px solid $artifact-item-border; // Рамка по умолчанию
-        border-radius: 8px;
-        background-color: $artifact-item-bg; // Фон обертки
-        margin-bottom: 6px;        // Отступ до названия
+        width: 64px; height: 64px;
+        padding: 5px;
+        border: 2px solid $artifact-item-border;
+        border-radius: 10px;
+        background-color: $artifact-item-bg;
         position: relative;
         display: flex; align-items: center; justify-content: center;
-        transition: border-color 0.2s, background-color 0.2s, transform 0.2s ease; // Плавные переходы
+        transition: border-color 0.2s, background-color 0.2s, transform 0.2s ease;
 
         img {
             display: block;
             max-width: 100%; max-height: 100%;
             object-fit: contain;
-            transition: filter 0.3s ease; // Плавный переход для фильтра яркости/серости
-            filter: none; // <<< Яркая иконка по умолчанию
+            transition: filter 0.3s ease;
+            filter: none;
         }
-
-        // Оверлей (опционально, может быть не нужен при использовании filter)
-        .locked-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            border-radius: inherit; // Наследует скругление родителя
-            display: flex; align-items: center; justify-content: center;
-            // Можно добавить иконку замка или '?'
-            // content: '?';
-            // font-size: 24px; color: #aaa;
-            opacity: 0; // Скрыт по умолчанию
-            transition: opacity 0.3s ease;
-        }
-    } // конец .artifact-icon-wrapper
-
-    .artifact-name {
-        font-size: 11px;
-        color: #ccc; // Цвет имени по умолчанию
-        line-height: 1.2;
-        transition: color 0.3s ease; // Плавный переход цвета
     }
 
-    // --- Стили для НЕАКТИВНЫХ артефактов ---
-    // Этот класс добавляется в JSX, если artifact.level === 0 или артефакта нет в collectedArtifacts
     &.not-owned {
         .artifact-icon-wrapper {
             img {
-                filter: grayscale(85%) opacity(0.5); // Делаем иконку тусклой
+                filter: grayscale(85%) opacity(0.5);
             }
-            // Если используешь оверлей, показываем его
-            // .locked-overlay {
-            //   opacity: 1;
-            // }
-        }
-        .artifact-name {
-           color: #777; // Серое имя для неактивных
         }
     }
 
-    // --- Стили для РЕДКОСТИ (влияют на рамку/фон обертки) ---
     &.rarity-common { .artifact-icon-wrapper { border-color: $rarity-common-color; } }
     &.rarity-rare { .artifact-icon-wrapper { border-color: $rarity-rare-color; background-color: rgba($rarity-rare-color, 0.15); } }
     &.rarity-legendary { .artifact-icon-wrapper { border-color: $rarity-legendary-color; background-color: rgba($rarity-legendary-color, 0.15); } }
     &.rarity-mythic { .artifact-icon-wrapper { border-color: $rarity-mythic-color; background-color: rgba($rarity-mythic-color, 0.15); } }
 
-    // --- Эффект при НАВЕДЕНИИ ---
     &:hover {
         .artifact-icon-wrapper {
-            transform: scale(1.05); // Немного увеличиваем
-            // Подсвечиваем рамку белым или цветом редкости
-             border-color: #fff; // Белым для контраста
-             // Или цветом редкости:
-             // &.rarity-common { border-color: lighten($rarity-common-color, 15%); }
-             // &.rarity-rare { border-color: lighten($rarity-rare-color, 15%); }
-             // &.rarity-legendary { border-color: lighten($rarity-legendary-color, 15%); }
-             // &.rarity-mythic { border-color: lighten($rarity-mythic-color, 15%); }
+            transform: scale(1.08);
+            border-color: #fff;
         }
-
-        // Немного ослабляем фильтр при наведении на неактивный
         &.not-owned .artifact-icon-wrapper img {
             filter: grayscale(50%) opacity(0.7);
         }
     }
+}
 
-} // Конец .artifact-item
+// --- НОВЫЕ И ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ БОНУСОВ ---
 
-// Блок с бонусами сета
-.set-bonuses {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1); // Разделитель
+// Контейнер для секции бонусов (заголовок + контент)
+.set-bonuses-section {
+    margin-top: 20px;
+    width: 100%;
+    // Для центрирования дочернего элемента с width: fit-content,
+    // можно сделать родителя flex-контейнером (не обязательно, если у дочернего margin: auto)
+    // display: flex;
+    // justify-content: center;
+}
 
-    h4 { // Заголовок "Бонусы набора:"
-        font-size: 0.9em;
-        color: #bbb;
-        margin: 0 0 10px 0;
-        font-weight: normal;
-        text-transform: uppercase;
-        text-align: left;
+.set-bonus-toggle {
+    font-size: 0.9em;
+    color: #ddd;
+    background-color: rgba(20, 30, 55, 0.8);
+    padding: 6px 15px; // Немного увеличим горизонтальный padding для лучшего вида
+    border-radius: 6px;
+    
+    // ИЗМЕНЕНИЯ ДЛЯ ЦЕНТРИРОВАНИЯ И ШИРИНЫ ПО КОНТЕНТУ:
+    width: fit-content; // Ширина кнопки будет по её содержимому
+    min-width: 180px;   // Минимальная ширина, чтобы кнопка не была слишком узкой (опционально)
+    margin-left: auto;  // Автоматический отступ слева
+    margin-right: auto; // Автоматический отступ справа
+    margin-bottom: 10px; // Отступ снизу
+
+    font-weight: normal;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;           // Оставляем flex для выравнивания текста и стрелки внутри кнопки
+    justify-content: center; // Центрируем текст и стрелку внутри кнопки
+    align-items: center;
+    user-select: none;
+
+    &:hover {
+        background-color: rgba(30, 40, 65, 0.85);
+        color: #fff;
     }
-    ul { // Список бонусов
+
+    .expand-indicator {
+        display: inline-block;
+        margin-left: 10px;
+        transition: transform 0.3s ease;
+        font-size: 0.8em;
+        // &.expanded - стили для повернутой стрелки остаются
+    }
+}
+
+
+// Контейнер для списка бонусов, который будет анимироваться
+.set-bonuses-content { // Контейнер для списка бонусов, который анимируется
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, padding-top 0.4s ease-in-out, border-top-width 0.4s ease-in-out;
+    padding-top: 0;
+    border-top: 0px dashed rgba(255, 255, 255, 0.1);
+
+    &.collapsed {
+        max-height: 0;
+        opacity: 0;
+    }
+
+    &.expanded {
+        max-height: 500px; // Подберите достаточное значение
+        opacity: 1;
+        padding-top: 15px;
+        border-top-width: 1px;
+    }
+
+    ul {
         list-style: none;
         padding: 0; margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 5px; // Отступ между строками бонусов
+        gap: 10px; // Отступ между "контейнерами" условий (2/2 и 4/4)
     }
-    li { // Строка бонуса
-        font-size: 0.85em;
-        color: #999; // Цвет неактивного бонуса
-        transition: color 0.3s ease;
-        text-align: left;
 
-        // Стили для активного бонуса
-        &.active-bonus {
-            color: #4caf50; // Зеленый цвет активного
-            font-weight: bold;
-            .bonus-condition { color: #6fcf97; } // Условие тоже подсвечиваем
-            .bonus-description { color: #fff; } // Описание делаем белым
+    li { // Теперь это li для целой группы бонусов - наш "отдельный контейнер"
+        background-color: rgba(10, 20, 40, 0.5); // Фоновый цвет для контейнера бонусов
+        border-radius: 6px;                      // Скругление углов контейнера
+        padding: 12px 15px;                      // Внутренние отступы контейнера
+        transition: background-color 0.3s ease, box-shadow 0.3s ease; // Плавные переходы
+
+        .bonus-condition-header {
+            text-align: center;     // Центрируем текст заголовка ("2/2:", "4/4:")
+            margin-bottom: 10px;    // Отступ под заголовком
+            padding-bottom: 6px;    // Небольшой отступ для линии под заголовком
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); // Линия под заголовком
         }
 
-        .bonus-condition { // "[Собрано X]"
-             display: inline-block;
-             min-width: 80px; // Чтобы выровнять описания
-             margin-right: 10px;
-             color: #ccc;      // Цвет условия по умолчанию
-             font-weight: 500;
-         }
-         // .bonus-description - текст бонуса
+        .bonus-condition-label {
+            font-size: 1em;         // Размер шрифта для "2/2:", "4/4:"
+            font-weight: bold;      // Жирный шрифт
+            color: #cdd9e5;         // Цвет текста заголовка по умолчанию
+            display: inline-block;  // Чтобы занимал только необходимую ширину
+        }
+
+        .bonus-description-list {
+            display: flex;
+            flex-direction: column; // Бонусы в столбик
+            gap: 5px;               // Отступ между описаниями бонусов
+        }
+
+        .bonus-description-item {
+            font-size: 0.85em;
+            color: #99acc1;         // Цвет текста неактивного бонуса
+            text-align: center;        // Выравнивание текста описаний по левому краю
+            padding-left: 5px;       // Небольшой отступ слева для описаний
+        }
+
+        // Стили для АКТИВНОЙ ГРУППЫ бонусов ("контейнера")
+        &.active-bonus-group {
+            background-color: rgba(40, 88, 42, 0.5); // Зеленоватый фон для активного контейнера
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+
+            .bonus-condition-label {
+                color: #86dc89; // Яркий цвет для активного заголовка "2/2:"
+            }
+
+            .bonus-description-item {
+                color: #e0ffe0; // Светлый цвет для описаний активных бонусов
+            }
+        }
+        
+        // Стили для НЕАКТИВНОЙ ГРУППЫ (если нужно отличать от дефолтных)
+        &.inactive-bonus-group {
+             // .bonus-condition-label остается #ccc
+             // .bonus-description-item остается #999
+        }
     }
-} // Конец .set-bonuses
+}
