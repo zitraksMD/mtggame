@@ -1,8 +1,12 @@
-// Переменные для цветов редкости
-$rarity-common-color: #888;
-$rarity-rare-color: #3a7ac0;
-$rarity-legendary-color: #d08000;
-$rarity-mythic-color: #c03050;
+// Переменные для цветов редкости (обновленные и добавленные)
+$rarity-common-color: #b0b0b0;    // Обновлено с вашего списка
+$rarity-uncommon-color: #66bb66;  // Новый - Зеленый
+$rarity-rare-color: #5599ff;      // Обновлено с вашего списка - Синий
+$rarity-epic-color: #A020F0;      // Новый - Фиолетовый (из вашего списка)
+$rarity-legendary-color: #ffaa44; // Обновлено с вашего списка - Оранжево-золотой
+$rarity-mythic-color: #cc66ff;    // Обновлено с вашего списка - Фиолетовый (из вашего списка)
+
+// Остальные ваши переменные
 $artifact-item-bg: rgba(15, 23, 42, 0.6);
 $artifact-item-border: rgba(120, 130, 150, 0.3);
 
@@ -22,11 +26,11 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     overflow-y: auto;
     // Текущий padding-top: 25px. Баннер с top: -15px нависает,
     // и его верхняя точка оказывается на 25px - 15px = 10px от верха .artifacts-list.
-    padding: 25px 5px 110px 5px; 
+    padding: 25px 5px 110px 5px;
     display: flex;
     flex-direction: column;
     // gap: 35px; // Этот gap будет между .artifact-set-container, если margin-bottom у него убрать
-                  // или можно оставить и то, и то, если нужно больше пространства.
+                // или можно оставить и то, и то, если нужно больше пространства.
 
     // Стилизация скроллбара (WebKit)
     &::-webkit-scrollbar { width: 8px; }
@@ -60,7 +64,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     background-color: rgba(20, 30, 55, 0.9);
     color: #f0f0f0;
     padding: 8px 20px;
-    border-radius: 10px;
+    border-radius: 18px;
     font-size: 1.2em;
     font-weight: bold;
     text-align: center;
@@ -78,7 +82,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
 // Блок отдельного сета артефактов
 .artifact-set {
     background-color: rgba(10, 15, 30, 0.6);
-    border-radius: 8px;
+    border-radius: 18px;
     padding: 35px 15px 15px 15px;
     border: 1px solid rgba(100, 110, 140, 0.3);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -97,8 +101,8 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     &.fully-collected-set-glow {
         border: $border-thickness-animated-local solid transparent;
         box-shadow: 0 0 7px $glow-color-animated-local,
-                    0 0 12px $glow-color-animated-local,
-                    0 0 18px rgba(255, 215, 0, 0.3);
+                      0 0 12px $glow-color-animated-local,
+                      0 0 18px rgba(255, 215, 0, 0.3);
 
         &::before {
             content: '';
@@ -143,57 +147,100 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
 
 // Контейнер для иконок артефактов внутри сета
 .set-items {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    // margin-bottom: 20px; // Этот отступ теперь будет управляться set-bonuses-section или отсутствием бонусов
-}
+        display: grid; // Используем Grid вместо Flex
+        grid-template-columns: repeat(2, auto); // 2 колонки, ширина по содержимому иконок
+        // Или, если иконки должны занимать равную ширину колонки:
+        // grid-template-columns: repeat(2, 1fr);
+
+        justify-content: center; // Центрирует всю сетку, если она меньше ширины родителя
+        align-items: start;      // Выравнивание элементов по началу их grid-area (если высота разная)
+        justify-items: center;   // Центрирует элементы внутри их ячеек грида по горизонтали
+
+        gap: 15px; // Отступ между иконками (и по горизонтали, и по вертикали)
+                   // Вы можете настроить row-gap и column-gap отдельно, если нужно:
+                   // row-gap: 15px;
+                   // column-gap: 10px;
+
+        width: fit-content; // Опционально: ширина блока иконок будет по его содержимому
+        margin-left: auto;  // Для центрирования блока .set-items внутри .artifact-set, если width: fit-content
+        margin-right: auto;
+        margin-bottom: 20px; // Отступ под блоком иконок
+    }
 
 // Элемент одного артефакта
 .artifact-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.2s ease;
+        display: flex; // Оставляем flex для вертикального расположения иконки и имени (если оно было)
+        flex-direction: column;
+        align-items: center;
+        // width: auto; // Ширина теперь будет больше зависеть от размера .artifact-icon-wrapper
+        cursor: pointer;
+        transition: transform 0.2s ease;
 
-    .artifact-icon-wrapper {
-        width: 64px; height: 64px;
-        padding: 5px;
-        border: 2px solid $artifact-item-border;
-        border-radius: 10px;
-        background-color: $artifact-item-bg;
-        position: relative;
-        display: flex; align-items: center; justify-content: center;
-        transition: border-color 0.2s, background-color 0.2s, transform 0.2s ease;
-
-        img {
-            display: block;
-            max-width: 100%; max-height: 100%;
-            object-fit: contain;
-            transition: filter 0.3s ease;
-            filter: none;
-        }
-    }
-
-    &.not-owned {
         .artifact-icon-wrapper {
+            width: 100px;  // УВЕЛИЧЕННЫЙ РАЗМЕР (было 55px или 60px)
+            height: 100px; // УВЕЛИЧЕННЫЙ РАЗМЕР
+            padding: 6px; // Можно немного увеличить отступ внутри рамки
+            border: 2px solid $artifact-item-border; // Стандартная рамка
+            border-radius: 10px; // Скругление углов
+            background-color: $artifact-item-bg; // Фон обертки
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, background-color 0.2s, transform 0.2s ease;
+
             img {
-                filter: grayscale(85%) opacity(0.5);
+                display: block;
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+                transition: filter 0.3s ease;
+                filter: none;
             }
-        }
+           .artifact-status-label {
+                position: absolute;
+                bottom: 0; // Прижимаем к низу контейнера .artifact-icon-wrapper
+                left: 0;
+                width: 100%; // Растягиваем на всю ширину контейнера
+                background-color: rgba(0, 0, 0, 0.75); // Полупрозрачный темный фон
+                color: #fff; // Белый цвет текста по умолчанию
+                font-size: 10px;
+                font-weight: bold;
+                text-align: center;
+                padding: 2px 0; // Небольшой вертикальный отступ
+                line-height: 1.2; // Для лучшего отображения текста
+                // Скругление углов не нужно, если родитель (.artifact-icon-wrapper) имеет overflow: hidden
+                // и этот лейбл прижат к его краям. Родительский border-radius "обрежет" его.
+                // Если overflow: hidden у родителя нет, можно добавить:
+                // border-bottom-left-radius: 8px; // Чуть меньше, чем у родителя, если у него 10px
+                // border-bottom-right-radius: 8px;
+                user-select: none; // Чтобы текст нельзя было выделить
+
+                &.level-label {
+                    color: #FFD700; // Золотой цвет для уровня
+                    font-size: 11px; // Можно чуть крупнее для уровня
+                }
+
+                &.not-active-label {
+                    color: #aaa; // Серый цвет для "Not active"
+                    font-style: italic; // Можно курсивом
+                }
+            }
+        // --- КОНЕЦ НОВЫХ СТИЛЕЙ ---
     }
 
-    &.rarity-common { .artifact-icon-wrapper { border-color: $rarity-common-color; } }
+    // Стили для редкостей артефактов
+    &.rarity-common { .artifact-icon-wrapper { border-color: $rarity-common-color; /* Для common фон не меняем, как в оригинале */ } }
+    &.rarity-uncommon { .artifact-icon-wrapper { border-color: $rarity-uncommon-color; background-color: rgba($rarity-uncommon-color, 0.15); } } // Новый стиль
     &.rarity-rare { .artifact-icon-wrapper { border-color: $rarity-rare-color; background-color: rgba($rarity-rare-color, 0.15); } }
+    &.rarity-epic { .artifact-icon-wrapper { border-color: $rarity-epic-color; background-color: rgba($rarity-epic-color, 0.15); } } // Новый стиль
     &.rarity-legendary { .artifact-icon-wrapper { border-color: $rarity-legendary-color; background-color: rgba($rarity-legendary-color, 0.15); } }
     &.rarity-mythic { .artifact-icon-wrapper { border-color: $rarity-mythic-color; background-color: rgba($rarity-mythic-color, 0.15); } }
 
     &:hover {
         .artifact-icon-wrapper {
             transform: scale(1.08);
-            border-color: #fff;
+            border-color: #fff; // При наведении рамка становится белой для всех редкостей
         }
         &.not-owned .artifact-icon-wrapper img {
             filter: grayscale(50%) opacity(0.7);
@@ -219,7 +266,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     background-color: rgba(20, 30, 55, 0.8);
     padding: 6px 15px; // Немного увеличим горизонтальный padding для лучшего вида
     border-radius: 6px;
-    
+
     // ИЗМЕНЕНИЯ ДЛЯ ЦЕНТРИРОВАНИЯ И ШИРИНЫ ПО КОНТЕНТУ:
     width: fit-content; // Ширина кнопки будет по её содержимому
     min-width: 180px;   // Минимальная ширина, чтобы кнопка не была слишком узкой (опционально)
@@ -306,7 +353,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
         .bonus-description-item {
             font-size: 0.85em;
             color: #99acc1;         // Цвет текста неактивного бонуса
-            text-align: center;        // Выравнивание текста описаний по левому краю
+            text-align: center;         // Выравнивание текста описаний по левому краю
             padding-left: 5px;       // Небольшой отступ слева для описаний
         }
 
@@ -323,7 +370,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
                 color: #e0ffe0; // Светлый цвет для описаний активных бонусов
             }
         }
-        
+
         // Стили для НЕАКТИВНОЙ ГРУППЫ (если нужно отличать от дефолтных)
         &.inactive-bonus-group {
              // .bonus-condition-label остается #ccc

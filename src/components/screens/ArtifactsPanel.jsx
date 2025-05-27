@@ -92,34 +92,49 @@ const ArtifactsPanel = ({ onPowerChange }) => {
                                                      // set добавлен, т.к. он используется в isBonusActive
                             // --- КОНЕЦ НОВОГО БЛОКА ---
 
-                            return (
-                                <div key={set.id} className="artifact-set-container">
-                                    <h3 className="set-title-banner">{set.name}</h3>
-                                    <div className={artifactSetClasses}>
-                                        <div className="set-items">
-                                            {set.artifacts.map((artifact) => {
-                                                const artifactState = artifactLevels[artifact.id] || { level: 0 };
-                                                const isActive = artifactState.level > 0;
-                                                const itemClasses = [
-                                                    'artifact-item',
-                                                    isActive ? 'owned' : 'not-owned',
-                                                    `rarity-${artifact.rarity || 'common'}`
-                                                ].join(' ');
+                           return (
+                            <div key={set.id} className="artifact-set-container">
+                                <h3 className="set-title-banner">{set.name}</h3>
+                                <div className={artifactSetClasses}>
+                                    <div className="set-items">
+                                        {set.artifacts.map((artifact) => {
+                                            const artifactState = artifactLevels[artifact.id] || { level: 0 };
+                                            const isActive = artifactState.level > 0;
+                                            const level = artifactState.level; // Получаем уровень артефакта
 
-                                                return (
-                                                    <div
-                                                        key={artifact.id}
-                                                        className={itemClasses}
-                                                        title={artifact.name}
-                                                        onClick={() => handleArtifactClick(artifact)}
-                                                    >
-                                                        <div className="artifact-icon-wrapper">
-                                                            <img src={artifact.icon} alt={artifact.name} />
-                                                        </div>
+                                            const itemClasses = [
+                                                'artifact-item',
+                                                isActive ? 'owned' : 'not-owned',
+                                                `rarity-${artifact.rarity || 'common'}`
+                                            ].join(' ');
+
+                                            return (
+                                                <div
+                                                    key={artifact.id}
+                                                    className={itemClasses}
+                                                    title={artifact.name}
+                                                    onClick={() => handleArtifactClick(artifact)}
+                                                >
+                                                    <div className="artifact-icon-wrapper">
+                                                        <img src={artifact.icon} alt={artifact.name} />
+                                                        
+                                                        {/* === НОВЫЙ БЛОК ДЛЯ ЛЕЙБЛОВ === */}
+                                                        {isActive ? (
+                                                            <div className="artifact-status-label level-label">
+                                                                Lvl {level}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="artifact-status-label not-active-label">
+                                                                Not active
+                                                            </div>
+                                                        )}
+                                                        {/* === КОНЕЦ НОВОГО БЛОКА === */}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                    {/* Если имя артефакта было под иконкой, оно там и останется или его можно вернуть */}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
 
                                         {set.bonuses && set.bonuses.length > 0 && (
                                             <div className="set-bonuses-section">
