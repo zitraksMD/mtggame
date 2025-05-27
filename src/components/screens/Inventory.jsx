@@ -504,17 +504,17 @@ const sortedInventory = useMemo(() => {
                         initial="initial" animate="animate" exit="exit"
                         variants={layoutTransitionVariants}
                     >
-                        <InventoryTabs
-                            activeTab={internalActiveTab}
-                            setActiveTab={setInternalActiveTab}
-                            position="top"
-                        />
                         <div className="content-section content-section--artifacts">
-                            <div className="inventory-main-area inventory-main-area--artifacts">
-                                <ArtifactsPanel onPowerChange={handleArtifactPowerChange} />
-                            </div>
-                        </div>
-                    </motion.div> /* Конец .inventory-layout--artifacts */
+        <InventoryTabs // <--- ТЕПЕРЬ ЗДЕСЬ
+            activeTab={internalActiveTab}
+            setActiveTab={setInternalActiveTab}
+            position="top"
+        />
+        <div className="inventory-main-area inventory-main-area--artifacts">
+            <ArtifactsPanel onPowerChange={handleArtifactPowerChange} />
+        </div>
+    </div>
+</motion.div>
                 )}
             </AnimatePresence>
 
