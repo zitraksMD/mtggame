@@ -1,0 +1,546 @@
+// src/components/Achievements.scss (или GloryScreen.scss)
+
+// VVV НОВЫЕ ПЕРЕМЕННЫЕ ЦВЕТА VVV
+$sp-bg-start: #2a0a4a;
+$sp-bg-end: #4a1a6a;
+// ^^^ КОНЕЦ НОВЫХ ПЕРЕМЕННЫХ ^^^
+
+// --- Общий контейнер экрана ---
+.glory-screen { // Был .achievements-screen
+    width: 100%;
+    height: 100%;
+    // VVV ИЗМЕНЕННЫЙ ФОН VVV
+    background: radial-gradient(ellipse at center, $sp-bg-start 0%, darken($sp-bg-end, 10%) 100%);
+    // ^^^ КОНЕЦ ИЗМЕНЕННОГО ФОНА ^^^
+    box-sizing: border-box;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 15px;
+    padding-right: 15px;
+    padding-top: 10px; 
+    padding-bottom: 75px; 
+    position: absolute;
+}
+
+// --- Навигация по вкладкам ---
+.tabs-navigation {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    width: 100%;
+    max-width: 600px;
+    background-color: rgba(0, 0, 0, 0.25); // Немного прозрачнее, чтобы фон просвечивал
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+
+    .tab-button {
+        flex-grow: 1;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #d0c0e0; // Оттенок под новый фон
+        background-color: transparent;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.25s, color 0.25s, box-shadow 0.25s;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+
+        &:hover {
+            background-color: rgba(255,255,255,0.08);
+            color: #f0e8ff; // Светлее при наведении
+        }
+
+        &.active {
+            // Используем один из цветов фона для активной вкладки, но сделаем его светлее
+            background-color: lighten($sp-bg-end, 10%); 
+            color: white;
+            box-shadow: 0 0 12px rgba(lighten($sp-bg-end, 10%), 0.7);
+        }
+    }
+}
+
+// --- Контейнер для контента активной вкладки ---
+.tab-content {
+    width: 100%;
+    flex-grow: 1; 
+    display: flex; 
+    flex-direction: column;
+    overflow: hidden; 
+
+    .trophies-content, .trials-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+// --- Стили для вкладки "Trophies" (Достижения) ---
+.trophies-content {
+    .achievement-level-progress-bar {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto 10px auto;
+        background-color: rgba(0, 0, 0, 0.35);
+        border-radius: 12px;
+        padding: 8px 15px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2); // Чуть светлее рамка
+
+        .level-badge {
+            flex-shrink: 0; width: 42px; height: 42px; background-color: lighten($sp-bg-end, 15%); // Используем цвет фона
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 2px solid #fff; box-shadow: 0 0 10px rgba(lighten($sp-bg-end, 15%), 0.7);
+            .level-number { font-size: 19px; font-weight: bold; color: #fff; }
+        }
+        .xp-bar-container {
+            flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .xp-bar-bg {
+            width: 100%; height: 14px; background-color: rgba(0, 0, 0, 0.55);
+            border-radius: 7px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .xp-bar-fg {
+            height: 100%; background: linear-gradient(to right, lighten($sp-bg-end, 20%), lighten($sp-bg-start, 30%)); // Градиент в тонах фона
+            border-radius: 7px; transition: width 0.5s ease-out;
+        }
+        .xp-text { font-size: 11px; color: #d8d8d8; font-weight: 500; }
+        .xp-target {
+            flex-shrink: 0; font-size: 15px; font-weight: bold; color: #ffd700;
+            min-width: 45px; text-align: right;
+        }
+    }
+
+    .level-rewards-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        background-color: darken($sp-bg-end, 5%); // В тон фона, но темнее
+        border: 1px solid lighten($sp-bg-end, 5%);
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 15px;
+        transition: background-color 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+        &:hover {
+            background-color: $sp-bg-end;
+        }
+    }
+
+    .achievements-list {
+        width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; display: flex;
+        flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; padding: 0 5px 10px 5px;
+
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
+        scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
+    }
+
+    .achievement-item {
+        background-color: rgba(255, 255, 255, 0.05); // Очень легкий светлый оттенок на фоне
+        border: 1px solid rgba(255, 255, 255, 0.15); 
+        border-radius: 10px; padding: 12px 15px;
+        display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center;
+        transition: opacity 0.3s, border-color 0.3s, background-color 0.3s; cursor: pointer;
+
+        &:hover { background-color: rgba(255, 255, 255, 0.08); }
+        &.claimed { 
+            opacity: 0.65; 
+            border-left: 5px solid #5cb85c;
+        }
+        &.claimable { 
+            border-color: #ffae42; 
+            background-color: rgba(255, 174, 66, 0.1); 
+            border-left: 5px solid #ffae42;
+        }
+
+        .achievement-icon {
+            font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            background-color: rgba(0,0,0,0.25); border-radius: 50%; flex-shrink: 0;
+        }
+        .achievement-details-condensed { 
+            overflow: hidden; 
+            .achievement-name {
+                font-weight: bold; font-size: 15px; color: #f0f0f0; 
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                margin-bottom: 3px;
+            }
+            .achievement-level-info {
+                font-size: 11px;
+                color: #c0b0d0; // В тон фона
+            }
+        }
+        .achievement-reward-condensed {
+            font-size: 12px; display: flex; align-items: center;
+            gap: 10px; justify-self: end; color: #d8c8e8; // В тон фона
+            span { display: flex; align-items: center; gap: 3px; }
+            small { font-weight: 500; font-size: 11px; }
+            .xp-reward { color: #d0a0ff; small { color: #d0a0ff; } } // Светлый фиолетовый для XP
+        }
+        .claim-button {
+            padding: 7px 10px; font-size: 12px; min-width: 65px; text-align: center;
+            border: none; border-radius: 6px; cursor: pointer; font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s; justify-self: end; white-space: nowrap;
+            
+            &:not(:disabled) { 
+                background-color: #50c878; color: white; // Яркий зеленый
+                &:hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
+            }
+            &:disabled { 
+                background-color: rgba(255,255,255,0.1); color: #aaa; cursor: default; opacity: 0.8; 
+            }
+        }
+    }
+}
+
+// --- Стили для вкладки "Trials" ---
+.trials-content {
+    h3 {
+        color: #f0e8ff; // Светлее для лучшей читаемости на темном фоне
+        margin-top: 10px;
+        margin-bottom: 15px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: 600;
+    }
+}
+
+.trials-list {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0 5px 15px 5px;
+
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
+    scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
+
+    p {
+        text-align: center;
+        color: #b0a0c0; // В тон фона
+        margin-top: 20px;
+    }
+}
+
+.trial-item {
+    background-color: rgba(255, 255, 255, 0.04); // Очень легкий светлый оттенок
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: auto 1fr; 
+    grid-template-rows: auto auto auto; // Добавил строку для наград, чтобы кнопки были всегда внизу
+    gap: 10px 15px;
+    align-items: center;
+
+    &.claimed { opacity: 0.6; border-left: 5px solid #5cb85c; }
+    &.claimable { border-color: #ffae42; border-left: 5px solid #ffae42; }
+
+    .trial-icon {
+        grid-row: 1 / 2;
+        font-size: 22px;
+        width: 38px; height: 38px;
+        display: flex; align-items: center; justify-content: center;
+        background-color: rgba(0,0,0,0.25);
+        border-radius: 50%;
+    }
+
+    .trial-info {
+        grid-row: 1 / 2;
+        .trial-name {
+            font-weight: bold;
+            font-size: 15px;
+            color: #f0f0f0;
+            margin-bottom: 5px;
+        }
+        .trial-description {
+            font-size: 13px;
+            color: #d0c0e0; // В тон фона
+            line-height: 1.45;
+            margin: 0;
+        }
+    }
+    
+    .trial-rewards {
+        grid-column: 1 / -1; // Растягиваем на всю ширину под инфо
+        grid-row: 2 / 3;    // Вторая строка
+        font-size: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        color: #d8c8e8; // В тон фона
+        margin-top: 10px; 
+        padding-top: 10px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+
+
+        span { display: flex; align-items: center; gap: 3px; background-color: rgba(0,0,0,0.15); padding: 2px 5px; border-radius: 4px;}
+        small { font-weight: 500; font-size: 11px; }
+        .xp-reward { color: #d0a0ff; small { color: #d0a0ff; } }
+    }
+
+    .trial-actions {
+        grid-column: 1 / -1; 
+        grid-row: 3 / 4;     
+        margin-top: 12px;    
+        // border-top: 1px solid rgba(255,255,255,0.1); // Можно убрать, если есть отступ от наград
+        // padding-top: 12px;
+        display: flex;
+        justify-content: flex-end; 
+        gap: 10px;
+        
+        .action-button, .claim-button {
+            padding: 8px 14px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .action-button {
+            background-color: lighten($sp-bg-end, 5%); // В тон фона, но чуть светлее
+            color: white;
+            border: 1px solid lighten($sp-bg-end, 15%);
+            &:hover { background-color: lighten($sp-bg-end, 10%); transform: scale(1.03); }
+        }
+        .claim-button {
+            &:not(:disabled) { background-color: #50c878; color: white; }
+            &:not(:disabled):hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
+            &:disabled { background-color: rgba(255,255,255,0.1); color: #aaa; cursor: default; }
+        }
+    }
+}
+
+
+// === Стили для ПОПАПОВ (Общие и специфичные) ===
+.achievement-popup-overlay, .level-rewards-popup-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(darken($sp-bg-start, 15%), 0.85); // Фон оверлея в тонах основного фона
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px; box-sizing: border-box;
+    backdrop-filter: blur(3px); // Легкое размытие фона под попапом
+}
+
+.achievement-popup-content, .level-rewards-popup-content {
+    background-color: lighten($sp-bg-start, 5%); 
+    border: 1px solid lighten($sp-bg-start, 15%); 
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 480px;
+    width: 100%; 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    position: relative; 
+    color: #e8e8e8;
+    display: flex;
+    flex-direction: column;
+
+    .popup-close-btn {
+        position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.05); border: none; // Чуть заметнее
+        color: #ccc; font-size: 22px; line-height: 1; cursor: pointer; padding: 0;
+        width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        transition: background-color 0.2s, color 0.2s;
+        &:hover { background-color: rgba(255,255,255,0.1); color: #fff; }
+    }
+}
+
+.achievement-popup-content {
+    padding-top: 25px;
+    
+    .popup-header {
+        display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
+        padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    .popup-icon {
+        font-size: 34px; width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;
+        background-color: rgba(0,0,0,0.25); border-radius: 50%; flex-shrink: 0;
+    }
+    .popup-name { font-size: 19px; font-weight: bold; margin: 0; color: #fff; }
+    
+    .achievement-levels-in-popup {
+        max-height: 60vh; 
+        overflow-y: auto;
+        margin-top: 10px;
+        padding-right: 5px; 
+        padding-left: 2px;
+
+        &::-webkit-scrollbar { width: 5px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
+    }
+
+    .achievement-popup-level-item {
+        background-color: rgba(255, 255, 255, 0.03); // Еще чуть прозрачнее
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+
+        &.claimed {
+            opacity: 0.7;
+            border-left: 4px solid #52a055; 
+        }
+        &.claimable {
+            border-color: #ffae42; 
+            border-left: 4px solid #ffae42;
+            background-color: rgba(255, 174, 66, 0.06); // Немного темнее
+        }
+
+        .level-number-badge {
+            flex-shrink: 0;
+            font-weight: bold;
+            font-size: 12px;
+            color: #e0e0e0;
+            background-color: rgba(0,0,0,0.3);
+            padding: 5px 8px;
+            border-radius: 5px;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .level-details {
+            flex-grow: 1;
+            .popup-description {
+                margin-top: 0; margin-bottom: 10px;
+                font-size: 13px; line-height: 1.5; color: #d8c8e8; // В тон фона
+            }
+            .popup-progress {
+                margin-bottom: 10px;
+                .progress-bar-bg { height: 8px; background-color: rgba(0, 0, 0, 0.35); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+                .progress-bar-fg { height: 100%; background: linear-gradient(to right, #ffae42, #ffd18a); border-radius: 4px; }
+                span { font-size: 11px; color: #ffae42; display: block; text-align: center; margin-top: 3px; font-weight: 500;}
+            }
+            .popup-status {
+                font-size: 13px; margin-bottom: 10px; font-weight: 500;
+                &.completed-text { color: #52a055; }
+                &.locked-text { color: #aaa; }
+            }
+            .popup-rewards.small-rewards {
+                margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);
+                font-size: 12px; display: flex; flex-wrap: wrap; gap: 8px;
+                span { margin-bottom: 0; background-color: rgba(0,0,0,0.15); padding: 2px 5px; border-radius: 3px;}
+                small { font-size: 11px; }
+            }
+        }
+
+        .claim-button-popup {
+            padding: 7px 12px; font-size: 12px; min-width: 70px;
+            align-self: center; font-weight: 600;
+            border: none; border-radius: 5px; cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            
+            &:not(:disabled) { 
+                background-color: #50c878; color: white; 
+                 &:hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
+            }
+            &:disabled { 
+                background-color: rgba(255,255,255,0.1); color: #aaa; opacity: 0.8;
+            }
+        }
+    }
+}
+
+.level-rewards-popup-content {
+    height: auto; 
+    max-height: 75vh; 
+    padding: 20px;
+    padding-top: 45px; 
+    background-color: lighten($sp-bg-start, 3%); // Чуть светлее основного фона попапов
+    border: 1px solid lighten($sp-bg-start, 12%);
+    
+    h2 {
+        text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 18px;
+        color: #f0e8ff; padding: 0 20px;
+        flex-shrink: 0; 
+    }
+
+    .level-rewards-list {
+        overflow-y: auto; 
+        flex-grow: 1;   
+        padding: 5px;
+        margin: 0 -5px;
+
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
+    }
+
+    .level-reward-item {
+        display: flex;
+        align-items: center;
+        background-color: rgba(255,255,255,0.04); 
+        border: 1px solid rgba(255,255,255,0.1); 
+        border-radius: 8px; 
+        padding: 10px 15px; 
+        margin-bottom: 10px; 
+        gap: 15px;
+
+        &.locked {
+            opacity: 0.6;
+        }
+        &.unlocked {
+             border-left: 4px solid #66bb6a;
+        }
+    }
+
+    .level-badge-area {
+        background-color: rgba(0, 0, 0, 0.25); 
+        border-radius: 6px; padding: 8px 10px; text-align: center;
+        flex-shrink: 0; min-width: 80px; 
+        color: #e0e0e0; 
+
+        .level-icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .level-badge-text {
+            display: block; font-weight: bold; font-size: 15px; margin-bottom: 3px;
+        }
+        .level-status-text {
+            display: block; font-size: 11px; 
+            color: #aaa; 
+            font-weight: 500;
+        }
+        .level-reward-item.unlocked & .level-status-text {
+            color: #8bc34a; // Ярче зеленый
+        }
+    }
+
+    .reward-details-area {
+        flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; 
+        font-size: 14px; font-weight: 500; justify-content: flex-start;
+        color: #d8c8e8; 
+    }
+    .reward-detail-item {
+        background-color: rgba(0, 0, 0, 0.25); 
+        padding: 4px 8px; border-radius: 5px;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+}

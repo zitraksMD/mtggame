@@ -11,7 +11,7 @@ import Shop from "./components/screens/Shop";
 import BottomNav from "./components/BottomNav";
 import UsernamePopup from "./components/popups/UsernamePopup";
 import Forge from "./components/screens/Forge";
-import Achievements from "./components/screens/Achievements";
+import Achievements from "./components/screens/GloryScreen";
 import RaceSelection from "./components/RaceSelection";
 import LoadingScreen from "./components/LoadingScreen";
 import RewardsScreen from "./components/screens/RewardsScreen";
