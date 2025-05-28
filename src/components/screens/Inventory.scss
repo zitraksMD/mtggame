@@ -3,12 +3,12 @@
 
 // --- ПЕРЕМЕННЫЕ ЦВЕТОВ РЕДКОСТИ ---
 // !!! Убедись, что эти переменные определены в твоем проекте или раскомментируй/настрой их здесь !!!
-$rarity-color-common: #b0b0b0 !default;     // Используем значения из код1 как предпочтительные
-$rarity-color-uncommon: #66bb66 !default;   // Зеленый
-$rarity-color-rare: #5599ff !default;       // Синий
+$rarity-color-common: #b0b0b0 !default;      // Используем значения из код1 как предпочтительные
+$rarity-color-uncommon: #66bb66 !default;    // Зеленый
+$rarity-color-rare: #5599ff !default;        // Синий
 $rarity-color-epic: #A020F0 !default;
-$rarity-color-legendary: #ffaa44 !default;  // Оранжево-золотой
-$rarity-color-mythic: #cc66ff !default;     // Фиолетовый
+$rarity-color-legendary: #ffaa44 !default;   // Оранжево-золотой
+$rarity-color-mythic: #cc66ff !default;      // Фиолетовый
 $bright-green-arrow: #20C20E;
 // ----------------------------------------------------
 $rarity-colors: (
@@ -27,12 +27,12 @@ $sp-bg-end: #4a1a6a;   // Более светлый фиолетовый для 
 $item-popup-bg-start: #1a2a4a; // Начальный цвет градиента
 $item-popup-bg-end: #0f1a30;
 // --- ДОБАВЬТЕ ЭТИ ПЕРЕМЕННЫЕ ДЛЯ ЦВЕТОВ ТЕКСТА И UI ---
-$text-primary-light: #ebebeb !default;    // Для заголовков, важных значений
-$text-secondary-light: #c5c5c5 !default; // Для основного текста деталей (используется на строке 653)
-$text-muted-light: #a0a0a0 !default;      // Для меток, субтитров, описаний (используется в .popup-description-area)
+$text-primary-light: #ebebeb !default;     // Для заголовков, важных значений
+$text-secondary-light: #c5c5c5 !default;  // Для основного текста деталей (используется на строке 653)
+$text-muted-light: #a0a0a0 !default;       // Для меток, субтитров, описаний (используется в .popup-description-area)
 $text-dark-placeholder: #888888 !default;   // Для плейсхолдеров или неактивного текста
 $golden-banner-bg: $rarity-color-legendary; // Используем ваш цвет для легендарной редкости как золотой
-$golden-banner-text-dark: #422D00;     // Темный текст для золотого фона
+$golden-banner-text-dark: #422D00;       // Темный текст для золотого фона
 $golden-banner-text-light: #fff;
 $golden-color: #FFD700;// Цвета фона и разделителей для темных тем (примеры)
 $background-element-dark: rgba(0, 0, 0, 0.2) !default; // Для фона областей, например, иконки
@@ -79,17 +79,17 @@ html, body {
     background-color: rgba(10, 15, 40, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    width: 100%; 
-    max-width: 280px; 
+    width: 100%;
+    max-width: 280px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     text-align: center;
     flex-shrink: 0;
 
     .inventory-power-label { // Для текста "Power:"
-        font-size: 24px;     // Текущий размер
+        font-size: 24px;      // Текущий размер
         font-weight: bold;
-        color: #FFD700;      // Текущий золотой цвет, хорошо сочетается с новым счетчиком
-        margin-right: 8px;   // Отступ справа от "Power:"
+        color: #FFD700;        // Текущий золотой цвет, хорошо сочетается с новым счетчиком
+        margin-right: 8px;    // Отступ справа от "Power:"
         text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5);
         white-space: nowrap; // Чтобы "Power:" не переносилось, если вдруг что
     }
@@ -112,7 +112,7 @@ html, body {
     margin-top: max(
         70px,
         calc(35px + env(safe-area-inset-top, 0px))
-      ) !important;
+    ) !important;
     left: 0;
     width: 100%;
     height: 100%;
@@ -137,7 +137,7 @@ html, body {
     width: 100%;
     max-width: 580px; // Как было у вас
     margin: 0 auto;   // Горизонтальное центрирование самого блока .character-section
-                      // Вертикальный отступ теперь будет управляться gap'ом родителя .inventory-layout--normal
+                                // Вертикальный отступ теперь будет управляться gap'ом родителя .inventory-layout--normal
     background-color: rgba(20, 25, 60, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 16px;
@@ -171,18 +171,18 @@ html, body {
             // --- Слоты экипировки ---
             .equipment-slot {
         width: 60px; height: 60px; border-radius: 10px;
-        border: 2px solid transparent; 
+        border: 2px solid transparent;
         background-color: rgba(0, 0, 0, 0.25); // Фон слота
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer; 
+        cursor: pointer;
         transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
         position: relative; // Важно для позиционирования дочерних элементов
 
-        img { 
-            width: 42px; 
-            height: 42px; 
-            object-fit: contain; 
-            position: relative; 
+        img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            position: relative;
             z-index: 1; // Изображение под меткой уровня
         }
         .empty-slot { font-size: 22px; color: #aaa; }
@@ -193,8 +193,8 @@ html, body {
                 &.rarity-rare { border-color: $rarity-color-rare !important; background: radial-gradient(ellipse at center, lighten($rarity-color-rare, 10%), darken($rarity-color-rare, 20%)) !important; }
                 &.rarity-legendary { border-color: $rarity-color-legendary !important; background: radial-gradient(ellipse at center, lighten($rarity-color-legendary, 10%), darken($rarity-color-legendary, 20%)) !important; animation: pulse-legendary 2s infinite ease-in-out; }
                 &.rarity-mythic { border-color: $rarity-color-mythic !important; background: radial-gradient(ellipse at center, lighten($rarity-color-mythic, 10%), darken($rarity-color-mythic, 20%)) !important; animation: pulse-mythic 1.8s infinite ease-in-out; }
-                &.rarity-epic { 
-                    border-color: $rarity-color-epic !important; 
+                &.rarity-epic {
+                    border-color: $rarity-color-epic !important;
                     background: radial-gradient(ellipse at center, lighten($rarity-color-epic, 10%), darken($rarity-color-epic, 20%)) !important;
                     // animation: pulse-epic 1.9s infinite ease-in-out; // Если нужна анимация
                 }
@@ -202,8 +202,8 @@ html, body {
                 &:hover { border-color: #fff !important; transform: scale(1.05); }
             .equipped-item-level-badge {
             position: absolute;
-            top: 0px;    // Отступ сверху
-            left: 0px;   // Отступ слева (для левого верхнего угла)
+            top: 0px;   // Отступ сверху
+            left: 0px;  // Отступ слева (для левого верхнего угла)
             background-color: rgba(0, 0, 0, 0.75); // Темный полупрозрачный фон
             color: #FFD700; // Золотой цвет текста (можно заменить на белый: #f0f0f0)
             padding: 1px 4px; // Компактные отступы
@@ -219,7 +219,7 @@ html, body {
         }
         // ▲▲▲ КОНЕЦ НОВЫХ СТИЛЕЙ ▲▲▲
     } // Конец .equipment-slot
- // Конец .character-equip
+// Конец .character-equip
 
             // --- Модель персонажа ---
             .character-model {
@@ -250,64 +250,64 @@ html, body {
 // ===== 2. Секция Контента (Нижняя Панель) =====
 .content-section {
     flex-grow: 1; // По умолчанию растягивается (для вкладок Gear, Artifacts)
-    width: 100%; 
-    max-width: 580px; 
+    width: 100%;
+    max-width: 580px;
     margin: 0 auto;
-    display: flex; 
+    display: flex;
     flex-direction: column;
     background-color: rgba(20, 25, 60, 0.7); // Ваш фон
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 16px; 
+    border-radius: 16px;
     padding: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box; 
-    overflow: visible; 
+    box-sizing: border-box;
+    overflow: visible;
     position: relative;
 
     // --- НОВЫЕ СТИЛИ для случая, когда активна вкладка "Stats" ---
     &.content-section--fit-content {
-        flex-grow: 0;         // Запрещаем .content-section растягиваться по высоте
-        height: auto;         // Высота .content-section определяется его содержимым
+        flex-grow: 0;        // Запрещаем .content-section растягиваться по высоте
+        height: auto;        // Высота .content-section определяется его содержимым
         align-self: flex-start; // Если родитель (.inventory-layout--normal) пытается растянуть/центрировать его по вертикали,
                                 // это заставит .content-section прижаться к верху своей "ячейки" во flex-контейнере родителя.
     }
 
-    // Стили для корневого элемента компонента InventoryTabs 
+    // Стили для корневого элемента компонента InventoryTabs
     // (предполагаем, что он имеет класс .inventory-tabs)
-    > .inventory-tabs { 
+    > .inventory-tabs {
         flex-shrink: 0;
-        position: relative; 
+        position: relative;
         z-index: 10; // Выше, чтобы перекрывать предыдущий блок при необходимости
 
         // --- ИЗМЕНЕНИЕ: Увеличиваем отрицательный отступ сверху ---
         // Это значение подбирается. Если padding-top у .content-section = 15px,
         // а высота самого блока табов с его внутренними отступами ~50-60px,
         // то margin-top: -40px или -45px заставит его значительно "выйти" вверх.
-        // Например, -40px означает, что верхний край табов будет на 25px (40-15) выше 
+        // Например, -40px означает, что верхний край табов будет на 25px (40-15) выше
         // верхней границы фона .content-section.
-        margin-top: -40px; 
-        
+        margin-top: -40px;
+
         margin-left: auto;
         margin-right: auto;
         // Отступ снизу до .inventory-action-buttons-wrapper или .inventory-main-area
         // Можно немного уменьшить, если табы сильно поднялись
-        margin-bottom: 0px; 
+        margin-bottom: 0px;
 
         width: fit-content;
         max-width: 90%;
-        
+
         // --- ИЗМЕНЕНИЕ: Возвращаем и адаптируем стили "подиума" ---
         // Адаптируем padding "подиума" под увеличенные кнопки
-        padding: 10px 15px 8px 15px; 
+        padding: 10px 15px 8px 15px;
         border-radius: 10px 10px 0 0; // Скругление верхних углов "подиума" (можно сделать чуть меньше, чем у кнопок)
         display: flex;
         justify-content: center;
-        align-items: center; 
+        align-items: center;
         gap: 0px; // Отступ между кнопками (можно уменьшить, если кнопки стали шире)
 
         // Стили для самих кнопок-табов
         button {
-            border: none; 
+            border: none;
             cursor: pointer;
             transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
             font-weight: 600;
@@ -318,37 +318,37 @@ html, body {
             border-radius: 8px 8px 8px 8px; // Скругление только верхних углов кнопок
             // --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
-            background: #4a5568; 
-            color: #cbd5e0; 
+            background: #4a5568;
+            color: #cbd5e0;
             box-shadow: inset 0 -2px 0px rgba(0,0,0,0.1);
 
-            &:hover:not(.active) { 
-                background: #5a6578; 
-                color: #fff; 
+            &:hover:not(.active) {
+                background: #5a6578;
+                color: #fff;
             }
-            &:active:not(.active) { 
-                transform: scale(0.97); 
+            &:active:not(.active) {
+                transform: scale(0.97);
             }
 
-            &.active { 
-                background: #FFA726; 
-                color: #fff; 
-                box-shadow: 0 -1px 4px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.25); 
-                position: relative; 
+            &.active {
+                background: #FFA726;
+                color: #fff;
+                box-shadow: 0 -1px 4px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.25);
+                position: relative;
             }
         }
     } // Конец > .inventory-tabs
 
     // --- Кнопки действий (прямой потомок .content-section) ---
     > .inventory-action-buttons-wrapper {
-        flex-shrink: 0; 
-        width: 100%; 
-        max-width: 400px; 
-        padding: 0 5px; 
+        flex-shrink: 0;
+        width: 100%;
+        max-width: 400px;
+        padding: 0 5px;
         box-sizing: border-box;
         margin: 0 auto 15px auto; // Отступы: сверху 0 (т.к. .inventory-tabs уже дал margin-bottom), авто по бокам, 15px снизу
-        display: flex; 
-        justify-content: space-between; 
+        display: flex;
+        justify-content: space-between;
         align-items: center;
 
         .inventory-sort-button,
@@ -390,21 +390,21 @@ html, body {
 > .inventory-main-area {
     flex-grow: 1; // По умолчанию растягивается (для вкладок Gear, Artifacts)
     width: 100%;
-    overflow: hidden; 
-    position: relative; 
-    border-radius: 12px; 
+    overflow: hidden;
+    position: relative;
+    border-radius: 12px;
     background-color: rgba(20, 10, 40, 0.6); // Ваш фон для этой области
-    border: 1px solid rgba(100, 80, 130, 0.3); 
-    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3); 
-    
-    display: flex; 
+    border: 1px solid rgba(100, 80, 130, 0.3);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
+
+    display: flex;
     align-items: flex-start; // Прижимает .stats-panel к верху
     justify-content: center; // Центрирует .stats-panel по горизонтали
 
     // --- НОВЫЕ СТИЛИ для случая, когда активна вкладка "Stats" ---
     &.inventory-main-area--fit-content {
-        flex-grow: 0;         // Запрещаем растягиваться по высоте
-        height: auto;         // Высота определяется содержимым (.stats-panel)
+        flex-grow: 0;        // Запрещаем растягиваться по высоте
+        height: auto;        // Высота определяется содержимым (.stats-panel)
         align-self: flex-start; // Дополнительно гарантируем прижатие к верху в контексте родителя (.content-section)
                                 // Это может быть полезно, если .content-section очень высокий.
     }
@@ -412,14 +412,14 @@ html, body {
 
 
 .stats-panel {
-    background-color: transparent; 
-    border: none; 
+    background-color: transparent;
+    border: none;
     box-shadow: none;
     padding: 10px 5px;  // Внутренние отступы самой панели статов
     margin: 0 auto;     // Горизонтальное центрирование панели статов
     width: 100%;
-    max-width: 360px; 
-    overflow-y: auto; 
+    max-width: 360px;
+    overflow-y: auto;
     box-sizing: border-box;
     height: auto; // Высота панели по контенту
 
@@ -431,16 +431,16 @@ html, body {
 
     p { // Стили для каждой строки характеристики
         display: flex;
-        align-items: center; 
-        justify-content: space-between; 
+        align-items: center;
+        justify-content: space-between;
 
         // --- УБИРАЕМ ВЕРТИКАЛЬНЫЕ MARGIN У СТРОК ---
-        margin: 0; 
+        margin: 0;
         font-size: 15px;
-        
+
         // --- ДЕЛАЕМ ФОН СТРОКИ ПРОЗРАЧНЫМ ---
-        background-color: transparent; 
-        
+        background-color: transparent;
+
         // --- ПАДДИНГИ ДЛЯ ВЫСОТЫ СТРОКИ И ОТСТУПОВ ТЕКСТА ---
         padding: 10px 10px; // Уменьшаем вертикальный padding, если нужно еще компактнее (было 12px)
 
@@ -455,20 +455,20 @@ html, body {
         }
 
         // Иконки убраны (псевдоэлемент ::before скрыт или удален)
-        &::before { 
-            display: none; 
+        &::before {
+            display: none;
         }
 
-        .stat-label { 
-            flex-grow: 0; 
-            color: $text-secondary-light; 
+        .stat-label {
+            flex-grow: 0;
+            color: $text-secondary-light;
             font-weight: 500;
-            margin-right: 10px; 
+            margin-right: 10px;
         }
-        .stat-value { 
-            color: $text-primary-light; 
-            font-weight: 600; 
-            text-align: right; 
+        .stat-value {
+            color: $text-primary-light;
+            font-weight: 600;
+            text-align: right;
         }
 
         // У последней строки убираем нижний разделитель
@@ -480,7 +480,7 @@ html, body {
 }
 
         .inventory-gear-wrapper {
- height: 100%;           // Должен занимать 100% высоты .inventory-main-area
+  height: 100%;         // Должен занимать 100% высоты .inventory-main-area
         display: flex;
         flex-direction: column;
         width: 100%;
@@ -488,68 +488,68 @@ html, body {
         min-height: 0;          // <--- САМЫЙ ВАЖНЫЙ ФИКС ДЛЯ ЭТОЙ ПРОБЛЕМЫ!
 
             .inventory-scroll-wrapper {
-               flex-grow: 1; 
-            width: 100%; 
+               flex-grow: 1;
+            width: 100%;
             overflow-y: auto; // Теперь это должно р// Принудительно показать скроллбар
-                        flex-basis: 0;          // Хорошо добавить для flex-grow
+                    flex-basis: 0;        // Хорошо добавить для flex-grow
 
                 overflow-x: hidden;
-                padding: 0px; 
+                padding: 0px;
                 box-sizing: border-box;
                 margin-bottom: 120px;
 
                  &::-webkit-scrollbar {
             display: none; // Можно также использовать width: 0; height: 0;
         }
-        
+
 
                 .inventory-items {
                     display: grid !important;
                     grid-template-columns: repeat(5, 1fr); // Или ваша адаптивная версия
-                    gap: 12px; 
-                    padding: 0; 
-                    width: 100%; 
-                    height: max-content; 
+                    gap: 12px;
+                    padding: 0;
+                    width: 100%;
+                    height: max-content;
 
                     .inventory-item {
-                        width: 100%; 
-                        padding-bottom: 100%; 
-                        height: 0; 
+                        width: 100%;
+                        padding-bottom: 100%;
+                        height: 0;
                         position: relative; // Важно для позиционирования дочерних элементов
-                        border-radius: 8px; 
-                        border: 2px solid transparent; 
+                        border-radius: 8px;
+                        border: 2px solid transparent;
                         background-color: rgba(0, 0, 0, 0.2);
-                        cursor: pointer; 
+                        cursor: pointer;
                         transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
                         img {
-                            position: absolute; 
-                            top: 50%; 
-                            left: 50%; 
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
                             transform: translate(-50%, -50%);
-                            max-width: 75%; 
-                            max-height: 75%; 
-                            width: auto; 
+                            max-width: 75%;
+                            max-height: 75%;
+                            width: auto;
                             height: auto;
-                            object-fit: contain; 
+                            object-fit: contain;
                             display: block;
                         }
 
                         .equipped-indicator {
-                            position: absolute; 
-                            bottom: 2px; 
-                            right: 2px; 
-                            width: 18px; 
+                            position: absolute;
+                            bottom: 2px;
+                            right: 2px;
+                            width: 18px;
                             height: 18px;
-                            background-color: $rarity-color-legendary; 
-                            color: #000; 
+                            background-color: $rarity-color-legendary;
+                            color: #000;
                             border-radius: 50%;
-                            font-size: 11px; 
-                            font-weight: bold; 
-                            display: flex; 
+                            font-size: 11px;
+                            font-weight: bold;
+                            display: flex;
                             align-items: center;
-                            justify-content: center; 
-                            line-height: 1; 
+                            justify-content: center;
+                            line-height: 1;
                             box-shadow: 0 0 3px rgba(0,0,0,0.5);
                             z-index: 2;
                         }
@@ -558,10 +558,10 @@ html, body {
                        .new-item-label {
             position: absolute;
             // --- ИЗМЕНЕНИЕ ПОЗИЦИИ НА ВЕРХНИЙ ЛЕВЫЙ УГОЛ ---
-            top: 0px;     // Небольшой отступ сверху
-            left: 0px;    // Небольшой отступ слева
+            top: 0px;   // Небольшой отступ сверху
+            left: 0px;   // Небольшой отступ слева
             // --- КОНЕЦ ИЗМЕНЕНИЯ ПОЗИЦИИ ---
-            background-color: #e53e3e; 
+            background-color: #e53e3e;
             color: white;
             padding: 1px 5px; // Чуть изменим паддинг для компактности
             font-size: 9px;   // Шрифт чуть меньше
@@ -569,7 +569,7 @@ html, body {
             line-height: 1.2; // Для лучшего вертикального выравнивания
             border-radius: 3px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.4);
-            z-index: 150; 
+            z-index: 150;
             pointer-events: none;
         }
 
@@ -602,8 +602,8 @@ html, body {
                         &.rarity-rare { border-color: $rarity-color-rare !important; background: radial-gradient(ellipse at center, lighten($rarity-color-rare, 10%), darken($rarity-color-rare, 20%)) !important; }
                         &.rarity-legendary { border-color: $rarity-color-legendary !important; background: radial-gradient(ellipse at center, lighten($rarity-color-legendary, 10%), darken($rarity-color-legendary, 20%)) !important; animation: pulse-legendary 2s infinite ease-in-out; }
                         &.rarity-mythic { border-color: $rarity-color-mythic !important; background: radial-gradient(ellipse at center, lighten($rarity-color-mythic, 10%), darken($rarity-color-mythic, 20%)) !important; animation: pulse-mythic 1.8s infinite ease-in-out; }
-                        &.rarity-epic { 
-                            border-color: $rarity-color-epic !important; 
+                        &.rarity-epic {
+                            border-color: $rarity-color-epic !important;
                             background: radial-gradient(ellipse at center, lighten($rarity-color-epic, 10%), darken($rarity-color-epic, 20%)) !important;
                         }
                         &:hover { border-color: #fff !important; transform: scale(1.03); }
@@ -624,8 +624,8 @@ html, body {
 // ===========================================================
 .inventory-layout--artifacts {
   // margin-top: 50px; // Этот отступ был в твоем коде.
-                     // Убедись, что он все еще нужен, учитывая базовый margin-top у .inventory-layout.
-                     // Если .inventory-layout уже корректно позиционируется, этот margin может быть избыточен.
+                               // Убедись, что он все еще нужен, учитывая базовый margin-top у .inventory-layout.
+                               // Если .inventory-layout уже корректно позиционируется, этот margin может быть избыточен.
 
   // Стили для .content-section--artifacts, который теперь содержит табы
  .content-section--artifacts {
@@ -718,8 +718,8 @@ html, body {
       border: 1px solid rgba(100, 80, 130, 0.3); // Рамка из normal layout .inventory-main-area
       box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3); // Тень из normal layout .inventory-main-area
       // margin-top: 15px; // Если у .inventory-tabs margin-bottom: 0, этот отступ отделит контент от табов.
-                          // В normal layout этот отступ создается gap'ом родителя .content-section.
-                          // Если .content-section--artifacts тоже имеет gap (например, если он display:flex, flex-direction:column), то этот margin может не понадобиться.
+                                  // В normal layout этот отступ создается gap'ом родителя .content-section.
+                                  // Если .content-section--artifacts тоже имеет gap (например, если он display:flex, flex-direction:column), то этот margin может не понадобиться.
 
       box-sizing: border-box;
 
@@ -734,39 +734,64 @@ html, body {
 
 // ===========================================================
 // === НАЧАЛО: ОБЩИЕ СТИЛИ ДЛЯ ТАБОВ ===
+// (Это ваш существующий блок, мы его модифицируем)
 // ===========================================================
-    .inventory-tabs {
-    flex-shrink: 0; 
-    display: flex;          // Эти свойства будут применены ко всем .inventory-tabs
-    justify-content: center; 
-    align-items: center;    // Добавлено для вертикального центрирования кнопок, если их высота разная
-    gap: 10px;              // Отступ между кнопками-табами
+.inventory-tabs {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
 
-    // Стили для самих кнопок-табов
     button {
-        background: #4a5568; 
-        color: #cbd5e0; 
-        border: none; 
+        background: #4a5568;
+        color: #cbd5e0;
+        border: none;
         border-radius: 8px;
-        padding: 8px 20px; 
-        font-weight: 600; 
-        font-size: 15px; 
+        padding: 8px 20px; // Это базовый паддинг, специфичные могут перекрыть
+        font-weight: 600;
+        font-size: 15px;
         cursor: pointer;
         transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        position: relative; // <<< ВАЖНО: для позиционирования индикатора
 
-        &:hover { 
-            background: #5a6578; 
-            color: #fff; 
+        &:hover {
+            background: #5a6578;
+            color: #fff;
         }
-         &:active { 
-            transform: scale(0.97); 
+        &:active {
+            transform: scale(0.97);
         }
-            &.active { 
-            background: #FFA726; // Оранжевый для активного таба (как на скриншоте image_6c74d2.png)
-            color: #fff; 
-            box-shadow: 0 0 10px rgba(255, 167, 38, 0.5), 0 2px 5px rgba(0,0,0,0.3); 
+        &.active {
+            background: #FFA726;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 167, 38, 0.5), 0 2px 5px rgba(0,0,0,0.3);
         }
+
+        // ▼▼▼ НОВЫЕ СТИЛИ ДЛЯ ИНДИКАТОРА НА ВКЛАДКЕ ▼▼▼
+.tab-action-indicator {
+            position: absolute;
+            top: 0px;       // Смещение сверху, подберите для лучшего вида
+            right: 0px;     // Смещение справа
+            width: 16px;    // Ширина кружка-индикатора
+            height: 16px;   // Высота кружка-индикатора
+            background-color: #ef4444; // Ярко-красный фон
+            color: white;             // Белый цвет для "!"
+            border-radius: 50%;       // Делает его круглым
+            font-size: 11px;          // Размер шрифта для "!"
+            font-weight: bold;
+            
+            // Используем flex для идеального центрирования "!" внутри кружка
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1; // Убираем лишнюю высоту строки для "!"
+            
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); // Легкая тень для объема
+            pointer-events: none; // Чтобы индикатор не мешал клику по кнопке
+        }
+        // ▲▲▲ КОНЕЦ ОБНОВЛЕННЫХ СТИЛЕЙ ДЛЯ ИНДИКАТОРА ▲▲▲
     }
 }
 // ===========================================================
@@ -785,7 +810,7 @@ html, body {
     display: flex; align-items: center; justify-content: center;
     z-index: 200; padding: 15px; box-sizing: border-box;
 
-    
+
     // Контейнер контента попапа
     .item-popup-content {
         width: 380px; // Слегка увеличим ширину для нового макета
@@ -837,9 +862,9 @@ html, body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 25px 15px 15px 15px; 
-            gap: 8px; 
-            border-bottom: 1px solid $divider-color-dark; 
+            padding: 25px 15px 15px 15px;
+            gap: 8px;
+            border-bottom: 1px solid $divider-color-dark;
             width: 100%;
             box-sizing: border-box;
             flex-shrink: 0;
@@ -853,13 +878,13 @@ html, body {
             font-size: 12px;
             font-weight: 700;
             text-align: center;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.45); 
-            position: relative; 
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5); 
-            z-index: 3; 
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.45);
+            position: relative;
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5);
+            z-index: 3;
             max-width: 70%;
-            margin-top: -50px; 
-            
+            margin-top: -50px;
+
             @each $rarity, $color in $rarity-colors {
                 &.rarity-bg-#{$rarity} {
                     background-color: $color;
@@ -902,51 +927,51 @@ html, body {
         // Баннер с текущим уровнем
         .current-level-banner {
             position: absolute;
-            top: 5px;    
-            left: 1px;   
+            top: 5px;
+            left: 1px;
             background-color: $golden-banner-bg;
             color: $golden-banner-text-dark;
             padding: 5px 12px;
             border-radius: 6px;
             font-size: 18px;
             font-weight: 600;
-            z-index: 5; 
+            z-index: 5;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            
+
             span { display: block; }
         }
 
         // 2. Основное тело попапа
         .popup-body {
-            padding: 15px 20px; 
-            // overflow-y: auto; 
+            padding: 15px 20px;
+            // overflow-y: auto;
 
             .popup-content-stack {
                 display: flex;
                 flex-direction: column;
-                align-items: center; 
-                gap: 18px; 
+                align-items: center;
+                gap: 18px;
                 width: 100%;
-                max-width: 380px; 
-                margin: 0 auto;  
+                max-width: 380px;
+                margin: 0 auto;
 
                 // --- ЭТАЖ 1: Иконка и Описание ---
                 .icon-description-row {
                     display: flex;
-                    flex-direction: row;   
-                    align-items: flex-start; 
-                    gap: 15px;             
-                    width: 100%;           
+                    flex-direction: row;
+                    align-items: flex-start;
+                    gap: 15px;
+                    width: 100%;
 
-                    .icon-column { 
-                        flex: 0 0 90px; 
+                    .icon-column {
+                        flex: 0 0 90px;
 
                         .popup-icon-area {
                             width: 90px;
                             height: 90px;
-                            padding: 6px; 
+                            padding: 6px;
                             border-radius: 6px;
-                            border: 2px solid transparent; 
+                            border: 2px solid transparent;
                             display: flex;
                             align-items: center;
                             justify-content: center;
@@ -954,52 +979,52 @@ html, body {
 
                             @each $rarity, $color in $rarity-colors {
                                 &.rarity-#{$rarity} {
-                                    border-color: $color; 
+                                    border-color: $color;
                                     background: radial-gradient(ellipse at center, lighten($color, 15%), darken($color, 20%));
                                 }
                             }
 
-                            .popup-icon { 
+                            .popup-icon {
                                 max-width: 100%;
                                 max-height: 100%;
                                 object-fit: contain;
-                                // image-rendering: pixelated; 
+                                // image-rendering: pixelated;
                             }
                         }
                     }
 
-                    .description-column { 
-                        flex: 1; 
-                        min-width: 0; 
+                    .description-column {
+                        flex: 1;
+                        min-width: 0;
 
-                        .popup-description-area { 
-                            background-color: rgba(0, 0, 0, 0.15); 
-                            padding: 12px 15px;           
-                            border-radius: 6px;           
-                            width: 100%;                  
+                        .popup-description-area {
+                            background-color: rgba(0, 0, 0, 0.15);
+                            padding: 12px 15px;
+                            border-radius: 6px;
+                            width: 100%;
                             box-sizing: border-box;
                             font-size: 13px;
                             line-height: 1.5;
-                            color: $text-secondary-light; 
-                            
+                            color: $text-secondary-light;
+
                             p {
-                                margin: 0; 
+                                margin: 0;
                             }
                         }
                     }
                 }
 
                 .stats-block { // Существующие стили для .stats-block
-                    background-color: rgba(0, 0, 0, 0.15); 
-                    padding: 15px;                        
-                    border-radius: 8px;                   
-                    margin-bottom: 5px;                   
-                    width: 100%;                          
-                    box-sizing: border-box; 
+                    background-color: rgba(0, 0, 0, 0.15);
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin-bottom: 5px;
+                    width: 100%;
+                    box-sizing: border-box;
 
                     .stats-comparison-table {
                         display: grid;
-                        grid-template-columns: minmax(100px, 1.6fr) 1fr auto 1fr; 
+                        grid-template-columns: minmax(100px, 1.6fr) 1fr auto 1fr;
                         column-gap: 8px;
                         row-gap: 5px;
                         font-size: 13px;
@@ -1013,34 +1038,34 @@ html, body {
                         }
 
                         .stat-name-cell {
-                            justify-content: flex-start; 
+                            justify-content: flex-start;
                         }
 
                         .current-value-cell {
-                            justify-content: center;   
+                            justify-content: center;
                             font-weight: 700;
                             color: $text-primary-light;
                         }
 
                         .arrow-cell {
-                            justify-content: center;   
+                            justify-content: center;
                             color: $bright-green-arrow;
                             font-weight: 700;
                         }
 
                         .next-value-cell {
-                            justify-content: center;  
+                            justify-content: center;
                             font-weight: 700;
 
-                            &.has-value { 
+                            &.has-value {
                                 color: $bright-green-arrow;
                             }
-                            &.no-value { 
-                                color: $text-primary-light; 
+                            &.no-value {
+                                color: $text-primary-light;
                             }
-                            &.no-upgrade { 
+                            &.no-upgrade {
                                 color: $text-muted-light;
-                                font-weight: 500; 
+                                font-weight: 500;
                             }
                         }
                     }
@@ -1049,8 +1074,8 @@ html, body {
                 // --- ЭТАЖ 3: Бонус Комплекта --- (Существующие стили для плейсхолдера бонуса комплекта)
                 .popup-set-bonus-area {
                     width: 100%;
-                    max-width: 340px; 
-                    margin: 0 auto;   
+                    max-width: 340px;
+                    margin: 0 auto;
                     font-size: 13px;
                     line-height: 1.5;
                     color: $text-muted-light;
@@ -1071,10 +1096,10 @@ html, body {
 
                     &.content-divider {
                         width: 100%;
-                        margin: 0; 
+                        margin: 0;
                     }
                     &.thin {
-                        // margin: 4px 0; 
+                        // margin: 4px 0;
                     }
                 }
 
@@ -1082,12 +1107,12 @@ html, body {
                 .toggleable-content-area {
                     position: relative;
                     width: 100%;
-                    min-height: 180px; 
-                    margin-bottom: 10px; 
+                    min-height: 180px;
+                    margin-bottom: 10px;
                 }
 
-                .stats-view-wrapper,     
-                .set-bonuses-view-wrapper { 
+                .stats-view-wrapper,
+                .set-bonuses-view-wrapper {
                     width: 100%;
                     box-sizing: border-box;
                     // position: absolute;
@@ -1096,18 +1121,18 @@ html, body {
                 }
 
                 .popup-set-bonus-area {
-                    &.actual-set-bonuses { 
+                    &.actual-set-bonuses {
                         padding: 15px;
                         width: 100%;
                         box-sizing: border-box;
-                        background-color: rgba(0,0,0,0.25); 
+                        background-color: rgba(0,0,0,0.25);
                         border-radius: 8px;
                         color: $text-secondary-light;
 
-                        h4 { 
+                        h4 {
                             font-size: 18px;
                             font-weight: 700;
-                            color: $golden-banner-bg; 
+                            color: $golden-banner-bg;
                             margin: 0 0 15px 0;
                             text-align: center;
                             text-shadow: 0 1px 2px rgba(0,0,0,0.4);
@@ -1115,30 +1140,30 @@ html, body {
 
                         .set-bonus-entry {
                             display: flex;
-                            align-items: flex-start; 
+                            align-items: flex-start;
                             font-size: 14px;
-                            line-height: 1.5; 
+                            line-height: 1.5;
                             color: $text-secondary-light;
                             padding: 8px 0;
-                            border-bottom: 1px dashed $divider-color-dark; 
+                            border-bottom: 1px dashed $divider-color-dark;
 
                             &:last-child {
                                 border-bottom: none;
-                                padding-bottom: 0; 
+                                padding-bottom: 0;
                             }
                             &:first-of-type {
                                 padding-top: 0;
                             }
 
-                            .set-bonus-count { 
+                            .set-bonus-count {
                                 font-weight: 600;
-                                color: $text-primary-light; 
+                                color: $text-primary-light;
                                 margin-right: 10px;
-                                white-space: nowrap; 
-                                flex-shrink: 0; 
+                                white-space: nowrap;
+                                flex-shrink: 0;
                             }
 
-                            .set-bonus-desc { 
+                            .set-bonus-desc {
                                 // Стили для описания бонуса, если нужны
                             }
                         }
@@ -1174,8 +1199,8 @@ html, body {
                         outline: none;
                     }
                     // Специфичные стили для button-toggle-view-standalone
-                    width: 90%; 
-                    max-width: 280px; 
+                    width: 90%;
+                    max-width: 280px;
                     margin-top: 5px; // Этот отступ будет работать в дополнение к 'gap' родителя .popup-content-stack, если кнопка является его прямым потомком
                     background: linear-gradient(180deg, #3a6278, #2e4f60);
                     border-color: #294554;
@@ -1200,19 +1225,19 @@ html, body {
             border-top: 1px solid rgba(120, 130, 160, 0.3);
             border-radius: 0 0 11px 11px;
             display: flex;
-            flex-direction: column; 
-            align-items: center;   
-            gap: 12px;            
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
 
             .upgrade-action-group,
             .action-button-row,
             .button-group-placeholder {
-                width: 90%; 
-                max-width: 320px; 
+                width: 90%;
+                max-width: 320px;
                 display: flex;
-                flex-direction: column; 
-                align-items: stretch;   
-                gap: 8px; 
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
             }
 
             .button-group-placeholder {
@@ -1249,79 +1274,79 @@ html, body {
                     opacity: 0.8;
                 }
 
-                .upgrade-action-text { 
+                .upgrade-action-text {
                     font-size: 14px;
                     font-weight: bold;
                 }
 
-                .upgrade-cost-display { 
-                    font-size: 12px;      
-                    opacity: 0.95;        
+                .upgrade-cost-display {
+                    font-size: 12px;
+                    opacity: 0.95;
                     white-space: nowrap;
-                    margin-top: 3px;      
-                    display: flex;        
+                    margin-top: 3px;
+                    display: flex;
                     align-items: center;
-                    justify-content: center; 
-                    gap: 8px;             
+                    justify-content: center;
+                    gap: 8px;
 
-                    .cost-item { 
-                        display: inline-flex; 
+                    .cost-item {
+                        display: inline-flex;
                         align-items: center;
-                        gap: 3px;           
+                        gap: 3px;
 
-                        span { 
-                            font-weight: 600; 
+                        span {
+                            font-weight: 600;
                         }
                     }
 
                     .cost-gold {
-                        span { 
-                            color: $golden-color; 
+                        span {
+                            color: $golden-color;
 
-                            &.insufficient-funds { 
-                                color: #E74C3C; 
+                            &.insufficient-funds {
+                                color: #E74C3C;
                             }
                         }
                     }
                     .cost-diamonds {
-                        span { 
-                            &.insufficient-funds { 
-                                color: #E74C3C; 
+                        span {
+                            &.insufficient-funds {
+                                color: #E74C3C;
                             }
                         }
                     }
 
-                    .cost-icon { 
-                        width: 1em;  
+                    .cost-icon {
+                        width: 1em;
                         height: 1em;
                     }
 
-                    .cost-info-text { 
-                        color: white; 
+                    .cost-info-text {
+                        color: white;
                         opacity: 0.8;
                     }
                 }
             }
 
             .player-currency-panel {
-                width: 100%; 
-                background-color: rgba(0, 0, 0, 0.25); 
+                width: 100%;
+                background-color: rgba(0, 0, 0, 0.25);
                 color: #e0e5f0;
-                padding: 8px 10px; 
-                border: 1px solid rgba(120, 130, 160, 0.25); 
-                border-radius: 8px; 
+                padding: 8px 10px;
+                border: 1px solid rgba(120, 130, 160, 0.25);
+                border-radius: 8px;
                 box-sizing: border-box;
-                font-size: 12px; 
+                font-size: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px; 
-                min-height: 30px; 
-                
+                gap: 6px;
+                min-height: 30px;
+
                 .currency-display {
-                    display: inline-flex; 
+                    display: inline-flex;
                     align-items: center;
-                    gap: 4px; 
+                    gap: 4px;
                 }
 
                 .currency-icon {
@@ -1330,13 +1355,13 @@ html, body {
                 }
 
                 .currency-separator {
-                    margin: 0 2px; 
+                    margin: 0 2px;
                 }
             }
 
             .action-button-row {
                 button.button-action {
-                    width: 100%; 
+                    width: 100%;
                     padding: 10px 15px;
                     font-size: 14px;
                     min-height: 50px;

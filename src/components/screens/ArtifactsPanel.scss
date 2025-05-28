@@ -1,10 +1,12 @@
+// ArtifactsPanel.scss
+
 // Переменные для цветов редкости (обновленные и добавленные)
 $rarity-common-color: #b0b0b0;    // Обновлено с вашего списка
 $rarity-uncommon-color: #66bb66;  // Новый - Зеленый
 $rarity-rare-color: #5599ff;      // Обновлено с вашего списка - Синий
 $rarity-epic-color: #A020F0;      // Новый - Фиолетовый (из вашего списка)
 $rarity-legendary-color: #ffaa44; // Обновлено с вашего списка - Оранжево-золотой
-$rarity-mythic-color: #cc66ff;    // Обновлено с вашего списка - Фиолетовый (из вашего списка)
+$rarity-mythic-color: #f44336;    // Обновлено с вашего списка - Красный (в вашем списке был фиолетовый, но f44336 - красный)
 
 // Остальные ваши переменные
 $artifact-item-bg: rgba(15, 23, 42, 0.6);
@@ -24,42 +26,29 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
 .artifacts-list {
     flex-grow: 1;
     overflow-y: auto;
-    // Текущий padding-top: 25px. Баннер с top: -15px нависает,
-    // и его верхняя точка оказывается на 25px - 15px = 10px от верха .artifacts-list.
     padding: 25px 5px 110px 5px;
     display: flex;
     flex-direction: column;
-    // gap: 35px; // Этот gap будет между .artifact-set-container, если margin-bottom у него убрать
-                // или можно оставить и то, и то, если нужно больше пространства.
 
-    // Стилизация скроллбара (WebKit)
     &::-webkit-scrollbar { width: 8px; }
     &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
     &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
     &::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.5); }
 
-    // --- ДОБАВЛЕНО: Отступ для первого сета ---
     > .artifact-set-container:first-child {
-        margin-top: 15px; // Добавляем дополнительный отступ сверху только для первого сета.
-                          // Это сдвинет его вниз. Если баннер нависает на 15px (top: -15px),
-                          // то теперь его верхний край будет примерно на уровне padding-top родителя .artifacts-list.
-                          // (25px padding + 15px margin) - 15px overhang = 25px от верха списка.
-                          // Можете настроить это значение (15px) для желаемого отступа.
+        margin-top: 15px;
     }
-    // --- КОНЕЦ ДОБАВЛЕНИЯ ---
 }
 
-// Контейнер для сета, включающий баннер и сам блок артефактов
 .artifact-set-container {
-    position: relative; // Для позиционирования баннера
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    margin-bottom: 35px; // Отступ между сетами
+    margin-bottom: 35px;
 }
 
-// Нависающий баннер для названия сета
 .set-title-banner {
     background-color: rgba(20, 30, 55, 0.9);
     color: #f0f0f0;
@@ -78,8 +67,6 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-
-// Блок отдельного сета артефактов
 .artifact-set {
     background-color: rgba(10, 15, 30, 0.6);
     border-radius: 18px;
@@ -92,7 +79,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     box-sizing: border-box;
     margin-top: 0;
     position: relative;
-    transition: box-shadow 0.5s ease; // Плавный переход для тени
+    transition: box-shadow 0.5s ease;
 
     $gold-color-animated-local: #FFD700;
     $border-thickness-animated-local: 2px;
@@ -101,8 +88,8 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     &.fully-collected-set-glow {
         border: $border-thickness-animated-local solid transparent;
         box-shadow: 0 0 7px $glow-color-animated-local,
-                      0 0 12px $glow-color-animated-local,
-                      0 0 18px rgba(255, 215, 0, 0.3);
+                    0 0 12px $glow-color-animated-local,
+                    0 0 18px rgba(255, 215, 0, 0.3);
 
         &::before {
             content: '';
@@ -135,7 +122,6 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     }
 }
 
-// Анимация для движущейся золотой рамки
 @keyframes animated-gold-border-flow {
     0% {
         background-position: 0 0;
@@ -145,140 +131,169 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     }
 }
 
-// Контейнер для иконок артефактов внутри сета
 .set-items {
-        display: grid; // Используем Grid вместо Flex
-        grid-template-columns: repeat(2, auto); // 2 колонки, ширина по содержимому иконок
-        // Или, если иконки должны занимать равную ширину колонки:
-        // grid-template-columns: repeat(2, 1fr);
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-content: center;
+    align-items: start;
+    justify-items: center;
+    gap: 15px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+}
 
-        justify-content: center; // Центрирует всю сетку, если она меньше ширины родителя
-        align-items: start;      // Выравнивание элементов по началу их grid-area (если высота разная)
-        justify-items: center;   // Центрирует элементы внутри их ячеек грида по горизонтали
-
-        gap: 15px; // Отступ между иконками (и по горизонтали, и по вертикали)
-                   // Вы можете настроить row-gap и column-gap отдельно, если нужно:
-                   // row-gap: 15px;
-                   // column-gap: 10px;
-
-        width: fit-content; // Опционально: ширина блока иконок будет по его содержимому
-        margin-left: auto;  // Для центрирования блока .set-items внутри .artifact-set, если width: fit-content
-        margin-right: auto;
-        margin-bottom: 20px; // Отступ под блоком иконок
-    }
-
-// Элемент одного артефакта
 .artifact-item {
-        display: flex; // Оставляем flex для вертикального расположения иконки и имени (если оно было)
-        flex-direction: column;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    // Обновленный transition, включающий box-shadow и transform для новых эффектов
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+    position: relative; // Для позиционирования индикатора улучшения, если он будет абсолютным
+
+    // === СТИЛИ ДЛЯ СВЕЧЕНИЯ АРТЕФАКТА ГОТОВОГО К АКТИВАЦИИ ===
+    &.glow-for-activation {
+        // Используем анимацию для пульсирующего свечения
+        animation: pulse-glow 1.5s infinite alternate;
+        // ... стили для свечения при активации ... // Оставил ваш комментарий, если захотите добавить сюда что-то еще
+    }
+    // === КОНЕЦ СТИЛЕЙ ДЛЯ СВЕЧЕНИЯ ===
+
+    // === СТИЛИ ДЛЯ ИНДИКАТОРА ВОЗМОЖНОСТИ УЛУЧШЕНИЯ ===
+    &.can-be-upgraded {
+  // Пример: восклицательный знак в углу
+  &::after {
+    content: '!';           // 👈 Изменено: теперь это текстовый символ "!"
+    position: absolute;
+    // 👇 Эти значения, возможно, придется немного подстроить для идеального вида
+    // в зависимости от шрифта и размера родительского элемента.
+    top: 0px;               // Скорректировано для текстового символа
+    right: 5px;             // Скорректировано для текстового символа
+
+    // 🗑️ Убираем свойства, отвечающие за форму и фон точки
+    // width: 10px;
+    // height: 10px;
+    // background-color: #ff0000; // Теперь цвет задается через 'color'
+    // border-radius: 50%;
+    // border: 1px solid white;
+
+    // ✨ Добавляем/изменяем свойства для текстового символа
+    color: #ff0000;         // Цвет восклицательного знака. В вашем примере фон точки был красный (#ff0000).
+                            // Если нужен зеленый, используйте, например, #4CAF50.
+    font-size: 14px;        // Размер восклицательного знака. Подберите для наилучшего вида.
+    font-weight: bold;      // Делаем символ жирным для лучшей видимости.
+    line-height: 1;         // Для более предсказуемого вертикального позиционирования текста.
+
+    box-shadow: 0 0 1px #ff0000; // Тень (зеленая, как в вашем примере).
+                                 // Можно изменить, например, на тень цвета знака: box-shadow: 0 0 5px rgba(255, 0, 0, 0.7);
+    z-index: 1;             // Чтобы знак был поверх иконки
+  }
+}
+    .artifact-icon-wrapper {
+        width: 100px;
+        height: 100px;
+        padding: 6px;
+        border: 2px solid $artifact-item-border;
+        border-radius: 10px;
+        background-color: $artifact-item-bg;
+        position: relative;
+        display: flex;
         align-items: center;
-        // width: auto; // Ширина теперь будет больше зависеть от размера .artifact-icon-wrapper
-        cursor: pointer;
-        transition: transform 0.2s ease;
+        justify-content: center;
+        // transition для border-color и background-color остается от ваших стилей
+        // transform transition теперь управляется общим transition на .artifact-item
+        transition: border-color 0.2s, background-color 0.2s;
 
-        .artifact-icon-wrapper {
-            width: 100px;  // УВЕЛИЧЕННЫЙ РАЗМЕР (было 55px или 60px)
-            height: 100px; // УВЕЛИЧЕННЫЙ РАЗМЕР
-            padding: 6px; // Можно немного увеличить отступ внутри рамки
-            border: 2px solid $artifact-item-border; // Стандартная рамка
-            border-radius: 10px; // Скругление углов
-            background-color: $artifact-item-bg; // Фон обертки
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.2s, background-color 0.2s, transform 0.2s ease;
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: filter 0.3s ease;
+            filter: none;
+        }
+        .artifact-status-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            padding: 2px 0;
+            line-height: 1.2;
+            user-select: none;
 
-            img {
-                display: block;
-                max-width: 100%;
-                max-height: 100%;
-                object-fit: contain;
-                transition: filter 0.3s ease;
-                filter: none;
+            &.level-label {
+                color: #FFD700;
+                font-size: 11px;
             }
-           .artifact-status-label {
-                position: absolute;
-                bottom: 0; // Прижимаем к низу контейнера .artifact-icon-wrapper
-                left: 0;
-                width: 100%; // Растягиваем на всю ширину контейнера
-                background-color: rgba(0, 0, 0, 0.75); // Полупрозрачный темный фон
-                color: #fff; // Белый цвет текста по умолчанию
-                font-size: 10px;
-                font-weight: bold;
-                text-align: center;
-                padding: 2px 0; // Небольшой вертикальный отступ
-                line-height: 1.2; // Для лучшего отображения текста
-                // Скругление углов не нужно, если родитель (.artifact-icon-wrapper) имеет overflow: hidden
-                // и этот лейбл прижат к его краям. Родительский border-radius "обрежет" его.
-                // Если overflow: hidden у родителя нет, можно добавить:
-                // border-bottom-left-radius: 8px; // Чуть меньше, чем у родителя, если у него 10px
-                // border-bottom-right-radius: 8px;
-                user-select: none; // Чтобы текст нельзя было выделить
 
-                &.level-label {
-                    color: #FFD700; // Золотой цвет для уровня
-                    font-size: 11px; // Можно чуть крупнее для уровня
-                }
+            &.not-active-label {
+                color: #aaa;
+                font-style: italic;
 
-                &.not-active-label {
-                    color: #aaa; // Серый цвет для "Not active"
-                    font-style: italic; // Можно курсивом
+                // === НОВЫЕ СТИЛИ ДЛЯ ЛЕЙБЛА "ГОТОВ!" ===
+                &.ready-label {
+                    background-color: rgba(12, 255, 200, 0.7); // Бирюзовый фон
+                    color: #000; // Черный текст для контраста
+                    font-style: normal; // Убираем курсив для "Готов!"
+                    font-weight: bold;  // Делаем жирным
                 }
+                // === КОНЕЦ НОВЫХ СТИЛЕЙ ДЛЯ ЛЕЙБЛА "ГОТОВ!" ===
             }
-        // --- КОНЕЦ НОВЫХ СТИЛЕЙ ---
+        }
     }
 
-    // Стили для редкостей артефактов
-    &.rarity-common { .artifact-icon-wrapper { border-color: $rarity-common-color; /* Для common фон не меняем, как в оригинале */ } }
-    &.rarity-uncommon { .artifact-icon-wrapper { border-color: $rarity-uncommon-color; background-color: rgba($rarity-uncommon-color, 0.15); } } // Новый стиль
+    &.rarity-common { .artifact-icon-wrapper { border-color: $rarity-common-color; } }
+    &.rarity-uncommon { .artifact-icon-wrapper { border-color: $rarity-uncommon-color; background-color: rgba($rarity-uncommon-color, 0.15); } }
     &.rarity-rare { .artifact-icon-wrapper { border-color: $rarity-rare-color; background-color: rgba($rarity-rare-color, 0.15); } }
-    &.rarity-epic { .artifact-icon-wrapper { border-color: $rarity-epic-color; background-color: rgba($rarity-epic-color, 0.15); } } // Новый стиль
+    &.rarity-epic { .artifact-icon-wrapper { border-color: $rarity-epic-color; background-color: rgba($rarity-epic-color, 0.15); } }
     &.rarity-legendary { .artifact-icon-wrapper { border-color: $rarity-legendary-color; background-color: rgba($rarity-legendary-color, 0.15); } }
     &.rarity-mythic { .artifact-icon-wrapper { border-color: $rarity-mythic-color; background-color: rgba($rarity-mythic-color, 0.15); } }
 
     &:hover {
         .artifact-icon-wrapper {
-            transform: scale(1.08);
-            border-color: #fff; // При наведении рамка становится белой для всех редкостей
+            // transform: scale(1.08); // Этот transform теперь обрабатывается анимацией pulse-glow или общим transition
+            border-color: #fff;
         }
         &.not-owned .artifact-icon-wrapper img {
             filter: grayscale(50%) opacity(0.7);
         }
+        // Если артефакт не готов к активации, при ховере можно усилить эффект увеличения,
+        // так как анимация свечения его не затрагивает.
+        &:not(.glow-for-activation) .artifact-icon-wrapper {
+            transform: scale(1.08);
+        }
     }
 }
 
-// --- НОВЫЕ И ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ БОНУСОВ ---
-
-// Контейнер для секции бонусов (заголовок + контент)
+// Стили для бонусов
 .set-bonuses-section {
     margin-top: 20px;
     width: 100%;
-    // Для центрирования дочернего элемента с width: fit-content,
-    // можно сделать родителя flex-контейнером (не обязательно, если у дочернего margin: auto)
-    // display: flex;
-    // justify-content: center;
 }
 
 .set-bonus-toggle {
     font-size: 0.9em;
     color: #ddd;
     background-color: rgba(20, 30, 55, 0.8);
-    padding: 6px 15px; // Немного увеличим горизонтальный padding для лучшего вида
+    padding: 6px 15px;
     border-radius: 6px;
-
-    // ИЗМЕНЕНИЯ ДЛЯ ЦЕНТРИРОВАНИЯ И ШИРИНЫ ПО КОНТЕНТУ:
-    width: fit-content; // Ширина кнопки будет по её содержимому
-    min-width: 180px;   // Минимальная ширина, чтобы кнопка не была слишком узкой (опционально)
-    margin-left: auto;  // Автоматический отступ слева
-    margin-right: auto; // Автоматический отступ справа
-    margin-bottom: 10px; // Отступ снизу
-
+    width: fit-content;
+    min-width: 180px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
     font-weight: normal;
     text-transform: uppercase;
     cursor: pointer;
-    display: flex;           // Оставляем flex для выравнивания текста и стрелки внутри кнопки
-    justify-content: center; // Центрируем текст и стрелку внутри кнопки
+    display: flex;
+    justify-content: center;
     align-items: center;
     user-select: none;
 
@@ -292,13 +307,10 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
         margin-left: 10px;
         transition: transform 0.3s ease;
         font-size: 0.8em;
-        // &.expanded - стили для повернутой стрелки остаются
     }
 }
 
-
-// Контейнер для списка бонусов, который будет анимироваться
-.set-bonuses-content { // Контейнер для списка бонусов, который анимируется
+.set-bonuses-content {
     overflow: hidden;
     transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, padding-top 0.4s ease-in-out, border-top-width 0.4s ease-in-out;
     padding-top: 0;
@@ -310,7 +322,7 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
     }
 
     &.expanded {
-        max-height: 500px; // Подберите достаточное значение
+        max-height: 500px;
         opacity: 1;
         padding-top: 15px;
         border-top-width: 1px;
@@ -321,60 +333,71 @@ $bg-anim-size-component: $pattern-unit-length-animated * 2.828; // Пример�
         padding: 0; margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 10px; // Отступ между "контейнерами" условий (2/2 и 4/4)
+        gap: 10px;
     }
 
-    li { // Теперь это li для целой группы бонусов - наш "отдельный контейнер"
-        background-color: rgba(10, 20, 40, 0.5); // Фоновый цвет для контейнера бонусов
-        border-radius: 6px;                      // Скругление углов контейнера
-        padding: 12px 15px;                      // Внутренние отступы контейнера
-        transition: background-color 0.3s ease, box-shadow 0.3s ease; // Плавные переходы
+    li {
+        background-color: rgba(10, 20, 40, 0.5);
+        border-radius: 6px;
+        padding: 12px 15px;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
 
         .bonus-condition-header {
-            text-align: center;     // Центрируем текст заголовка ("2/2:", "4/4:")
-            margin-bottom: 10px;    // Отступ под заголовком
-            padding-bottom: 6px;    // Небольшой отступ для линии под заголовком
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05); // Линия под заголовком
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .bonus-condition-label {
-            font-size: 1em;         // Размер шрифта для "2/2:", "4/4:"
-            font-weight: bold;      // Жирный шрифт
-            color: #cdd9e5;         // Цвет текста заголовка по умолчанию
-            display: inline-block;  // Чтобы занимал только необходимую ширину
+            font-size: 1em;
+            font-weight: bold;
+            color: #cdd9e5;
+            display: inline-block;
         }
 
         .bonus-description-list {
             display: flex;
-            flex-direction: column; // Бонусы в столбик
-            gap: 5px;               // Отступ между описаниями бонусов
+            flex-direction: column;
+            gap: 5px;
         }
 
         .bonus-description-item {
             font-size: 0.85em;
-            color: #99acc1;         // Цвет текста неактивного бонуса
-            text-align: center;         // Выравнивание текста описаний по левому краю
-            padding-left: 5px;       // Небольшой отступ слева для описаний
+            color: #99acc1;
+            text-align: center;
+            padding-left: 5px;
         }
 
-        // Стили для АКТИВНОЙ ГРУППЫ бонусов ("контейнера")
         &.active-bonus-group {
-            background-color: rgba(40, 88, 42, 0.5); // Зеленоватый фон для активного контейнера
+            background-color: rgba(40, 88, 42, 0.5);
             box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
 
             .bonus-condition-label {
-                color: #86dc89; // Яркий цвет для активного заголовка "2/2:"
+                color: #86dc89;
             }
 
             .bonus-description-item {
-                color: #e0ffe0; // Светлый цвет для описаний активных бонусов
+                color: #e0ffe0;
             }
         }
 
-        // Стили для НЕАКТИВНОЙ ГРУППЫ (если нужно отличать от дефолтных)
         &.inactive-bonus-group {
-             // .bonus-condition-label остается #ccc
-             // .bonus-description-item остается #999
+           // Стили по умолчанию
         }
+    }
+}
+
+// === НОВАЯ АНИМАЦИЯ СВЕЧЕНИЯ ===
+@keyframes pulse-glow {
+    from {
+        transform: scale(1);
+        box-shadow: 0 0 8px 2px rgba(12, 255, 200, 0.6); // Бирюзовое свечение
+        // filter: drop-shadow(0 0 4px rgba(12, 255, 200, 0.7)); // Альтернатива через filter
+    }
+    to {
+        transform: scale(1.03); // Небольшое увеличение
+        box-shadow: 0 0 16px 5px rgba(12, 255, 200, 0.8); // Усиленное свечение
+        // filter: drop-shadow(0 0 7px rgba(12, 255, 200, 0.9)); // Альтернатива через filter
     }
 }

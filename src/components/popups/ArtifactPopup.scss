@@ -1,167 +1,487 @@
-// src/components/ArtifactPopup.scss (или твой основной файл стилей)
+// ===========================================================
+// === СТИЛИ ДЛЯ ArtifactPopup.jsx (Адаптировано из ForgeItemInfoPopup) ===
+// ===========================================================
 
-// --- Переменные (если не определены глобально) ---
-$rarity-common-color: #888;
-$rarity-rare-color: #3a7ac0;    // Синий
-$rarity-legendary-color: #d08000; // Оранжевый/Золотой
-$rarity-mythic-color: #c03050;  // Фиолетовый/Красный
+// --- Переменные (из ForgeItemInfoPopup) ---
+$item-popup-bg-start: #2f3949;
+$item-popup-bg-end: #212833;
+$divider-color-dark: rgba(120, 130, 160, 0.2);
+$text-primary-light: #e0e5f0;
+$text-secondary-light: #c0c8d4;
+$text-muted-light: #9098a8;
+$golden-banner-bg: #daa520; // Для типа артефакта, если будет
+$golden-banner-text-dark: #2c3e50;
+$background-element-dark: rgba(0, 0, 0, 0.2);
+$positive-change-color: #4CAF50; // Зеленый для улучшений
 
-// --- Стили для попапа артефакта ---
+$rarity-colors: (
+  common: #9e9e9e,
+  uncommon: #66bb66,
+  rare: #42a5f5,
+  epic: #ab47bc,
+  legendary: #ff9800,
+  mythic: #f44336
+);
 
-// Оверлей (можно использовать существующий .popup-overlay, если он универсальный)
-.popup-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; // Выше остального интерфейса
-  padding: 20px;
+// Цвета для кнопок активации/улучшения
+$activate-button-bg-start: #007bff; // Синий для активации
+$activate-button-bg-end: #0056b3;
+$activate-button-border: darken($activate-button-bg-end, 10%);
+
+$upgrade-button-bg-start: #28a745; // Зеленый для улучшения
+$upgrade-button-bg-end: #1e7e34;
+$upgrade-button-border: darken($upgrade-button-bg-end, 10%);
+
+
+// --- Основные стили попапа (из ForgeItemInfoPopup) ---
+
+.item-popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh; // Используем dvh для лучшей поддержки мобильных браузеров
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 15px;
   box-sizing: border-box;
-  // animation: fadeIn 0.25s ease;
 }
 
-// Основной контейнер попапа
-.popup-content.artifact-popup {
-  background: #fdf5e6;       // Светло-бежевый фон
-  border: 3px solid #a0522d; // Коричневая рамка
-  border-radius: 15px;       // Скругленные углы
-  width: 340px;              // Примерная ширина
-  max-width: 90vw;           // Ограничение по ширине экрана
-  color: #4b3a2e;            // Темно-коричневый текст
-  padding: 15px;             // Общий внутренний отступ
-  padding-top: 45px;         // Отступ сверху для кнопки и заголовка
-  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-  position: relative;        // Для позиционирования кнопки и значка
+.item-popup-content {
+  width: 370px;
+  max-width: 95vw;
+  background: linear-gradient(160deg, $item-popup-bg-start, $item-popup-bg-end);
+  border: 1px solid rgba(120, 130, 160, 0.3);
+  border-radius: 12px;
+  color: $text-primary-light;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;                 // Пространство между основными блоками
-  // animation: zoomIn 0.3s ease;
-}
+  overflow: hidden; // Важно для border-radius дочерних элементов с фоном
 
-// Кнопка закрытия (без изменений)
-.popup-close-x {
-  position: absolute; top: 8px; right: 8px;
-  background: #d2691e; border: 2px solid #8b4513; color: white;
-  font-size: 18px; font-weight: bold; line-height: 1; padding: 0;
-  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background-color 0.2s, transform 0.1s; z-index: 10;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  &:hover { background-color: #b85c1a; }
-  &:active { transform: scale(0.95); }
-}
+  &.forge-info-popup-fixed-height {
+    max-height: 640px;
+  }
 
-// <<< НОВЫЙ БЛОК: Значок Редкости >>>
-.popup-rarity-badge {
-  position: absolute;
-  top: 10px;             // Отступ сверху
-  left: 10px;             // Отступ слева
-  padding: 3px 8px;       // Паддинги внутри значка
-  border-radius: 5px;     // Небольшое скругление
-  font-size: 10px;        // Маленький шрифт
-  font-weight: bold;
-  text-transform: uppercase;
-  border: 1px solid rgba(0,0,0,0.2); // Тонкая темная рамка для читаемости
-  z-index: 1;             // Под кнопкой закрытия
-
-  // Цвета фона и текста для значка редкости
-  &.rarity-common { background-color: $rarity-common-color; color: white; border-color: darken($rarity-common-color, 15%); }
-  &.rarity-rare { background-color: $rarity-rare-color; color: white; border-color: darken($rarity-rare-color, 15%); }
-  &.rarity-legendary { background-color: $rarity-legendary-color; color: white; border-color: darken($rarity-legendary-color, 15%); }
-  &.rarity-mythic { background-color: $rarity-mythic-color; color: white; border-color: darken($rarity-mythic-color, 15%); }
-}
-
-// <<< СТИЛИ НАЗВАНИЯ ИЗМЕНЕНЫ >>>
-.popup-title {
-    // Base styles defined above
-    display: block; // Or table
-    width: fit-content; // Or remove width for table
-    margin: 5px auto 10px auto; // Center the block
-    padding: 5px 20px;
-    border: 2px solid #a0522d; // Default border
-    border-radius: 20px;
-    background-color: #ffeb9b; // Default background (e.g., legendary)
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    font-size: 20px;
+  // === Стили для НОВОЙ кнопки "X" закрытия ===
+  .popup-close-x-button {
+    position: absolute;
+    top: 3px; // Отступы можно подобрать
+    right: 3px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1); // Полупрозрачный фон
+    color: $text-muted-light; // Цвет крестика
+    font-size: 24px;
     font-weight: bold;
-    color: #5d4037; // Default color
-    line-height: 1.2;
-    text-align: center; // Center text within the banner
-}
+    line-height: 1; // Для точного центрирования крестика
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    z-index: 10; // Чтобы была над другими элементами шапки
 
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: $text-primary-light;
+    }
 
-// <<< СТИЛИ ДЛЯ СТАРОГО .popup-header УДАЛЕНЫ >>>
-
-// Иконка артефакта (без изменений)
-.popup-icon-area {
-  width: 80px; height: 80px;
-  padding: 4px;
-  border: 3px solid $rarity-common-color; // Рамка по умолчанию
-  border-radius: 10px;
-  background-color: #e0d8c9;
-  margin: 0 auto;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-
-  .popup-icon { width: 100%; height: 100%; object-fit: contain; display: block; }
-
-  // Цвета рамки/фона для иконки
-  &.rarity-rare { border-color: $rarity-rare-color; background-color: rgba($rarity-rare-color, 0.1); }
-  &.rarity-legendary { border-color: $rarity-legendary-color; background-color: rgba($rarity-legendary-color, 0.1); }
-  &.rarity-mythic { border-color: $rarity-mythic-color; background-color: rgba($rarity-mythic-color, 0.1); }
-}
-
-// Область деталей (описание, уровень) (без изменений)
-.popup-details-area {
-  background-color: rgba(160, 82, 45, 0.05);
-  border-radius: 8px;
-  padding: 10px 15px;
-  text-align: center;
-
-  .artifact-description {
-    font-size: 13px; color: #6d5b4e; margin: 0 0 12px 0;
-    line-height: 1.4; font-style: italic;
+    &:active {
+        transform: scale(0.92);
+    }
   }
-}
+  // === Конец стилей для кнопки "X" ===
 
-// Секция уровня и прогресса осколков (без изменений)
-.artifact-level-section {
-  margin-bottom: 5px;
-  h4 { margin: 0 0 6px 0; font-size: 15px; font-weight: bold; color: #5d4037; }
-  .shard-progress { /* ... */ } // Если был текст осколков, он удален из JSX
-   .max-level-text { font-size: 14px; font-weight: bold; color: #d08000; }
-   .shard-count { // Стиль для отображения остатка на макс. уровне
-       font-size: 13px;
-       color: #7d6b5e;
-       margin-top: 4px; // Небольшой отступ
-   }
-}
+  .custom-popup-header {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 25px 15px 15px 15px;
+    gap: 8px;
+    border-bottom: 1px solid $divider-color-dark;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
 
-// Секция статов (без изменений)
-.artifact-stats-section {
-  background-color: rgba(160, 82, 45, 0.07);
-  border-radius: 8px; padding: 12px 15px;
-  display: flex; flex-direction: column; gap: 8px;
+    .item-name-banner {
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 20px;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+      z-index: 3;
+      max-width: 90%;
+      margin-top: -40px;
 
-  .stat-group {
-      h5 { /* ... */ margin: 0 0 6px 0; font-size: 13px; color: #a0522d; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid rgba(160, 82, 45, 0.2); padding-bottom: 3px; text-align: left; }
-      p { /* ... */ margin: 1px 0; font-size: 14px; color: #5d4037; text-align: left;
-          .base-value-hint { /* ... */ color: #888; font-size: 0.85em; margin-left: 6px; }
+      h2 {
+        margin: 0;
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: 1.2;
       }
-      &:empty::after { /* ... */ content: "Нет характеристик"; font-style: italic; color: #999; font-size: 13px; display: block; text-align: center; padding: 5px 0; }
+
+      @each $rarity, $color in $rarity-colors {
+        &.rarity-bg-#{$rarity} {
+          background-color: $color;
+          color: if(lightness($color) > 60%, #111, white);
+          border: 2px solid darken($color, 15%);
+        }
+      }
+    }
+  }
+
+  .popup-body-scrollable-area {
+    padding: 15px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-grow: 1;
+    min-height: 200px;
+
+    .popup-content-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .icon-description-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 15px;
+      width: 100%;
+
+      .icon-column {
+        flex: 0 0 90px;
+        .popup-icon-area {
+          width: 90px;
+          height: 90px;
+          padding: 6px;
+          border-radius: 8px;
+          border: 2px solid transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+
+          @each $rarity, $color in $rarity-colors {
+            &.rarity-#{$rarity} {
+              border-color: $color;
+              background: rgba($color, 0.15);
+            }
+          }
+          .popup-icon {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+          }
+        }
+      }
+      .description-column {
+        flex: 1;
+        min-width: 0;
+        .popup-description-area {
+          background-color: $background-element-dark;
+          padding: 12px 15px;
+          border-radius: 6px;
+          width: 100%;
+          box-sizing: border-box;
+          font-size: 14px;
+          line-height: 1.5;
+          color: $text-secondary-light;
+          p { margin: 0; font-style: italic;}
+        }
+      }
+    }
+
+    .toggleable-content-area {
+      position: relative;
+      width: 100%;
+      min-height: 150px;
+    }
+
+    .stats-view-wrapper,
+    .details-view-wrapper {
+      width: 100%;
+    }
+
+    .details-view-wrapper {
+      .details-content-block {
+        padding: 15px;
+        background-color: $background-element-dark;
+        border-radius: 8px;
+        color: $text-secondary-light;
+        font-size: 14px;
+        line-height: 1.6;
+        p { margin-top: 0; margin-bottom: 10px; &:last-child { margin-bottom: 0; }}
+        strong { color: $text-primary-light; }
+      }
+    }
+
+    .content-section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: $text-primary-light;
+      margin-bottom: 12px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid $divider-color-dark;
+      width: 100%;
+
+      &.left-aligned-title {
+        text-align: left;
+      }
+    }
+
+    .stats-block {
+      background-color: $background-element-dark;
+      padding: 15px;
+      border-radius: 8px;
+      width: 100%;
+      box-sizing: border-box;
+
+      .stats-comparison-table {
+        display: grid;
+        grid-template-columns: minmax(90px, 2fr) auto 20px auto;
+        column-gap: 8px;
+        row-gap: 10px;
+        font-size: 14px;
+        width: 100%;
+        align-items: center;
+
+        .stat-name-cell {
+          justify-self: start;
+          color: $text-secondary-light;
+          font-weight: 500;
+          padding-right: 5px;
+        }
+
+        .current-value-cell,
+        .next-value-cell {
+          justify-self: start;
+          font-weight: 600;
+          color: $text-primary-light;
+          white-space: nowrap;
+        }
+
+        .arrow-cell {
+          justify-self: center;
+          color: $text-secondary-light;
+          font-weight: bold;
+        }
+
+        .next-value-cell {
+          &.has-value {
+            // Можно добавить базовый стиль, если значение есть, но не изменилось или ухудшилось
+          }
+          &.positive-change {
+            color: $positive-change-color;
+            font-weight: bold;
+          }
+          &.max-level {
+            color: $golden-banner-bg;
+            font-style: italic;
+            font-weight: normal;
+          }
+          &.no-value, &.no-upgrade:not(.max-level) {
+             color: $text-muted-light;
+             font-weight: normal;
+          }
+        }
+
+        .current-value-cell.is-level-value,
+        .next-value-cell.is-level-value {
+          font-weight: bold;
+        }
+        .stat-name-cell:has(+ .is-level-value) {
+            font-weight: bold;
+        }
+      }
+    }
+
+    .no-stats-message {
+      padding: 20px 0;
+      text-align: center;
+      color: $text-muted-light;
+      font-size: 14px;
+      font-style: italic;
+        p { margin: 0; }
+    }
+
+    // === СТАРЫЕ СТИЛИ ДЛЯ .artifact-action-buttons УДАЛЕНЫ ОТСЮДА ===
+    // .artifact-action-buttons {
+    //   // Эти стили больше не нужны здесь, так как кнопки перемещены в футер
+    // }
+    // .max-level-indicator {
+    //    // Этот блок также был частью старой структуры кнопок в теле, 
+    //    // его стили больше не нужны здесь если сам блок удален из JSX
+    // }
+
+    .button-toggle-view-standalone {
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      color: $text-primary-light;
+      width: 90%;
+      max-width: 280px;
+      margin-top: 15px; // Может потребоваться调整 в зависимости от того, где теперь кнопка
+      background: linear-gradient(180deg, #3a6278, #2e4f60);
+      border-color: #294554;
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(180deg, #437088, #355b6e);
+        border-color: #315263;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      &:active:not(:disabled){
+        transform: translateY(0px);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      }
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(58, 98, 120, 0.5);
+      }
+      &:disabled {
+        background: #414a56;
+        border-color: #384049;
+        color: $text-muted-light;
+        opacity: 0.6;
+        cursor: default;
+        transform: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      }
+    }
+
+  } // Конец .popup-body-scrollable-area
+
+  .popup-buttons {
+    &.item-info-footer {
+      padding: 12px 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-top: 1px solid $divider-color-dark;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 0 0 11px 11px;
+      flex-shrink: 0;
+
+      // Общие стили для кнопки в футере, если она одна
+      .button-action {
+        width: 100%;
+        max-width: 320px; // Максимальная ширина для кнопки в футере
+        margin: 0 auto; // Центрирование, если max-width меньше 100%
+        padding: 10px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        color: $text-primary-light;
+        text-decoration: none;
+        line-height: 1.3;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        &:active:not(:disabled){
+          transform: translateY(0px);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+        &:focus {
+          outline: none;
+        }
+        &:disabled {
+          background: #414a56 !important; // Сохраняем !important из вашего кода
+          border-color: #384049 !important; // Сохраняем !important из вашего кода
+          color: $text-muted-light !important; // Сохраняем !important из вашего кода
+          opacity: 0.6;
+          cursor: default;
+          transform: none !important; // Сохраняем !important из вашего кода
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important; // Сохраняем !important из вашего кода
+        }
+      }
+
+      // Специфичные стили для состояний кнопки в футере
+      .button-activate-artifact-footer {
+        background: linear-gradient(180deg, lighten($activate-button-bg-start, 5%), $activate-button-bg-end);
+        border-color: $activate-button-border;
+        &:hover:not(:disabled) {
+            background: linear-gradient(180deg, $activate-button-bg-start, darken($activate-button-bg-end, 5%));
+            border-color: darken($activate-button-border, 5%);
+        }
+        &:focus:not(:disabled) {
+             box-shadow: 0 0 0 3px rgba($activate-button-bg-start, 0.4);
+        }
+      }
+      .button-upgrade-artifact-footer {
+        background: linear-gradient(180deg, lighten($upgrade-button-bg-start, 5%), $upgrade-button-bg-end);
+        border-color: $upgrade-button-border;
+         &:hover:not(:disabled) {
+            background: linear-gradient(180deg, $upgrade-button-bg-start, darken($upgrade-button-bg-end, 5%));
+            border-color: darken($upgrade-button-border, 5%);
+        }
+         &:focus:not(:disabled) {
+             box-shadow: 0 0 0 3px rgba($upgrade-button-bg-start, 0.4);
+        }
+      }
+      .button-max-level-footer {
+        background: linear-gradient(180deg, #454c54, #3a4047); // Темно-серый для макс. уровня
+        border-color: #30353b;
+        color: $text-muted-light;
+        // cursor: default; // :disabled уже делает это
+         &:hover:not(:disabled) { // Убираем hover эффект для disabled состояния (хотя disabled уже это делает)
+            background: linear-gradient(180deg, #454c54, #3a4047);
+            border-color: #30353b;
+         }
+         // Состояние :disabled уже обрабатывается общим .button-action:disabled
+      }
+    }
+
+    // Старый .button-close-popup, если он больше не используется и была только одна кнопка, его можно удалить.
+    // Если .button-action в футере теперь единственная, этот блок не нужен.
+    // .button-close-popup {
+    //   background: linear-gradient(180deg, #5a6268, #495057);
+    //   border-color: #41464b;
+    //   min-width: 150px;
+    //   width: auto;
+    //   flex-grow: 0;
+
+    //   &:hover:not(:disabled) {
+    //     background: linear-gradient(180deg, #646c74, #52585e);
+    //     border-color: #4a5056;
+    //   }
+    //   &:focus:not(:disabled) {
+    //     box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.4);
+    //   }
+    // }
   }
 }
-
-// Область кнопки активации/улучшения (без изменений)
-.artifact-upgrade-area {
-   margin-top: 8px; text-align: center;
-
-   .button-activate, .button-upgrade {
-       padding: 9px 18px; font-size: 15px; font-weight: bold; color: white;
-       border-radius: 8px; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, opacity 0.2s, transform 0.1s;
-       min-width: 160px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-   }
-   .button-activate { background-color: #007bff; border-bottom: 3px solid #0056b3; &:hover:not(:disabled) { background-color: #0069d9; } }
-   .button-upgrade { background-color: #28a745; border-bottom: 3px solid #1e7e34; &:hover:not(:disabled) { background-color: #218838; } }
-   .button-activate:active:not(:disabled), .button-upgrade:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.2); border-bottom-width: 2px; }
-   .button-activate:disabled, .button-upgrade:disabled { background-color: #6c757d; border-bottom-color: #5a6268; box-shadow: none; cursor: default; opacity: 0.65; }
-}   

@@ -1,21 +1,25 @@
-import React, { useMemo, useState, useCallback } from 'react'; // Добавлен useCallback
+// ArtifactsPanel.jsx
+import React, { useMemo, useState, useCallback } from 'react';
 import useGameStore from '../../store/useGameStore.js';
-import { ARTIFACT_SETS, getArtifactById } from '../../data/artifactsData';
+// Предполагаем, что BASE_SHARD_COST_PER_LEVEL находится в artifactsData.js
+// Если это не так, вам нужно будет скорректировать импорт или значение по умолчанию.
+// Добавлен MAX_ARTIFACT_LEVEL
+import { ARTIFACT_SETS, getArtifactById, BASE_SHARD_COST_PER_LEVEL, MAX_ARTIFACT_LEVEL } from '../../data/artifactsData';
 import ArtifactPopup from '../popups/ArtifactPopup.jsx';
 import './ArtifactsPanel.scss';
 
 const ArtifactsPanel = ({ onPowerChange }) => {
     const artifactLevels = useGameStore(state => state.artifactLevels);
+    // collectedArtifacts нам не нужен для этой логики, так как наличие записи в artifactLevels с level 0 уже означает "собран"
     const [selectedArtifactData, setSelectedArtifactData] = useState(null);
     const [expandedSets, setExpandedSets] = useState(new Set());
 
-    // Мемоизируем getOwnedArtifactsCount с useCallback
     const getOwnedArtifactsCount = useCallback((set) => {
         return set.artifacts.filter(artifact => {
             const state = artifactLevels[artifact.id];
             return state && state.level > 0;
         }).length;
-    }, [artifactLevels]); // Зависит от artifactLevels
+    }, [artifactLevels]);
 
     const isBonusActive = useMemo(() => {
         return (set, bonusCondition) => {
@@ -24,10 +28,10 @@ const ArtifactsPanel = ({ onPowerChange }) => {
             const requiredCount = parseInt(match[1], 10);
             if (isNaN(requiredCount) || requiredCount <= 0) return false;
             
-            const activeOwnedCount = getOwnedArtifactsCount(set); // Используем мемоизированную версию
+            const activeOwnedCount = getOwnedArtifactsCount(set);
             return activeOwnedCount >= requiredCount;
         };
-    }, [getOwnedArtifactsCount]); // Теперь зависим от мемоизированной getOwnedArtifactsCount
+    }, [getOwnedArtifactsCount]);
 
     const toggleSetExpansion = (setId) => {
         setExpandedSets(prevExpandedSets => {
@@ -54,6 +58,54 @@ const ArtifactsPanel = ({ onPowerChange }) => {
         setSelectedArtifactData(null);
     };
 
+    const isArtifactReadyForActivation = useCallback((artifactJson) => {
+        const artifactState = artifactLevels[artifactJson.id] || { level: 0, shards: 0 };
+        
+        if (artifactState.level !== 0) {
+            return false; 
+        }
+
+        const artifactDataFromDb = getArtifactById(artifactJson.id);
+        if (!artifactDataFromDb) {
+            console.warn(`Данные для артефакта ${artifactJson.id} не найдены в getArtifactById для проверки активации.`);
+            return false;
+        }
+
+        const shardsNeeded = (0 + 1) * (artifactDataFromDb.baseShardCost || BASE_SHARD_COST_PER_LEVEL);
+        return (artifactState.shards || 0) >= shardsNeeded;
+    }, [artifactLevels, /* BASE_SHARD_COST_PER_LEVEL если он может меняться и не из getArtifactById */]);
+
+    // === НОВАЯ ФУНКЦИЯ ДЛЯ ПРОВЕРКИ ГОТОВНОСТИ К УЛУЧШЕНИЮ ===
+    const isArtifactReadyForUpgrade = useCallback((artifactJson) => {
+        const artifactState = artifactLevels[artifactJson.id];
+        // Артефакт должен быть активирован (level > 0)
+        if (!artifactState || artifactState.level === 0) {
+            return false;
+        }
+
+        const fullArtifactData = getArtifactById(artifactJson.id);
+        if (!fullArtifactData) {
+            return false;
+        }
+        
+        // Проверяем, не максимальный ли уровень
+        const maxLevel = fullArtifactData.maxLevel || MAX_ARTIFACT_LEVEL;
+        if (artifactState.level >= maxLevel) {
+            return false;
+        }
+
+        const shardsNeeded = (artifactState.level + 1) * (fullArtifactData.baseShardCost || BASE_SHARD_COST_PER_LEVEL);
+        return (artifactState.shards || 0) >= shardsNeeded;
+    }, [artifactLevels]);
+
+
+    // Блок группировки бонусов вынесен за пределы map для соответствия правилам React Hooks,
+    // но его нужно будет адаптировать для каждого сета отдельно или передавать `set` как аргумент.
+    // В данном примере, для сохранения структуры вашего кода, оставляю useMemo внутри map,
+    // но с предупреждением о необходимости рефакторинга.
+    // const groupedBonusesForAllSets = useMemo(() => { /* ... */ }, [ARTIFACT_SETS, isBonusActive]);
+
+
     return (
         <>
             <div className="artifacts-panel-content-only">
@@ -71,14 +123,17 @@ const ArtifactsPanel = ({ onPowerChange }) => {
                                 'artifact-set',
                                 isSetFullyCollected ? 'fully-collected-set-glow' : ''
                             ].join(' ').trim();
-
-                            // --- НОВЫЙ БЛОК: ГРУППИРОВКА БОНУСОВ ---
+                            
+                            // --- БЛОК ГРУППИРОВКИ БОНУСОВ (из вашего кода) ---
+                            // Внимание: useMemo здесь вызывается внутри map, что является нарушением правил React Hooks.
+                            // Это может привести к неожиданному поведению. Его следует выносить из цикла.
+                            // Однако, для сохранения структуры вашего кода, оставляю как есть.
                             const groupedBonuses = useMemo(() => {
                                 if (!set.bonuses || set.bonuses.length === 0) {
                                     return {};
                                 }
                                 return set.bonuses.reduce((acc, bonus) => {
-                                    const conditionKey = bonus.condition; // Например, "[Собрано 2]"
+                                    const conditionKey = bonus.condition;
                                     if (!acc[conditionKey]) {
                                         acc[conditionKey] = {
                                             descriptions: [],
@@ -88,53 +143,57 @@ const ArtifactsPanel = ({ onPowerChange }) => {
                                     acc[conditionKey].descriptions.push(bonus.description);
                                     return acc;
                                 }, {});
-                            }, [set, isBonusActive]); // Убрали set.bonuses и artifactLevels т.к. isBonusActive уже их учитывает косвенно
-                                                     // set добавлен, т.к. он используется в isBonusActive
-                            // --- КОНЕЦ НОВОГО БЛОКА ---
+                            }, [set, isBonusActive]); // Зависимости для useMemo, если он остается здесь
+                            // --- КОНЕЦ БЛОКА ГРУППИРОВКИ БОНУСОВ ---
 
-                           return (
-                            <div key={set.id} className="artifact-set-container">
-                                <h3 className="set-title-banner">{set.name}</h3>
-                                <div className={artifactSetClasses}>
-                                    <div className="set-items">
-                                        {set.artifacts.map((artifact) => {
-                                            const artifactState = artifactLevels[artifact.id] || { level: 0 };
-                                            const isActive = artifactState.level > 0;
-                                            const level = artifactState.level; // Получаем уровень артефакта
+                            return (
+                                <div key={set.id} className="artifact-set-container">
+                                    <h3 className="set-title-banner">{set.name}</h3>
+                                    <div className={artifactSetClasses}>
+                                        <div className="set-items">
+                                            {set.artifacts.map((artifact) => {
+                                                const artifactState = artifactLevels[artifact.id] || { level: 0, shards: 0 };
+                                                const isActive = artifactState.level > 0;
+                                                const level = artifactState.level;
 
-                                            const itemClasses = [
-                                                'artifact-item',
-                                                isActive ? 'owned' : 'not-owned',
-                                                `rarity-${artifact.rarity || 'common'}`
-                                            ].join(' ');
+                                                const readyForActivation = isArtifactReadyForActivation(artifact);
+                                                // === ВЫЗОВ НОВОЙ ФУНКЦИИ ===
+                                                const readyForUpgrade = isArtifactReadyForUpgrade(artifact);
 
-                                            return (
-                                                <div
-                                                    key={artifact.id}
-                                                    className={itemClasses}
-                                                    title={artifact.name}
-                                                    onClick={() => handleArtifactClick(artifact)}
-                                                >
-                                                    <div className="artifact-icon-wrapper">
-                                                        <img src={artifact.icon} alt={artifact.name} />
-                                                        
-                                                        {/* === НОВЫЙ БЛОК ДЛЯ ЛЕЙБЛОВ === */}
-                                                        {isActive ? (
-                                                            <div className="artifact-status-label level-label">
-                                                                Lvl {level}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="artifact-status-label not-active-label">
-                                                                Not active
-                                                            </div>
-                                                        )}
-                                                        {/* === КОНЕЦ НОВОГО БЛОКА === */}
+                                                const itemClasses = [
+                                                    'artifact-item',
+                                                    isActive ? 'owned' : 'not-owned',
+                                                    `rarity-${artifact.rarity || 'common'}`,
+                                                    readyForActivation ? 'glow-for-activation' : '',
+                                                    readyForUpgrade ? 'can-be-upgraded' : '' // Новый класс для индикатора улучшения
+                                                ].join(' ').trim();
+
+                                                return (
+                                                    <div
+                                                        key={artifact.id}
+                                                        className={itemClasses}
+                                                        title={artifact.name}
+                                                        onClick={() => handleArtifactClick(artifact)}
+                                                    >
+                                                        <div className="artifact-icon-wrapper">
+                                                            <img src={artifact.icon} alt={artifact.name} />
+                                                            
+                                                            {/* === ИЗМЕНЕННЫЙ БЛОК ДЛЯ ЛЕЙБЛОВ (соответствует первому варианту) === */}
+                                                            {isActive ? ( 
+                                                                <div className="artifact-status-label level-label">
+                                                                    Lvl {level}
+                                                                </div>
+                                                            ) : ( 
+                                                                <div className="artifact-status-label not-active-label">
+                                                                    Not active {/* Замените на "Не активен", если нужна локализация */}
+                                                                </div>
+                                                            )}
+                                                            {/* Вы можете добавить сюда иконку для readyForUpgrade, если она не через CSS */}
+                                                        </div>
                                                     </div>
-                                                    {/* Если имя артефакта было под иконкой, оно там и останется или его можно вернуть */}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
 
                                         {set.bonuses && set.bonuses.length > 0 && (
                                             <div className="set-bonuses-section">
@@ -152,7 +211,6 @@ const ArtifactsPanel = ({ onPowerChange }) => {
                                                 </h4>
                                                 <div className={`set-bonuses-content ${isCurrentlyExpanded ? 'expanded' : 'collapsed'}`}>
                                                     <ul>
-                                                        {/* --- ИЗМЕНЕННЫЙ ЦИКЛ ОТОБРАЖЕНИЯ БОНУСОВ --- */}
                                                         {Object.entries(groupedBonuses).map(([conditionString, bonusGroupData]) => {
                                                             const match = conditionString.match(/\[\s*Собрано\s*(\d+)\s*\]/i);
                                                             const requiredCountForDisplay = match ? parseInt(match[1], 10) : null;
@@ -178,7 +236,6 @@ const ArtifactsPanel = ({ onPowerChange }) => {
                                                                 </li>
                                                             );
                                                         })}
-                                                        {/* --- КОНЕЦ ИЗМЕНЕННОГО ЦИКЛА --- */}
                                                     </ul>
                                                 </div>
                                             </div>

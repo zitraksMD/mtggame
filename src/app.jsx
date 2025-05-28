@@ -1,14 +1,14 @@
 // src/App.jsx
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'; // <<< Добавлен useMemo
 import { motion, AnimatePresence } from 'framer-motion';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
-// Импорты Компонентов
+// Импорты Компонентов (без изменений)
 import MainMenu from "./components/screens/MainMenu";
 import Level from "./components/Level";
 import Inventory from "./components/screens/Inventory";
 import Shop from "./components/screens/Shop";
-import BottomNav from "./components/BottomNav"; // Используется для BottomNav
+import BottomNav from "./components/BottomNav";
 import UsernamePopup from "./components/popups/UsernamePopup";
 import Forge from "./components/screens/Forge";
 import Achievements from "./components/screens/Achievements";
@@ -24,6 +24,15 @@ import ShardPassScreen from './components/screens/ShardPassScreen';
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
 import './App.scss';
+
+// ▼▼▼ НУЖНЫЕ ИМПОРТЫ ИЗ ДАННЫХ АРТЕФАКТОВ ▼▼▼
+// Убедитесь, что эти экспорты существуют и пути правильные
+import {
+    ALL_ARTIFACTS_ARRAY,      // Массив ВСЕХ артефактов для итерации
+    getArtifactById,          // Функция для получения данных артефакта по ID
+    BASE_SHARD_COST_PER_LEVEL,// Базовая стоимость осколков за уровень (дефолт)
+    MAX_ARTIFACT_LEVEL        // Максимальный уровень артефакта (дефолт)
+} from './data/artifactsData'; // <<< УКАЖИТЕ ПРАВИЛЬНЫЙ ПУТЬ К ФАЙЛУ ДАННЫХ АРТЕФАКТОВ
 
 const ENERGY_REFILL_INTERVAL_MS = 30 * 60 * 1000;
 
@@ -58,8 +67,8 @@ const App = () => {
         onTransitionCloseCompleteCallback,
         onTransitionOpenCompleteCallback,
         startScreenTransition,
-        // ▼▼▼ ПОЛУЧАЕМ НОВОЕ СОСТОЯНИЕ ИЗ useGameStore ДЛЯ ИНДИКАТОРА FORGE ▼▼▼
-        isAnyRecipeCraftable // Предполагается, что это состояние будет добавлено в useGameStore
+        isAnyRecipeCraftable, // Уже есть
+        artifactLevels       // <<< ДОБАВЛЯЕМ ЭТО ДЛЯ ДОСТУПА К УРОВНЯМ АРТЕФАКТОВ
     } = useGameStore(
         useCallback(state => ({
             username: state.username, gold: state.gold, diamonds: state.diamonds, toncoinShards: state.toncoinShards,
@@ -71,13 +80,10 @@ const App = () => {
             onTransitionCloseCompleteCallback: state.onTransitionCloseCompleteCallback,
             onTransitionOpenCompleteCallback: state.onTransitionOpenCompleteCallback,
             startScreenTransition: state.startScreenTransition,
-            // ▼▼▼ ДОБАВЛЯЕМ ПОЛУЧЕНИЕ showForgeIndicator ИЗ ГЛОБАЛЬНОГО ХРАНИЛИЩА ▼▼▼
-            // Важно: свойство 'showForgeIndicator' должно быть определено в вашем useGameStore
-            isAnyRecipeCraftable: state.isAnyRecipeCraftable() 
+            isAnyRecipeCraftable: state.isAnyRecipeCraftable ? state.isAnyRecipeCraftable() : false, // Оставляем как есть
+            artifactLevels: state.artifactLevels // <<< ПОЛУЧАЕМ УРОВНИ АРТЕФАКТОВ
         }), [])
     );
-
-
 
     const setUsernameAction = useGameStore((s) => s.setUsername);
     const initializeCharacterStats = useGameStore((s) => s.initializeCharacterStats);
@@ -87,6 +93,55 @@ const App = () => {
     const checkAndResetWeeklyTasks = useGameStore((s) => s.checkAndResetWeeklyTasks);
     const checkAndResetMonthlyTasks = useGameStore((s) => s.checkAndResetMonthlyTasks);
     const trackTaskEvent = useGameStore((s) => s.trackTaskEvent);
+
+    // ▼▼▼ ЛОГИКА ДЛЯ ОПРЕДЕЛЕНИЯ, МОЖНО ЛИ ЧТО-ТО СДЕЛАТЬ С АРТЕФАКТАМИ ▼▼▼
+    const isArtifactReadyForActivationGlobal = useCallback((artifactJson, currentArtifactLevels) => {
+        if (!artifactJson || !currentArtifactLevels || !getArtifactById) return false; // Добавлена проверка getArtifactById
+        const artifactState = currentArtifactLevels[artifactJson.id] || { level: 0, shards: 0 };
+        if (artifactState.level !== 0) return false;
+
+        const artifactDataFromDb = getArtifactById(artifactJson.id);
+        if (!artifactDataFromDb) {
+            console.warn(`Artifact data not found for ID: ${artifactJson.id} in isArtifactReadyForActivationGlobal`);
+            return false;
+        }
+        // Стоимость активации (перехода с 0 на 1 уровень)
+        const shardsNeeded = (0 + 1) * (artifactDataFromDb.baseShardCost || BASE_SHARD_COST_PER_LEVEL);
+        return (artifactState.shards || 0) >= shardsNeeded;
+    }, []); // Зависимости: getArtifactById и константы статичны или импортированы
+
+    const isArtifactReadyForUpgradeGlobal = useCallback((artifactJson, currentArtifactLevels) => {
+        if (!artifactJson || !currentArtifactLevels || !getArtifactById) return false; // Добавлена проверка getArtifactById
+        const artifactState = currentArtifactLevels[artifactJson.id];
+        if (!artifactState || artifactState.level === 0) return false; // Нельзя улучшить, если не активирован
+
+        const fullArtifactData = getArtifactById(artifactJson.id);
+        if (!fullArtifactData) {
+            console.warn(`Artifact data not found for ID: ${artifactJson.id} in isArtifactReadyForUpgradeGlobal`);
+            return false;
+        }
+
+        const maxLevel = fullArtifactData.maxLevel !== undefined ? fullArtifactData.maxLevel : MAX_ARTIFACT_LEVEL;
+        if (artifactState.level >= maxLevel) return false; // Уже максимальный уровень
+
+        // Стоимость улучшения до следующего уровня
+        const shardsNeeded = (artifactState.level + 1) * (fullArtifactData.baseShardCost || BASE_SHARD_COST_PER_LEVEL);
+        return (artifactState.shards || 0) >= shardsNeeded;
+    }, []); // Зависимости: getArtifactById и константы статичны или импортированы
+
+    const isAnyArtifactActionable = useMemo(() => {
+        if (!ALL_ARTIFACTS_ARRAY || ALL_ARTIFACTS_ARRAY.length === 0 || !artifactLevels) {
+            return false;
+        }
+
+        for (const artifact of ALL_ARTIFACTS_ARRAY) {
+            if (isArtifactReadyForActivationGlobal(artifact, artifactLevels) || isArtifactReadyForUpgradeGlobal(artifact, artifactLevels)) {
+                return true;
+            }
+        }
+        return false;
+    }, [artifactLevels, isArtifactReadyForActivationGlobal, isArtifactReadyForUpgradeGlobal, ALL_ARTIFACTS_ARRAY]); // Добавлен ALL_ARTIFACTS_ARRAY в зависимости
+    // ▲▲▲ КОНЕЦ ЛОГИКИ ДЛЯ ИНДИКАТОРА АРТЕФАКТОВ ▲▲▲
 
     const avatarUrl = "/assets/default-avatar.png";
 
@@ -346,13 +401,13 @@ const App = () => {
 
     const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading', '/discovery', '/shop', '/forge', '/glory', '/inventory'];
     const shouldShowNewGameHeaderUpdated = showAnyFixedUIBaseConditions && 
-                                        !screensWithoutHeader.some(p => path.startsWith(p) || path === p) &&
-                                        path !== '/global-map';
+                                         !screensWithoutHeader.some(p => path.startsWith(p) || path === p) &&
+                                         path !== '/global-map';
 
     const screensWithoutBottomNav = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading'];
     const shouldShowBottomNavUpdated = showAnyFixedUIBaseConditions &&
-                                        !screensWithoutBottomNav.some(p => path.startsWith(p) || path === p) &&
-                                        path !== '/global-map';
+                                         !screensWithoutBottomNav.some(p => path.startsWith(p) || path === p) &&
+                                         path !== '/global-map';
 
     if (isInitialLoading) return <LoadingScreen key="loading_initial" message="Загрузка игры..." />;
     if (needsRaceSelection && location.pathname !== '/race-selection') return <LoadingScreen key="redirecting_to_race" message="Подготовка выбора расы..." />;
@@ -418,8 +473,10 @@ const App = () => {
                             zIndex: 10000 
                         }}
                     >
-                        {/* ▼▼▼ ПЕРЕДАЕМ ПРОП showForgeIndicator В BottomNav ▼▼▼ */}
-<BottomNav showForgeIndicator={isAnyRecipeCraftable} />
+                        {/* ▼▼▼ ОБЪЕДИНЯЕМ УСЛОВИЯ ДЛЯ ИНДИКАТОРА НА ВКЛАДКЕ "Gear" ▼▼▼ */}
+                        <BottomNav 
+                            showForgeIndicator={isAnyRecipeCraftable || isAnyArtifactActionable} 
+                        />
                     </motion.div>
                 )}
             </AnimatePresence>

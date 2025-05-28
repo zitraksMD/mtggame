@@ -1808,7 +1808,7 @@ const useGameStore = create((set, get) => ({
                 collectedArtifacts: newCollected,
                 artifactLevels: {
                     ...state.artifactLevels,
-                    [artifactId]: { level: 1, shards: remainingShards }
+                    [artifactId]: { level: 0, shards: remainingShards }
                 }
             };
         });
