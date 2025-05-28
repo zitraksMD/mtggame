@@ -1,17 +1,16 @@
-// Предположим, файл теперь называется GloryScreen.jsx
-// import './GloryScreen.scss'; // и SCSS файл тоже переименован
-
+// GloryScreen.jsx
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../../store/useGameStore.js';
-import levelRewardsData, { RewardType as GlobalLevelRewardType } from '../../data/levelRewardsData'; // Награды за общий уровень достижений
-import achievementsData from '../../data/achievementsDatabase.js'; // Достижения (Trophies)
-import trialsData from '../../data/trialsData.js'; // Новый файл для Испытаний (Trials)
+import levelRewardsData, { RewardType as GlobalLevelRewardType } from '../../data/levelRewardsData';
+import achievementsData from '../../data/achievementsDatabase.js';
+import trialsData from '../../data/trialsData.js'; // Убедись, что структура reward здесь: { type, amount, icon }
 import { pageVariants, pageTransition } from '../../animations';
-import './GloryScreen.scss';
+import './GloryScreen.scss'; // Или Achievements.scss
 
 const GloryScreen = () => {
-const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Trials'
+    const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Trials'
+    const [expandedTrialId, setExpandedTrialId] = useState(null); // Состояние для раскрытого Trial
 
     const {
         achievementsStatus,
@@ -21,6 +20,9 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
         getXpNeededForCurrentLevelUp,
         getAchievementXpNeededForNextLevel,
         getGlobalStatValue,
+        trialsStatus,
+        markTrialActionTaken,
+        claimTrialReward,
     } = useGameStore((state) => ({
         achievementsStatus: state.achievementsStatus || {},
         claimAchievementReward: state.claimAchievementReward,
@@ -29,22 +31,23 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
         getXpNeededForCurrentLevelUp: state.getXpNeededForCurrentLevelUp,
         getAchievementXpNeededForNextLevel: state.getAchievementXpNeededForNextLevel,
         getGlobalStatValue: (statName) => state[statName],
+        trialsStatus: state.trialsStatus || {}, // Kept fallback for safety, adjust if store guarantees presence
+        markTrialActionTaken: state.markTrialActionTaken,
+        claimTrialReward: state.claimTrialReward,
     }));
 
+    // Состояния и логика для Trophies (Достижений)
     const [selectedAchId, setSelectedAchId] = useState(null);
     const [isLevelRewardsPopupOpen, setIsLevelRewardsPopupOpen] = useState(false);
-    
-    const selectedAchievementLine = useMemo(() => {
-      if (!selectedAchId) return null;
-      const achLine = achievementsData.find(a => a.id === selectedAchId);
-      if (achLine && !Array.isArray(achLine.levels)) {
-        console.warn(`Achievement line with ID "${achLine.id}" has missing or invalid 'levels' property.`, achLine);
-        // Можно вернуть achLine с пустым массивом levels, чтобы попап не падал, но показал что-то
-        // return { ...achLine, levels: [] }; 
-      }
-      return achLine;
-    }, [selectedAchId]);
 
+    const selectedAchievementLine = useMemo(() => {
+        if (!selectedAchId) return null;
+        const achLine = achievementsData.find(a => a.id === selectedAchId);
+        if (achLine && !Array.isArray(achLine.levels)) {
+            console.warn(`Achievement line with ID "${achLine.id}" has missing or invalid 'levels' property.`, achLine);
+        }
+        return achLine;
+    }, [selectedAchId]);
 
     const currentLevelXp = getCurrentLevelXpProgress();
     const xpToLevelUp = getXpNeededForCurrentLevelUp();
@@ -64,58 +67,52 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
                 const booleanFlags = getGlobalStatValue('booleanFlags') || {};
                 currentValueForStat = booleanFlags[achLine.flag] ? 1 : 0;
             }
-            
-            // VVV ИЗМЕНЕНИЕ: Защитная проверка для achLine.levels VVV
+
             const currentAchLevels = Array.isArray(achLine.levels) ? achLine.levels : [];
             if (!Array.isArray(achLine.levels)) {
-                console.warn(`Achievement line with ID "${achLine.id}" in achievementsData is missing or has an invalid 'levels' property. Defaulting to empty array.`, achLine);
+                // console.warn(`Achievement line with ID "${achLine.id}" in achievementsData is missing or has an invalid 'levels' property. Defaulting to empty array.`, achLine);
             }
-            // ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^
 
             let nextLevelToDisplay = null;
             let canClaimSomething = false;
             let isFullyClaimed = true;
             let nextClaimableLevel = null;
 
-            // VVV ИЗМЕНЕНИЕ: Используем currentAchLevels VVV
-            for (const levelData of currentAchLevels) { 
+            for (const levelData of currentAchLevels) {
                 if (levelData.level > status.claimedRewardsUpToLevel) {
-                    isFullyClaimed = false; 
-                    if (!nextLevelToDisplay) { 
+                    isFullyClaimed = false;
+                    if (!nextLevelToDisplay) {
                         nextLevelToDisplay = levelData;
                     }
-                    const targetMet = (achLine.stat && currentValueForStat >= levelData.target) || 
-                                      (achLine.flag && currentValueForStat >= (levelData.target === true ? 1: levelData.target) );
+                    const targetMet = (achLine.stat && currentValueForStat >= levelData.target) ||
+                        (achLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target));
                     if (targetMet) {
                         canClaimSomething = true;
                         if (!nextClaimableLevel) {
                             nextClaimableLevel = levelData;
                         }
                     }
-                    // Небольшое изменение в условии break для большей ясности
                     if (nextLevelToDisplay && !targetMet && ((achLine.stat && currentValueForStat < nextLevelToDisplay.target) || (achLine.flag && !currentValueForStat))) {
-                       break;
+                        break;
                     }
                 }
             }
-            
-            // VVV ИЗМЕНЕНИЕ: Используем currentAchLevels VVV
+
             if (!nextLevelToDisplay && currentAchLevels.length > 0) {
-                 nextLevelToDisplay = currentAchLevels[currentAchLevels.length -1];
+                nextLevelToDisplay = currentAchLevels[currentAchLevels.length - 1];
             } else if (!nextLevelToDisplay && currentAchLevels.length === 0) {
-                 nextLevelToDisplay = { description: "Нет уровней", reward: {}, xpGain: 0, target: 0, level: 0 }; // добавил level:0 для консистентности
+                nextLevelToDisplay = { description: "Нет уровней", reward: {}, xpGain: 0, target: 0, level: 0 };
             }
 
-
             return {
-                ...achLine, 
-                levels: currentAchLevels, // Передаем проверенный или пустой массив уровней
-                lineStatus: status, 
+                ...achLine,
+                levels: currentAchLevels,
+                lineStatus: status,
                 currentValueForStat,
                 canClaimOverall: canClaimSomething,
                 isFullyCompletedAndClaimed: isFullyClaimed,
                 nextLevelForDisplay: nextLevelToDisplay,
-                nextClaimableLevelData: nextClaimableLevel 
+                nextClaimableLevelData: nextClaimableLevel
             };
         }).sort((a, b) => {
             if (a.canClaimOverall && !b.canClaimOverall) return -1;
@@ -137,37 +134,60 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
             claimAchievementReward(achLine.id, achLine.nextClaimableLevelData.level);
         }
     };
-    
+
     const handleClaimPopupLevelButton = (e, achievementId, level) => {
         e.stopPropagation();
         claimAchievementReward(achievementId, level);
     };
 
-    const trialsToDisplay = useMemo(() => {
-        return trialsData.map(trial => ({
-            ...trial,
-            isCompleted: false, 
-            isClaimed: false,   
-            canClaim: false,    
-        }));
-    }, []); 
-
-    const handleTrialAction = (trial) => {
-        if (trial.actionUrl) {
-            window.open(trial.actionUrl, '_blank');
-        }
-        console.log("Trial action for:", trial.name);
+    // Логика для Trials (Испытаний)
+    const toggleTrialExpansion = (trialId) => {
+        setExpandedTrialId(prevId => (prevId === trialId ? null : trialId));
     };
 
-    const handleClaimTrial = (trialId) => {
-        console.log("Claiming trial:", trialId);
+    // Обновленная функция для получения текста награды для Trials
+    const getTrialRewardPreviewText = (reward) => {
+        if (!reward) return "";
+        let text = "";
+        if (reward.type === 'gold') text = `${reward.amount} Gold`;
+        else if (reward.type === 'diamonds') text = `${reward.amount} Diamonds`;
+        else if (reward.type === 'toncoin_shards') text = `${reward.amount} TON Shards`;
+        else if (reward.type === 'rareChestKeys') text = `${reward.amount} Rare Key${reward.amount > 1 ? 's' : ''}`;
+        else if (reward.type === 'epicChestKeys') text = `${reward.amount} Epic Key${reward.amount > 1 ? 's' : ''}`;
+        // Добавь другие типы наград
+        return text;
+    };
+
+    const trialsToDisplay = useMemo(() => {
+        return trialsData.map(trial => {
+            const status = trialsStatus[trial.id] || { actionTaken: false, rewardClaimed: false };
+            return {
+                ...trial,
+                actionTaken: status.actionTaken,
+                rewardClaimed: status.rewardClaimed,
+                canClaimReward: status.actionTaken && !status.rewardClaimed,
+            };
+        });
+    }, [trialsStatus, trialsData]); // trialsData included in dependencies
+
+    const handleTrialMainAction = (e, trial) => {
+        e.stopPropagation(); // Предотвращаем раскрытие/сворачивание описания
+        if (trial.rewardClaimed) return;
+
+        if (trial.canClaimReward) {
+            if(claimTrialReward) claimTrialReward(trial.id);
+        } else if (!trial.actionTaken) {
+            if (trial.actionUrl) {
+                window.open(trial.actionUrl, '_blank');
+            }
+            if(markTrialActionTaken) markTrialActionTaken(trial.id);
+        }
     };
 
     return (
         <motion.div
             className="glory-screen"
             initial="initial" animate="in" exit="out"
-            variants={pageVariants} transition={pageTransition}
         >
             <div className="tabs-navigation">
                 <button
@@ -201,7 +221,6 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
 
                         <div className="achievements-list">
                             {achievementsToDisplay.map(achLine => {
-                                // achLine.levels здесь уже должен быть массивом из-за useMemo
                                 const displayLevel = achLine.nextLevelForDisplay || { reward: {}, xpGain: 0, description: "Все уровни пройдены", level: achLine.levels.length > 0 ? achLine.levels[achLine.levels.length - 1].level : 0 };
                                 return (
                                     <div
@@ -213,7 +232,7 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
                                         <div className="achievement-details-condensed">
                                             <div className="achievement-name">{achLine.name}</div>
                                             <div className="achievement-level-info">
-                                                Ур. {achLine.lineStatus.claimedRewardsUpToLevel} / {achLine.levels.length} {/* Используем achLine.levels.length */}
+                                                Ур. {achLine.lineStatus.claimedRewardsUpToLevel} / {achLine.levels.length}
                                                 {achLine.stat && !achLine.isFullyCompletedAndClaimed && displayLevel.target > 0 && ` (${achLine.currentValueForStat}/${displayLevel.target})`}
                                             </div>
                                         </div>
@@ -242,15 +261,14 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 onClick={handleCloseAchPopup}
                             >
-                                 <div className="achievement-popup-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="achievement-popup-content" onClick={(e) => e.stopPropagation()}>
                                     <button className="popup-close-btn" onClick={handleCloseAchPopup}>×</button>
                                     <div className="popup-header">
                                         <div className="popup-icon">{selectedAchievementLine.icon || '🏆'}</div>
                                         <h3 className="popup-name">{selectedAchievementLine.name}</h3>
                                     </div>
-                                    
+
                                     <div className="achievement-levels-in-popup">
-                                        {/* VVV ИЗМЕНЕНИЕ: Проверка selectedAchievementLine.levels перед map VVV */}
                                         {Array.isArray(selectedAchievementLine.levels) && selectedAchievementLine.levels.map(levelData => {
                                             const status = achievementsStatus[selectedAchievementLine.id] || { highestReachedLevel: 0, claimedRewardsUpToLevel: 0, currentValue: 0 };
                                             let currentValueForStat = 0;
@@ -261,8 +279,8 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
                                                 currentValueForStat = booleanFlags[selectedAchievementLine.flag] ? 1 : 0;
                                             }
 
-                                            const isLevelTargetMet = (selectedAchievementLine.stat && currentValueForStat >= levelData.target) || 
-                                                                     (selectedAchievementLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target) );
+                                            const isLevelTargetMet = (selectedAchievementLine.stat && currentValueForStat >= levelData.target) ||
+                                                (selectedAchievementLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target));
                                             const isLevelClaimed = levelData.level <= status.claimedRewardsUpToLevel;
                                             const canClaimThisLevel = isLevelTargetMet && !isLevelClaimed;
                                             const progressPercent = (selectedAchievementLine.stat && levelData.target > 0)
@@ -305,14 +323,13 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
                                                 </div>
                                             );
                                         })}
-                                        {/* ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ */}
                                     </div>
                                 </div>
                             </motion.div>
                         )}
 
                         {isLevelRewardsPopupOpen && (
-                             <motion.div
+                            <motion.div
                                 className="level-rewards-popup-overlay"
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 onClick={closeLevelRewardsPopup}
@@ -354,50 +371,71 @@ const [activeTab, setActiveTab] = useState('Trials'); // 'Trophies' или 'Tria
                         )}
                     </div>
                 )}
-
                 {activeTab === 'Trials' && (
                     <div className="trials-content">
-                        <h3>Испытания (Trials)</h3>
+                        {/* Убираем старый заголовок <h3>Испытания (Trials)</h3> */}
+
+                        {/* Вставляем баннер */}
+                        <img src="/assets/trials-banner.png" alt="Trials Banner" className="trials-banner-image" />
+
+                        {/* Вставляем описание под баннером */}
+                        <p className="trials-main-description">
+                            Unlock amazing and valuable rewards with Trials! It's your chance to earn great prizes by completing simple actions. Don't miss out on these easy opportunities to get rewarded!
+                        </p>
+
+                        {/* Заголовок "Available Trials:" в контейнере */}
+                        <div className="available-trials-title-container">
+                            <h4 className="available-trials-title">Available Trials:</h4>
+                        </div>
+
+                        {/* Список испытаний (остается как был) */}
                         <div className="trials-list">
-                            {trialsToDisplay.map(trial => (
-                                <div key={trial.id} className={`trial-item ${trial.isClaimed ? 'claimed' : ''} ${trial.canClaim ? 'claimable' : ''}`}>
-                                    <div className="trial-icon">{trial.icon || '🎯'}</div>
-                                    <div className="trial-info">
-                                        <div className="trial-name">{trial.name}</div>
-                                        <p className="trial-description">{trial.description}</p>
+                            {trialsToDisplay.map(trial => {
+                                const isExpanded = expandedTrialId === trial.id;
+                                return (
+                                    <div 
+                                        key={trial.id} 
+                                        className={`trial-item ${trial.rewardClaimed ? 'claimed' : ''} ${trial.canClaimReward ? 'claimable' : ''} ${isExpanded ? 'expanded' : ''}`}
+                                        onClick={() => toggleTrialExpansion(trial.id)}
+                                    >
+                                        <div className="trial-content-wrapper">
+                                            <div className="trial-reward-icon-display">
+                                                {trial.reward?.icon || '🎁'}
+                                            </div>
+                                            <div className="trial-details-area">
+                                                <div className="trial-name">{trial.name}</div>
+                                                <div className="trial-rewards-summary">
+                                                    Rewards: <span className="reward-icon-inline">{trial.reward?.icon}</span> {getTrialRewardPreviewText(trial.reward)}
+                                                </div>
+                                            </div>
+                                            <div className="trial-action-button-container">
+                                                <button 
+                                                    className={`trial-button ${trial.canClaimReward ? 'claim-type' : 'action-type'}`}
+                                                    onClick={(e) => handleTrialMainAction(e, trial)}
+                                                    disabled={trial.rewardClaimed}
+                                                >
+                                                    {trial.rewardClaimed ? "✔️" : (trial.canClaimReward ? trial.actionTextClaim : trial.actionTextDefault)}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <AnimatePresence>
+                                            {isExpanded && (
+                                                <motion.div
+                                                    className="trial-description-expanded"
+                                                    initial={{ opacity: 0, height: 0, y: -10, borderTopWidth: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto', y: 0, borderTopWidth: '1px', 
+                                                              paddingTop:'12px', paddingBottom:'12px', marginTop: '12px' }}
+                                                    exit={{ opacity: 0, height: 0, y: -10, borderTopWidth: 0, 
+                                                            paddingTop:0, paddingBottom:0, marginTop:0 }}
+                                                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                                                >
+                                                    <p>{trial.description}</p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
-                                    <div className="trial-rewards">
-                                        {trial.reward?.gold > 0 && <span>💰<small>{trial.reward.gold}</small></span>}
-                                        {trial.reward?.diamonds > 0 && <span>💎<small>{trial.reward.diamonds}</small></span>}
-                                        {trial.reward?.rareChestKeys > 0 && <span>🔑<small>{trial.reward.rareChestKeys}(R)</small></span>}
-                                        {trial.xpGain > 0 && <span className='xp-reward'>💡<small>{trial.xpGain}</small></span>}
-                                    </div>
-                                    <div className="trial-actions">
-                                        {!trial.isCompleted && trial.actionText && (
-                                            <button className="action-button" onClick={() => handleTrialAction(trial)}>
-                                                {trial.actionText}
-                                            </button>
-                                        )}
-                                        {trial.isCompleted && !trial.isClaimed && ( 
-                                            <button 
-                                                className="claim-button"
-                                                onClick={() => handleClaimTrial(trial.id)}
-                                                disabled={!trial.canClaim}
-                                            >
-                                                Забрать
-                                            </button>
-                                        )}
-                                         {trial.isCompleted && trial.isClaimed && (
-                                            <button className="claim-button" disabled>✔️</button>
-                                        )}
-                                        {!trial.isCompleted && !trial.actionText && trial.verificationType === 'button_confirm' && (
-                                             <button className="action-button" onClick={() => handleTrialAction(trial)}>
-                                               Подтвердить
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {trialsToDisplay.length === 0 && <p>Пока нет доступных испытаний.</p>}
                         </div>
                     </div>

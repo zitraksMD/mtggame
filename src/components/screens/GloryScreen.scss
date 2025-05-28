@@ -19,14 +19,18 @@ $sp-bg-end: #4a1a6a;
     align-items: center;
     padding-left: 15px;
     padding-right: 15px;
-    padding-top: 10px; 
-    padding-bottom: 75px; 
+    padding-top: 10px;
+    padding-bottom: 75px;
     position: absolute;
 }
 
 // --- Навигация по вкладкам ---
 .tabs-navigation {
     display: flex;
+      margin-top: max(
+    70px,
+    calc(45px + env(safe-area-inset-top, 0px))
+  );
     justify-content: center;
     margin-bottom: 15px;
     width: 100%;
@@ -60,7 +64,7 @@ $sp-bg-end: #4a1a6a;
 
         &.active {
             // Используем один из цветов фона для активной вкладки, но сделаем его светлее
-            background-color: lighten($sp-bg-end, 10%); 
+            background-color: lighten($sp-bg-end, 10%);
             color: white;
             box-shadow: 0 0 12px rgba(lighten($sp-bg-end, 10%), 0.7);
         }
@@ -70,18 +74,10 @@ $sp-bg-end: #4a1a6a;
 // --- Контейнер для контента активной вкладки ---
 .tab-content {
     width: 100%;
-    flex-grow: 1; 
+    flex-grow: 1; // Занимает всё доступное вертикальное пространство внутри .glory-screen
     display: flex; 
-    flex-direction: column;
-    overflow: hidden; 
-
-    .trophies-content, .trials-content {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+    flex-direction: column; // Дочерние элементы (как .trials-content) будут вести себя как flex-items
+    overflow: hidden; // ВАЖНО: Предотвращает растягивание .tab-content, если внутренний контент больше
 }
 
 // --- Стили для вкладки "Trophies" (Достижения) ---
@@ -153,19 +149,19 @@ $sp-bg-end: #4a1a6a;
 
     .achievement-item {
         background-color: rgba(255, 255, 255, 0.05); // Очень легкий светлый оттенок на фоне
-        border: 1px solid rgba(255, 255, 255, 0.15); 
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 10px; padding: 12px 15px;
         display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center;
         transition: opacity 0.3s, border-color 0.3s, background-color 0.3s; cursor: pointer;
 
         &:hover { background-color: rgba(255, 255, 255, 0.08); }
-        &.claimed { 
-            opacity: 0.65; 
+        &.claimed {
+            opacity: 0.65;
             border-left: 5px solid #5cb85c;
         }
-        &.claimable { 
-            border-color: #ffae42; 
-            background-color: rgba(255, 174, 66, 0.1); 
+        &.claimable {
+            border-color: #ffae42;
+            background-color: rgba(255, 174, 66, 0.1);
             border-left: 5px solid #ffae42;
         }
 
@@ -173,10 +169,10 @@ $sp-bg-end: #4a1a6a;
             font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
             background-color: rgba(0,0,0,0.25); border-radius: 50%; flex-shrink: 0;
         }
-        .achievement-details-condensed { 
-            overflow: hidden; 
+        .achievement-details-condensed {
+            overflow: hidden;
             .achievement-name {
-                font-weight: bold; font-size: 15px; color: #f0f0f0; 
+                font-weight: bold; font-size: 15px; color: #f0f0f0;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                 margin-bottom: 3px;
             }
@@ -196,13 +192,13 @@ $sp-bg-end: #4a1a6a;
             padding: 7px 10px; font-size: 12px; min-width: 65px; text-align: center;
             border: none; border-radius: 6px; cursor: pointer; font-weight: 600;
             transition: background-color 0.2s, transform 0.1s; justify-self: end; white-space: nowrap;
-            
-            &:not(:disabled) { 
+
+            &:not(:disabled) {
                 background-color: #50c878; color: white; // Яркий зеленый
                 &:hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
             }
-            &:disabled { 
-                background-color: rgba(255,255,255,0.1); color: #aaa; cursor: default; opacity: 0.8; 
+            &:disabled {
+                background-color: rgba(255,255,255,0.1); color: #aaa; cursor: default; opacity: 0.8;
             }
         }
     }
@@ -210,127 +206,258 @@ $sp-bg-end: #4a1a6a;
 
 // --- Стили для вкладки "Trials" ---
 .trials-content {
-    h3 {
-        color: #f0e8ff; // Светлее для лучшей читаемости на темном фоне
-        margin-top: 10px;
-        margin-bottom: 15px;
-        text-align: center;
-        font-size: 18px;
-        font-weight: 600;
-    }
-}
-
-.trials-list {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
-    flex-grow: 1;
-    padding: 0 5px 15px 5px;
+    flex-direction: column; 
+    width: 100%;
+    height: 100%; 
+    align-items: center; 
 
-    &::-webkit-scrollbar { width: 6px; }
-    &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
-    &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
-    scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
+    .trials-banner-image {
+        width: 100%;
+        max-width: 450px; 
+        height: auto;      
+        max-height: 160px; 
+        object-fit: cover; 
+        border-radius: 12px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        flex-shrink: 0; 
+    }
 
-    p {
+    .trials-main-description {
+        font-size: 14px;
+        color: #d0c8e8; 
+        line-height: 1.6;
         text-align: center;
-        color: #b0a0c0; // В тон фона
-        margin-top: 20px;
+        max-width: 550px; 
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 20px; 
+        padding: 0 10px; 
+        flex-shrink: 0; 
+    }
+
+    .available-trials-title-container {
+        width: 100%;
+        max-width: 600px; 
+        background-color: rgba(0, 0, 0, 0.25); 
+        border-radius: 8px; 
+        padding: 10px 15px; 
+        margin-bottom: 15px; 
+        box-sizing: border-box;
+        flex-shrink: 0; 
+
+        .available-trials-title {
+            color: #e8e0f8; 
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            margin: 0; 
+        }
+    }
+
+    .trials-list {
+        width: 100%;
+        max-width: 600px; 
+        margin-left: auto; 
+        margin-right: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        
+        overflow-y: auto; 
+        flex-grow: 1;     
+        min-height: 0; 
+        
+        padding: 0 5px 15px 5px;
+        box-sizing: border-box;
+
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
+        &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
+        scrollbar-width: thin; 
+        scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
+        
+        p { /* Стили для сообщения "Пока нет доступных испытаний." */ }
     }
 }
 
+// Стили для .trial-item и его дочерних элементов
 .trial-item {
-    background-color: rgba(255, 255, 255, 0.04); // Очень легкий светлый оттенок
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    padding: 15px;
-    display: grid;
-    grid-template-columns: auto 1fr; 
-    grid-template-rows: auto auto auto; // Добавил строку для наград, чтобы кнопки были всегда внизу
-    gap: 10px 15px;
-    align-items: center;
-
-    &.claimed { opacity: 0.6; border-left: 5px solid #5cb85c; }
-    &.claimable { border-color: #ffae42; border-left: 5px solid #ffae42; }
-
-    .trial-icon {
-        grid-row: 1 / 2;
-        font-size: 22px;
-        width: 38px; height: 38px;
-        display: flex; align-items: center; justify-content: center;
-        background-color: rgba(0,0,0,0.25);
-        border-radius: 50%;
+    background-color: $sp-bg-end; 
+    border: 1px solid lighten($sp-bg-end, 10%);
+    border-radius: 12px;
+    display: flex; 
+    flex-direction: column;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    overflow: hidden; 
+    flex-shrink: 0; // VVV ВОТ ЭТО ВАЖНОЕ ДОБАВЛЕНИЕ VVV
+    &:hover {
+        background-color: lighten($sp-bg-end, 3%);
     }
 
-    .trial-info {
-        grid-row: 1 / 2;
-        .trial-name {
-            font-weight: bold;
-            font-size: 15px;
-            color: #f0f0f0;
-            margin-bottom: 5px;
+    &.claimed { 
+        opacity: 0.7; 
+        .trial-content-wrapper .trial-action-button-container .trial-button {
+            background-color: #58657e !important; 
+            border-color: #76839b !important;
+            cursor: default;
+            &:hover { transform: none; }
         }
-        .trial-description {
-            font-size: 13px;
-            color: #d0c0e0; // В тон фона
-            line-height: 1.45;
-            margin: 0;
+    }
+
+    .trial-content-wrapper {
+        display: grid;
+        grid-template-columns: auto 1fr auto; 
+        align-items: start; 
+        column-gap: 12px;
+        padding: 15px; 
+        position: relative; 
+    }
+
+    .trial-reward-icon-display {
+        grid-column: 1 / 2;
+        grid-row: 1 / 2; 
+        font-size: 28px; 
+        width: 40px; 
+        height: 40px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center; 
+        justify-content: center;
+    }
+
+    .trial-details-area { 
+        grid-column: 2 / 3; 
+        grid-row: 1 / 3; 
+        display: flex;
+        flex-direction: column;
+        justify-content: center; 
+        gap: 4px; 
+    }
+
+    .trial-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #f0f0f0;
+        line-height: 1.35; 
+        white-space: normal; 
+        word-break: break-word; 
+    }
+    
+    .trial-rewards-summary { // Первый экземпляр, который был внутри .trial-details-area
+        font-size: 12px; // Уменьшен до 12px, как в одном из ваших примеров для краткой награды
+        color: #c0b0e0; 
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+
+        .reward-icon-inline {
+            font-size: 14px; 
+            margin-right: 5px;
+            line-height: 1;
+        }
+    }
+
+    .trial-action-button-container {
+        grid-column: 3 / 4; 
+        grid-row: 1 / 3; 
+        display: flex; 
+        margin-top: 10px;
+        align-items: center; 
+        justify-content: flex-end; 
+        
+        .trial-button {
+            min-width: 70px; 
+            max-width: 70px; 
+            width: 100px; 
+            padding: 10px 0; 
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background-color 0.2s, transform 0.1s, border-color 0.2s;
+            color: white;
+            border: 1px solid transparent;
+
+            &.action-type {
+                background-color: lighten($sp-bg-end, 12%); 
+                border-color: lighten($sp-bg-end, 20%);
+                &:hover { 
+                    background-color: lighten($sp-bg-end, 18%); 
+                    border-color: lighten($sp-bg-end, 25%);
+                    transform: scale(1.02); 
+                }
+            }
+            &.claim-type {
+                background-color: #4CAF50; 
+                border-color: lighten(#4CAF50, 10%);
+                &:hover { 
+                    background-color: lighten(#4CAF50, 8%); 
+                    border-color: lighten(#4CAF50, 15%);
+                    transform: scale(1.02); 
+                }
+            }
+            &:disabled { 
+                background-color: #58657e !important; 
+                border-color: #76839b !important;
+                color: #b0bec5; 
+                cursor: default; 
+                transform: none;
+            }
+        }
+    }
+
+    // Второй экземпляр .trial-rewards-summary, который был ниже .trial-action-button-container
+    // Если он был предназначен для другого отображения или позиции, его стили нужно будет уточнить.
+    // Исходя из последней правки, он располагается под иконкой и названием
+    .trial-rewards-summary { // Этот блок может конфликтовать с верхним, если они оба активны.
+                              // Убедитесь, что в HTML используется только один из них или они имеют разные классы/условия.
+        grid-column: 1 / 3; 
+        grid-row: 2 / 3;  // Изменено с 3/3 на 2/3, чтобы быть под названием/иконкой, но над описанием если оно появится
+                           // Если .trial-details-area занимает 1/3, то это должно быть 2/2.
+                           // С учетом того, что .trial-details-area занимает grid-row: 1 / 3; то этот блок будет под ним.
+                           // Чтобы он был под иконкой и названием (и слева от кнопки), grid-row должен быть 2 / 3
+                           // (если иконка и название в первой "строке" грида, а кнопка растянута на обе)
+                           // Если иконка в 1/2, а название в 1/2, а детали занимают 1/3, то это будет 2/3.
+                           // Для простоты, если .trial-details-area (с названием и ПЕРВЫМ summary) занимает строку 1,
+                           // то этот второй summary должен быть в строке 2.
+                           // В вашем коде .trial-details-area имеет grid-row: 1 / 3;
+                           // Значит, для этого элемента grid-row: 2 / 3; выглядит логично, если он ПОД названием/наградой в .trial-details-area
+                           // и перед .trial-description-expanded.
+                           // Если вы имели в виду, что этот блок идет ПОСЛЕ всей основной сетки (иконка, детали, кнопка),
+                           // то его нужно вынести из .trial-content-wrapper или изменить структуру грида.
+                           // Для данного примера, я оставлю его как в вашем последнем коде, но учтите возможный конфликт.
+                           // Если он всегда отображается, а первый summary в .trial-details-area скрывается, тогда все ок.
+        font-size: 12px; // был 10px, возвращаю к 12px для консистентности, если это краткая награда
+        color: #c0b0e0; 
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        padding-left: 2px; 
+        margin-top: 4px; // Добавляем небольшой отступ сверху
+
+        .reward-icon-inline {
+            font-size: 14px; 
+            margin-right: 5px;
+            line-height: 1;
         }
     }
     
-    .trial-rewards {
-        grid-column: 1 / -1; // Растягиваем на всю ширину под инфо
-        grid-row: 2 / 3;    // Вторая строка
-        font-size: 12px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        color: #d8c8e8; // В тон фона
-        margin-top: 10px; 
-        padding-top: 10px;
-        border-top: 1px solid rgba(255,255,255,0.08);
-
-
-        span { display: flex; align-items: center; gap: 3px; background-color: rgba(0,0,0,0.15); padding: 2px 5px; border-radius: 4px;}
-        small { font-weight: 500; font-size: 11px; }
-        .xp-reward { color: #d0a0ff; small { color: #d0a0ff; } }
-    }
-
-    .trial-actions {
-        grid-column: 1 / -1; 
-        grid-row: 3 / 4;     
-        margin-top: 12px;    
-        // border-top: 1px solid rgba(255,255,255,0.1); // Можно убрать, если есть отступ от наград
-        // padding-top: 12px;
-        display: flex;
-        justify-content: flex-end; 
-        gap: 10px;
-        
-        .action-button, .claim-button {
-            padding: 8px 14px;
+    .trial-description-expanded {
+        border-top: 1px solid rgba(lighten($sp-bg-end, 15%), 0.5); 
+        overflow: hidden; 
+        p {
             font-size: 13px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            white-space: nowrap;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .action-button {
-            background-color: lighten($sp-bg-end, 5%); // В тон фона, но чуть светлее
-            color: white;
-            border: 1px solid lighten($sp-bg-end, 15%);
-            &:hover { background-color: lighten($sp-bg-end, 10%); transform: scale(1.03); }
-        }
-        .claim-button {
-            &:not(:disabled) { background-color: #50c878; color: white; }
-            &:not(:disabled):hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
-            &:disabled { background-color: rgba(255,255,255,0.1); color: #aaa; cursor: default; }
+            color: #d0c8e0; 
+            line-height: 1.5;
+            margin: 0; 
+            padding: 10px 15px 15px 15px; // Добавил отступы сверху и снизу, справа и слева как у wrapper
         }
     }
 }
@@ -339,27 +466,27 @@ $sp-bg-end: #4a1a6a;
 // === Стили для ПОПАПОВ (Общие и специфичные) ===
 .achievement-popup-overlay, .level-rewards-popup-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(darken($sp-bg-start, 15%), 0.85); // Фон оверлея в тонах основного фона
+    background-color: rgba(darken($sp-bg-start, 15%), 0.85); 
     display: flex; align-items: center; justify-content: center;
     z-index: 1000; padding: 20px; box-sizing: border-box;
-    backdrop-filter: blur(3px); // Легкое размытие фона под попапом
+    backdrop-filter: blur(3px); 
 }
 
 .achievement-popup-content, .level-rewards-popup-content {
-    background-color: lighten($sp-bg-start, 5%); 
-    border: 1px solid lighten($sp-bg-start, 15%); 
+    background-color: lighten($sp-bg-start, 5%);
+    border: 1px solid lighten($sp-bg-start, 15%);
     border-radius: 12px;
     padding: 20px;
     max-width: 480px;
-    width: 100%; 
+    width: 100%;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-    position: relative; 
+    position: relative;
     color: #e8e8e8;
     display: flex;
     flex-direction: column;
 
     .popup-close-btn {
-        position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.05); border: none; // Чуть заметнее
+        position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.05); border: none; 
         color: #ccc; font-size: 22px; line-height: 1; cursor: pointer; padding: 0;
         width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
         transition: background-color 0.2s, color 0.2s;
@@ -369,7 +496,7 @@ $sp-bg-end: #4a1a6a;
 
 .achievement-popup-content {
     padding-top: 25px;
-    
+
     .popup-header {
         display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
         padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.15);
@@ -379,12 +506,12 @@ $sp-bg-end: #4a1a6a;
         background-color: rgba(0,0,0,0.25); border-radius: 50%; flex-shrink: 0;
     }
     .popup-name { font-size: 19px; font-weight: bold; margin: 0; color: #fff; }
-    
+
     .achievement-levels-in-popup {
-        max-height: 60vh; 
+        max-height: 60vh;
         overflow-y: auto;
         margin-top: 10px;
-        padding-right: 5px; 
+        padding-right: 5px;
         padding-left: 2px;
 
         &::-webkit-scrollbar { width: 5px; }
@@ -393,7 +520,7 @@ $sp-bg-end: #4a1a6a;
     }
 
     .achievement-popup-level-item {
-        background-color: rgba(255, 255, 255, 0.03); // Еще чуть прозрачнее
+        background-color: rgba(255, 255, 255, 0.03); 
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
         padding: 12px;
@@ -404,12 +531,12 @@ $sp-bg-end: #4a1a6a;
 
         &.claimed {
             opacity: 0.7;
-            border-left: 4px solid #52a055; 
+            border-left: 4px solid #52a055;
         }
         &.claimable {
-            border-color: #ffae42; 
+            border-color: #ffae42;
             border-left: 4px solid #ffae42;
-            background-color: rgba(255, 174, 66, 0.06); // Немного темнее
+            background-color: rgba(255, 174, 66, 0.06); 
         }
 
         .level-number-badge {
@@ -428,7 +555,7 @@ $sp-bg-end: #4a1a6a;
             flex-grow: 1;
             .popup-description {
                 margin-top: 0; margin-bottom: 10px;
-                font-size: 13px; line-height: 1.5; color: #d8c8e8; // В тон фона
+                font-size: 13px; line-height: 1.5; color: #d8c8e8; 
             }
             .popup-progress {
                 margin-bottom: 10px;
@@ -454,12 +581,12 @@ $sp-bg-end: #4a1a6a;
             align-self: center; font-weight: 600;
             border: none; border-radius: 5px; cursor: pointer;
             transition: background-color 0.2s, transform 0.1s;
-            
-            &:not(:disabled) { 
-                background-color: #50c878; color: white; 
-                 &:hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
+
+            &:not(:disabled) {
+                background-color: #50c878; color: white;
+                &:hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
             }
-            &:disabled { 
+            &:disabled {
                 background-color: rgba(255,255,255,0.1); color: #aaa; opacity: 0.8;
             }
         }
@@ -467,22 +594,22 @@ $sp-bg-end: #4a1a6a;
 }
 
 .level-rewards-popup-content {
-    height: auto; 
-    max-height: 75vh; 
+    height: auto;
+    max-height: 75vh;
     padding: 20px;
-    padding-top: 45px; 
-    background-color: lighten($sp-bg-start, 3%); // Чуть светлее основного фона попапов
+    padding-top: 45px;
+    background-color: lighten($sp-bg-start, 3%); 
     border: 1px solid lighten($sp-bg-start, 12%);
-    
+
     h2 {
         text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 18px;
         color: #f0e8ff; padding: 0 20px;
-        flex-shrink: 0; 
+        flex-shrink: 0;
     }
 
     .level-rewards-list {
-        overflow-y: auto; 
-        flex-grow: 1;   
+        overflow-y: auto;
+        flex-grow: 1;
         padding: 5px;
         margin: 0 -5px;
 
@@ -494,26 +621,26 @@ $sp-bg-end: #4a1a6a;
     .level-reward-item {
         display: flex;
         align-items: center;
-        background-color: rgba(255,255,255,0.04); 
-        border: 1px solid rgba(255,255,255,0.1); 
-        border-radius: 8px; 
-        padding: 10px 15px; 
-        margin-bottom: 10px; 
+        background-color: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-bottom: 10px;
         gap: 15px;
 
         &.locked {
             opacity: 0.6;
         }
         &.unlocked {
-             border-left: 4px solid #66bb6a;
+            border-left: 4px solid #66bb6a;
         }
     }
 
     .level-badge-area {
-        background-color: rgba(0, 0, 0, 0.25); 
+        background-color: rgba(0, 0, 0, 0.25);
         border-radius: 6px; padding: 8px 10px; text-align: center;
-        flex-shrink: 0; min-width: 80px; 
-        color: #e0e0e0; 
+        flex-shrink: 0; min-width: 80px;
+        color: #e0e0e0;
 
         .level-icon {
             font-size: 20px;
@@ -524,22 +651,22 @@ $sp-bg-end: #4a1a6a;
             display: block; font-weight: bold; font-size: 15px; margin-bottom: 3px;
         }
         .level-status-text {
-            display: block; font-size: 11px; 
-            color: #aaa; 
+            display: block; font-size: 11px;
+            color: #aaa;
             font-weight: 500;
         }
         .level-reward-item.unlocked & .level-status-text {
-            color: #8bc34a; // Ярче зеленый
+            color: #8bc34a; 
         }
     }
 
     .reward-details-area {
-        flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; 
+        flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px;
         font-size: 14px; font-weight: 500; justify-content: flex-start;
-        color: #d8c8e8; 
+        color: #d8c8e8;
     }
     .reward-detail-item {
-        background-color: rgba(0, 0, 0, 0.25); 
+        background-color: rgba(0, 0, 0, 0.25);
         padding: 4px 8px; border-radius: 5px;
         display: inline-flex; align-items: center; gap: 5px;
     }

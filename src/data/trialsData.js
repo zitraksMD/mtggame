@@ -1,34 +1,60 @@
 // src/data/trialsData.js
 export const TRIAL_VERIFICATION_TYPE = {
-    BUTTON_CONFIRM: 'button_confirm', // Пользователь нажимает "Я выполнил"
-    // API_CALLBACK: 'api_callback', // Если будет внешняя проверка
-    // NONE: 'none' // Для заданий без явной награды или с авто-наградой
+    BUTTON_CONFIRM: 'button_confirm', // Пользователь нажимает "Я выполнил", затем "Claim"
+    // API_CALLBACK: 'api_callback', // Для будущей серверной проверки
 };
 
 const trials = [
     {
         id: 'subscribe_main_channel',
-        name: 'Подписка на Канал',
-        description: 'Подпишитесь на наш основной Telegram канал, чтобы быть в курсе всех новостей и обновлений!',
-        icon: '📢',
-        actionText: 'Подписаться',
+        name: 'Follow our Telegram channel', // Название как в примере
+        description: 'Подпишитесь на наш основной Telegram канал, чтобы быть в курсе всех новостей и обновлений! Это поможет нам развиваться.',
+        reward: { type: 'toncoin_shards', amount: 25, icon: '💎' }, // Пример награды
+        actionTextDefault: 'Join', // Текст на кнопке до выполнения действия
+        actionTextClaim: 'Claim',     // Текст на кнопке после выполнения (до получения награды)
         actionUrl: 'https://t.me/YourGameChannel', // Замените на реальную ссылку
-        verificationType: TRIAL_VERIFICATION_TYPE.BUTTON_CONFIRM, // Пользователь должен будет подтвердить
-        reward: { gold: 500, diamonds: 10 },
-        xpGain: 50, // Можно также давать опыт за испытания
+        verificationType: TRIAL_VERIFICATION_TYPE.BUTTON_CONFIRM,
+    },
+     {
+        id: 'subscribe_main_channel',
+        name: 'Follow our Telegram channel', // Название как в примере
+        description: 'Подпишитесь на наш основной Telegram канал, чтобы быть в курсе всех новостей и обновлений! Это поможет нам развиваться.',
+        reward: { type: 'toncoin_shards', amount: 25, icon: '💎' }, // Пример награды
+        actionTextDefault: 'Join', // Текст на кнопке до выполнения действия
+        actionTextClaim: 'Claim',     // Текст на кнопке после выполнения (до получения награды)
+        actionUrl: 'https://t.me/YourGameChannel', // Замените на реальную ссылку
+        verificationType: TRIAL_VERIFICATION_TYPE.BUTTON_CONFIRM,
+    },
+     {
+        id: 'subscribe_main_channel',
+        name: 'Follow our Telegram channel', // Название как в примере
+        description: 'Подпишитесь на наш основной Telegram канал, чтобы быть в курсе всех новостей и обновлений! Это поможет нам развиваться.',
+        reward: { type: 'toncoin_shards', amount: 25, icon: '💎' }, // Пример награды
+        actionTextDefault: 'Join', // Текст на кнопке до выполнения действия
+        actionTextClaim: 'Claim',     // Текст на кнопке после выполнения (до получения награды)
+        actionUrl: 'https://t.me/YourGameChannel', // Замените на реальную ссылку
+        verificationType: TRIAL_VERIFICATION_TYPE.BUTTON_CONFIRM,
     },
     {
         id: 'join_community_chat',
-        name: 'Вступить в Чат Сообщества',
-        description: 'Присоединяйтесь к нашему чату для общения, обмена опытом и поиска друзей!',
-        icon: '💬',
-        actionText: 'Вступить',
-        actionUrl: 'https://t.me/YourGameChat', // Замените на реальную ссылку
+        name: 'Join our Community Chat',
+        description: 'Присоединяйтесь к нашему игровому чату для общения с другими игроками, обмена опытом и поиска друзей в игре.',
+        reward: { type: 'rareChestKeys', amount: 1, icon: '🔑' },
+        actionTextDefault: 'Join',
+        actionTextClaim: 'Claim',
+        actionUrl: 'https://t.me/YourGameChat', 
         verificationType: TRIAL_VERIFICATION_TYPE.BUTTON_CONFIRM,
-        reward: { rareChestKeys: 1 },
-        xpGain: 30,
     },
-    // Можно добавить другие: "Пригласи друга", "Оставь отзыв" и т.д.
+    {
+        id: 'boost_channel',
+        name: 'Boost our Telegram channel',
+        description: 'Поддержите наш канал бустом! Это очень поможет в продвижении.',
+        reward: { type: 'epicChestKeys', amount: 1, icon: '🗝️' }, // Другой ключ для примера
+        actionTextDefault: 'Boost',
+        actionTextClaim: 'Claim',
+        actionUrl: 'https://t.me/YourGameChannel?boost', // Пример ссылки для буста
+        verificationType: TRIAL_VERIFICATION_TYPE.BUTTON_CONFIRM,
+    }
 ];
 
 export default trials;
