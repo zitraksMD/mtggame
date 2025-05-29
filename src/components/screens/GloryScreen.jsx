@@ -88,17 +88,17 @@ const GloryScreen = () => {
             // variants и transition для всей страницы закомментированы, как и было
         >
             <div className="tabs-navigation">
+                 <button
+                    className={`tab-button ${activeTab === 'Trials' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('Trials')}
+                >
+                    🎯 Trials
+                </button>
                 <button
                     className={`tab-button ${activeTab === 'Trophies' ? 'active' : ''}`}
                     onClick={() => setActiveTab('Trophies')}
                 >
                     🏆 Trophies
-                </button>
-                <button
-                    className={`tab-button ${activeTab === 'Trials' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('Trials')}
-                >
-                    🎯 Trials
                 </button>
             </div>
 
