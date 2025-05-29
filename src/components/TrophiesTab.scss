@@ -1,121 +1,621 @@
+// Предполагаемое имя файла: TrophiesTab.scss или GloryScreen.scss
+// Убедитесь, что SCSS переменные вроде $sp-bg-start и $sp-bg-end определены/импортированы в вашем проекте.
+
+// VVV ЭТИ ПЕРЕМЕННЫЕ ДОЛЖНЫ БЫТЬ В НАЧАЛЕ ФАЙЛА ИЛИ ИМПОРТИРОВАНЫ VVV
+$sp-bg-start: #2a0a4a; // Ваши цвета
+$sp-bg-end: #4a1a6a;   // Ваши цвета
+
+// Ваши переменные цветов редкости
+$rarity-color-common: #b0b0b0;    // Серый (для уровня 0)
+$rarity-color-uncommon: #66bb66;  // Зеленый (для уровня 1)
+$rarity-color-rare: #5599ff;      // Синий (для уровня 2)
+$rarity-color-epic: #A020F0;      // Фиолетовый (для уровней 3 и 4)
+$rarity-color-legendary: #ffaa44; // Оранжево-золотой (для уровня 5)
+$rarity-color-mythic: #cc66ff;    // Светло-фиолетовый (для уровня 6+)
+// ^^^ КОНЕЦ ПЕРЕМЕННЫХ ^^^
+
+@keyframes pulse-glow-uncommon {
+    0% { box-shadow: 0 0 5px 0px rgba($rarity-color-uncommon, 0.5), inset 0 0 3px rgba($rarity-color-uncommon, 0.3); }
+    50% { box-shadow: 0 0 12px 3px rgba($rarity-color-uncommon, 0.8), inset 0 0 5px rgba($rarity-color-uncommon, 0.5); }
+    100% { box-shadow: 0 0 5px 0px rgba($rarity-color-uncommon, 0.5), inset 0 0 3px rgba($rarity-color-uncommon, 0.3); }
+}
+@keyframes pulse-glow-rare {
+    0% { box-shadow: 0 0 5px 0px rgba($rarity-color-rare, 0.5), inset 0 0 3px rgba($rarity-color-rare, 0.3); }
+    50% { box-shadow: 0 0 12px 3px rgba($rarity-color-rare, 0.8), inset 0 0 5px rgba($rarity-color-rare, 0.5); }
+    100% { box-shadow: 0 0 5px 0px rgba($rarity-color-rare, 0.5), inset 0 0 3px rgba($rarity-color-rare, 0.3); }
+}
+@keyframes pulse-glow-epic {
+    0% { box-shadow: 0 0 5px 0px rgba($rarity-color-epic, 0.5), inset 0 0 3px rgba($rarity-color-epic, 0.3); }
+    50% { box-shadow: 0 0 12px 3px rgba($rarity-color-epic, 0.8), inset 0 0 5px rgba($rarity-color-epic, 0.5); }
+    100% { box-shadow: 0 0 5px 0px rgba($rarity-color-epic, 0.5), inset 0 0 3px rgba($rarity-color-epic, 0.3); }
+}
+@keyframes pulse-glow-legendary {
+    0% { box-shadow: 0 0 5px 0px rgba($rarity-color-legendary, 0.5), inset 0 0 3px rgba($rarity-color-legendary, 0.3); }
+    50% { box-shadow: 0 0 12px 3px rgba($rarity-color-legendary, 0.8), inset 0 0 5px rgba($rarity-color-legendary, 0.5); }
+    100% { box-shadow: 0 0 5px 0px rgba($rarity-color-legendary, 0.5), inset 0 0 3px rgba($rarity-color-legendary, 0.3); }
+}
+@keyframes pulse-glow-mythic {
+    0% { box-shadow: 0 0 5px 0px rgba($rarity-color-mythic, 0.5), inset 0 0 3px rgba($rarity-color-mythic, 0.3); }
+    50% { box-shadow: 0 0 12px 3px rgba($rarity-color-mythic, 0.8), inset 0 0 5px rgba($rarity-color-mythic, 0.5); }
+    100% { box-shadow: 0 0 5px 0px rgba($rarity-color-mythic, 0.5), inset 0 0 3px rgba($rarity-color-mythic, 0.3); }
+}
+
 .trophies-content {
-    .achievement-level-progress-bar {
-        width: 100%;
-        max-width: 600px;
-        margin: 0 auto 10px auto;
-        background-color: rgba(0, 0, 0, 0.35);
-        border-radius: 12px;
-        padding: 8px 15px;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        border: 1px solid rgba(255, 255, 255, 0.2); // Чуть светлее рамка
-
-        .level-badge {
-            flex-shrink: 0; width: 42px; height: 42px; background-color: lighten($sp-bg-end, 15%); // Используем цвет фона
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 2px solid #fff; box-shadow: 0 0 10px rgba(lighten($sp-bg-end, 15%), 0.7);
-            .level-number { font-size: 19px; font-weight: bold; color: #fff; }
-        }
-        .xp-bar-container {
-            flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-        }
-        .xp-bar-bg {
-            width: 100%; height: 14px; background-color: rgba(0, 0, 0, 0.55);
-            border-radius: 7px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .xp-bar-fg {
-            height: 100%; background: linear-gradient(to right, lighten($sp-bg-end, 20%), lighten($sp-bg-start, 30%)); // Градиент в тонах фона
-            border-radius: 7px; transition: width 0.5s ease-out;
-        }
-        .xp-text { font-size: 11px; color: #d8d8d8; font-weight: 500; }
-        .xp-target {
-            flex-shrink: 0; font-size: 15px; font-weight: bold; color: #ffd700;
-            min-width: 45px; text-align: right;
-        }
-    }
-
-    .level-rewards-button {
-        padding: 10px 20px;
+    // Стили для описания вкладки (остаются без изменений)
+    .trophies-tab-description {
         font-size: 14px;
-        font-weight: 600;
-        color: white;
-        background-color: darken($sp-bg-end, 5%); // В тон фона, но темнее
-        border: 1px solid lighten($sp-bg-end, 5%);
-        border-radius: 8px;
-        cursor: pointer;
-        margin-bottom: 15px;
-        transition: background-color 0.2s;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        color: #c5c0e0;
+        line-height: 1.5;
+        text-align: center;
+        max-width: 580px;
+        margin: 5px auto 5px auto;
+        padding: 0 15px;
+    }
 
-        &:hover {
-            background-color: $sp-bg-end;
+    // Стили для навигации по категориям (остаются без изменений)
+    .trophy-category-navigation {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        
+        &::-webkit-scrollbar {
+            display: none;
+        }
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+
+        justify-content: flex-start;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto 1px auto; 
+        padding: 8px 10px;
+        background-color: rgba(0,0,0,0.15);
+        border-radius: 10px;
+        box-sizing: border-box;
+
+        .trophy-category-button {
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #d0c8e8;
+            background-color: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+
+            &:hover {
+                background-color: rgba(255,255,255,0.1);
+                border-color: rgba(255,255,255,0.2);
+            }
+
+            &.active {
+                background-color: lighten($sp-bg-end, 15%); 
+                color: white;
+                border-color: lighten($sp-bg-end, 25%);
+                box-shadow: 0 0 8px rgba(lighten($sp-bg-end, 15%), 0.5);
+            }
         }
     }
 
-    .achievements-list {
-        width: 100%; max-width: 600px; margin: 0 auto; box-sizing: border-box; display: flex;
-        flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; padding: 0 5px 10px 5px;
+    // VVV СТИЛИ ДЛЯ ГЛОБАЛЬНОГО XP-ТРЕКА С ИЗМЕНЕНИЯМИ ДЛЯ ИКОНОК VVV
+    .global-xp-track-outer-container {
+        width: 100%;
+        max-width: 700px;
+        margin: 0 auto 5px auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
-        &::-webkit-scrollbar { width: 6px; }
-        &::-webkit-scrollbar-track { background: rgba(0,0,0,0.15); border-radius: 3px; }
-        &::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.25); border-radius: 3px; }
-        scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
+    .global-xp-track-scroll-container {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 5px; 
+        margin-bottom: 5px; 
+
+       // === СКРЫВАЕМ ПОЛОСЫ ПРОКРУТКИ ===
+            &::-webkit-scrollbar {
+                display: none; // Для Webkit-браузеров (Chrome, Safari, Edge, Opera)
+            }
+            -ms-overflow-style: none;  // Для Internet Explorer и старых версий Edge
+            scrollbar-width: none;     // Для Firefox
+            // === КОНЕЦ СКРЫТИЯ ПОЛОС ПРОКРУТКИ ===
+        }
+
+.global-xp-track-content { 
+        height: 130px; // ИЗМЕНЕНО: Увеличена высота общего контейнера трека
+        position: relative;
+        // === ВАЖНО для корректного расчета left: X% от trackPixelWidth ===
+        box-sizing: content-box; 
+        // Теперь padding будет добавляться СВЕРХ инлайновой width (trackPixelWidth)
+        padding-left: 35px;  // Немного увеличим, чтобы крайние большие иконки не прилипали
+        padding-right: 35px;
+        // width задается инлайн в JSX: style={{ width: `${trackPixelWidth}px` }}
+    }
+
+    .global-xp-progress-bar-visual { 
+        position: absolute;
+        left: 0; // Теперь отсчитывается от внутреннего края padding-left родителя
+        width: 100%; // Занимает 100% от trackPixelWidth (контентной ширины родителя)
+        top: 50%; 
+        transform: translateY(-50%);
+        height: 12px; 
+        background-color: rgba(0,0,0,0.7); 
+        border-radius: 6px; 
+        overflow: hidden;
+        z-index: 1; 
+    }
+
+    .global-xp-bar-fill-visual { 
+        height: 100%;
+        background: linear-gradient(to right, lighten($sp-bg-end, 15%), lighten($sp-bg-start, 25%)); 
+        border-radius: 6px; 
+        transition: width 0.5s ease-out;
+        z-index: 2; 
+    }
+
+    .reward-markers-area { 
+        position: absolute;
+        left: 0;
+        width: 100%; 
+        height: calc(50% - 6px); 
+        z-index: 3;   
+        pointer-events: none; 
+
+        &.above {
+            top: 0; 
+            display: flex; 
+            align-items: flex-end; 
+        }
+        &.below {
+            bottom: 0; 
+            display: flex; 
+            align-items: flex-start; 
+        }
+
+        .reward-milestone-marker { 
+            position: absolute;
+            transform: translateX(-50%); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all; 
+            transition: all 0.2s ease-out;
+
+            &.icon-marker {
+                // === ИЗМЕНЕНИЯ ЗДЕСЬ ===
+                width: 50px;  // Увеличена ширина
+                height: 50px; // Увеличена высота
+                background-color: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 6px; // Скругленные углы вместо круга
+                font-size: 18px;  // Немного увеличен размер шрифта для иконки
+                color: #777; 
+                cursor: default;
+                // === КОНЕЦ ИЗМЕНЕНИЙ ===
+                
+.reward-marker-icon-graphic { 
+                    display: flex; // Для центрирования содержимого (img или emoji)
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;     // Растягиваем span на весь .icon-marker
+                    height: 100%;    // Растягиваем span на весь .icon-marker
+                    // img внутри будет иметь свой objectFit: 'contain' и заданный размер (например, 36px)
+                    // emoji внутри будет использовать font-size от .icon-marker
+                }                
+                .claim-indicator-dot {
+                    position: absolute;
+                    top: -4px;  // Немного скорректировано для нового размера
+                    right: -4px; // Немного скорректировано для нового размера
+                    width: 10px; // Чуть больше точка для большей иконки
+                    height: 10px;
+                    background-color: #ffae42; 
+                    border-radius: 50%;
+                    border: 1px solid rgba(0,0,0,0.3); // Небольшая обводка для точки
+                    box-shadow: 0 0 5px #ffae42;
+                }
+                .reward-marker-quantity {
+                    position: absolute;
+                    bottom: 3px;
+                    right: 4px;
+                    background-color: rgba(0, 0, 0, 0.8); 
+                    color: white;
+                    font-size: 12px; 
+                    font-weight: bold;
+                    padding: 1px 5px; 
+                    border-radius: 5px; 
+                    line-height: 1.2; 
+                    min-width: 14px; 
+                    text-align: center;
+                    z-index: 6; 
+                }
+
+                &.reached { 
+                    color: #ccc; 
+                    background-color: rgba(255,255,255,0.15); 
+                }
+                &.claimable {
+                    color: #fff; 
+                    background-color: lighten($sp-bg-end, 20%); 
+                    border-color: #ffae42; 
+                    cursor: pointer;
+                    transform: translateX(-50%) scale(1.15); // Может потребоваться настройка scale
+                    box-shadow: 0 0 10px lighten($sp-bg-end, 20%);
+                    
+                    .claim-indicator-dot { 
+                        background-color: #4CAF50; 
+                        box-shadow: 0 0 5px #4CAF50; 
+                    }
+                    &:hover { 
+                        transform: translateX(-50%) scale(1.25); // Может потребоваться настройка scale
+                    }
+                }
+                &.claimed { 
+                    color: #6a5; 
+                    background-color: rgba(76, 175, 80, 0.2);
+                    border-color: #5a5;
+                    cursor: default; 
+                    transform: translateX(-50%) scale(0.9); // Может потребоваться настройка scale
+                    .claim-indicator-dot { display: none; }
+                }
+            }
+
+            &.xp-label-marker { // Стили для текстовых меток XP остаются без изменений
+                font-size: 10px;
+                color: #aaa;
+                background-color: rgba(0,0,0,0.3);
+                padding: 2px 5px;
+                border-radius: 3px;
+                white-space: nowrap;
+                &.reached { color: #ddd; }
+                &.claimable-text { color: #ffae42; font-weight: bold;}
+                &.claimed-text { color: #6a5; text-decoration: line-through; }
+            }
+        }
+        
+        &.above .reward-milestone-marker.icon-marker { bottom: 2px; }
+        &.above .reward-milestone-marker.xp-label-marker { bottom: 2px; }
+        
+        &.below .reward-milestone-marker.icon-marker { top: 2px; }
+        &.below .reward-milestone-marker.xp-label-marker { top: 2px; }
+    }
+    
+    // .global-xp-bar-text-static был удален из JSX, так что стили для него больше не нужны,
+    // либо можно оставить, если он используется где-то еще.
+    // .global-xp-bar-text-static { 
+    //     font-size: 13px;
+    //     color: #e0e0e0;
+    //     font-weight: 500;
+    //     text-align: center;
+    //     margin-top: 8px; 
+    // }
+    // ^^^ Конец обновленных стилей для XP-трека ^^^
+
+    // Стили для .obtained-achievements-overview (остаются без изменений)
+    .obtained-achievements-overview {
+        width: 100%;
+        max-width: 600px; 
+        margin: 15px auto 15px auto; // Увеличим верхний margin, чтобы было место для выступающего заголовка
+        padding: 15px; 
+        padding-top: 35px; // Дополнительный padding сверху для контента ПОД выступающим заголовком
+        background-color: rgba(0,0,0,0.2); 
+        border-radius: 12px; 
+        position: relative; // ВАЖНО: для абсолютного позиционирования дочернего заголовка
+    }
+
+    // Опциональный контейнер для центрирования, если .overview-header-label не справляется сам
+    // .overview-header-label-container {
+    //   position: absolute;
+    //   top: 0;
+    //   left: 0;
+    //   width: 100%;
+    //   display: flex;
+    //   justify-content: center;
+    //   z-index: 4; // Убедимся, что он над возможными артефактами
+    //   pointer-events: none; // Чтобы не мешал кликам, если он пустой
+    // }
+
+    .overview-header-label {
+        position: absolute;
+        top: 0; // Позиционируем относительно верха .obtained-achievements-overview
+        left: 50%; // Центрируем по горизонтали
+        transform: translate(-50%, -50%); // Смещаем вверх на половину своей высоты и влево на половину ширины
+
+        background-color: $sp-bg-end; // Пример цвета фона, можете подобрать другой
+        color: #e8e0ff;
+        padding: 8px 25px;
+        border-radius: 20px; // Как у кнопок категорий
+        border: 1px solid lighten($sp-bg-end, 10%);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.35); // Тень для эффекта "нависания"
+        font-size: 17px; // Размер шрифта
+        font-weight: 600;
+        white-space: nowrap; // Чтобы текст не переносился
+        z-index: 4; // Должен быть выше фона .obtained-achievements-overview 
+                     // и потенциально выше элементов предыдущего блока, на которые он "залазит"
+        // pointer-events: auto; // Если на сам лейбл не нужны клики, можно оставить по умолчанию или убрать
+    }
+    
+    // Старый .obtained-achievements-title можно удалить из SCSS, если он больше не используется
+    // .obtained-achievements-title { /* ... */ }
+
+        .obtained-icons-grid {
+            display: grid;
+            // Определяем 3 строки, высота каждой будет по содержимому (по высоте .obtained-achievement-icon)
+            grid-template-rows: repeat(3, auto); 
+            // Элементы будут автоматически добавляться в новые колонки
+            grid-auto-flow: column; 
+            // Ширина колонок будет по содержимому (по ширине .obtained-achievement-icon)
+            grid-auto-columns: auto; 
+
+            gap: 12px; // Промежуток между иконками (по горизонтали и вертикали)
+
+            overflow-x: auto;  // Включаем горизонтальный скролл
+            overflow-y: hidden; // Отключаем вертикальный скролл для этого блока
+
+            // Небольшой отступ снизу, чтобы скроллбар не перекрывал контент,
+            // особенно если он не оверлейный.
+            padding-left: 2px; // Небольшой отступ слева, чтобы первая колонка не прилипала
+            padding-right: 2px; // Небольшой отступ справа для последней видимой колонки
+
+            // Убираем свойства flex, если они были здесь раньше
+            // justify-content: center; // Больше не нужно
+            // flex-wrap: wrap;      // Больше не нужно
+
+            // Стилизация скроллбара для Webkit (Chrome, Safari, Edge)
+            // === СКРЫВАЕМ ПОЛОСЫ ПРОКРУТКИ ===
+            &::-webkit-scrollbar {
+                display: none; // Для Webkit-браузеров (Chrome, Safari, Edge, Opera)
+            }
+            -ms-overflow-style: none;  // Для Internet Explorer и старых версий Edge
+            scrollbar-width: none;     // Для Firefox
+            // === КОНЕЦ СКРЫТИЯ ПОЛОС ПРОКРУТКИ ===
+        }
+        .obtained-achievement-icon {
+            width: 64px;     
+            height: 86px;    // Оставляем квадратные размеры для основы шестиугольника
+            // background-color и border-color будут применяться из классов редкости и будут обрезаны по форме
+            
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            position: relative;
+            cursor: help; 
+            // Убираем box-shadow из основного transition, т.к. он будет анимироваться через @keyframes
+            transition: opacity 0.3s ease, transform 0.2s ease, background-color 0.3s ease;
+            
+            padding: 2px; // Рамка по умолчанию для common/unachieved
+            background-color: darken($rarity-color-common, 20%); // Цвет рамки по умолчанию
+            box-shadow: none; // Нет свечения по умолчанию
+            opacity: 0.6;     // Тусклый по умолчанию
+            animation: none;  // Нет анимации по умолчанию
+
+            .icon-inner-content {
+                width: 100%; height: 100%;
+                clip-path: inherit;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 28px; 
+                transition: background-color 0.3s ease;
+                background-color: $rarity-color-common; 
+                color: #333;
+
+                img { max-width: 70%; max-height: 70%; object-fit: contain; }
+            }
+            
+            // Убираем общий transform: scale при ховере, если он не нужен
+            &:hover {
+                // transform: scale(1.05); // УБРАНО или уменьшено, если все же нужно легкое увеличение
+            }
+
+            // Стили для каждой редкости
+            &.rarity-common {
+                // Стили по умолчанию уже настроены для тусклого вида
+            }
+
+            // Общие стили для "активных" редкостей (uncommon и выше)
+            &.rarity-uncommon,
+            &.rarity-rare,
+            &.rarity-epic,
+            &.rarity-legendary,
+            &.rarity-mythic {
+                opacity: 1;
+                padding: 3px; // Более толстая рамка
+            }
+
+            &.rarity-uncommon {
+                background-color: $rarity-color-uncommon; // Цвет рамки
+                .icon-inner-content { background-color: lighten($rarity-color-uncommon, 7%); color: white; }
+                animation: pulse-glow-uncommon 2.5s infinite ease-in-out; // Применяем анимацию
+            }
+            &.rarity-rare {
+                background-color: $rarity-color-rare; 
+                .icon-inner-content { background-color: lighten($rarity-color-rare, 7%); color: white; }
+                animation: pulse-glow-rare 2.5s infinite ease-in-out;
+            }
+            &.rarity-epic {
+                background-color: $rarity-color-epic; 
+                .icon-inner-content { background-color: lighten($rarity-color-epic, 7%); color: white; }
+                animation: pulse-glow-epic 2.5s infinite ease-in-out;
+            }
+            &.rarity-legendary {
+                background-color: $rarity-color-legendary; 
+                .icon-inner-content { background-color: lighten($rarity-color-legendary, 7%); color: #422d00;}
+                animation: pulse-glow-legendary 2.5s infinite ease-in-out;
+            }
+            &.rarity-mythic {
+                background-color: $rarity-color-mythic; 
+                .icon-inner-content { background-color: lighten($rarity-color-mythic, 7%); color: white; }
+                animation: pulse-glow-mythic 2.5s infinite ease-in-out;
+            }
+            
+            // Класс .is-unachieved переопределяет анимацию и другие стили для тусклости
+            // Он будет на иконках с .rarity-common и нулевым прогрессом
+            &.is-unachieved { 
+                opacity: 0.6; 
+                box-shadow: none !important; 
+                padding: 2px !important;
+                animation: none !important; // Важно: отключаем любую анимацию для неактивных
+                
+                &:hover {
+                    opacity: 0.85;
+                    transform: none; // Убедимся, что нет scale при ховере на неактивных
+                }
+            }
+        }
+    // Остальные стили (no-achievements-message, achievement-category-section и т.д.) остаются без изменений
+    .no-achievements-message {
+        color: #a098b0;
+        text-align: center;
+        margin-top: 20px;
+        padding: 10px;
+    }
+
+    .achievement-category-section {
+        margin-bottom: 25px;
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .achievement-category-title {
+        font-size: 18px;
+        color: #e0daef;
+        text-align: center;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    
+    .achievements-list {
+        width: 100%; 
+        max-width: 600px; 
+        margin: 0 auto; 
+        box-sizing: border-box; 
+        display: flex;
+        flex-direction: column; 
+        gap: 10px; 
+        flex-grow: 1; 
+        overflow-y: auto; 
+        padding: 0 5px 10px 5px;
+
+        &::-webkit-scrollbar { 
+            width: 6px; 
+        }
+        &::-webkit-scrollbar-track { 
+            background: rgba(0,0,0,0.15); 
+            border-radius: 3px; 
+        }
+        &::-webkit-scrollbar-thumb { 
+            background-color: rgba(255, 255, 255, 0.25); 
+            border-radius: 3px; 
+        }
+        scrollbar-width: thin; 
+        scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
     }
 
     .achievement-item {
-        background-color: rgba(255, 255, 255, 0.05); // Очень легкий светлый оттенок на фоне
+        background-color: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 10px; padding: 12px 15px;
-        display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center;
-        transition: opacity 0.3s, border-color 0.3s, background-color 0.3s; cursor: pointer;
+        border-radius: 10px; 
+        padding: 12px 15px;
+        display: grid; 
+        grid-template-columns: auto 1fr auto auto; 
+        gap: 12px; 
+        align-items: center;
+        transition: opacity 0.3s, border-color 0.3s, background-color 0.3s; 
+        cursor: pointer;
 
-        &:hover { background-color: rgba(255, 255, 255, 0.08); }
-        &.claimed {
-            opacity: 0.65;
-            border-left: 5px solid #5cb85c;
+        &:hover { 
+            background-color: rgba(255, 255, 255, 0.08); 
         }
-        &.claimable {
-            border-color: #ffae42;
-            background-color: rgba(255, 174, 66, 0.1);
-            border-left: 5px solid #ffae42;
+        &.claimed { 
+            opacity: 0.65;
+            border-left: 5px solid #5cb85c; 
+        }
+        &.claimable { 
+            border-color: #ffae42; 
+            background-color: rgba(255, 174, 66, 0.1); 
+            border-left: 5px solid #ffae42; 
         }
 
         .achievement-icon {
-            font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            background-color: rgba(0,0,0,0.25); border-radius: 50%; flex-shrink: 0;
+            font-size: 24px; 
+            width: 40px; 
+            height: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background-color: rgba(0,0,0,0.25); 
+            border-radius: 50%; 
+            flex-shrink: 0;
         }
         .achievement-details-condensed {
-            overflow: hidden;
+            overflow: hidden; 
             .achievement-name {
-                font-weight: bold; font-size: 15px; color: #f0f0f0;
-                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                font-weight: bold; 
+                font-size: 15px; 
+                color: #f0f0f0;
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis;
                 margin-bottom: 3px;
             }
             .achievement-level-info {
                 font-size: 11px;
-                color: #c0b0d0; // В тон фона
+                color: #c0b0d0; 
             }
         }
         .achievement-reward-condensed {
-            font-size: 12px; display: flex; align-items: center;
-            gap: 10px; justify-self: end; color: #d8c8e8; // В тон фона
-            span { display: flex; align-items: center; gap: 3px; }
-            small { font-weight: 500; font-size: 11px; }
-            .xp-reward { color: #d0a0ff; small { color: #d0a0ff; } } // Светлый фиолетовый для XP
+            font-size: 12px; 
+            display: flex; 
+            align-items: center;
+            gap: 10px; 
+            justify-self: end; 
+            color: #d8c8e8; 
+            span { 
+                display: flex; 
+                align-items: center; 
+                gap: 3px; 
+            }
+            small { 
+                font-weight: 500; 
+                font-size: 11px; 
+            }
+            .xp-reward { 
+                color: #d0a0ff; 
+                small { 
+                    color: #d0a0ff; 
+                } 
+            }
         }
         .claim-button {
-            padding: 7px 10px; font-size: 12px; min-width: 65px; text-align: center;
-            border: none; border-radius: 6px; cursor: pointer; font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s; justify-self: end; white-space: nowrap;
+            padding: 7px 10px; 
+            font-size: 12px; 
+            min-width: 65px; 
+            text-align: center;
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s; 
+            justify-self: end; 
+            white-space: nowrap;
 
             &:not(:disabled) {
-                background-color: #50c878; color: white; // Яркий зеленый
-                &:hover { background-color: lighten(#50c878, 5%); transform: scale(1.03); }
+                background-color: #50c878; 
+                color: white;
+                &:hover { 
+                    background-color: lighten(#50c878, 5%); 
+                    transform: scale(1.03); 
+                }
             }
             &:disabled {
-                background-color: rgba(255,255,255,0.1); color: #aaa; cursor: default; opacity: 0.8;
+                background-color: rgba(255,255,255,0.1); 
+                color: #aaa; 
+                cursor: default; 
+                opacity: 0.8;
             }
         }
     }
