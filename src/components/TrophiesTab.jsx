@@ -286,21 +286,32 @@ const TrophiesTab = () => {
         return categories;
     }, [achievementsStatus, getGlobalStatValue]);
 
-    const categoryOrder = useMemo(() => { 
-        const predefinedOrder = ["Летопись Героя", "Арсенал Завоевателя", "Искусство Кузни"];
+const categoryOrder = useMemo(() => {
+        // Основной порядок
+        const predefinedOrder = ["Hero's Path", "Relic Hunter", "Anvil Master"];
+        // Собираем все категории, которые есть в данных, кроме "Other"
         const dynamicCategories = Object.keys(allCategorizedAchievements)
-            .filter(cat => !predefinedOrder.includes(cat) && cat !== "Прочие")
-            .sort();
-        const otherCategory = allCategorizedAchievements["Прочие"] ? ["Прочие"] : [];
-        return [...predefinedOrder.filter(cat => allCategorizedAchievements[cat]), ...dynamicCategories, ...otherCategory];
-    }, [allCategorizedAchievements]);
-
-    const achievementsForRendering = useMemo(() => { 
-        if (activeTrophyCategory !== 'Overview' && allCategorizedAchievements[activeTrophyCategory]) {
-            return { [activeTrophyCategory]: allCategorizedAchievements[activeTrophyCategory] };
+            .filter(cat => !predefinedOrder.includes(cat) && cat !== "Other")
+            .sort(); // Сортируем остальные по алфавиту
+        
+        // Собираем итоговый порядок: сначала предопределенные (если они есть в данных), потом остальные, потом "Other"
+        const finalOrder = [];
+        predefinedOrder.forEach(catName => {
+            if (allCategorizedAchievements[catName]) {
+                finalOrder.push(catName);
+            }
+        });
+        dynamicCategories.forEach(catName => {
+            if (!finalOrder.includes(catName) && allCategorizedAchievements[catName]) { // Убедимся, что не дублируем
+                finalOrder.push(catName);
+            }
+        });
+        if (allCategorizedAchievements["Other"]) {
+            finalOrder.push("Other");
         }
-        return {};
-    }, [activeTrophyCategory, allCategorizedAchievements]);
+        return finalOrder;
+    }, [allCategorizedAchievements]);
+    // ^^^ КОНЕЦ ОБНОВЛЕНИЯ categoryOrder ^^^
 
     const handleOpenAchPopup = (achId) => setSelectedAchId(achId);
     const handleCloseAchPopup = () => setSelectedAchId(null);
@@ -365,18 +376,19 @@ const TrophiesTab = () => {
                     className={`trophy-category-button ${activeTrophyCategory === 'Overview' ? 'active' : ''}`}
                     onClick={() => setActiveTrophyCategory('Overview')}
                 >
-                    Обзор
+                    Overview {/* Можно заменить на "Обзор" если нужно */}
                 </button>
+                {/* VVV Используем отсортированный categoryOrder для рендеринга кнопок VVV */}
                 {categoryOrder.map(categoryName => (
-                    allCategorizedAchievements[categoryName] && 
                     <button
                         key={categoryName}
                         className={`trophy-category-button ${activeTrophyCategory === categoryName ? 'active' : ''}`}
                         onClick={() => setActiveTrophyCategory(categoryName)}
                     >
-                        {categoryName}
+                        {categoryName} 
                     </button>
                 ))}
+                {/* ^^^ Конец использования categoryOrder ^^^ */}
             </div>
 
             {activeTrophyCategory === 'Overview' && (
@@ -503,52 +515,52 @@ const TrophiesTab = () => {
                 </>
             )}
 
-            {activeTrophyCategory !== 'Overview' && (
+           {activeTrophyCategory !== 'Overview' && (
                <div className="achievements-list">
-                    {achievementsForRendering[activeTrophyCategory] && Array.isArray(achievementsForRendering[activeTrophyCategory]) && achievementsForRendering[activeTrophyCategory].length > 0 ? (
-                        <div className="achievement-category-section">
-                            <h3 className="achievement-category-title">{activeTrophyCategory}</h3>
-                            {achievementsForRendering[activeTrophyCategory].map(achLine => {
-                                const displayLevel = achLine.nextLevelForDisplay || (achLine.levels && achLine.levels.length > 0 ? achLine.levels[achLine.levels.length -1] : { reward: {}, xpGain: 0, description: "Все уровни пройдены", level: 0 });
-                                const currentProgressText = achLine.stat && !achLine.isFullyCompletedAndClaimed && displayLevel.target > 0 
-                                    ? ` (${achLine.currentValueForStat.toLocaleString()}/${displayLevel.target.toLocaleString()})`
-                                    : (achLine.flag && !achLine.isFullyCompletedAndClaimed && displayLevel.target > 0 
-                                        ? (achLine.currentValueForStat >= (displayLevel.target === true ? 1 : displayLevel.target) ? ' (✓)' : ' (✗)')
-                                        : '');
+                    {allCategorizedAchievements[activeTrophyCategory] && Array.isArray(allCategorizedAchievements[activeTrophyCategory]) && allCategorizedAchievements[activeTrophyCategory].length > 0 ? (
+                        <div className="achievement-category-section">
+                            {allCategorizedAchievements[activeTrophyCategory].map(achLine => {
+                                const levelProgressString = `Level ${achLine.lineStatus.claimedRewardsUpToLevel}/${achLine.levels?.length || 0}`;
+                                // Класс для цвета фона метки уровня, используем существующую функцию
+                                const levelLabelRarityClass = getRarityClassByLevel(achLine.lineStatus.claimedRewardsUpToLevel);
+
+                                // Классы для состояний самой карточки (для затемнения, возможно, рамки и т.д.)
+                                let cardStateClasses = '';
+                                if (achLine.isFullyCompletedAndClaimed) {
+                                    cardStateClasses += ' claimed-item';
+                                } else if (achLine.canClaimOverall) {
+                                    cardStateClasses += ' claimable-item';
+                                }
+                                if (!achLine.hasAnyProgress) {
+                                    cardStateClasses += ' is-unachieved';
+                                }
+                                
                                 return (
                                     <div
                                         key={achLine.id}
-                                        className={`achievement-item ${achLine.canClaimOverall ? 'claimable' : ''} ${achLine.isFullyCompletedAndClaimed ? 'claimed' : ''}`}
-                                        onClick={() => handleOpenAchPopup(achLine.id)}
+                                        className={`achievement-item ${cardStateClasses.trim()}`}
+                                        onClick={() => handleOpenAchPopup(achLine.id)} // Клик по карточке открывает попап
                                     >
-                                        <div className="achievement-icon">{achLine.icon || '🏆'}</div>
-                                        <div className="achievement-details-condensed">
-                                            <div className="achievement-name">{achLine.name}</div>
-                                            <div className="achievement-level-info">
-                                                Ур. {achLine.lineStatus.claimedRewardsUpToLevel} / {achLine.levels?.length || 0}
-                                                {currentProgressText}
+                                        {/* Нависающая метка уровня */}
+                                        <div className={`achievement-level-label ${levelLabelRarityClass}`}>
+                                            {levelProgressString}
+                                        </div>
+
+                                        {/* Основное содержимое карточки: иконка и название */}
+                                        <div className="achievement-card-main-content">
+                                            <div className="achievement-icon-wrapper">
+                                                {achLine.icon || '🏆'}
+                                            </div>
+                                            <div className="achievement-info-wrapper">
+                                                <div className="achievement-name">{achLine.name}</div>
                                             </div>
                                         </div>
-                                        <div className="achievement-reward-condensed">
-                                            {displayLevel.reward?.gold > 0 && <span>💰<small>{displayLevel.reward.gold.toLocaleString()}</small></span>}
-                                            {displayLevel.reward?.diamonds > 0 && <span>💎<small>{displayLevel.reward.diamonds.toLocaleString()}</small></span>}
-                                            {displayLevel.reward?.rareChestKeys > 0 && <span>🔑<small>{displayLevel.reward.rareChestKeys}(R)</small></span>}
-                                            {displayLevel.reward?.epicChestKeys > 0 && <span>🔑<small>{displayLevel.reward.epicChestKeys}(E)</small></span>}
-                                            {displayLevel.xpGain > 0 && <span className='xp-reward'>💡<small>{displayLevel.xpGain.toLocaleString()}</small></span>}
-                                        </div>
-                                        <button
-                                            className="claim-button"
-                                            onClick={(e) => handleClaimListButton(e, achLine)}
-                                            disabled={!achLine.canClaimOverall || achLine.isFullyCompletedAndClaimed}
-                                        >
-                                            {achLine.isFullyCompletedAndClaimed ? "✔️" : (achLine.canClaimOverall ? "Забрать" : "...")}
-                                        </button>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <p className="no-achievements-message">Нет достижений в этой категории или категория не найдена.</p>
+                        <p className="no-achievements-message">Нет достижений в этой категории.</p>
                     )}
                 </div>
             )}

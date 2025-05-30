@@ -41,6 +41,9 @@ $rarity-color-mythic: #cc66ff;    // Светло-фиолетовый (для �
 }
 
 .trophies-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     // Стили для описания вкладки (остаются без изменений)
     .trophies-tab-description {
         font-size: 14px;
@@ -480,26 +483,32 @@ $rarity-color-mythic: #cc66ff;    // Светло-фиолетовый (для �
         }
     }
 
-    .achievement-category-title {
+.achievement-category-title {
         font-size: 18px;
         color: #e0daef;
         text-align: center;
         margin-bottom: 15px;
         font-weight: 600;
+        flex-shrink: 0; // Чтобы заголовок не сжимался, если .achievements-list будет расти
     }
     
     .achievements-list {
         width: 100%; 
-        max-width: 600px; 
+        max-width: 650px;
+        max-height: 470px;
         margin: 0 auto; 
-        box-sizing: border-box; 
         display: flex;
         flex-direction: column; 
-        gap: 10px; 
-        flex-grow: 1; 
-        overflow-y: auto; 
-        padding: 0 5px 10px 5px;
+        gap: 25px;
+        padding: 0 10px 15px 10px; 
 
+        // === ВАЖНЫЕ ИЗМЕНЕНИЯ ДЛЯ СКРОЛЛА ===
+        overflow-y: auto; // Включаем вертикальный скролл, когда контент не помещается
+        flex-grow: 1;     // Позволяем этому блоку занимать все доступное вертикальное пространство 
+                          // внутри родителя (.trophies-content, если он display: flex; flex-direction: column;)
+        min-height: 0;    // Важно для корректной работы flex-grow в некоторых случаях
+
+        // Стили для скроллбара (остаются)
         &::-webkit-scrollbar { 
             width: 6px; 
         }
@@ -513,110 +522,115 @@ $rarity-color-mythic: #cc66ff;    // Светло-фиолетовый (для �
         }
         scrollbar-width: thin; 
         scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0,0,0,0.15);
+        // === КОНЕЦ ИЗМЕНЕНИЙ ДЛЯ СКРОЛЛА ===
     }
 
     .achievement-item {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 10px; 
-        padding: 12px 15px;
-        display: grid; 
-        grid-template-columns: auto 1fr auto auto; 
-        gap: 12px; 
-        align-items: center;
-        transition: opacity 0.3s, border-color 0.3s, background-color 0.3s; 
+         background-color: rgba(35, 25, 55, 0.7); 
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px; 
+        padding: 15px;
+        margin-top: 20px; 
+        padding-top: 25px; 
+        position: relative; 
         cursor: pointer;
+        transition: border-color 0.3s, background-color 0.3s, transform 0.2s ease, opacity 0.3s ease;
+        flex-shrink: 0; // Чтобы карточки не сжимались по высоте, если .achievements-list очень высокий
+
 
         &:hover { 
-            background-color: rgba(255, 255, 255, 0.08); 
-        }
-        &.claimed { 
-            opacity: 0.65;
-            border-left: 5px solid #5cb85c; 
-        }
-        &.claimable { 
-            border-color: #ffae42; 
-            background-color: rgba(255, 174, 66, 0.1); 
-            border-left: 5px solid #ffae42; 
+            background-color: rgba(45, 35, 65, 0.8); 
+            border-color: rgba(255,255,255,0.15);
+            transform: translateY(-2px); // Легкий подъем при наведении
         }
 
-        .achievement-icon {
-            font-size: 24px; 
-            width: 40px; 
-            height: 40px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            background-color: rgba(0,0,0,0.25); 
-            border-radius: 50%; 
-            flex-shrink: 0;
+        // Стили для состояний всей карточки
+        &.is-unachieved {
+            opacity: 1; // Затемняем всю карточку, если не получена
+            // Можно также изменить border или background
         }
-        .achievement-details-condensed {
-            overflow: hidden; 
-            .achievement-name {
-                font-weight: bold; 
-                font-size: 15px; 
-                color: #f0f0f0;
-                white-space: nowrap; 
-                overflow: hidden; 
-                text-overflow: ellipsis;
-                margin-bottom: 3px;
-            }
-            .achievement-level-info {
-                font-size: 11px;
-                color: #c0b0d0; 
-            }
-        }
-        .achievement-reward-condensed {
-            font-size: 12px; 
-            display: flex; 
-            align-items: center;
-            gap: 10px; 
-            justify-self: end; 
-            color: #d8c8e8; 
-            span { 
-                display: flex; 
-                align-items: center; 
-                gap: 3px; 
-            }
-            small { 
-                font-weight: 500; 
-                font-size: 11px; 
-            }
-            .xp-reward { 
-                color: #d0a0ff; 
-                small { 
-                    color: #d0a0ff; 
-                } 
-            }
-        }
-        .claim-button {
-            padding: 7px 10px; 
-            font-size: 12px; 
-            min-width: 65px; 
-            text-align: center;
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: 600;
-            transition: background-color 0.2s, transform 0.1s; 
-            justify-self: end; 
-            white-space: nowrap;
-
-            &:not(:disabled) {
-                background-color: #50c878; 
-                color: white;
-                &:hover { 
-                    background-color: lighten(#50c878, 5%); 
-                    transform: scale(1.03); 
-                }
-            }
-            &:disabled {
-                background-color: rgba(255,255,255,0.1); 
-                color: #aaa; 
-                cursor: default; 
-                opacity: 0.8;
-            }
+        // Вы можете добавить стили для .claimable-item или .claimed-item, 
+        // например, особую рамку или фон для всей карточки, если нужно
+        &.claimable-item {
+             // border-left: 4px solid $rarity-color-legendary; // Пример
         }
     }
+
+    .achievement-level-label {
+        position: absolute;
+        top: 0; // Относительно верхнего края .achievement-item
+        left: 50%;
+        transform: translate(-50%, -50%); // Сдвигает лейбл вверх на половину его высоты и центрирует
+
+        padding: 6px 18px; // Паддинги для текста внутри лейбла
+        border-radius: 16px; // Форма "пилюли"
+        font-size: 12px;
+        font-weight: 600;
+        color: white; // По умолчанию белый текст, можно менять для некоторых фонов
+        white-space: nowrap;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3); // Тень для эффекта "нависания"
+        z-index: 2; // Чтобы был поверх карточки
+        border: 1px solid rgba(255,255,255,0.1); // Тонкая светлая обводка для контраста
+
+        // Классы редкости для фона лейбла
+        &.rarity-common    { background-color: $rarity-color-common; color: #222; border-color: darken($rarity-color-common, 15%); }
+        &.rarity-uncommon  { background-color: $rarity-color-uncommon; border-color: darken($rarity-color-uncommon, 15%);}
+        &.rarity-rare      { background-color: $rarity-color-rare; border-color: darken($rarity-color-rare, 15%);}
+        &.rarity-epic      { background-color: $rarity-color-epic; border-color: darken($rarity-color-epic, 15%);}
+        &.rarity-legendary { background-color: $rarity-color-legendary; color: #332200; border-color: darken($rarity-color-legendary, 15%);}
+        &.rarity-mythic    { background-color: $rarity-color-mythic; border-color: darken($rarity-color-mythic, 15%);}
+    }
+
+    .achievement-card-main-content {
+        display: flex;
+        align-items: center; // Вертикальное выравнивание иконки и блока с названием
+        gap: 15px; // Отступ между иконкой и названием
+        width: 100%;
+    }
+
+    .achievement-icon-wrapper {
+        font-size: 28px; 
+        width: 52px;    // Можно сделать чуть больше, если нужно
+        height: 52px;   
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        background-color: rgba(0,0,0,0.2); 
+        border-radius: 10px; 
+        flex-shrink: 0; // Чтобы иконка не сжималась
+
+        img { /* Стили для картинок иконок, если они есть */
+            max-width: 70%;
+            max-height: 70%;
+            object-fit: contain;
+        }
+    }
+
+    .achievement-info-wrapper { // Теперь содержит только название
+        display: flex;
+        flex-direction: column;
+        justify-content: center; 
+        overflow: hidden; 
+        min-width: 0; // Для правильной работы text-overflow в flex
+        flex-grow: 1; // Чтобы занимал доступное пространство
+    }
+
+    .achievement-name {
+        font-weight: 600; 
+        font-size: 15px; // Можно немного уменьшить, если карточка стала компактнее
+        color: #e8e0ff;  // Светлее для лучшей читаемости
+        line-height: 1.35; 
+        display: -webkit-box;
+        -webkit-line-clamp: 2; // Ограничение двумя строками
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+        text-overflow: ellipsis;
+        // Для не-WebKit браузеров может потребоваться ограничение по высоте, если имя слишком длинное
+        // max-height: calc(1.35em * 2 + 2px); // Примерная высота для двух строк + небольшой запас
+    }
+
+    // Удаляем стили для .achievement-progress-details-text, .achievement-button-wrapper, .achievement-action-button
+    // если они больше не используются в этом контексте.
+
+    // ... (остальные стили: попап, скроллбар списка и т.д.)
 }

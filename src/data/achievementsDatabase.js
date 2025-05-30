@@ -9,14 +9,14 @@
 
 const achievements = [
     // =============================================
-    // Категория: Летопись Героя
+    // Категория: Hero's Path
     // =============================================
     {
         id: "daily_login_milestones",
         name: "Страж Времени",
         icon: "⏳",
         stat: 'uniqueLoginDaysCount', // Новый стат в useGameStore: общее кол-во уникальных дней входа
-        category: "Летопись Героя",
+        category: "Hero's Path",
         levels: [
             { level: 1, description: "Войти в игру 30 разных дней.", target: 30, reward: { gold: 1000, diamonds: 25 }, xpGain: 20 },
             { level: 2, description: "Войти в игру 90 разных дней.", target: 90, reward: { gold: 3000, diamonds: 75, rareChestKeys: 1 }, xpGain: 35 },
@@ -30,7 +30,7 @@ const achievements = [
         name: "Гроза Чудовищ",
         icon: "⚔️",
         stat: 'totalKills', // Существующий стат
-        category: "Летопись Героя",
+        category: "Hero's Path",
         levels: [
             { level: 1, description: "Убить 1,000 монстров.", target: 1000, reward: { gold: 500 }, xpGain: 15 },
             { level: 2, description: "Убить 5,000 монстров.", target: 5000, reward: { gold: 2000, diamonds: 20 }, xpGain: 30 },
@@ -44,7 +44,7 @@ const achievements = [
         name: "Исследователь Пустошей",
         icon: "🗺️",
         stat: 'uniqueNormalLevelsCompleted', // Новый вычисляемый стат: кол-во уникальных пройденных уровней на Normal
-        category: "Летопись Героя",
+        category: "Hero's Path",
         levels: [
             { level: 1, description: "Пройти 10 разных уровней на обычном режиме.", target: 10, reward: { gold: 300 }, xpGain: 10 },
             { level: 2, description: "Пройти 100 разных уровней на обычном режиме.", target: 100, reward: { gold: 1000, diamonds: 20 }, xpGain: 20 },
@@ -58,7 +58,7 @@ const achievements = [
         name: "Закаленный в Боях",
         icon: "🔥",
         stat: 'uniqueHardLevelsCompleted', // Новый вычисляемый стат: кол-во уникальных пройденных уровней на Hard
-        category: "Летопись Героя",
+        category: "Hero's Path",
         levels: [
             { level: 1, description: "Пройти 3 разных уровня на сложном режиме.", target: 3, reward: { gold: 500, diamonds: 10 }, xpGain: 20 },
             { level: 2, description: "Пройти 25 разных уровней на сложном режиме.", target: 25, reward: { gold: 2000, diamonds: 30 }, xpGain: 35 },
@@ -72,7 +72,7 @@ const achievements = [
         name: "Несокрушимая Мощь",
         icon: "🚀",
         stat: 'powerLevel', // Существующий стат
-        category: "Летопись Героя",
+        category: "Hero's Path",
         levels: [
             { level: 1, description: "Достигнуть 50,000 Мощи.", target: 50000, reward: { gold: 10000, diamonds: 50 }, xpGain: 30 },
             { level: 2, description: "Достигнуть 250,000 Мощи.", target: 250000, reward: { gold: 25000, diamonds: 125, rareChestKeys: 1 }, xpGain: 50 },
@@ -83,14 +83,14 @@ const achievements = [
     },
 
     // =============================================
-    // Категория: Арсенал Завоевателя
+    // Категория: Relic Hunter
     // =============================================
     {
         id: "gear_chest_connoisseur",
         name: "Коллекционер Снаряжения",
         icon: "🧰",
         stat: 'totalGearChestsOpened',
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Открыть 100 сундуков снаряжения.", target: 100, reward: { gold: 750 }, xpGain: 15 },
             { level: 2, description: "Открыть 500 сундуков снаряжения.", target: 500, reward: { gold: 3000, diamonds: 30 }, xpGain: 30 },
@@ -104,7 +104,7 @@ const achievements = [
         name: "Знаток Артефактов",
         icon: "🏺",
         stat: 'totalArtifactChestsOpened',
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Открыть 100 сундуков артефактов.", target: 100, reward: { diamonds: 50 }, xpGain: 20 },
             { level: 2, description: "Открыть 500 сундуков артефактов.", target: 500, reward: { diamonds: 200, gold: 1000 }, xpGain: 30 },
@@ -118,7 +118,7 @@ const achievements = [
         name: "Эпический Кутюрье",
         icon: "💜",
         stat: 'equippedEpicItemCount', // Новый вычисляемый стат: кол-во надетых эпических предметов
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Надеть 1 эпический предмет снаряжения.", target: 1, reward: { gold: 500 }, xpGain: 10 },
             { level: 2, description: "Надеть 2 эпических предмета снаряжения.", target: 2, reward: { gold: 1000 }, xpGain: 15 },
@@ -133,7 +133,7 @@ const achievements = [
         name: "Легендарный Законодатель Мод",
         icon: "🧡",
         stat: 'equippedLegendaryItemCount', // Новый вычисляемый стат
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Надеть 1 легендарный предмет снаряжения.", target: 1, reward: { gold: 1000, diamonds: 10 }, xpGain: 15 },
             { level: 2, description: "Надеть 2 легендарных предмета снаряжения.", target: 2, reward: { gold: 2000, diamonds: 20 }, xpGain: 20 },
@@ -148,7 +148,7 @@ const achievements = [
         name: "Мифический Идеал",
         icon: "❤️",
         stat: 'equippedMythicItemCount', // Новый вычисляемый стат
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Надеть 1 мифический предмет снаряжения.", target: 1, reward: { gold: 2500, diamonds: 25 }, xpGain: 20 },
             { level: 2, description: "Надеть 2 мифических предмета снаряжения.", target: 2, reward: { gold: 5000, diamonds: 50 }, xpGain: 35 },
@@ -163,7 +163,7 @@ const achievements = [
         name: "Хранитель Сетов",
         icon: "📜",
         stat: 'completedArtifactSetCount', // Новый вычисляемый стат: кол-во полностью собранных и активных сетов артефактов
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Собрать 1 полный сет артефактов.", target: 1, reward: { diamonds: 100 }, xpGain: 20 },
             { level: 2, description: "Собрать 2 полных сета артефактов.", target: 2, reward: { diamonds: 200, gold: 2000 }, xpGain: 35 },
@@ -178,7 +178,7 @@ const achievements = [
         name: "Золотой Транжира",
         icon: "💸",
         stat: 'totalGoldSpent', // Новый стат: общее кол-во потраченного золота
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Потратить 25,000 золота.", target: 25000, reward: { diamonds: 10 }, xpGain: 10 },
             { level: 2, description: "Потратить 150,000 золота.", target: 150000, reward: { diamonds: 50 }, xpGain: 15 },
@@ -192,7 +192,7 @@ const achievements = [
         name: "Алмазный Инвестор",
         icon: "💎✨",
         stat: 'totalDiamondsSpent', // Новый стат: общее кол-во потраченных алмазов
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Потратить 5,000 алмазов.", target: 5000, reward: { gold: 10000 }, xpGain: 20 },
             { level: 2, description: "Потратить 25,000 алмазов.", target: 25000, reward: { gold: 50000, rareChestKeys: 1 }, xpGain: 40 },
@@ -206,7 +206,7 @@ const achievements = [
         name: "Коллекционер Осколков",
         icon: "💠",
         stat: 'totalTonShardsEarned', // Новый стат: общее кол-во заработанных осколков TON
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Получить 25 осколков Toncoin.", target: 25, reward: { gold: 500 }, xpGain: 10 },
             { level: 2, description: "Получить 300 осколков Toncoin.", target: 300, reward: { gold: 2500, diamonds: 10 }, xpGain: 20 },
@@ -220,7 +220,7 @@ const achievements = [
         name: "TON Кит",
         icon: "🐳",
         stat: 'totalTonWithdrawn', // Новый стат: общее кол-во выведенных TON (после обмена из осколков)
-        category: "Арсенал Завоевателя",
+        category: "Relic Hunter",
         levels: [
             { level: 1, description: "Вывести 5 Toncoin.", target: 5, reward: { toncoinShards: 50 }, xpGain: 30 },
             { level: 2, description: "Вывести 25 Toncoin.", target: 25, reward: { toncoinShards: 250 }, xpGain: 55 },
@@ -231,14 +231,14 @@ const achievements = [
     },
     
     // =============================================
-    // Категория: Искусство Кузни
+    // Категория: Anvil Master 
     // =============================================
     {
         id: "gear_enhancement_prodigy",
         name: "Гений Улучшений", 
         icon: "🔧🔥",
         stat: 'totalGearUpgradesPerformed', // Новый стат
-        category: "Искусство Кузни",
+        category: "Anvil Master ",
         levels: [
             { level: 1, description: "Улучшить снаряжение 100 раз.", target: 100, reward: { gold: 2000, diamonds: 10 }, xpGain: 15 },
             { level: 2, description: "Улучшить снаряжение 250 раз.", target: 250, reward: { gold: 5000, diamonds: 25 }, xpGain: 30 },
@@ -252,7 +252,7 @@ const achievements = [
         name: "Коллекционер Совершенства", 
         icon: "🌟🛡️",
         stat: 'gearItemsAtMaxLevelCount', // Новый ВЫЧИСЛЯЕМЫЙ стат
-        category: "Искусство Кузни",
+        category: "Anvil Master ",
         levels: [
             { level: 1, description: "Улучшить 1 предмет снаряжения до максимального уровня.", target: 1, reward: { diamonds: 50, gold: 1000 }, xpGain: 20 },
             { level: 2, description: "Улучшить 2 разных предмета до максимального уровня.", target: 2, reward: { diamonds: 100, gold: 2500 }, xpGain: 35 },
@@ -267,23 +267,13 @@ const achievements = [
         name: "Повелитель Наковальни",
         icon: "🔨🔥",
         stat: 'totalItemsCrafted', // Новый стат: общее кол-во созданных (forged) предметов
-        category: "Искусство Кузни",
+        category: "Anvil Master ",
         levels: [
             { level: 1, description: "Создать 10 предметов в кузнице.", target: 10, reward: { gold: 500 }, xpGain: 10 },
             { level: 2, description: "Создать 50 предметов в кузнице.", target: 50, reward: { gold: 2000, diamonds: 20 }, xpGain: 20 },
             { level: 3, description: "Создать 150 предметов в кузнице.", target: 150, reward: { gold: 6000, diamonds: 60, rareChestKeys: 1 }, xpGain: 40 },
             { level: 4, description: "Создать 300 предметов в кузнице.", target: 300, reward: { gold: 15000, diamonds: 120, epicChestKeys: 1 }, xpGain: 60 },
             { level: 5, description: "Создать 500 предметов в кузнице.", target: 500, reward: { gold: 30000, diamonds: 250, epicChestKeys: 2 }, xpGain: 100 },
-        ]
-    },
-    {
-        id: "first_forge_or_upgrade_action", 
-        name: "Прикосновение к Кузне",
-        icon: "🔨",
-        flag: 'hasForgedOrUpgraded', 
-        category: "Искусство Кузни",
-        levels: [
-            { level: 1, description: "Улучшить или создать предмет в кузнице.", target: true, reward: { gold: 200 }, xpGain: 15 }
         ]
     },
 ];
