@@ -97,6 +97,17 @@ const TrophiesTab = () => {
     const [activeTrophyCategory, setActiveTrophyCategory] = useState('Overview');
     const [selectedAchId, setSelectedAchId] = useState(null);
 
+    // ВСТАВЛЕННЫЙ КОД: Состояние для развернутых наград
+    const [expandedRewardsForLevel, setExpandedRewardsForLevel] = useState({}); // { levelNumber: true/false }
+
+    // ВСТАВЛЕННЫЙ КОД: Функция для переключения видимости наград
+    const toggleRewardsVisibility = (levelNumber) => {
+        setExpandedRewardsForLevel(prev => ({
+            ...prev,
+            [levelNumber]: !prev[levelNumber]
+        }));
+    };
+
     const {
         achievementsStatus,
         claimAchievementReward,
@@ -256,7 +267,7 @@ const TrophiesTab = () => {
                         nextLevelToDisplay = levelData; 
                     }
                     const targetMet = (achLine.stat && currentValueForStat >= levelData.target) ||
-                                        (achLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target));
+                                      (achLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target));
                     if (targetMet) {
                         canClaimSomething = true;
                         if (!nextClaimableLevel) {
@@ -618,41 +629,89 @@ const TrophiesTab = () => {
                                         ? Math.min(100, Math.floor((currentValueForStat / levelData.target) * 100))
                                         : (isLevelTargetMet ? 100 : 0);
 
+                                    // НАЧАЛО ЗАМЕНЕННОГО БЛОКА
                                     return (
-                                        <div key={levelData.level} className={`achievement-popup-level-item ${isLevelClaimed ? 'claimed' : ''} ${canClaimThisLevel ? 'claimable' : ''}`}>
-                                            <div className="level-number-badge">Ур. {levelData.level}</div>
-                                            <div className="level-details">
-                                                <p className="popup-description">{levelData.description}</p>
-                                                {(selectedAchievementLine.stat && !isLevelClaimed && levelData.target > 0) && (
-                                                    <div className="popup-progress">
-                                                        <div className="progress-bar-bg">
-                                                            <div className="progress-bar-fg" style={{ width: `${progressPercent}%` }}></div>
+                                        <div
+                                            key={levelData.level}
+                                            className={`achievement-popup-level-item ${isLevelClaimed ? 'claimed' : ''} ${canClaimThisLevel ? 'claimable' : ''} ${!isLevelTargetMet && !isLevelClaimed ? 'locked' : ''}`}
+                                            style={{ /* Можно будет задать min-height для фиксации начальной высоты */ }}
+                                        >
+                                            {/* 1. Нависающий лейбл уровня */}
+                                            <div className={`popup-level-badge ${getRarityClassByLevel(levelData.level) /* или другой класс для цвета */}`}>
+                                                Ур. {levelData.level}
+                                            </div>
+
+                                            <div className="popup-level-main-content">
+                                                {/* 2. Описание задания */}
+                                                <p className="popup-level-description">{levelData.description}</p>
+
+                                                {/* 3. Прогресс-бар и Claim-кнопка */}
+                                                <div className="popup-level-progress-claim-wrapper">
+                                                    {(selectedAchievementLine.stat && levelData.target > 0) && (
+                                                        <div className="popup-level-progress">
+                                                            <div className="progress-bar-bg">
+                                                                <div className="progress-bar-fg" style={{ width: `${progressPercent}%` }}></div>
+                                                            </div>
+                                                            <span className="progress-text">{currentValueForStat.toLocaleString()} / {levelData.target.toLocaleString()}</span>
                                                         </div>
-                                                        <span>{currentValueForStat.toLocaleString()} / {levelData.target.toLocaleString()}</span>
-                                                    </div>
-                                                )}
-                                                {selectedAchievementLine.flag && (
-                                                    <p className={`popup-status ${isLevelTargetMet ? 'completed-text' : 'locked-text'}`}>
-                                                        Статус: {isLevelTargetMet ? 'Выполнено' : 'Не выполнено'}
-                                                    </p>
-                                                )}
-                                                <div className="popup-rewards small-rewards">
-                                                    {levelData.reward?.gold > 0 && <span>💰 <small>{levelData.reward.gold.toLocaleString()}</small></span>}
-                                                    {levelData.reward?.diamonds > 0 && <span>💎 <small>{levelData.reward.diamonds.toLocaleString()}</small></span>}
-                                                    {levelData.reward?.rareChestKeys > 0 && <span>🔑 <small>{levelData.reward.rareChestKeys}(R)</small></span>}
-                                                    {levelData.reward?.epicChestKeys > 0 && <span>🔑 <small>{levelData.reward.epicChestKeys}(E)</small></span>}
-                                                    {levelData.xpGain > 0 && <span>💡 <small>{levelData.xpGain.toLocaleString()} XP</small></span>}
+                                                    )}
+                                                    {selectedAchievementLine.flag && (
+                                                            <div className="popup-level-progress"> {/* Используем тот же класс для выравнивания */}
+                                                                <p className={`popup-level-status-flag ${isLevelTargetMet ? 'completed-text' : 'locked-text'}`}>
+                                                                    {isLevelTargetMet ? 'Выполнено' : 'Не выполнено'}
+                                                                </p>
+                                                            </div>
+                                                    )}
+                                                    {/* Пустой div для выравнивания, если нет прогресс-бара, чтобы кнопка была справа */}
+                                                    {!(selectedAchievementLine.stat && levelData.target > 0) && !selectedAchievementLine.flag && (
+                                                        <div className="popup-level-progress"></div> // Пустышка для flex-grow
+                                                    )}
+
+                                                    <button
+                                                        className={`popup-level-claim-button ${canClaimThisLevel ? 'active-green' : 'dull-gray'}`}
+                                                        onClick={(e) => handleClaimPopupLevelButton(e, selectedAchievementLine.id, levelData.level)}
+                                                        disabled={!canClaimThisLevel && !isLevelClaimed} // Блокируем если нечего забирать или уже забрано (кроме случая, когда просто "забрано")
+                                                    >
+                                                        {isLevelClaimed ? "✔️" : (canClaimThisLevel ? "Claim" : "Claim")}
+                                                    </button>
+                                                </div>
+
+                                                {/* 4. Кнопка Rewards */}
+                                                <div className="popup-level-rewards-toggle-wrapper">
+                                                    <button
+                                                        className="rewards-toggle-button"
+                                                        onClick={() => toggleRewardsVisibility(levelData.level)}
+                                                    >
+                                                        Награды {expandedRewardsForLevel[levelData.level]}
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <button
-                                                className="claim-button-popup"
-                                                onClick={(e) => handleClaimPopupLevelButton(e, selectedAchievementLine.id, levelData.level)}
-                                                disabled={!canClaimThisLevel}
-                                            >
-                                                {isLevelClaimed ? "✔️" : (canClaimThisLevel ? "Забрать" : "...")}
-                                            </button>
+
+                                            {/* Выезжающий список наград */}
+                                            <AnimatePresence>
+                                                {expandedRewardsForLevel[levelData.level] && (
+                                                    <motion.div
+                                                        className="popup-level-rewards-list"
+                                                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1, marginTop: '10px' }}
+                                                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                                                        transition={{ duration: 0.3 }}
+                                                    >
+                                                        {levelData.reward?.gold > 0 && <span>💰 <small>{levelData.reward.gold.toLocaleString()} золота</small></span>}
+                                                        {levelData.reward?.diamonds > 0 && <span>💎 <small>{levelData.reward.diamonds.toLocaleString()} алмазов</small></span>}
+                                                        {levelData.reward?.rareChestKeys > 0 && <span>🔑 <small>{levelData.reward.rareChestKeys} редких ключа</small></span>}
+                                                        {levelData.reward?.epicChestKeys > 0 && <span>🔑 <small>{levelData.reward.epicChestKeys} эпик. ключа</small></span>}
+                                                        {/* Добавьте другие возможные награды из levelData.reward */}
+                                                        {levelData.xpGain > 0 && <span>💡 <small>{levelData.xpGain.toLocaleString()} XP</small></span>}
+                                                        {Object.keys(levelData.reward || {}).length === 0 && !levelData.xpGain && (
+                                                            <small>Нет особых наград за этот уровень.</small>
+                                                        )}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
                                     );
+                                    // КОНЕЦ ЗАМЕНЕННОГО БЛОКА
                                 })}
                             </div>
                         </div>
