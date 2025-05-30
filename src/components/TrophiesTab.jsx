@@ -11,6 +11,7 @@ import './TrophiesTab.scss';
 
 // ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ ИКОНОК: возвращает объект { iconJsx, quantity }
 const getIconForMilestoneMarker = (rewardsObject) => {
+    // ... (ваш существующий код getIconForMilestoneMarker) ...
     const imgSize = '40px'; // Новый увеличенный размер для самих картинок (контейнер будет больше)
     const commonImageStyle = { width: imgSize, height: imgSize, objectFit: 'contain' };
     // Для эмодзи будем полагаться на font-size из CSS, но можем также вернуть объект
@@ -61,6 +62,7 @@ const getIconForMilestoneMarker = (rewardsObject) => {
 };
 
 const getGlobalRewardTextForMilestoneDisplay = (milestone) => {
+    // ... (ваш существующий код getGlobalRewardTextForMilestoneDisplay) ...
     if (!milestone || !milestone.rewards) return "Награда";
     const rewardEntries = Object.entries(milestone.rewards);
     if (rewardEntries.length === 0) return "Особая награда";
@@ -80,11 +82,11 @@ const getGlobalRewardTextForMilestoneDisplay = (milestone) => {
     }).join(' и ');
 };
 
-// Вспомогательная функция для определения класса редкости на основе полученного уровня
 const getRarityClassByLevel = (claimedLevel) => {
+    // ... (ваш существующий код getRarityClassByLevel) ...
     if (claimedLevel >= 6) return 'rarity-mythic';
     if (claimedLevel === 5) return 'rarity-legendary';
-    if (claimedLevel === 4) return 'rarity-epic'; 
+    if (claimedLevel === 4) return 'rarity-epic';
     if (claimedLevel === 3) return 'rarity-epic'; // Уровни 3 и 4 могут делить один цвет редкости
     if (claimedLevel === 2) return 'rarity-rare';
     if (claimedLevel === 1) return 'rarity-uncommon';
@@ -98,7 +100,7 @@ const TrophiesTab = () => {
     const {
         achievementsStatus,
         claimAchievementReward,
-        achievementXp,
+        achievementXp, // Оригинальное значение из стора
         getGlobalStatValue,
         claimedGlobalTrackRewards,
         claimGlobalTrackReward,
@@ -112,6 +114,7 @@ const TrophiesTab = () => {
     }));
 
     const selectedAchievementLine = useMemo(() => {
+        // ... (ваш существующий код selectedAchievementLine) ...
         if (!selectedAchId) return null;
         const achLine = achievementsData.find(a => a.id === selectedAchId);
         if (achLine && !Array.isArray(achLine.levels)) {
@@ -130,14 +133,22 @@ const TrophiesTab = () => {
 
     const trackPixelWidth = useMemo(() => {
         const safeTotalXp = (typeof totalXpOfTrack === 'number' && totalXpOfTrack > 0) ? totalXpOfTrack : 5500;
-        return Math.max(1200, safeTotalXp * 0.7); 
+        return Math.max(1200, safeTotalXp * 0.7);
     }, [totalXpOfTrack]);
 
-    const globalXpProgressPercent = (typeof totalXpOfTrack === 'number' && totalXpOfTrack > 0)
-        ? Math.min(100, (achievementXp / totalXpOfTrack) * 100)
+    // Обеспечиваем, что achievementXp является числом, по умолчанию 0.
+    const currentAchievementXp = typeof achievementXp === 'number' ? achievementXp : 0;
+
+    const rawGlobalXpProgressPercent = (typeof totalXpOfTrack === 'number' && totalXpOfTrack > 0)
+        ? Math.min(100, (currentAchievementXp / totalXpOfTrack) * 100)
         : 0;
 
+    // Обеспечиваем, что globalXpProgressPercent является числом, по умолчанию 0.
+    const currentGlobalXpProgressPercent = typeof rawGlobalXpProgressPercent === 'number' ? rawGlobalXpProgressPercent : 0;
+
+
     const handleClaimGlobalMilestone = (e, milestoneIdentifier) => {
+        // ... (ваш существующий код handleClaimGlobalMilestone) ...
         e.stopPropagation();
         if (claimGlobalTrackReward) {
             claimGlobalTrackReward(milestoneIdentifier);
@@ -147,6 +158,7 @@ const TrophiesTab = () => {
     };
     
     const getGlobalRewardText = (reward) => {
+        // ... (ваш существующий код getGlobalRewardText) ...
         if (!reward) return "";
         let text = reward.amount;
         if (reward.type === REWARD_TYPES?.GOLD || reward.type === 'gold') text += " золота";
@@ -163,8 +175,8 @@ const TrophiesTab = () => {
         return `${reward.icon || '🏆'} ${text}`;
     };
 
-    // Обновляем obtainedAchievementIcons для отображения ВСЕХ ачивок с динамическим классом редкости
- const obtainedAchievementIcons = useMemo(() => {
+    const obtainedAchievementIcons = useMemo(() => {
+        // ... (ваш существующий код obtainedAchievementIcons) ...
         if (!achievementsData || !Array.isArray(achievementsData)) {
             return [];
         }
@@ -188,16 +200,11 @@ const TrophiesTab = () => {
             };
         });
 
-        // Сортировка:
-        // 1. Сначала те, по которым есть прогресс (hasAnyProgress = true)
-        // 2. Среди тех, по которым есть прогресс, сначала полностью завершенные (isFullyCompletedAndClaimed = true)
-        // 3. Затем по убыванию текущего уровня
-        // 4. В остальных случаях по имени
         const sortedIcons = mappedIcons.sort((a, b) => {
             if (a.hasAnyProgress && !b.hasAnyProgress) return -1;
             if (!a.hasAnyProgress && b.hasAnyProgress) return 1;
 
-            if (a.hasAnyProgress && b.hasAnyProgress) { // Обе с прогрессом или обе без
+            if (a.hasAnyProgress && b.hasAnyProgress) { 
                 if (a.isFullyCompletedAndClaimed && !b.isFullyCompletedAndClaimed) return -1;
                 if (!a.isFullyCompletedAndClaimed && b.isFullyCompletedAndClaimed) return 1;
                 
@@ -212,6 +219,7 @@ const TrophiesTab = () => {
     }, [achievementsData, achievementsStatus]);
 
     const allCategorizedAchievements = useMemo(() => { 
+        // ... (ваш существующий код allCategorizedAchievements) ...
         const categories = {};
         if (!achievementsData || !Array.isArray(achievementsData)) return categories;
 
@@ -248,7 +256,7 @@ const TrophiesTab = () => {
                         nextLevelToDisplay = levelData; 
                     }
                     const targetMet = (achLine.stat && currentValueForStat >= levelData.target) ||
-                                      (achLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target));
+                                        (achLine.flag && currentValueForStat >= (levelData.target === true ? 1 : levelData.target));
                     if (targetMet) {
                         canClaimSomething = true;
                         if (!nextClaimableLevel) {
@@ -286,15 +294,13 @@ const TrophiesTab = () => {
         return categories;
     }, [achievementsStatus, getGlobalStatValue]);
 
-const categoryOrder = useMemo(() => {
-        // Основной порядок
+    const categoryOrder = useMemo(() => {
+        // ... (ваш существующий код categoryOrder) ...
         const predefinedOrder = ["Hero's Path", "Relic Hunter", "Anvil Master"];
-        // Собираем все категории, которые есть в данных, кроме "Other"
         const dynamicCategories = Object.keys(allCategorizedAchievements)
             .filter(cat => !predefinedOrder.includes(cat) && cat !== "Other")
-            .sort(); // Сортируем остальные по алфавиту
+            .sort(); 
         
-        // Собираем итоговый порядок: сначала предопределенные (если они есть в данных), потом остальные, потом "Other"
         const finalOrder = [];
         predefinedOrder.forEach(catName => {
             if (allCategorizedAchievements[catName]) {
@@ -302,7 +308,7 @@ const categoryOrder = useMemo(() => {
             }
         });
         dynamicCategories.forEach(catName => {
-            if (!finalOrder.includes(catName) && allCategorizedAchievements[catName]) { // Убедимся, что не дублируем
+            if (!finalOrder.includes(catName) && allCategorizedAchievements[catName]) { 
                 finalOrder.push(catName);
             }
         });
@@ -311,12 +317,12 @@ const categoryOrder = useMemo(() => {
         }
         return finalOrder;
     }, [allCategorizedAchievements]);
-    // ^^^ КОНЕЦ ОБНОВЛЕНИЯ categoryOrder ^^^
 
     const handleOpenAchPopup = (achId) => setSelectedAchId(achId);
     const handleCloseAchPopup = () => setSelectedAchId(null);
 
     const handleClaimListButton = (e, achLine) => {
+        // ... (ваш существующий код handleClaimListButton) ...
         e.stopPropagation();
         if (achLine.nextClaimableLevelData && claimAchievementReward) {
             claimAchievementReward(achLine.id, achLine.nextClaimableLevelData.level);
@@ -324,6 +330,7 @@ const categoryOrder = useMemo(() => {
     };
 
     const handleClaimPopupLevelButton = (e, achievementId, level) => {
+        // ... (ваш существующий код handleClaimPopupLevelButton) ...
         e.stopPropagation();
         if (claimAchievementReward) {
             claimAchievementReward(achievementId, level);
@@ -334,19 +341,19 @@ const categoryOrder = useMemo(() => {
     useEffect(() => { 
         if (activeTrophyCategory === 'Overview' && xpTrackRef.current && totalXpOfTrack > 0 && typeof trackPixelWidth === 'number') {
             const scrollContainer = xpTrackRef.current;
-            const currentProgressPx = (achievementXp / totalXpOfTrack) * trackPixelWidth;
+            const currentProgressPx = (currentAchievementXp / totalXpOfTrack) * trackPixelWidth;
             const targetScrollLeft = Math.max(0, currentProgressPx - scrollContainer.offsetWidth / 3); 
 
             if (typeof scrollContainer.scrollTo === 'function') {
                 scrollContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
             }
         }
-    }, [achievementXp, totalXpOfTrack, trackPixelWidth, activeTrophyCategory]);
+    }, [currentAchievementXp, totalXpOfTrack, trackPixelWidth, activeTrophyCategory]);
 
 
     const processMilestone = (milestone) => {
         const milestoneIdStr = milestone.xpThreshold.toString();
-        const isReached = achievementXp >= milestone.xpThreshold;
+        const isReached = currentAchievementXp >= milestone.xpThreshold;
         const isClaimed = claimedGlobalTrackRewards && claimedGlobalTrackRewards[milestoneIdStr];
         const canClaimThisMilestone = isReached && !isClaimed;
         const positionPercent = totalXpOfTrack > 0 ? (milestone.xpThreshold / totalXpOfTrack) * 100 : 0;
@@ -354,8 +361,8 @@ const categoryOrder = useMemo(() => {
         const iconData = getIconForMilestoneMarker(milestone.rewards); 
         const primaryIconJsx = iconData.iconJsx;
         const primaryRewardQuantity = (typeof iconData.quantity === 'number' && iconData.quantity > 0) 
-                                            ? iconData.quantity 
-                                            : null;
+                                        ? iconData.quantity 
+                                        : null;
 
         const titleText = `${milestone.xpThreshold.toLocaleString()} XP: ${milestone.description || getGlobalRewardTextForMilestoneDisplay(milestone)}`;
         
@@ -376,9 +383,8 @@ const categoryOrder = useMemo(() => {
                     className={`trophy-category-button ${activeTrophyCategory === 'Overview' ? 'active' : ''}`}
                     onClick={() => setActiveTrophyCategory('Overview')}
                 >
-                    Overview {/* Можно заменить на "Обзор" если нужно */}
+                    Overview
                 </button>
-                {/* VVV Используем отсортированный categoryOrder для рендеринга кнопок VVV */}
                 {categoryOrder.map(categoryName => (
                     <button
                         key={categoryName}
@@ -388,7 +394,6 @@ const categoryOrder = useMemo(() => {
                         {categoryName} 
                     </button>
                 ))}
-                {/* ^^^ Конец использования categoryOrder ^^^ */}
             </div>
 
             {activeTrophyCategory === 'Overview' && (
@@ -435,8 +440,27 @@ const categoryOrder = useMemo(() => {
                                     })}
                                 </div>
 
-                                <div className="global-xp-progress-bar-visual">
-                                    <div className="global-xp-bar-fill-visual" style={{ width: `${globalXpProgressPercent}%` }}></div>
+                                <div className="global-xp-progress-bar-visual"> {/* Ensure this has position: relative and a defined height in CSS */}
+                                    <div className="global-xp-bar-fill-visual" style={{ width: `${currentGlobalXpProgressPercent}%` }}></div>
+                                    
+                                    {/* == UPDATED: Current XP Value Label == */}
+                                    {currentGlobalXpProgressPercent > 0 && currentAchievementXp >= 0 && (
+                                        <div
+                                            className="current-xp-value-label"
+                                            style={{
+                                                position: 'absolute',
+                                                left: `${currentGlobalXpProgressPercent}%`,
+                                                bottom: '100%', // Positions the bottom of the label at the top of the bar
+                                                transform: 'translateX(-50%)', // Horizontally centers the label on the progress point
+                                                marginBottom: '4px', // Adds a small gap above the bar
+                                                zIndex: 1000, 
+                                                pointerEvents: 'none',
+                                            }}
+                                        >
+                                            {currentAchievementXp.toLocaleString()}&nbsp;XP
+                                        </div>
+                                    )}
+                                    {/* == END: Current XP Value Label == */}
                                 </div>
 
                                 <div className="reward-markers-area below">
@@ -480,8 +504,8 @@ const categoryOrder = useMemo(() => {
                         </div>
                     </div>
 
-                    {/* Обновленная секция "Мои Трофеи" */}
-<div className="obtained-achievements-overview">
+                    <div className="obtained-achievements-overview">
+                        {/* ... (ваш существующий код obtained-achievements-overview) ... */}
                         <div className="overview-header-label-container">
                             <div className="overview-header-label">
                                 Trophies
@@ -491,19 +515,18 @@ const categoryOrder = useMemo(() => {
                         {obtainedAchievementIcons.length > 0 ? (
                             <div className="obtained-icons-grid">
                                 {obtainedAchievementIcons.map(ach => (
-                                     <div 
-        key={ach.id} 
-        className={
-            `obtained-achievement-icon ${ach.rarityClass}` +
-            `${!ach.hasAnyProgress ? ' is-unachieved' : ''}`
-        }
-        title={`${ach.name} (Уровень: ${ach.currentLevel}${ach.maxLevel > 0 ? `/${ach.maxLevel}` : ''})`}
-    >
-        {/* Новый внутренний div для контента и заливки */}
-        <div className="icon-inner-content">
-            {ach.icon} {/* ach.icon содержит JSX для <img> или строку эмодзи */}
-        </div>
-    </div>
+                                        <div 
+                                        key={ach.id} 
+                                        className={
+                                            `obtained-achievement-icon ${ach.rarityClass}` +
+                                            `${!ach.hasAnyProgress ? ' is-unachieved' : ''}`
+                                        }
+                                        title={`${ach.name} (Уровень: ${ach.currentLevel}${ach.maxLevel > 0 ? `/${ach.maxLevel}` : ''})`}
+                                    >
+                                    <div className="icon-inner-content">
+                                        {ach.icon}
+                                    </div>
+                                </div>
                                 ))}
                             </div>
                         ) : (
@@ -515,23 +538,21 @@ const categoryOrder = useMemo(() => {
                 </>
             )}
 
-           {activeTrophyCategory !== 'Overview' && (
-               <div className="achievements-list">
-                    {allCategorizedAchievements[activeTrophyCategory] && Array.isArray(allCategorizedAchievements[activeTrophyCategory]) && allCategorizedAchievements[activeTrophyCategory].length > 0 ? (
-                        <div className="achievement-category-section">
-                            {allCategorizedAchievements[activeTrophyCategory].map(achLine => {
+            {activeTrophyCategory !== 'Overview' && (
+                <div className="achievements-list">
+                    {/* ... (ваш существующий код для списка ачивок по категориям) ... */}
+                    {allCategorizedAchievements[activeTrophyCategory] && Array.isArray(allCategorizedAchievements[activeTrophyCategory]) && allCategorizedAchievements[activeTrophyCategory].length > 0 ? (
+                        <div className="achievement-category-section">
+                            {allCategorizedAchievements[activeTrophyCategory].map(achLine => {
                                 const levelProgressString = `Level ${achLine.lineStatus.claimedRewardsUpToLevel}/${achLine.levels?.length || 0}`;
-                                // Класс для цвета фона метки уровня, используем существующую функцию
                                 const levelLabelRarityClass = getRarityClassByLevel(achLine.lineStatus.claimedRewardsUpToLevel);
-
-                                // Классы для состояний самой карточки (для затемнения, возможно, рамки и т.д.)
                                 let cardStateClasses = '';
                                 if (achLine.isFullyCompletedAndClaimed) {
                                     cardStateClasses += ' claimed-item';
                                 } else if (achLine.canClaimOverall) {
                                     cardStateClasses += ' claimable-item';
                                 }
-                                if (!achLine.hasAnyProgress) {
+                                if (!achLine.hasAnyProgress) { // Проверяем, есть ли вообще прогресс
                                     cardStateClasses += ' is-unachieved';
                                 }
                                 
@@ -539,14 +560,11 @@ const categoryOrder = useMemo(() => {
                                     <div
                                         key={achLine.id}
                                         className={`achievement-item ${cardStateClasses.trim()}`}
-                                        onClick={() => handleOpenAchPopup(achLine.id)} // Клик по карточке открывает попап
+                                        onClick={() => handleOpenAchPopup(achLine.id)}
                                     >
-                                        {/* Нависающая метка уровня */}
                                         <div className={`achievement-level-label ${levelLabelRarityClass}`}>
                                             {levelProgressString}
                                         </div>
-
-                                        {/* Основное содержимое карточки: иконка и название */}
                                         <div className="achievement-card-main-content">
                                             <div className="achievement-icon-wrapper">
                                                 {achLine.icon || '🏆'}
@@ -575,6 +593,7 @@ const categoryOrder = useMemo(() => {
                         key="achPopup"
                     >
                         <div className="achievement-popup-content" onClick={(e) => e.stopPropagation()}>
+                            {/* ... (ваш существующий код для попапа ачивки) ... */}
                             <button className="popup-close-btn" onClick={handleCloseAchPopup}>×</button>
                             <div className="popup-header">
                                 <div className="popup-icon">{selectedAchievementLine.icon || '🏆'}</div>
