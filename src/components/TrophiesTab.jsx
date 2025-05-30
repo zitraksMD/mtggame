@@ -4,10 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/useGameStore.js';
 import globalTrackRewardsData from '../data/globalTrackRewards.js';
 import achievementsData from '../data/achievementsDatabase.js';
-import { pageTransition } from '../animations';
+import { pageTransition } from '../animations'; // У вас уже есть
 import { REWARD_TYPES } from '../data/ShardPassRewardsData.js';
 
 import './TrophiesTab.scss';
+
+// Варианты анимации для контента вкладок (из вашего примера)
+const tabAnimationVariants = {
+    hidden: { opacity: 0, x: 20 }, // Начинаем немного справа и невидимы
+    visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: 'easeInOut' } },
+    exit: { opacity: 0, x: -20, transition: { duration: 0.2, ease: 'easeInOut' } } // Уходим влево
+};
 
 // ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ ИКОНОК: возвращает объект { iconJsx, quantity }
 const getIconForMilestoneMarker = (rewardsObject) => {
@@ -227,7 +234,7 @@ const TrophiesTab = () => {
         });
 
         return sortedIcons;
-    }, [achievementsData, achievementsStatus]);
+    }, [achievementsStatus]); // Убрал achievementsData из зависимостей, так как он не меняется
 
     const allCategorizedAchievements = useMemo(() => { 
         // ... (ваш существующий код allCategorizedAchievements) ...
@@ -253,6 +260,8 @@ const TrophiesTab = () => {
             let canClaimSomething = false;
             let isFullyClaimed = true; 
             let nextClaimableLevel = null;
+            let hasAnyProgress = status.claimedRewardsUpToLevel > 0 || (currentAchLevels.length > 0 && currentValueForStat > 0);
+
 
             if (currentAchLevels.length === 0) {
                 isFullyClaimed = true; 
@@ -289,7 +298,8 @@ const TrophiesTab = () => {
                 canClaimOverall: canClaimSomething,
                 isFullyCompletedAndClaimed: isFullyClaimed && currentAchLevels.length > 0, 
                 nextLevelForDisplay: nextLevelToDisplay,
-                nextClaimableLevelData: nextClaimableLevel
+                nextClaimableLevelData: nextClaimableLevel,
+                hasAnyProgress: hasAnyProgress 
             });
         });
 
@@ -303,7 +313,7 @@ const TrophiesTab = () => {
             });
         }
         return categories;
-    }, [achievementsStatus, getGlobalStatValue]);
+    }, [achievementsStatus, getGlobalStatValue]); // Убрал achievementsData
 
     const categoryOrder = useMemo(() => {
         // ... (ваш существующий код categoryOrder) ...
@@ -323,7 +333,7 @@ const TrophiesTab = () => {
                 finalOrder.push(catName);
             }
         });
-        if (allCategorizedAchievements["Other"]) {
+        if (allCategorizedAchievements["Other"] && allCategorizedAchievements["Other"].length > 0) { // Проверяем, что категория "Other" не пуста
             finalOrder.push("Other");
         }
         return finalOrder;
@@ -407,204 +417,221 @@ const TrophiesTab = () => {
                 ))}
             </div>
 
-            {activeTrophyCategory === 'Overview' && (
-                <>
-                    <div className="global-xp-track-outer-container">
-                        <div className="global-xp-track-scroll-container" ref={xpTrackRef}>
-                            <div className="global-xp-track-content" style={{ width: `${trackPixelWidth}px` }}>
-                                
-                                <div className="reward-markers-area above">
-                                    {globalTrackRewardsData.map((milestone, index) => {
-                                        const { 
-                                            milestoneIdStr, isReached, canClaimThisMilestone, isClaimed, 
-                                            positionPercent, primaryIconJsx, titleText, primaryRewardQuantity
-                                        } = processMilestone(milestone);
-
-                                        if (index % 2 !== 0) { // Нечетный индекс: ИКОНКА СВЕРХУ
-                                            return (
-                                                <div
-                                                    key={`${milestoneIdStr}-icon-above`} 
-                                                    className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
-                                                    style={{ left: `${positionPercent}%` }} 
-                                                    title={titleText}
-                                                    onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
-                                                >
-                                                    <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
-                                                    {primaryRewardQuantity && (
-                                                        <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
-                                                    )}
-                                                    {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
-                                                </div>
-                                            );
-                                        } else { // Четный индекс: ТЕКСТ XP СВЕРХУ
-                                            return (
-                                                <div
-                                                    key={`${milestoneIdStr}-xp-above`}
-                                                    className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
-                                                    style={{ left: `${positionPercent}%` }}
-                                                    title={titleText}
-                                                >
-                                                    {milestone.xpThreshold.toLocaleString()}&nbsp;XP
-                                                </div>
-                                            );
-                                        }
-                                    })}
-                                </div>
-
-                                <div className="global-xp-progress-bar-visual"> {/* Ensure this has position: relative and a defined height in CSS */}
-                                    <div className="global-xp-bar-fill-visual" style={{ width: `${currentGlobalXpProgressPercent}%` }}></div>
+            {/* ОБЕРТКА ДЛЯ АНИМАЦИИ КОНТЕНТА ВКЛАДОК */}
+            <AnimatePresence mode="wait"> {/* mode="wait" ждет завершения exit анимации перед animate новой */}
+                {activeTrophyCategory === 'Overview' && (
+                    <motion.div
+                        key="overview-content" // Уникальный ключ для AnimatePresence
+                        className="overview-content-wrapper" // Добавим обертку
+                        variants={tabAnimationVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        <div className="global-xp-track-outer-container">
+                            <div className="global-xp-track-scroll-container" ref={xpTrackRef}>
+                                <div className="global-xp-track-content" style={{ width: `${trackPixelWidth}px` }}>
                                     
-                                    {/* == UPDATED: Current XP Value Label == */}
-                                    {currentGlobalXpProgressPercent > 0 && currentAchievementXp >= 0 && (
-                                        <div
-                                            className="current-xp-value-label"
-                                            style={{
-                                                position: 'absolute',
-                                                left: `${currentGlobalXpProgressPercent}%`,
-                                                bottom: '100%', // Positions the bottom of the label at the top of the bar
-                                                transform: 'translateX(-50%)', // Horizontally centers the label on the progress point
-                                                marginBottom: '4px', // Adds a small gap above the bar
-                                                zIndex: 1000, 
-                                                pointerEvents: 'none',
-                                            }}
-                                        >
-                                            {currentAchievementXp.toLocaleString()}&nbsp;XP
-                                        </div>
-                                    )}
-                                    {/* == END: Current XP Value Label == */}
-                                </div>
+                                    <div className="reward-markers-area above">
+                                        {globalTrackRewardsData.map((milestone, index) => {
+                                            const { 
+                                                milestoneIdStr, isReached, canClaimThisMilestone, isClaimed, 
+                                                positionPercent, primaryIconJsx, titleText, primaryRewardQuantity
+                                            } = processMilestone(milestone);
 
-                                <div className="reward-markers-area below">
-                                    {globalTrackRewardsData.map((milestone, index) => {
-                                        const { 
-                                            milestoneIdStr, isReached, canClaimThisMilestone, isClaimed, 
-                                            positionPercent, primaryIconJsx, titleText, primaryRewardQuantity
-                                        } = processMilestone(milestone);
+                                            if (index % 2 !== 0) { // Нечетный индекс: ИКОНКА СВЕРХУ
+                                                return (
+                                                    <div
+                                                        key={`${milestoneIdStr}-icon-above`} 
+                                                        className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
+                                                        style={{ left: `${positionPercent}%` }} 
+                                                        title={titleText}
+                                                        onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
+                                                    >
+                                                        <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
+                                                        {primaryRewardQuantity && (
+                                                            <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
+                                                        )}
+                                                        {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
+                                                    </div>
+                                                );
+                                            } else { // Четный индекс: ТЕКСТ XP СВЕРХУ
+                                                return (
+                                                    <div
+                                                        key={`${milestoneIdStr}-xp-above`}
+                                                        className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
+                                                        style={{ left: `${positionPercent}%` }}
+                                                        title={titleText}
+                                                    >
+                                                        {milestone.xpThreshold.toLocaleString()}&nbsp;XP
+                                                    </div>
+                                                );
+                                            }
+                                        })}
+                                    </div>
 
-                                        if (index % 2 !== 0) { // Нечетный индекс: ТЕКСТ XP СНИЗУ
-                                            return (
-                                                <div
-                                                    key={`${milestoneIdStr}-xp-below`}
-                                                    className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
-                                                    style={{ left: `${positionPercent}%` }}
-                                                    title={titleText}
-                                                >
-                                                    {milestone.xpThreshold.toLocaleString()}&nbsp;XP
-                                                </div>
-                                            );
-                                        } else { // Четный индекс: ИКОНКА СНИЗУ
-                                            return (
-                                                <div
-                                                    key={`${milestoneIdStr}-icon-below`} 
-                                                    className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
-                                                    style={{ left: `${positionPercent}%` }} 
-                                                    title={titleText}
-                                                    onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
-                                                >
-                                                    <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
-                                                    {primaryRewardQuantity && (
-                                                        <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
-                                                    )}
-                                                    {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
-                                                </div>
-                                            );
-                                        }
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                    <div className="global-xp-progress-bar-visual"> {/* Ensure this has position: relative and a defined height in CSS */}
+                                        <div className="global-xp-bar-fill-visual" style={{ width: `${currentGlobalXpProgressPercent}%` }}></div>
+                                        
+                                        {/* == UPDATED: Current XP Value Label == */}
+                                        {currentGlobalXpProgressPercent > 0 && currentAchievementXp >= 0 && (
+                                            <div
+                                                className="current-xp-value-label"
+                                                style={{
+                                                    position: 'absolute',
+                                                    left: `${currentGlobalXpProgressPercent}%`,
+                                                    bottom: '100%', // Positions the bottom of the label at the top of the bar
+                                                    transform: 'translateX(-50%)', // Horizontally centers the label on the progress point
+                                                    marginBottom: '4px', // Adds a small gap above the bar
+                                                    zIndex: 1000, 
+                                                    pointerEvents: 'none',
+                                                }}
+                                            >
+                                                {currentAchievementXp.toLocaleString()}&nbsp;XP
+                                            </div>
+                                        )}
+                                        {/* == END: Current XP Value Label == */}
+                                    </div>
 
-                    <div className="obtained-achievements-overview">
-                        {/* ... (ваш существующий код obtained-achievements-overview) ... */}
-                        <div className="overview-header-label-container">
-                            <div className="overview-header-label">
-                                Trophies
-                            </div>
-                        </div>
+                                    <div className="reward-markers-area below">
+                                        {globalTrackRewardsData.map((milestone, index) => {
+                                            const { 
+                                                milestoneIdStr, isReached, canClaimThisMilestone, isClaimed, 
+                                                positionPercent, primaryIconJsx, titleText, primaryRewardQuantity
+                                            } = processMilestone(milestone);
 
-                        {obtainedAchievementIcons.length > 0 ? (
-                            <div className="obtained-icons-grid">
-                                {obtainedAchievementIcons.map(ach => (
-                                        <div 
-                                        key={ach.id} 
-                                        className={
-                                            `obtained-achievement-icon ${ach.rarityClass}` +
-                                            `${!ach.hasAnyProgress ? ' is-unachieved' : ''}`
-                                        }
-                                        title={`${ach.name} (Уровень: ${ach.currentLevel}${ach.maxLevel > 0 ? `/${ach.maxLevel}` : ''})`}
-                                    >
-                                    <div className="icon-inner-content">
-                                        {ach.icon}
+                                            if (index % 2 !== 0) { // Нечетный индекс: ТЕКСТ XP СНИЗУ
+                                                return (
+                                                    <div
+                                                        key={`${milestoneIdStr}-xp-below`}
+                                                        className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
+                                                        style={{ left: `${positionPercent}%` }}
+                                                        title={titleText}
+                                                    >
+                                                        {milestone.xpThreshold.toLocaleString()}&nbsp;XP
+                                                    </div>
+                                                );
+                                            } else { // Четный индекс: ИКОНКА СНИЗУ
+                                                return (
+                                                    <div
+                                                        key={`${milestoneIdStr}-icon-below`} 
+                                                        className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
+                                                        style={{ left: `${positionPercent}%` }} 
+                                                        title={titleText}
+                                                        onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
+                                                    >
+                                                        <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
+                                                        {primaryRewardQuantity && (
+                                                            <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
+                                                        )}
+                                                        {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
+                                                    </div>
+                                                );
+                                            }
+                                        })}
                                     </div>
                                 </div>
-                                ))}
+                            </div>
+                        </div>
+
+                        <div className="obtained-achievements-overview">
+                            <div className="overview-header-label-container">
+                                <div className="overview-header-label">
+                                    Trophies
+                                </div>
+                            </div>
+
+                            {obtainedAchievementIcons.length > 0 ? (
+                                <div className="obtained-icons-grid">
+                                    {obtainedAchievementIcons.map(ach => (
+                                        <div
+                                            key={ach.id}
+                                            className={
+                                                `obtained-achievement-icon ${ach.rarityClass}` +
+                                                `${!ach.hasAnyProgress ? ' is-unachieved' : ''}`
+                                            }
+                                            title={`${ach.name} (Уровень: ${ach.currentLevel}${ach.maxLevel > 0 ? `/${ach.maxLevel}` : ''})`}
+                                            onClick={() => handleOpenAchPopup(ach.id)}
+                                            style={{ cursor: 'pointer' }} 
+                                        >
+                                            <div className="icon-inner-content">
+                                                {ach.icon}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="no-obtained-achievements-message">
+                                    Список достижений пуст или данные загружаются.
+                                </p>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+
+                {activeTrophyCategory !== 'Overview' && (
+                    <motion.div
+                        key={activeTrophyCategory} // Ключ по имени категории для плавной смены МЕЖДУ категориями
+                        className="achievements-list" // Используем существующий класс, если он корневой для этого вида
+                        variants={tabAnimationVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        {allCategorizedAchievements[activeTrophyCategory] && Array.isArray(allCategorizedAchievements[activeTrophyCategory]) && allCategorizedAchievements[activeTrophyCategory].length > 0 ? (
+                            <div className="achievement-category-section"> {/* Этот div теперь внутри motion.div */}
+                                {allCategorizedAchievements[activeTrophyCategory].map(achLine => {
+                                    const levelProgressString = `Level ${achLine.lineStatus.claimedRewardsUpToLevel}/${achLine.levels?.length || 0}`;
+                                    const levelLabelRarityClass = getRarityClassByLevel(achLine.lineStatus.claimedRewardsUpToLevel);
+                                    let cardStateClasses = '';
+                                    if (achLine.isFullyCompletedAndClaimed) {
+                                        cardStateClasses += ' claimed-item';
+                                    } else if (achLine.canClaimOverall) {
+                                        cardStateClasses += ' claimable-item';
+                                    }
+                                    // Обновлено условие для 'is-unachieved'
+                                    if (!achLine.lineStatus.hasAnyProgress && !achLine.isFullyCompletedAndClaimed && !achLine.canClaimOverall && !achLine.hasAnyProgress) { 
+                                        cardStateClasses += ' is-unachieved';
+                                    }
+                                    
+                                    return (
+                                        <div
+                                            key={achLine.id}
+                                            className={`achievement-item ${cardStateClasses.trim()}`}
+                                            onClick={() => handleOpenAchPopup(achLine.id)}
+                                        >
+                                            <div className={`achievement-level-label ${levelLabelRarityClass}`}>
+                                                {levelProgressString}
+                                            </div>
+                                            <div className="achievement-card-main-content">
+                                                <div className="achievement-icon-wrapper">
+                                                    {achLine.icon || '🏆'}
+                                                </div>
+                                                <div className="achievement-info-wrapper">
+                                                    <div className="achievement-name">{achLine.name}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <p className="no-obtained-achievements-message">
-                                Список достижений пуст или данные загружаются.
-                            </p>
+                            <p className="no-achievements-message">Нет достижений в этой категории.</p>
                         )}
-                    </div>
-                </>
-            )}
-
-            {activeTrophyCategory !== 'Overview' && (
-                <div className="achievements-list">
-                    {/* ... (ваш существующий код для списка ачивок по категориям) ... */}
-                    {allCategorizedAchievements[activeTrophyCategory] && Array.isArray(allCategorizedAchievements[activeTrophyCategory]) && allCategorizedAchievements[activeTrophyCategory].length > 0 ? (
-                        <div className="achievement-category-section">
-                            {allCategorizedAchievements[activeTrophyCategory].map(achLine => {
-                                const levelProgressString = `Level ${achLine.lineStatus.claimedRewardsUpToLevel}/${achLine.levels?.length || 0}`;
-                                const levelLabelRarityClass = getRarityClassByLevel(achLine.lineStatus.claimedRewardsUpToLevel);
-                                let cardStateClasses = '';
-                                if (achLine.isFullyCompletedAndClaimed) {
-                                    cardStateClasses += ' claimed-item';
-                                } else if (achLine.canClaimOverall) {
-                                    cardStateClasses += ' claimable-item';
-                                }
-                                if (!achLine.hasAnyProgress) { // Проверяем, есть ли вообще прогресс
-                                    cardStateClasses += ' is-unachieved';
-                                }
-                                
-                                return (
-                                    <div
-                                        key={achLine.id}
-                                        className={`achievement-item ${cardStateClasses.trim()}`}
-                                        onClick={() => handleOpenAchPopup(achLine.id)}
-                                    >
-                                        <div className={`achievement-level-label ${levelLabelRarityClass}`}>
-                                            {levelProgressString}
-                                        </div>
-                                        <div className="achievement-card-main-content">
-                                            <div className="achievement-icon-wrapper">
-                                                {achLine.icon || '🏆'}
-                                            </div>
-                                            <div className="achievement-info-wrapper">
-                                                <div className="achievement-name">{achLine.name}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <p className="no-achievements-message">Нет достижений в этой категории.</p>
-                    )}
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
             
             <AnimatePresence>
                 {selectedAchievementLine && (
                     <motion.div
                         className="achievement-popup-overlay"
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        transition={pageTransition}
+                        transition={pageTransition} // Используем ваш pageTransition, если он подходит, или можно свой
                         onClick={handleCloseAchPopup}
-                        key="achPopup"
+                        key="achPopup" // Уникальный ключ для AnimatePresence
                     >
                         <div className="achievement-popup-content" onClick={(e) => e.stopPropagation()}>
-                            {/* ... (ваш существующий код для попапа ачивки) ... */}
                             <button className="popup-close-btn" onClick={handleCloseAchPopup}>×</button>
                             <div className="popup-header">
                                 <div className="popup-icon">{selectedAchievementLine.icon || '🏆'}</div>
@@ -629,23 +656,18 @@ const TrophiesTab = () => {
                                         ? Math.min(100, Math.floor((currentValueForStat / levelData.target) * 100))
                                         : (isLevelTargetMet ? 100 : 0);
 
-                                    // НАЧАЛО ЗАМЕНЕННОГО БЛОКА
                                     return (
                                         <div
                                             key={levelData.level}
                                             className={`achievement-popup-level-item ${isLevelClaimed ? 'claimed' : ''} ${canClaimThisLevel ? 'claimable' : ''} ${!isLevelTargetMet && !isLevelClaimed ? 'locked' : ''}`}
-                                            style={{ /* Можно будет задать min-height для фиксации начальной высоты */ }}
                                         >
-                                            {/* 1. Нависающий лейбл уровня */}
-                                            <div className={`popup-level-badge ${getRarityClassByLevel(levelData.level) /* или другой класс для цвета */}`}>
+                                            <div className={`popup-level-badge ${getRarityClassByLevel(levelData.level)}`}>
                                                 Ур. {levelData.level}
                                             </div>
 
                                             <div className="popup-level-main-content">
-                                                {/* 2. Описание задания */}
                                                 <p className="popup-level-description">{levelData.description}</p>
 
-                                                {/* 3. Прогресс-бар и Claim-кнопка */}
                                                 <div className="popup-level-progress-claim-wrapper">
                                                     {(selectedAchievementLine.stat && levelData.target > 0) && (
                                                         <div className="popup-level-progress">
@@ -656,38 +678,35 @@ const TrophiesTab = () => {
                                                         </div>
                                                     )}
                                                     {selectedAchievementLine.flag && (
-                                                            <div className="popup-level-progress"> {/* Используем тот же класс для выравнивания */}
-                                                                <p className={`popup-level-status-flag ${isLevelTargetMet ? 'completed-text' : 'locked-text'}`}>
-                                                                    {isLevelTargetMet ? 'Выполнено' : 'Не выполнено'}
-                                                                </p>
-                                                            </div>
+                                                        <div className="popup-level-progress"> 
+                                                            <p className={`popup-level-status-flag ${isLevelTargetMet ? 'completed-text' : 'locked-text'}`}>
+                                                                {isLevelTargetMet ? 'Выполнено' : 'Не выполнено'}
+                                                            </p>
+                                                        </div>
                                                     )}
-                                                    {/* Пустой div для выравнивания, если нет прогресс-бара, чтобы кнопка была справа */}
                                                     {!(selectedAchievementLine.stat && levelData.target > 0) && !selectedAchievementLine.flag && (
-                                                        <div className="popup-level-progress"></div> // Пустышка для flex-grow
+                                                        <div className="popup-level-progress"></div> 
                                                     )}
 
                                                     <button
                                                         className={`popup-level-claim-button ${canClaimThisLevel ? 'active-green' : 'dull-gray'}`}
                                                         onClick={(e) => handleClaimPopupLevelButton(e, selectedAchievementLine.id, levelData.level)}
-                                                        disabled={!canClaimThisLevel && !isLevelClaimed} // Блокируем если нечего забирать или уже забрано (кроме случая, когда просто "забрано")
+                                                        disabled={!canClaimThisLevel && !isLevelClaimed} 
                                                     >
                                                         {isLevelClaimed ? "✔️" : (canClaimThisLevel ? "Claim" : "Claim")}
                                                     </button>
                                                 </div>
 
-                                                {/* 4. Кнопка Rewards */}
                                                 <div className="popup-level-rewards-toggle-wrapper">
                                                     <button
                                                         className="rewards-toggle-button"
                                                         onClick={() => toggleRewardsVisibility(levelData.level)}
                                                     >
-                                                        Награды {expandedRewardsForLevel[levelData.level]}
+                                                        Награды {expandedRewardsForLevel[levelData.level] ? '▲' : '▼'} {/* Изменено для индикации */}
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {/* Выезжающий список наград */}
                                             <AnimatePresence>
                                                 {expandedRewardsForLevel[levelData.level] && (
                                                     <motion.div
@@ -711,7 +730,6 @@ const TrophiesTab = () => {
                                             </AnimatePresence>
                                         </div>
                                     );
-                                    // КОНЕЦ ЗАМЕНЕННОГО БЛОКА
                                 })}
                             </div>
                         </div>
