@@ -128,8 +128,8 @@ $rarity-color-mythic: #cc66ff;    // Светло-фиолетовый (для �
         height: 130px;
         position: relative;
         box-sizing: content-box; 
-        padding-left: 35px;
-        padding-right: 35px;
+        padding-left: 50px;
+        padding-right: 50px;
     }
 
     .global-xp-progress-bar-visual { 
@@ -143,70 +143,87 @@ $rarity-color-mythic: #cc66ff;    // Светло-фиолетовый (для �
         background: linear-gradient(to right, lighten($sp-bg-end, 15%), lighten($sp-bg-start, 25%)); 
         border-radius: 6px; transition: width 0.5s ease-out; z-index: 2; 
     }
-    .current-xp-value-label {
-        background-color: rgba(30, 30, 45, 0.85); color: #ffffff; padding: 2px 6px;
-        border-radius: 3px; font-size: 11px; font-weight: 500; white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); line-height: 1.2; z-index: 1000;
+  .current-xp-value-label {
+    background-color: $rarity-color-legendary;
+    color: #fff;
+    padding: 3px 7px;           // <--- УМЕНЬШЕНО
+    border-radius: 4px;         // Можно чуть уменьшить для общей компактности
+    font-size: 11px;            // <--- УМЕНЬШЕНО
+    font-weight: bold;
+    white-space: nowrap;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4); // Можно чуть уменьшить тень
+    line-height: 1.3; // Или 1.2, если шрифт сильно уменьшится
+    &::after { // Стили для вертикальной линии
+        content: '';
+        position: absolute;
+        top: 100%; // Линия начинается от нижней границы основной плашки флажка
+        left: 50%;
+        transform: translateX(-50%); // Центрируем линию по горизонтали
+        width: 2px;                   // <--- ИЗМЕНЕНО: Ширина линии (например, 2px или 3px)
+        height: var(--label-margin-bottom); // <--- ИЗМЕНЕНО: Высота линии берется из CSS-переменной
+        background-color: $rarity-color-legendary; // <--- ИЗМЕНЕНО: Цвет линии (тот же, что и фон флажка)
+        // Убираем свойства border-left, border-right, border-top, так как они формировали треугольник
     }
+}
 
-    .reward-markers-area { 
-        position: absolute; left: 0; width: 100%; height: calc(50% - 6px); 
-        z-index: 3; pointer-events: none; 
-        &.above { top: 0; display: flex; align-items: flex-end; }
-        &.below { bottom: 0; display: flex; align-items: flex-start; }
+.reward-markers-area { 
+    position: absolute; left: 0; width: 100%; height: calc(50% - 6px); 
+    z-index: 3; pointer-events: none; 
+    &.above { top: 0; display: flex; align-items: flex-end; }
+    &.below { bottom: 0; display: flex; align-items: flex-start; }
 
-        .reward-milestone-marker { 
-            position: absolute; transform: translateX(-50%); display: flex;
-            align-items: center; justify-content: center; pointer-events: all; 
-            transition: all 0.2s ease-out;
+    .reward-milestone-marker { 
+        position: absolute; transform: translateX(-50%); display: flex;
+        align-items: center; justify-content: center; pointer-events: all; 
+        transition: all 0.2s ease-out;
 
-            &.icon-marker {
-                width: 50px; height: 50px; background-color: rgba(255,255,255,0.1);
-                border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
-                font-size: 18px; color: #777; cursor: default;
-                
-                .reward-marker-icon-graphic { 
-                    display: flex; align-items: center; justify-content: center;
-                    width: 100%; height: 100%;
-                }
-                .claim-indicator-dot {
-                    position: absolute; top: -4px; right: -4px; width: 10px; height: 10px;
-                    background-color: #ffae42; border-radius: 50%;
-                    border: 1px solid rgba(0,0,0,0.3); box-shadow: 0 0 5px #ffae42;
-                }
-                .reward-marker-quantity {
-                    position: absolute; bottom: 3px; right: 4px;
-                    background-color: rgba(0, 0, 0, 0.8); color: white;
-                    font-size: 12px; font-weight: bold; padding: 1px 5px; 
-                    border-radius: 5px; line-height: 1.2; min-width: 14px; 
-                    text-align: center; z-index: 6; 
-                }
-
-                &.reached { color: #ccc; background-color: rgba(255,255,255,0.15); }
-                &.claimable {
-                    color: #fff; background-color: lighten($sp-bg-end, 20%); 
-                    border-color: #ffae42; cursor: pointer;
-                    transform: translateX(-50%) scale(1.15);
-                    box-shadow: 0 0 10px lighten($sp-bg-end, 20%);
-                    .claim-indicator-dot { background-color: #4CAF50; box-shadow: 0 0 5px #4CAF50; }
-                    &:hover { transform: translateX(-50%) scale(1.25); }
-                }
-                &.claimed { 
-                    color: #6a5; background-color: rgba(76, 175, 80, 0.2);
-                    border-color: #5a5; cursor: default; 
-                    transform: translateX(-50%) scale(0.9);
-                    .claim-indicator-dot { display: none; }
-                }
+        &.icon-marker {
+            width: 50px; height: 50px; background-color: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+            font-size: 18px; color: #777; cursor: default;
+            
+            .reward-marker-icon-graphic { 
+                display: flex; align-items: center; justify-content: center;
+                width: 100%; height: 100%;
+            }
+            .claim-indicator-dot {
+                position: absolute; top: -4px; right: -4px; width: 10px; height: 10px;
+                background-color: #ffae42; border-radius: 50%;
+                border: 1px solid rgba(0,0,0,0.3); box-shadow: 0 0 5px #ffae42;
+            }
+            .reward-marker-quantity {
+                position: absolute; bottom: 3px; right: 4px;
+                background-color: rgba(0, 0, 0, 0.8); color: white;
+                font-size: 12px; font-weight: bold; padding: 1px 5px; 
+                border-radius: 5px; line-height: 1.2; min-width: 14px; 
+                text-align: center; z-index: 6; 
             }
 
-            &.xp-label-marker {
-                font-size: 10px; color: #aaa; background-color: rgba(0,0,0,0.3);
-                padding: 2px 5px; border-radius: 3px; white-space: nowrap;
-                &.reached { color: #ddd; }
-                &.claimable-text { color: #ffae42; font-weight: bold;}
-                &.claimed-text { color: #6a5; text-decoration: line-through; }
+            &.reached { color: #ccc; background-color: rgba(255,255,255,0.15); }
+            &.claimable {
+                color: #fff; background-color: lighten($sp-bg-end, 20%); 
+                border-color: #ffae42; cursor: pointer;
+                transform: translateX(-50%) scale(1.15);
+                box-shadow: 0 0 10px lighten($sp-bg-end, 20%);
+                .claim-indicator-dot { background-color: #4CAF50; box-shadow: 0 0 5px #4CAF50; }
+                &:hover { transform: translateX(-50%) scale(1.25); }
+            }
+            &.claimed { 
+                color: #6a5; background-color: rgba(76, 175, 80, 0.2);
+                border-color: #5a5; cursor: default; 
+                transform: translateX(-50%) scale(0.9);
+                .claim-indicator-dot { display: none; }
             }
         }
+
+        &.xp-label-marker {
+            font-size: 10px; color: #aaa; background-color: rgba(0,0,0,0.3);
+            padding: 2px 5px; border-radius: 3px; white-space: nowrap;
+            &.reached { color: #ddd; }
+            &.claimable-text { color: #ffae42; font-weight: bold;}
+            &.claimed-text { color: #6a5; text-decoration: line-through; }
+        }
+    }
         
         &.above .reward-milestone-marker.icon-marker { bottom: 2px; }
         &.above .reward-milestone-marker.xp-label-marker { bottom: 2px; }

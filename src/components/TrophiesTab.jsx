@@ -4,30 +4,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/useGameStore.js';
 import globalTrackRewardsData from '../data/globalTrackRewards.js';
 import achievementsData from '../data/achievementsDatabase.js';
-import { pageTransition } from '../animations'; // У вас уже есть
+import { pageTransition } from '../animations';
 import { REWARD_TYPES } from '../data/ShardPassRewardsData.js';
 
 import './TrophiesTab.scss';
 
-// Варианты анимации для контента вкладок (из вашего примера)
 const tabAnimationVariants = {
-    hidden: { opacity: 0, x: 20 }, // Начинаем немного справа и невидимы
+    hidden: { opacity: 0, x: 20 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: 'easeInOut' } },
-    exit: { opacity: 0, x: -20, transition: { duration: 0.2, ease: 'easeInOut' } } // Уходим влево
+    exit: { opacity: 0, x: -20, transition: { duration: 0.2, ease: 'easeInOut' } }
 };
 
-// ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ ИКОНОК: возвращает объект { iconJsx, quantity }
 const getIconForMilestoneMarker = (rewardsObject) => {
     // ... (ваш существующий код getIconForMilestoneMarker) ...
-    const imgSize = '40px'; // Новый увеличенный размер для самих картинок (контейнер будет больше)
+    const imgSize = '40px'; 
     const commonImageStyle = { width: imgSize, height: imgSize, objectFit: 'contain' };
-    // Для эмодзи будем полагаться на font-size из CSS, но можем также вернуть объект
 
     if (!rewardsObject || Object.keys(rewardsObject).length === 0) {
         return { iconJsx: '🎁', quantity: null };
     }
-
-    // Приоритетный порядок для определения основной иконки и ее количества
     if (rewardsObject.bnb) {
         return { iconJsx: <img src="/assets/bnb-icon.png" alt="BNB" style={commonImageStyle} />, quantity: rewardsObject.bnb };
     }
@@ -58,14 +53,11 @@ const getIconForMilestoneMarker = (rewardsObject) => {
     if (rewardsObject.gold) {
         return { iconJsx: <img src="/assets/coin-icon.png" alt="Gold" style={commonImageStyle} />, quantity: rewardsObject.gold };
     }
-
-    // Если нет специфической картинки, но награды есть, берем первую и показываем с общей иконкой
     const firstKey = Object.keys(rewardsObject)[0];
     if (firstKey && typeof rewardsObject[firstKey] === 'number') {
          return { iconJsx: '🏆', quantity: rewardsObject[firstKey] };
     }
-
-    return { iconJsx: '🏆', quantity: null }; // Общий случай / фолбэк
+    return { iconJsx: '🏆', quantity: null };
 };
 
 const getGlobalRewardTextForMilestoneDisplay = (milestone) => {
@@ -94,20 +86,17 @@ const getRarityClassByLevel = (claimedLevel) => {
     if (claimedLevel >= 6) return 'rarity-mythic';
     if (claimedLevel === 5) return 'rarity-legendary';
     if (claimedLevel === 4) return 'rarity-epic';
-    if (claimedLevel === 3) return 'rarity-epic'; // Уровни 3 и 4 могут делить один цвет редкости
+    if (claimedLevel === 3) return 'rarity-epic';
     if (claimedLevel === 2) return 'rarity-rare';
     if (claimedLevel === 1) return 'rarity-uncommon';
-    return 'rarity-common'; // Для уровня 0 (серый)
+    return 'rarity-common';
 };
 
 const TrophiesTab = () => {
     const [activeTrophyCategory, setActiveTrophyCategory] = useState('Overview');
     const [selectedAchId, setSelectedAchId] = useState(null);
+    const [expandedRewardsForLevel, setExpandedRewardsForLevel] = useState({});
 
-    // ВСТАВЛЕННЫЙ КОД: Состояние для развернутых наград
-    const [expandedRewardsForLevel, setExpandedRewardsForLevel] = useState({}); // { levelNumber: true/false }
-
-    // ВСТАВЛЕННЫЙ КОД: Функция для переключения видимости наград
     const toggleRewardsVisibility = (levelNumber) => {
         setExpandedRewardsForLevel(prev => ({
             ...prev,
@@ -118,7 +107,7 @@ const TrophiesTab = () => {
     const {
         achievementsStatus,
         claimAchievementReward,
-        achievementXp, // Оригинальное значение из стора
+        achievementXp,
         getGlobalStatValue,
         claimedGlobalTrackRewards,
         claimGlobalTrackReward,
@@ -154,16 +143,13 @@ const TrophiesTab = () => {
         return Math.max(1200, safeTotalXp * 0.7);
     }, [totalXpOfTrack]);
 
-    // Обеспечиваем, что achievementXp является числом, по умолчанию 0.
     const currentAchievementXp = typeof achievementXp === 'number' ? achievementXp : 0;
 
     const rawGlobalXpProgressPercent = (typeof totalXpOfTrack === 'number' && totalXpOfTrack > 0)
         ? Math.min(100, (currentAchievementXp / totalXpOfTrack) * 100)
         : 0;
 
-    // Обеспечиваем, что globalXpProgressPercent является числом, по умолчанию 0.
     const currentGlobalXpProgressPercent = typeof rawGlobalXpProgressPercent === 'number' ? rawGlobalXpProgressPercent : 0;
-
 
     const handleClaimGlobalMilestone = (e, milestoneIdentifier) => {
         // ... (ваш существующий код handleClaimGlobalMilestone) ...
@@ -201,7 +187,6 @@ const TrophiesTab = () => {
         const mappedIcons = achievementsData.map(achLine => {
             const status = achievementsStatus[achLine.id] || { claimedRewardsUpToLevel: 0 };
             const rarityClass = getRarityClassByLevel(status.claimedRewardsUpToLevel);
-            
             const maxLevelForAch = achLine.levels ? achLine.levels.length : 0;
             const isFullyCompletedAndClaimed = maxLevelForAch > 0 && status.claimedRewardsUpToLevel >= maxLevelForAch;
             const hasAnyProgress = status.claimedRewardsUpToLevel > 0;
@@ -210,37 +195,31 @@ const TrophiesTab = () => {
                 id: achLine.id, 
                 icon: achLine.icon || '🏆',
                 name: achLine.name,
-                rarityClass: rarityClass, // Для фона
+                rarityClass: rarityClass,
                 currentLevel: status.claimedRewardsUpToLevel,
                 maxLevel: maxLevelForAch,
-                isFullyCompletedAndClaimed: isFullyCompletedAndClaimed, // Для возможной доп. логики или сортировки
-                hasAnyProgress: hasAnyProgress // Для золотой рамки и затемнения/сортировки
+                isFullyCompletedAndClaimed: isFullyCompletedAndClaimed,
+                hasAnyProgress: hasAnyProgress
             };
         });
-
         const sortedIcons = mappedIcons.sort((a, b) => {
             if (a.hasAnyProgress && !b.hasAnyProgress) return -1;
             if (!a.hasAnyProgress && b.hasAnyProgress) return 1;
-
             if (a.hasAnyProgress && b.hasAnyProgress) { 
                 if (a.isFullyCompletedAndClaimed && !b.isFullyCompletedAndClaimed) return -1;
                 if (!a.isFullyCompletedAndClaimed && b.isFullyCompletedAndClaimed) return 1;
-                
                 if (a.currentLevel > b.currentLevel) return -1;
                 if (a.currentLevel < b.currentLevel) return 1;
             }
-            
             return a.name.localeCompare(b.name);
         });
-
         return sortedIcons;
-    }, [achievementsStatus]); // Убрал achievementsData из зависимостей, так как он не меняется
+    }, [achievementsStatus]);
 
     const allCategorizedAchievements = useMemo(() => { 
         // ... (ваш существующий код allCategorizedAchievements) ...
         const categories = {};
         if (!achievementsData || !Array.isArray(achievementsData)) return categories;
-
         achievementsData.forEach(achLine => {
             const categoryName = achLine.category || "Прочие";
             if (!categories[categoryName]) {
@@ -254,7 +233,6 @@ const TrophiesTab = () => {
                 const booleanFlags = getGlobalStatValue('booleanFlags') || {};
                 currentValueForStat = booleanFlags[achLine.flag] ? 1 : 0;
             }
-
             const currentAchLevels = Array.isArray(achLine.levels) ? achLine.levels : [];
             let nextLevelToDisplay = null;
             let canClaimSomething = false;
@@ -262,14 +240,12 @@ const TrophiesTab = () => {
             let nextClaimableLevel = null;
             let hasAnyProgress = status.claimedRewardsUpToLevel > 0 || (currentAchLevels.length > 0 && currentValueForStat > 0);
 
-
             if (currentAchLevels.length === 0) {
                 isFullyClaimed = true; 
                 nextLevelToDisplay = { description: "Нет уровней", reward: {}, xpGain: 0, target: 0, level: 0 };
             } else {
                 isFullyClaimed = status.claimedRewardsUpToLevel >= currentAchLevels[currentAchLevels.length -1].level;
             }
-
             for (const levelData of currentAchLevels) {
                 if (levelData.level > status.claimedRewardsUpToLevel) {
                     if (!nextLevelToDisplay) {
@@ -285,11 +261,9 @@ const TrophiesTab = () => {
                     }
                 }
             }
-            
             if (!nextLevelToDisplay && currentAchLevels.length > 0) { 
                 nextLevelToDisplay = currentAchLevels[currentAchLevels.length - 1];
             }
-            
             categories[categoryName].push({
                 ...achLine,
                 levels: currentAchLevels,
@@ -302,7 +276,6 @@ const TrophiesTab = () => {
                 hasAnyProgress: hasAnyProgress 
             });
         });
-
         for (const categoryName in categories) {
             categories[categoryName].sort((a, b) => {
                 if (a.canClaimOverall && !b.canClaimOverall) return -1;
@@ -313,7 +286,7 @@ const TrophiesTab = () => {
             });
         }
         return categories;
-    }, [achievementsStatus, getGlobalStatValue]); // Убрал achievementsData
+    }, [achievementsStatus, getGlobalStatValue]);
 
     const categoryOrder = useMemo(() => {
         // ... (ваш существующий код categoryOrder) ...
@@ -321,7 +294,6 @@ const TrophiesTab = () => {
         const dynamicCategories = Object.keys(allCategorizedAchievements)
             .filter(cat => !predefinedOrder.includes(cat) && cat !== "Other")
             .sort(); 
-        
         const finalOrder = [];
         predefinedOrder.forEach(catName => {
             if (allCategorizedAchievements[catName]) {
@@ -333,7 +305,7 @@ const TrophiesTab = () => {
                 finalOrder.push(catName);
             }
         });
-        if (allCategorizedAchievements["Other"] && allCategorizedAchievements["Other"].length > 0) { // Проверяем, что категория "Other" не пуста
+        if (allCategorizedAchievements["Other"] && allCategorizedAchievements["Other"].length > 0) {
             finalOrder.push("Other");
         }
         return finalOrder;
@@ -364,13 +336,11 @@ const TrophiesTab = () => {
             const scrollContainer = xpTrackRef.current;
             const currentProgressPx = (currentAchievementXp / totalXpOfTrack) * trackPixelWidth;
             const targetScrollLeft = Math.max(0, currentProgressPx - scrollContainer.offsetWidth / 3); 
-
             if (typeof scrollContainer.scrollTo === 'function') {
                 scrollContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
             }
         }
     }, [currentAchievementXp, totalXpOfTrack, trackPixelWidth, activeTrophyCategory]);
-
 
     const processMilestone = (milestone) => {
         const milestoneIdStr = milestone.xpThreshold.toString();
@@ -384,7 +354,6 @@ const TrophiesTab = () => {
         const primaryRewardQuantity = (typeof iconData.quantity === 'number' && iconData.quantity > 0) 
                                         ? iconData.quantity 
                                         : null;
-
         const titleText = `${milestone.xpThreshold.toLocaleString()} XP: ${milestone.description || getGlobalRewardTextForMilestoneDisplay(milestone)}`;
         
         return { 
@@ -417,12 +386,11 @@ const TrophiesTab = () => {
                 ))}
             </div>
 
-            {/* ОБЕРТКА ДЛЯ АНИМАЦИИ КОНТЕНТА ВКЛАДОК */}
-            <AnimatePresence mode="wait"> {/* mode="wait" ждет завершения exit анимации перед animate новой */}
+            <AnimatePresence mode="wait">
                 {activeTrophyCategory === 'Overview' && (
                     <motion.div
-                        key="overview-content" // Уникальный ключ для AnimatePresence
-                        className="overview-content-wrapper" // Добавим обертку
+                        key="overview-content"
+                        className="overview-content-wrapper"
                         variants={tabAnimationVariants}
                         initial="hidden"
                         animate="visible"
@@ -432,102 +400,72 @@ const TrophiesTab = () => {
                             <div className="global-xp-track-scroll-container" ref={xpTrackRef}>
                                 <div className="global-xp-track-content" style={{ width: `${trackPixelWidth}px` }}>
                                     
+                                    {/* === ИЗМЕНЕНИЕ 1: ВСЕ XP МЕТКИ СВЕРХУ === */}
                                     <div className="reward-markers-area above">
-                                        {globalTrackRewardsData.map((milestone, index) => {
+                                        {globalTrackRewardsData.map((milestone) => {
                                             const { 
                                                 milestoneIdStr, isReached, canClaimThisMilestone, isClaimed, 
-                                                positionPercent, primaryIconJsx, titleText, primaryRewardQuantity
+                                                positionPercent, titleText 
                                             } = processMilestone(milestone);
 
-                                            if (index % 2 !== 0) { // Нечетный индекс: ИКОНКА СВЕРХУ
-                                                return (
-                                                    <div
-                                                        key={`${milestoneIdStr}-icon-above`} 
-                                                        className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
-                                                        style={{ left: `${positionPercent}%` }} 
-                                                        title={titleText}
-                                                        onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
-                                                    >
-                                                        <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
-                                                        {primaryRewardQuantity && (
-                                                            <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
-                                                        )}
-                                                        {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
-                                                    </div>
-                                                );
-                                            } else { // Четный индекс: ТЕКСТ XP СВЕРХУ
-                                                return (
-                                                    <div
-                                                        key={`${milestoneIdStr}-xp-above`}
-                                                        className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
-                                                        style={{ left: `${positionPercent}%` }}
-                                                        title={titleText}
-                                                    >
-                                                        {milestone.xpThreshold.toLocaleString()}&nbsp;XP
-                                                    </div>
-                                                );
-                                            }
+                                            return (
+                                                <div
+                                                    key={`${milestoneIdStr}-xp-above`}
+                                                    className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
+                                                    style={{ left: `${positionPercent}%` }}
+                                                    title={titleText}
+                                                >
+                                                    {milestone.xpThreshold.toLocaleString()}&nbsp;XP
+                                                </div>
+                                            );
                                         })}
                                     </div>
 
-                                    <div className="global-xp-progress-bar-visual"> {/* Ensure this has position: relative and a defined height in CSS */}
+                                    <div className="global-xp-progress-bar-visual">
                                         <div className="global-xp-bar-fill-visual" style={{ width: `${currentGlobalXpProgressPercent}%` }}></div>
                                         
-                                        {/* == UPDATED: Current XP Value Label == */}
-                                        {currentGlobalXpProgressPercent > 0 && currentAchievementXp >= 0 && (
-                                            <div
-                                                className="current-xp-value-label"
-                                                style={{
-                                                    position: 'absolute',
-                                                    left: `${currentGlobalXpProgressPercent}%`,
-                                                    bottom: '100%', // Positions the bottom of the label at the top of the bar
-                                                    transform: 'translateX(-50%)', // Horizontally centers the label on the progress point
-                                                    marginBottom: '4px', // Adds a small gap above the bar
-                                                    zIndex: 1000, 
-                                                    pointerEvents: 'none',
-                                                }}
-                                            >
-                                                {currentAchievementXp.toLocaleString()}&nbsp;XP
-                                            </div>
-                                        )}
-                                        {/* == END: Current XP Value Label == */}
+                                       {currentGlobalXpProgressPercent > 0 && currentAchievementXp >= 0 && (
+    <div
+        className="current-xp-value-label"
+        style={{
+            position: 'absolute',
+            left: `${currentGlobalXpProgressPercent}%`,
+            bottom: '100%', 
+            transform: 'translateX(-50%)',
+            marginBottom: '30px', // Убедитесь, что это значение вам подходит
+            '--label-margin-bottom': '30px', // <--- ДОБАВЛЕНО: CSS Custom Property (значение должно совпадать с marginBottom)
+            zIndex: 1000, 
+            pointerEvents: 'none',
+        }}
+    >
+        {currentAchievementXp.toLocaleString()}&nbsp;XP
+    </div>
+)}
                                     </div>
 
+                                    {/* === ИЗМЕНЕНИЕ 3: ВСЕ ИКОНКИ НАГРАД СНИЗУ === */}
                                     <div className="reward-markers-area below">
-                                        {globalTrackRewardsData.map((milestone, index) => {
+                                        {globalTrackRewardsData.map((milestone) => {
                                             const { 
                                                 milestoneIdStr, isReached, canClaimThisMilestone, isClaimed, 
                                                 positionPercent, primaryIconJsx, titleText, primaryRewardQuantity
                                             } = processMilestone(milestone);
 
-                                            if (index % 2 !== 0) { // Нечетный индекс: ТЕКСТ XP СНИЗУ
-                                                return (
-                                                    <div
-                                                        key={`${milestoneIdStr}-xp-below`}
-                                                        className={`reward-milestone-marker xp-label-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable-text' : ''} ${isClaimed ? 'claimed-text' : ''}`}
-                                                        style={{ left: `${positionPercent}%` }}
-                                                        title={titleText}
-                                                    >
-                                                        {milestone.xpThreshold.toLocaleString()}&nbsp;XP
-                                                    </div>
-                                                );
-                                            } else { // Четный индекс: ИКОНКА СНИЗУ
-                                                return (
-                                                    <div
-                                                        key={`${milestoneIdStr}-icon-below`} 
-                                                        className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
-                                                        style={{ left: `${positionPercent}%` }} 
-                                                        title={titleText}
-                                                        onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
-                                                    >
-                                                        <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
-                                                        {primaryRewardQuantity && (
-                                                            <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
-                                                        )}
-                                                        {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
-                                                    </div>
-                                                );
-                                            }
+                                            return (
+                                                <div
+                                                    key={`${milestoneIdStr}-icon-below`} 
+                                                    className={`reward-milestone-marker icon-marker ${isReached ? 'reached' : ''} ${canClaimThisMilestone ? 'claimable' : ''} ${isClaimed ? 'claimed' : ''}`}
+                                                    style={{ left: `${positionPercent}%` }} 
+                                                    title={titleText}
+                                                    onClick={(e) => canClaimThisMilestone && handleClaimGlobalMilestone(e, milestoneIdStr)}
+                                                >
+                                                    <span className="reward-marker-icon-graphic">{primaryIconJsx}</span>
+                                                    {primaryRewardQuantity && (
+                                                        <span className="reward-marker-quantity">{primaryRewardQuantity}</span>
+                                                    )}
+                                                    {canClaimThisMilestone && <div className="claim-indicator-dot"></div>}
+                                                </div>
+                                            );
                                         })}
                                     </div>
                                 </div>
@@ -535,12 +473,12 @@ const TrophiesTab = () => {
                         </div>
 
                         <div className="obtained-achievements-overview">
+                            {/* ... остальная часть overview ... */}
                             <div className="overview-header-label-container">
                                 <div className="overview-header-label">
                                     Trophies
                                 </div>
                             </div>
-
                             {obtainedAchievementIcons.length > 0 ? (
                                 <div className="obtained-icons-grid">
                                     {obtainedAchievementIcons.map(ach => (
@@ -570,16 +508,17 @@ const TrophiesTab = () => {
                 )}
 
                 {activeTrophyCategory !== 'Overview' && (
-                    <motion.div
-                        key={activeTrophyCategory} // Ключ по имени категории для плавной смены МЕЖДУ категориями
-                        className="achievements-list" // Используем существующий класс, если он корневой для этого вида
+                    // ... код для других вкладок ...
+                     <motion.div
+                        key={activeTrophyCategory}
+                        className="achievements-list"
                         variants={tabAnimationVariants}
                         initial="hidden"
                         animate="visible"
                         exit="exit"
                     >
                         {allCategorizedAchievements[activeTrophyCategory] && Array.isArray(allCategorizedAchievements[activeTrophyCategory]) && allCategorizedAchievements[activeTrophyCategory].length > 0 ? (
-                            <div className="achievement-category-section"> {/* Этот div теперь внутри motion.div */}
+                            <div className="achievement-category-section">
                                 {allCategorizedAchievements[activeTrophyCategory].map(achLine => {
                                     const levelProgressString = `Level ${achLine.lineStatus.claimedRewardsUpToLevel}/${achLine.levels?.length || 0}`;
                                     const levelLabelRarityClass = getRarityClassByLevel(achLine.lineStatus.claimedRewardsUpToLevel);
@@ -589,7 +528,6 @@ const TrophiesTab = () => {
                                     } else if (achLine.canClaimOverall) {
                                         cardStateClasses += ' claimable-item';
                                     }
-                                    // Обновлено условие для 'is-unachieved'
                                     if (!achLine.lineStatus.hasAnyProgress && !achLine.isFullyCompletedAndClaimed && !achLine.canClaimOverall && !achLine.hasAnyProgress) { 
                                         cardStateClasses += ' is-unachieved';
                                     }
@@ -624,12 +562,13 @@ const TrophiesTab = () => {
             
             <AnimatePresence>
                 {selectedAchievementLine && (
+                    // ... код попапа ...
                     <motion.div
                         className="achievement-popup-overlay"
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        transition={pageTransition} // Используем ваш pageTransition, если он подходит, или можно свой
+                        transition={pageTransition}
                         onClick={handleCloseAchPopup}
-                        key="achPopup" // Уникальный ключ для AnimatePresence
+                        key="achPopup"
                     >
                         <div className="achievement-popup-content" onClick={(e) => e.stopPropagation()}>
                             <button className="popup-close-btn" onClick={handleCloseAchPopup}>×</button>
@@ -702,7 +641,7 @@ const TrophiesTab = () => {
                                                         className="rewards-toggle-button"
                                                         onClick={() => toggleRewardsVisibility(levelData.level)}
                                                     >
-                                                        Награды {expandedRewardsForLevel[levelData.level] ? '▲' : '▼'} {/* Изменено для индикации */}
+                                                        Награды {expandedRewardsForLevel[levelData.level] ? '▲' : '▼'}
                                                     </button>
                                                 </div>
                                             </div>
@@ -720,7 +659,6 @@ const TrophiesTab = () => {
                                                         {levelData.reward?.diamonds > 0 && <span>💎 <small>{levelData.reward.diamonds.toLocaleString()} алмазов</small></span>}
                                                         {levelData.reward?.rareChestKeys > 0 && <span>🔑 <small>{levelData.reward.rareChestKeys} редких ключа</small></span>}
                                                         {levelData.reward?.epicChestKeys > 0 && <span>🔑 <small>{levelData.reward.epicChestKeys} эпик. ключа</small></span>}
-                                                        {/* Добавьте другие возможные награды из levelData.reward */}
                                                         {levelData.xpGain > 0 && <span>💡 <small>{levelData.xpGain.toLocaleString()} XP</small></span>}
                                                         {Object.keys(levelData.reward || {}).length === 0 && !levelData.xpGain && (
                                                             <small>Нет особых наград за этот уровень.</small>
