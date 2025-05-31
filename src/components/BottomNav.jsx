@@ -13,7 +13,7 @@ const BottomNav = ({ showForgeIndicator }) => {
     { path: "/inventory", icon: "/assets/icon-equipment.png", label: "Gear", alt: "Gear & Inventory", hasIndicator: showForgeIndicator },
     { path: "/main", icon: "/assets/icon-play.png", label: "Campaign", alt: "Campaign / Play" },
     { path: "/glory", icon: "/assets/achievement-icon.png", label: "Glory", alt: "Glory (Achievements & Tasks)" },
-    { path: "/events", icon: "/assets/icon-events.png", label: "Events", alt: "Events" },
+   // { path: "/events", icon: "/assets/icon-events.png", label: "Events", alt: "Events" },
     { path: "/alliance", icon: "/assets/icon-alliance-placeholder.png", label: "Alliance", alt: "Alliance Center (Referrals, Friends)" },
   ];
   // ▲▲▲-----------------------------------------------------------------------▲▲▲

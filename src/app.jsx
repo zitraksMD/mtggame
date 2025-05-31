@@ -20,6 +20,8 @@ import TransitionOverlay from './components/TransitionOverlay';
 import GameHeader from './components/GameHeader';
 import DiscoveryScreen from "./components/screens/DiscoveryScreen";
 import ShardPassScreen from './components/screens/ShardPassScreen';
+import ReferralsTab from './components/screens/ReferralsTab'; // Или ваш актуальный путь
+
 
 // Импорты Утилит и Стора
 import useGameStore from "./store/useGameStore";
@@ -399,7 +401,7 @@ const App = () => {
     const path = location.pathname;
     const showAnyFixedUIBaseConditions = !isInitialLoading && !needsRaceSelection && !isFullScreenMapActive;
 
-    const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading', '/discovery', '/shop', '/forge', '/glory', '/inventory'];
+    const screensWithoutHeader = ['/shardpass', '/level', '/rewards', '/race-selection', '/loading', '/discovery', '/shop', '/forge', '/glory', '/inventory', '/alliance'];
     const shouldShowNewGameHeaderUpdated = showAnyFixedUIBaseConditions && 
                                          !screensWithoutHeader.some(p => path.startsWith(p) || path === p) &&
                                          path !== '/global-map';
@@ -453,6 +455,11 @@ const App = () => {
                         } />
                         <Route path="/main" element={<motion.div key="main" {...routeContentVariants}><MainMenu onStart={handleStartGame} onChapterNameChange={handleChapterNameChange} /></motion.div>} />
                         <Route path="*" element={<motion.div key="mainfallback" {...routeContentVariants}><MainMenu onStart={handleStartGame} onChapterNameChange={handleChapterNameChange} /></motion.div>} />
+                        <Route path="/alliance" element={
+                        <motion.div key="alliance-referrals" {...routeContentVariants}>
+                            <ReferralsTab />
+                        </motion.div>
+                    } />
                     </Routes>
                 </AnimatePresence>
             </main>
