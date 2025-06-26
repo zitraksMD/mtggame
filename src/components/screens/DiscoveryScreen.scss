@@ -1,175 +1,245 @@
-// src/components/BottomNav.scss
+/* src/screens/DiscoveryScreen.scss */
 
-// --- Переменные ---
-$nav-item-height: 75px;
-$nav-item-min-width: 55px;
-$nav-icon-size: 28px; // Уменьшил немного, так как кнопка стала выше, а контент прижат кверху
-$nav-label-font-size: 10px;
-$nav-item-content-padding-top: 10px; 
-$nav-label-margin-top: 4px;
+// --- Переменные для удобства ---
+$primary-background: #1a1a2e;
+$secondary-background: #16213e;
+$accent-color: #0f3460;
+$primary-text-color: #ffffff;
+$secondary-text-color: #e94560;
+$green-accent: #32de84;
+$border-radius: 12px;
+$container-padding: 20px;
 
-// ▼▼▼ Новые переменные для управления нижним отступом контента ▼▼▼
-$content_bottom_clearance_above_system_bar: 10px; // Желаемый зазор МЕЖДУ текстом/иконкой и началом системной панели/safe area
-$android_fallback_navigation_bar_height: 48px; // Предполагаемая высота экранных кнопок Android, если safe-area-inset-bottom = 0.
-                                                // Это значение - компромисс. Стандартной высоты нет, она варьируется.
-                                                // 48dp - частый размер для touch targets.
-// ▲▲▲-------------------------------------------------------------▲▲▲
-
-$nav-item-background: #483D8B;
-$nav-item-background-active: #4A90E2;
-$nav-item-text-color: #d0cce9;
-$nav-item-text-color-active: #ffffff;
-$nav-item-border-radius: 0px;
-
-$nav-bar-padding-horizontal: 0px; // Если кнопки от края до края
-
-// --- Контейнер Навбара ---
-.bottom-nav {
-  display: flex;
-  align-items: stretch; 
-  background: transparent;
-  padding: 0 $nav-bar-padding-horizontal;
-  box-sizing: border-box;
-  width: 100%;
-  height: $nav-item-height;
+// --- Общие стили экрана ---
+.discovery-screen {
+    background-color: $primary-background;
+    min-height: 100vh;
+    width: 100%;
+    color: $primary-text-color;
+    padding: $container-padding;
+    padding-top: max(40px, env(safe-area-inset-top, 20px)); // Отступ сверху для статус-бара
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 30px; // Пространство между Task HUB и Contests
 }
 
-// --- Стиль для каждой кнопки-плашки ---
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-
-  flex-basis: 0;
-  flex-grow: 1;
-  min-width: $nav-item-min-width;
-  height: 100%;
-  margin: 0;
-  
-  // ▼▼▼ Используем вычисляемый padding-bottom ▼▼▼
-  padding: $nav-item-content-padding-top 
-           2px 
-           calc(env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}) + #{$content_bottom_clearance_above_system_bar})
-           2px;
-  // Пояснение calc:
-  // 1. env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}):
-  //    - Если env(safe-area-inset-bottom) > 0 (например, на iPhone или Android с жестовой навигацией, где система это сообщает), используется это значение.
-  //    - Если env(safe-area-inset-bottom) = 0 (или не поддерживается/не возвращается, что часто на Android с экранными кнопками),
-  //      то используется #{$android_fallback_navigation_bar_height} как запасное значение.
-  // 2. + #{$content_bottom_clearance_above_system_bar}:
-  //    - К полученной высоте системной панели/безопасной зоны добавляется наш желаемый зазор.
-  // ▲▲▲---------------------------------------------▲▲▲
-
-  box-sizing: border-box;
-  text-decoration: none;
-  color: $nav-item-text-color;
-  background-color: $nav-item-background;
-  border-radius: $nav-item-border-radius;
-  // box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-
-  cursor: pointer;
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
-  position: relative;
-  transition: background-color 0.2s ease,
-              color 0.2s ease;
-              // box-shadow 0.2s ease;
-
-  .nav-icon {
-    width: $nav-icon-size;
-    height: $nav-icon-size;
-    object-fit: contain;
-  }
-
-  .nav-label {
-    display: block;
-    font-size: $nav-label-font-size;
-    font-weight: 500;
-    line-height: 1.1;
-    text-align: center;
-    margin-top: $nav-label-margin-top;
-  }
-
-  &.active {
-    background-color: $nav-item-background-active;
-    color: $nav-item-text-color-active;
-    .nav-label {
-      font-weight: 600;
-    }
-  }
-
-  &:hover:not(.active) {
-    background-color: lighten($nav-item-background, 6%);
-  }
-
-  &:active {
-    transition-duration: 0.05s;
-    &:not(.active) {
-      background-color: darken($nav-item-background, 8%);
-    }
-    &.active {
-      background-color: darken($nav-item-background-active, 8%);
-    }
-  }
+// --- Стили для общего заголовка секции ---
+.hub-title, .contests-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
 }
 
-// --- Адаптивность ---
-// В медиа-запросах можно будет корректировать $android_fallback_navigation_bar_height и $content_bottom_clearance_above_system_bar, если нужно.
-@media (max-width: 410px) {
-  $nav-item-height-small: 70px; 
-  $nav-icon-size-small-mq: 26px;
-  $nav-label-font-size-small-mq: 9px; // Уменьшил, чтобы помещалось
-  $content-padding-top-small: 8px;
-  // Для $android_fallback_navigation_bar_height можно оставить глобальное значение или переопределить
-  // $content_bottom_clearance_above_system_bar_small: 8px;
-
-  .bottom-nav {
-    height: $nav-item-height-small;
-  }
-
-  .nav-item {
-    // padding-bottom будет использовать те же переменные, если их не переопределить здесь
-    // padding-bottom: calc(env(safe-area-inset-bottom, #{$android_fallback_navigation_bar_height}) + #{$content_bottom_clearance_above_system_bar_small});
-    padding-top: $content-padding-top-small;
-    min-width: 48px;
-
-    .nav-icon {
-      width: $nav-icon-size-small-mq;
-      height: $nav-icon-size-small-mq;
-      margin-bottom: 1px;
+// --- Секция Task HUB ---
+.task-hub-wrapper {
+    // Контейнер для онбординга
+    .onboarding-container {
+        background-color: $secondary-background;
+        border-radius: $border-radius;
+        padding: 20px;
+        position: relative; // Для позиционирования кнопки "Claim"
+        overflow: hidden; // Чтобы оверлей не вылезал за границы
     }
-    .nav-label {
-      font-size: $nav-label-font-size-small-mq;
-      margin-top: 2px;
+
+    .onboarding-tasks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
-  }
+
+    // Стили для одной онбординг-задачи
+    .onboarding-task {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .task-icon-container {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+
+            .task-icon-placeholder {
+                width: 100%;
+                height: 100%;
+                border: 2px solid $accent-color;
+                border-radius: 50%;
+            }
+            
+            .task-icon.completed-icon {
+                font-size: 24px;
+                color: $green-accent;
+            }
+        }
+        
+        .task-name {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        // Стиль для выполненной задачи
+        &.completed {
+            .task-name {
+                text-decoration: line-through;
+                opacity: 0.6;
+            }
+        }
+    }
+
+    // Оверлей и кнопка "Claim"
+    .claim-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(22, 33, 62, 0.85); // Полупрозрачный фон
+        backdrop-filter: blur(5px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        
+        .claim-button {
+            background: linear-gradient(45deg, #e94560, #f05a74);
+            color: $primary-text-color;
+            border: none;
+            border-radius: $border-radius;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+            &:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 20px rgba(233, 69, 96, 0.5);
+            }
+
+            &:active {
+                transform: translateY(-1px);
+            }
+        }
+    }
+    
+    // Стили для повторяющихся задач
+    .recurring-tasks-container {
+      background-color: $secondary-background;
+      border-radius: $border-radius;
+      padding: 15px;
+
+      .tasks-tabs {
+        display: flex;
+        background-color: $accent-color;
+        border-radius: 8px;
+        padding: 5px;
+        margin-bottom: 15px;
+
+        .task-tab-button {
+          flex: 1;
+          padding: 10px;
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          border-radius: 6px;
+          transition: all 0.3s ease;
+          
+          &.active {
+            background-color: $secondary-text-color;
+            color: $primary-text-color;
+          }
+        }
+      }
+
+      .tasks-list {
+        .task-item {
+          padding: 12px;
+          background-color: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+          &:not(:last-child) {
+            margin-bottom: 10px;
+          }
+        }
+      }
+    }
 }
 
-@media (max-width: 360px) {
-  $nav-item-height-tiny: 65px; 
-  $nav-icon-size-tiny-mq: 28px;
-  $content-padding-top-tiny: 6px;
-  // $android_fallback_navigation_bar_height_tiny: 40px; // Можно сделать еще меньше
-  // $content_bottom_clearance_above_system_bar_tiny: 6px;
 
-
-  .bottom-nav {
-    height: $nav-item-height-tiny;
-  }
-
-  .nav-item {
-    // padding-bottom будет использовать те же переменные, если их не переопределить здесь
-    padding-top: $content-padding-top-tiny;
-    justify-content: center; // Если только иконка
-
-    .nav-label {
-      display: none;
+// --- Секция Contests ---
+.contests-wrapper {
+    // Горизонтальная прокрутка
+    .contests-scroll-area {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding-bottom: 15px; // Чтобы тень от скроллбара (если есть) не обрезалась
+        
+        // Скрываем скроллбар, но оставляем функциональность
+        &::-webkit-scrollbar {
+            display: none;
+        }
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
     }
-    .nav-icon {
-      width: $nav-icon-size-tiny-mq;
-      height: $nav-icon-size-tiny-mq;
-      margin-bottom: 0;
+
+    // Стили для одного баннера
+    .contest-banner {
+        flex: 0 0 80%; // Баннер занимает 80% ширины экрана, не сжимается, не растягивается
+        max-width: 320px; // Но не более 320px
+        height: 180px;
+        border-radius: $border-radius;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 15px;
+        color: $primary-text-color;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+
+        // Оверлей для лучшей читаемости текста
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.5) 100%);
+        }
+
+        .prize-pool {
+            position: relative;
+            align-self: flex-end;
+            background-color: rgba(233, 69, 96, 0.85);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .contest-name {
+            position: relative;
+            font-size: 18px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+        }
     }
-  }
 }

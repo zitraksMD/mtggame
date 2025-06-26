@@ -32,10 +32,20 @@
       "targetRoomIdForDoor": "room2_north"
     }
   ],
-  "enemies": [ 
-    { "id": "skel_sword_1_lvl101", "type": "skeleton_swordsman", "x": 300, "y": 800, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "necro_1_lvl101", "type": "necromancer", "x": 600, "y": 650, "roomId": "room1_start", "initiallyActive": true },
-    { "id": "rotting_soldier_1_lvl101", "type": "rotting_soldier", "x": 900, "y": 400, "roomId": "room2_north", "initiallyActive": false }
+  "enemies": [
+
+    { "id": "nbg_1_lvl101", "type": "necropolis_bone_guardian",         "x": 200, "y": 1000, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "nra_1_lvl101", "type": "necropolis_resurrected_archer",    "x": 900, "y": 1050, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "ned_1_lvl101", "type": "necropolis_ethereal_devourer",     "x": 400, "y": 800, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "nrn_1_lvl101", "type": "necropolis_raatken_necromancer",   "x": 600, "y": 900, "roomId": "room1_start", "initiallyActive": true },
+    { "id": "nfb_1_lvl101", "type": "necropolis_fetid_blightspawn",     "x": 750, "y": 700, "roomId": "room1_start", "initiallyActive": true },
+
+
+    { "id": "nfg_1_lvl101", "type": "necropolis_fallen_gladiator",      "x": 300, "y": 450, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "nct_1_lvl101", "type": "necropolis_corpsefiend_tank",      "x": 800, "y": 500, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "ncg_1_lvl101", "type": "necropolis_creaking_gravedigger",  "x": 250, "y": 150, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "nrp_1_lvl101", "type": "necropolis_rotting_predator",      "x": 950, "y": 200, "roomId": "room2_north", "initiallyActive": false },
+    { "id": "nrlm_1_lvl101", "type": "necropolis_raatken_lich_miniboss", "x": 600, "y": 100, "roomId": "room2_north", "initiallyActive": false, "isMiniboss": true }
   ],
   "winCondition": {
     "type": "clear_enemies"

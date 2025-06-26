@@ -125,7 +125,7 @@ const CraftingSuccessPopup = ({ itemData, onClose, onNavigateToInventory }) => {
                 onClick={(e) => e.stopPropagation()}
                 variants={popupContentVariants}
             >
-                
+                    
 
                 <div className="popup-header-new">
                     <div className={`item-name-banner-new rarity-bg-${itemRarity}`}>

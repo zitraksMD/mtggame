@@ -7,7 +7,7 @@ export const TASK_TYPES = {
   export const DAILY_TASKS_DEFINITIONS = [
     { 
       id: 'daily_login', 
-      description: "Войти в игру", 
+      description: "Enter the game", 
       target: 1, 
       reward: { diamonds: 25 }, 
       xp: 20,
@@ -16,7 +16,7 @@ export const TASK_TYPES = {
     },
     { 
       id: 'daily_kill_monsters', 
-      description: "Уничтожить {N} монстров",
+      description: "Complete one module",
       target: 50, 
       reward: { diamonds: 25 }, 
       xp: 20,
@@ -25,7 +25,7 @@ export const TASK_TYPES = {
     },
     { 
       id: 'daily_complete_levels', 
-      description: "Пройти {N} уровней",
+      description: "Earn 50 knowledge points",
       target: 3, 
       reward: { diamonds: 25 }, 
       xp: 20,
@@ -34,7 +34,7 @@ export const TASK_TYPES = {
     },
     { 
       id: 'daily_upgrade_gear', 
-      description: "Улучшить {N} раз экипировку",
+      description: "Upgrade your character's equipment",
       target: 2, 
       reward: { diamonds: 25 }, 
       xp: 20,
@@ -43,7 +43,7 @@ export const TASK_TYPES = {
     },
     { 
       id: 'daily_open_chests', 
-      description: "Открыть {N} сундуков", // Любых сундуков (артефактных, снаряжения)
+      description: "Pass one knowledge test", // Любых сундуков (артефактных, снаряжения)
       target: 5, 
       reward: { diamonds: 25 }, 
       xp: 20,

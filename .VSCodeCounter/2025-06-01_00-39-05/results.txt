@@ -1,0 +1,195 @@
+Date : 2025-06-01 00:39:05
+Directory : u:\telegram-miniapp-game\src
+Total : 152 files,  34605 codes, 3462 comments, 4025 blanks, all 42092 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript JSX |         56 |     13,722 |      1,526 |      1,752 |     17,000 |
+| SCSS           |         46 |     13,400 |      1,466 |      1,840 |     16,706 |
+| JavaScript     |         49 |      7,468 |        469 |        428 |      8,365 |
+| PostCSS        |          1 |         15 |          1 |          5 |         21 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                            | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                               |        152 |     34,605 |      3,462 |      4,025 |     42,092 |
+| . (Files)                                                                       |          4 |        726 |         46 |         95 |        867 |
+| assets                                                                          |          1 |         15 |          1 |          5 |         21 |
+| assets\styles                                                                   |          1 |         15 |          1 |          5 |         21 |
+| components                                                                      |         99 |     26,366 |      2,922 |      3,490 |     32,778 |
+| components (Files)                                                              |         29 |      7,143 |      1,162 |      1,101 |      9,406 |
+| components\popups                                                               |         41 |      7,452 |        786 |        942 |      9,180 |
+| components\screens                                                              |         29 |     11,771 |        974 |      1,447 |     14,192 |
+| config                                                                          |          1 |         68 |          4 |          2 |         74 |
+| context                                                                         |          1 |         67 |         28 |         14 |        109 |
+| data                                                                            |         44 |      4,607 |        412 |        220 |      5,239 |
+| data (Files)                                                                    |         22 |      2,714 |        395 |        166 |      3,275 |
+| data\zones                                                                      |         22 |      1,893 |         17 |         54 |      1,964 |
+| data\zones\zone_01_necropolis                                                   |         11 |        951 |         14 |         32 |        997 |
+| data\zones\zone_02_infernal_chasm                                               |         11 |        942 |          3 |         22 |        967 |
+| store                                                                           |          1 |      2,745 |         49 |        197 |      2,991 |
+| utils                                                                           |          1 |         11 |          0 |          2 |         13 |
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                        | language       | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| u:\telegram-miniapp-game\src\App.scss                                           | SCSS           |        239 |         30 |         43 |        312 |
+| u:\telegram-miniapp-game\src\animations.js                                      | JavaScript     |         19 |          1 |          1 |         21 |
+| u:\telegram-miniapp-game\src\app.jsx                                            | JavaScript JSX |        456 |         10 |         50 |        516 |
+| u:\telegram-miniapp-game\src\assets\styles\joystick.css                         | PostCSS        |         15 |          1 |          5 |         21 |
+| u:\telegram-miniapp-game\src\components\BottomNav.jsx                           | JavaScript JSX |         38 |         12 |          5 |         55 |
+| u:\telegram-miniapp-game\src\components\BottomNav.scss                          | SCSS           |        159 |         26 |         28 |        213 |
+| u:\telegram-miniapp-game\src\components\CharacterViewer.jsx                     | JavaScript JSX |         91 |         26 |         27 |        144 |
+| u:\telegram-miniapp-game\src\components\CompactRecipeCard.jsx                   | JavaScript JSX |         28 |          4 |          6 |         38 |
+| u:\telegram-miniapp-game\src\components\CraftingFocusView.jsx                   | JavaScript JSX |        107 |         16 |         16 |        139 |
+| u:\telegram-miniapp-game\src\components\GameHeader.jsx                          | JavaScript JSX |         95 |         18 |         12 |        125 |
+| u:\telegram-miniapp-game\src\components\GameHeader.scss                         | SCSS           |        190 |         23 |         25 |        238 |
+| u:\telegram-miniapp-game\src\components\GlobalMap.jsx                           | JavaScript JSX |        149 |         12 |         24 |        185 |
+| u:\telegram-miniapp-game\src\components\GlobalMap.scss                          | SCSS           |        149 |         23 |         20 |        192 |
+| u:\telegram-miniapp-game\src\components\InventoryTabs.jsx                       | JavaScript JSX |         35 |          9 |          4 |         48 |
+| u:\telegram-miniapp-game\src\components\Level.jsx                               | JavaScript JSX |      2,546 |        624 |        451 |      3,621 |
+| u:\telegram-miniapp-game\src\components\LoadingScreen.jsx                       | JavaScript JSX |         18 |          0 |          2 |         20 |
+| u:\telegram-miniapp-game\src\components\LoadingScreen.scss                      | SCSS           |         18 |          0 |          2 |         20 |
+| u:\telegram-miniapp-game\src\components\PowerLevel.jsx                          | JavaScript JSX |         46 |         21 |         16 |         83 |
+| u:\telegram-miniapp-game\src\components\PowerLevel.scss                         | SCSS           |         34 |          0 |         10 |         44 |
+| u:\telegram-miniapp-game\src\components\RaceModelViewer.jsx                     | JavaScript JSX |         54 |         12 |          7 |         73 |
+| u:\telegram-miniapp-game\src\components\RaceSelection.jsx                       | JavaScript JSX |        150 |         22 |         15 |        187 |
+| u:\telegram-miniapp-game\src\components\RaceSelection.scss                      | SCSS           |        200 |         23 |         26 |        249 |
+| u:\telegram-miniapp-game\src\components\ResourceBar.jsx                         | JavaScript JSX |         21 |          6 |          4 |         31 |
+| u:\telegram-miniapp-game\src\components\Styles.scss                             | SCSS           |        736 |         83 |        117 |        936 |
+| u:\telegram-miniapp-game\src\components\TransitionOverlay.jsx                   | JavaScript JSX |         95 |         22 |          8 |        125 |
+| u:\telegram-miniapp-game\src\components\TransitionOverlay.scss                  | SCSS           |         21 |          6 |          2 |         29 |
+| u:\telegram-miniapp-game\src\components\TrophiesTab.jsx                         | JavaScript JSX |        602 |         33 |         65 |        700 |
+| u:\telegram-miniapp-game\src\components\TrophiesTab.scss                        | SCSS           |        536 |         16 |         56 |        608 |
+| u:\telegram-miniapp-game\src\components\ZoneMap.jsx                             | JavaScript JSX |        412 |         24 |         59 |        495 |
+| u:\telegram-miniapp-game\src\components\ZoneMap.scss                            | SCSS           |        241 |         74 |         41 |        356 |
+| u:\telegram-miniapp-game\src\components\popups\ArtifactPopup.jsx                | JavaScript JSX |        368 |         17 |         45 |        430 |
+| u:\telegram-miniapp-game\src\components\popups\ArtifactPopup.scss               | SCSS           |        406 |         37 |         44 |        487 |
+| u:\telegram-miniapp-game\src\components\popups\ChestInfoPopup.jsx               | JavaScript JSX |        178 |         39 |         29 |        246 |
+| u:\telegram-miniapp-game\src\components\popups\ChestInfoPopup.scss              | SCSS           |        134 |         18 |         19 |        171 |
+| u:\telegram-miniapp-game\src\components\popups\ChestResultsPopup.jsx            | JavaScript JSX |        214 |         31 |         29 |        274 |
+| u:\telegram-miniapp-game\src\components\popups\ChestResultsPopup.scss           | SCSS           |        238 |         31 |         27 |        296 |
+| u:\telegram-miniapp-game\src\components\popups\CraftingSuccessPopup.jsx         | JavaScript JSX |        194 |         18 |         27 |        239 |
+| u:\telegram-miniapp-game\src\components\popups\CraftingSuccessPopup.scss        | SCSS           |        388 |        108 |         52 |        548 |
+| u:\telegram-miniapp-game\src\components\popups\ForgeItemInfoPopup.jsx           | JavaScript JSX |        186 |         19 |         18 |        223 |
+| u:\telegram-miniapp-game\src\components\popups\ForgeItemInfoPopup.scss          | SCSS           |        346 |         43 |         34 |        423 |
+| u:\telegram-miniapp-game\src\components\popups\GameOverPopup.jsx                | JavaScript JSX |         27 |          6 |          3 |         36 |
+| u:\telegram-miniapp-game\src\components\popups\GameOverPopup.scss               | SCSS           |         89 |         16 |         13 |        118 |
+| u:\telegram-miniapp-game\src\components\popups\ItemDetailPopup.jsx              | JavaScript JSX |        413 |         33 |         33 |        479 |
+| u:\telegram-miniapp-game\src\components\popups\LevelDetailsPopup.jsx            | JavaScript JSX |        135 |         18 |         20 |        173 |
+| u:\telegram-miniapp-game\src\components\popups\LevelDetailsPopup.scss           | SCSS           |        194 |         20 |         29 |        243 |
+| u:\telegram-miniapp-game\src\components\popups\LevelLootPopup.jsx               | JavaScript JSX |         74 |         17 |         10 |        101 |
+| u:\telegram-miniapp-game\src\components\popups\LevelLootPopup.scss              | SCSS           |        117 |         15 |         12 |        144 |
+| u:\telegram-miniapp-game\src\components\popups\LevelVictoryPopup.jsx            | JavaScript JSX |        244 |         19 |         26 |        289 |
+| u:\telegram-miniapp-game\src\components\popups\LevelVictoryPopup.scss           | SCSS           |        190 |         24 |         27 |        241 |
+| u:\telegram-miniapp-game\src\components\popups\MailDetailPopup.jsx              | JavaScript JSX |         85 |          8 |          5 |         98 |
+| u:\telegram-miniapp-game\src\components\popups\MailDetailPopup.scss             | SCSS           |         70 |          1 |         11 |         82 |
+| u:\telegram-miniapp-game\src\components\popups\MailPopupContent.jsx             | JavaScript JSX |        124 |          9 |         16 |        149 |
+| u:\telegram-miniapp-game\src\components\popups\MailPopupContent.scss            | SCSS           |        113 |          4 |         19 |        136 |
+| u:\telegram-miniapp-game\src\components\popups\Popup.jsx                        | JavaScript JSX |         59 |          7 |         10 |         76 |
+| u:\telegram-miniapp-game\src\components\popups\Popup.scss                       | SCSS           |         85 |          8 |         13 |        106 |
+| u:\telegram-miniapp-game\src\components\popups\PowerChangePopup.jsx             | JavaScript JSX |         60 |          4 |          7 |         71 |
+| u:\telegram-miniapp-game\src\components\popups\PowerChangePopup.scss            | SCSS           |         40 |          7 |          1 |         48 |
+| u:\telegram-miniapp-game\src\components\popups\ShardboundRunesGamePopup.jsx     | JavaScript JSX |         79 |          6 |         12 |         97 |
+| u:\telegram-miniapp-game\src\components\popups\ShardboundRunesResultsPopup.jsx  | JavaScript JSX |         37 |          4 |          8 |         49 |
+| u:\telegram-miniapp-game\src\components\popups\SwapItemPopup.jsx                | JavaScript JSX |        207 |         12 |         21 |        240 |
+| u:\telegram-miniapp-game\src\components\popups\SwapItemPopup.scss               | SCSS           |        351 |         34 |         49 |        434 |
+| u:\telegram-miniapp-game\src\components\popups\TasksPopup.jsx                   | JavaScript JSX |        260 |         18 |         42 |        320 |
+| u:\telegram-miniapp-game\src\components\popups\TasksPopup.scss                  | SCSS           |        441 |         27 |         65 |        533 |
+| u:\telegram-miniapp-game\src\components\popups\TonExchangePopup.jsx             | JavaScript JSX |        284 |         17 |         28 |        329 |
+| u:\telegram-miniapp-game\src\components\popups\TonExchangePopup.scss            | SCSS           |        381 |         29 |         42 |        452 |
+| u:\telegram-miniapp-game\src\components\popups\TreasureChestInfoPopup.jsx       | JavaScript JSX |         70 |          9 |         11 |         90 |
+| u:\telegram-miniapp-game\src\components\popups\TreasureChestInfoPopup.scss      | SCSS           |        450 |         43 |         61 |        554 |
+| u:\telegram-miniapp-game\src\components\popups\UsernamePopup.jsx                | JavaScript JSX |         36 |          1 |          7 |         44 |
+| u:\telegram-miniapp-game\src\components\popups\UsernamePopup.scss               | SCSS           |         41 |          0 |          6 |         47 |
+| u:\telegram-miniapp-game\src\components\popups\_mail-theme.scss                 | SCSS           |         31 |          5 |          6 |         42 |
+| u:\telegram-miniapp-game\src\components\popups\_treasure-chest-theme.scss       | SCSS           |         13 |          4 |          5 |         22 |
+| u:\telegram-miniapp-game\src\components\screens\ArtifactsPanel.jsx              | JavaScript JSX |        211 |         21 |         30 |        262 |
+| u:\telegram-miniapp-game\src\components\screens\ArtifactsPanel.scss             | SCSS           |        320 |         37 |         46 |        403 |
+| u:\telegram-miniapp-game\src\components\screens\ChestCard.scss                  | SCSS           |        139 |         18 |         21 |        178 |
+| u:\telegram-miniapp-game\src\components\screens\CryptoPurchaseScreen.jsx        | JavaScript JSX |         99 |          1 |         11 |        111 |
+| u:\telegram-miniapp-game\src\components\screens\CryptoPurchaseScreen.scss       | SCSS           |        215 |          2 |         26 |        243 |
+| u:\telegram-miniapp-game\src\components\screens\DiscoveryScreen.jsx             | JavaScript JSX |        218 |         14 |         22 |        254 |
+| u:\telegram-miniapp-game\src\components\screens\DiscoveryScreen.scss            | SCSS           |        123 |         28 |         24 |        175 |
+| u:\telegram-miniapp-game\src\components\screens\EventDetailModal.jsx            | JavaScript JSX |         71 |          9 |         10 |         90 |
+| u:\telegram-miniapp-game\src\components\screens\EventDetailModal.scss           | SCSS           |        176 |         25 |         30 |        231 |
+| u:\telegram-miniapp-game\src\components\screens\Forge.jsx                       | JavaScript JSX |        456 |         21 |         65 |        542 |
+| u:\telegram-miniapp-game\src\components\screens\Forge.scss                      | SCSS           |        384 |         51 |         59 |        494 |
+| u:\telegram-miniapp-game\src\components\screens\GloryScreen.jsx                 | JavaScript JSX |        165 |         16 |         14 |        195 |
+| u:\telegram-miniapp-game\src\components\screens\GloryScreen.scss                | SCSS           |        376 |         30 |         48 |        454 |
+| u:\telegram-miniapp-game\src\components\screens\Inventory.jsx                   | JavaScript JSX |        534 |         16 |         35 |        585 |
+| u:\telegram-miniapp-game\src\components\screens\Inventory.scss                  | SCSS           |      1,140 |        138 |        154 |      1,432 |
+| u:\telegram-miniapp-game\src\components\screens\MainMenu.jsx                    | JavaScript JSX |        852 |         37 |         88 |        977 |
+| u:\telegram-miniapp-game\src\components\screens\MainMenu.scss                   | SCSS           |        469 |         80 |         81 |        630 |
+| u:\telegram-miniapp-game\src\components\screens\ReferralsTab.jsx                | JavaScript JSX |        277 |          7 |         25 |        309 |
+| u:\telegram-miniapp-game\src\components\screens\ReferralsTab.scss               | SCSS           |        403 |          9 |         41 |        453 |
+| u:\telegram-miniapp-game\src\components\screens\RewardsScreen.jsx               | JavaScript JSX |        306 |         22 |         52 |        380 |
+| u:\telegram-miniapp-game\src\components\screens\RewardsScreen.scss              | SCSS           |        285 |         50 |         36 |        371 |
+| u:\telegram-miniapp-game\src\components\screens\ShardPassScreen.jsx             | JavaScript JSX |        764 |         34 |         67 |        865 |
+| u:\telegram-miniapp-game\src\components\screens\ShardPassScreen.scss            | SCSS           |      1,486 |        102 |        199 |      1,787 |
+| u:\telegram-miniapp-game\src\components\screens\Shop.jsx                        | JavaScript JSX |        872 |         50 |         71 |        993 |
+| u:\telegram-miniapp-game\src\components\screens\Shop.scss                       | SCSS           |        738 |         76 |        100 |        914 |
+| u:\telegram-miniapp-game\src\components\screens\TaskCenterModal.jsx             | JavaScript JSX |        126 |         28 |         16 |        170 |
+| u:\telegram-miniapp-game\src\components\screens\TaskCenterModal.scss            | SCSS           |        377 |         20 |         48 |        445 |
+| u:\telegram-miniapp-game\src\components\screens\TaskItemNew.jsx                 | JavaScript JSX |         61 |         10 |          6 |         77 |
+| u:\telegram-miniapp-game\src\components\screens\TaskItemNew.scss                | SCSS           |        128 |         22 |         22 |        172 |
+| u:\telegram-miniapp-game\src\components\useEnemyLoader.jsx                      | JavaScript JSX |        282 |         17 |         36 |        335 |
+| u:\telegram-miniapp-game\src\components\usePlayerLoader.jsx                     | JavaScript JSX |         72 |          7 |         11 |         90 |
+| u:\telegram-miniapp-game\src\components\utils.js                                | JavaScript     |         18 |          3 |          6 |         27 |
+| u:\telegram-miniapp-game\src\config\raceData.js                                 | JavaScript     |         68 |          4 |          2 |         74 |
+| u:\telegram-miniapp-game\src\context\TelegramProvider.jsx                       | JavaScript JSX |         67 |         28 |         14 |        109 |
+| u:\telegram-miniapp-game\src\data\ShardPassRewardsData.js                       | JavaScript     |        299 |         60 |          6 |        365 |
+| u:\telegram-miniapp-game\src\data\ShardPassTasksData.js                         | JavaScript     |         68 |         33 |          5 |        106 |
+| u:\telegram-miniapp-game\src\data\TimeConstants.js                              | JavaScript     |         26 |         24 |         10 |         60 |
+| u:\telegram-miniapp-game\src\data\achievementsDatabase.js                       | JavaScript     |        260 |         16 |          5 |        281 |
+| u:\telegram-miniapp-game\src\data\artifactChestData.js                          | JavaScript     |         85 |          9 |          9 |        103 |
+| u:\telegram-miniapp-game\src\data\artifactsData.js                              | JavaScript     |        326 |         19 |         17 |        362 |
+| u:\telegram-miniapp-game\src\data\enemyBaseStats.js                             | JavaScript     |         85 |         14 |          6 |        105 |
+| u:\telegram-miniapp-game\src\data\forgeDatabase.js                              | JavaScript     |        196 |         19 |         10 |        225 |
+| u:\telegram-miniapp-game\src\data\gearChestData.js                              | JavaScript     |         46 |          8 |          7 |         61 |
+| u:\telegram-miniapp-game\src\data\generalBundlesData.js                         | JavaScript     |         92 |          4 |          2 |         98 |
+| u:\telegram-miniapp-game\src\data\globalTrackRewards.js                         | JavaScript     |         78 |         11 |          4 |         93 |
+| u:\telegram-miniapp-game\src\data\itemSets.js                                   | JavaScript     |         32 |          2 |          2 |         36 |
+| u:\telegram-miniapp-game\src\data\itemsDatabase.js                              | JavaScript     |        329 |         77 |         27 |        433 |
+| u:\telegram-miniapp-game\src\data\levelChestData.js                             | JavaScript     |         42 |          9 |          2 |         53 |
+| u:\telegram-miniapp-game\src\data\levelRewardsData.js                           | JavaScript     |         94 |         18 |          4 |        116 |
+| u:\telegram-miniapp-game\src\data\rarityData.js                                 | JavaScript     |        170 |         28 |         29 |        227 |
+| u:\telegram-miniapp-game\src\data\rewardStagesData.js                           | JavaScript     |         75 |         12 |          3 |         90 |
+| u:\telegram-miniapp-game\src\data\shopData.js                                   | JavaScript     |         68 |          8 |          2 |         78 |
+| u:\telegram-miniapp-game\src\data\specialDealsData.js                           | JavaScript     |        107 |          8 |          2 |        117 |
+| u:\telegram-miniapp-game\src\data\tasksData.js                                  | JavaScript     |        168 |          5 |          8 |        181 |
+| u:\telegram-miniapp-game\src\data\trialsData.js                                 | JavaScript     |         56 |          2 |          2 |         60 |
+| u:\telegram-miniapp-game\src\data\worldMapData.js                               | JavaScript     |         12 |          9 |          4 |         25 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter10Data.js     | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter1Data.js      | JavaScript     |         91 |          1 |          3 |         95 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter2Data.js      | JavaScript     |         91 |          1 |          3 |         95 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter3Data.js      | JavaScript     |         91 |          1 |          3 |         95 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter4Data.js      | JavaScript     |         91 |          1 |          3 |         95 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter5Data.js      | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter6Data.js      | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter7Data.js      | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter8Data.js      | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter9Data.js      | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\zoneData.js          | JavaScript     |         41 |         10 |          8 |         59 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter11Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter12Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter13Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter14Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter15Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter16Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter17Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter18Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter19Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter20Data.js | JavaScript     |         91 |          0 |          2 |         93 |
+| u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\zoneData.js      | JavaScript     |         32 |          3 |          2 |         37 |
+| u:\telegram-miniapp-game\src\main.jsx                                           | JavaScript JSX |         12 |          5 |          1 |         18 |
+| u:\telegram-miniapp-game\src\store\useGameStore.js                              | JavaScript     |      2,745 |         49 |        197 |      2,991 |
+| u:\telegram-miniapp-game\src\utils\loadlevel.js                                 | JavaScript     |         11 |          0 |          2 |         13 |
+| Total                                                                           |                |     34,605 |      3,462 |      4,025 |     42,092 |
++---------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

@@ -85,7 +85,7 @@ const GameHeader = ({
 
                     {/* Информация о главе */}
                     <div className="header-chapter-info-wrapper">
-                        <span className="chapter-info-label">Глава:</span>
+                        <span className="chapter-info-label">Chapter:</span>
                         {currentChapterName ? (
                             <div className="chapter-info-name-banner" title={currentChapterName}> {/* title для всплывающей подсказки полного имени */}
                                 <span className="chapter-info-name-text">{currentChapterName}</span>

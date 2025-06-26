@@ -2,7 +2,7 @@
 
 const chapterData = {
     id: 1,
-    name: "Проклятые Земли",
+    name: "Planet Python",
     image: "/assets/zones/necropolis/chapter1.png",
     imageWidth: 1200,
     imageHeight: 900,
@@ -11,7 +11,7 @@ const chapterData = {
     levels: [
         {
             id: 101,
-            name: "Затхлый Склеп",
+            name: "Python Module 1",
             x: 150, y: 750, nodeSize: 40,
             description: "Первый склеп на пути к древним захоронениям. Воздух здесь тяжел, а тишину нарушает лишь скрип костей.",
             requiredPowerLevel: 600,

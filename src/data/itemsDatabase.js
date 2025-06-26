@@ -416,6 +416,8 @@ export default itemsDatabase;
 const ITEMS_MAP = new Map(itemsDatabase.map(item => [item.id, item]));
 export const getItemById = (id) => ITEMS_MAP.get(id);
 
+console.log("itemsDatabase.js executed successfully. getItemById type:", typeof getItemById);
+
 // Как использовать новые функции:
 // import { calculateItemStat, getGoldUpgradeCost, getDiamondUpgradeCost, getItemById } from './itemsDatabase';
 //

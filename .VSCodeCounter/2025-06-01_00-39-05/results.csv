@@ -1,0 +1,154 @@
+"filename", "language", "JavaScript", "JavaScript JSX", "SCSS", "PostCSS", "comment", "blank", "total"
+"u:\telegram-miniapp-game\src\App.scss", "SCSS", 0, 0, 239, 0, 30, 43, 312
+"u:\telegram-miniapp-game\src\animations.js", "JavaScript", 19, 0, 0, 0, 1, 1, 21
+"u:\telegram-miniapp-game\src\app.jsx", "JavaScript JSX", 0, 456, 0, 0, 10, 50, 516
+"u:\telegram-miniapp-game\src\assets\styles\joystick.css", "PostCSS", 0, 0, 0, 15, 1, 5, 21
+"u:\telegram-miniapp-game\src\components\BottomNav.jsx", "JavaScript JSX", 0, 38, 0, 0, 12, 5, 55
+"u:\telegram-miniapp-game\src\components\BottomNav.scss", "SCSS", 0, 0, 159, 0, 26, 28, 213
+"u:\telegram-miniapp-game\src\components\CharacterViewer.jsx", "JavaScript JSX", 0, 91, 0, 0, 26, 27, 144
+"u:\telegram-miniapp-game\src\components\CompactRecipeCard.jsx", "JavaScript JSX", 0, 28, 0, 0, 4, 6, 38
+"u:\telegram-miniapp-game\src\components\CraftingFocusView.jsx", "JavaScript JSX", 0, 107, 0, 0, 16, 16, 139
+"u:\telegram-miniapp-game\src\components\GameHeader.jsx", "JavaScript JSX", 0, 95, 0, 0, 18, 12, 125
+"u:\telegram-miniapp-game\src\components\GameHeader.scss", "SCSS", 0, 0, 190, 0, 23, 25, 238
+"u:\telegram-miniapp-game\src\components\GlobalMap.jsx", "JavaScript JSX", 0, 149, 0, 0, 12, 24, 185
+"u:\telegram-miniapp-game\src\components\GlobalMap.scss", "SCSS", 0, 0, 149, 0, 23, 20, 192
+"u:\telegram-miniapp-game\src\components\InventoryTabs.jsx", "JavaScript JSX", 0, 35, 0, 0, 9, 4, 48
+"u:\telegram-miniapp-game\src\components\Level.jsx", "JavaScript JSX", 0, 2546, 0, 0, 624, 451, 3621
+"u:\telegram-miniapp-game\src\components\LoadingScreen.jsx", "JavaScript JSX", 0, 18, 0, 0, 0, 2, 20
+"u:\telegram-miniapp-game\src\components\LoadingScreen.scss", "SCSS", 0, 0, 18, 0, 0, 2, 20
+"u:\telegram-miniapp-game\src\components\PowerLevel.jsx", "JavaScript JSX", 0, 46, 0, 0, 21, 16, 83
+"u:\telegram-miniapp-game\src\components\PowerLevel.scss", "SCSS", 0, 0, 34, 0, 0, 10, 44
+"u:\telegram-miniapp-game\src\components\RaceModelViewer.jsx", "JavaScript JSX", 0, 54, 0, 0, 12, 7, 73
+"u:\telegram-miniapp-game\src\components\RaceSelection.jsx", "JavaScript JSX", 0, 150, 0, 0, 22, 15, 187
+"u:\telegram-miniapp-game\src\components\RaceSelection.scss", "SCSS", 0, 0, 200, 0, 23, 26, 249
+"u:\telegram-miniapp-game\src\components\ResourceBar.jsx", "JavaScript JSX", 0, 21, 0, 0, 6, 4, 31
+"u:\telegram-miniapp-game\src\components\Styles.scss", "SCSS", 0, 0, 736, 0, 83, 117, 936
+"u:\telegram-miniapp-game\src\components\TransitionOverlay.jsx", "JavaScript JSX", 0, 95, 0, 0, 22, 8, 125
+"u:\telegram-miniapp-game\src\components\TransitionOverlay.scss", "SCSS", 0, 0, 21, 0, 6, 2, 29
+"u:\telegram-miniapp-game\src\components\TrophiesTab.jsx", "JavaScript JSX", 0, 602, 0, 0, 33, 65, 700
+"u:\telegram-miniapp-game\src\components\TrophiesTab.scss", "SCSS", 0, 0, 536, 0, 16, 56, 608
+"u:\telegram-miniapp-game\src\components\ZoneMap.jsx", "JavaScript JSX", 0, 412, 0, 0, 24, 59, 495
+"u:\telegram-miniapp-game\src\components\ZoneMap.scss", "SCSS", 0, 0, 241, 0, 74, 41, 356
+"u:\telegram-miniapp-game\src\components\popups\ArtifactPopup.jsx", "JavaScript JSX", 0, 368, 0, 0, 17, 45, 430
+"u:\telegram-miniapp-game\src\components\popups\ArtifactPopup.scss", "SCSS", 0, 0, 406, 0, 37, 44, 487
+"u:\telegram-miniapp-game\src\components\popups\ChestInfoPopup.jsx", "JavaScript JSX", 0, 178, 0, 0, 39, 29, 246
+"u:\telegram-miniapp-game\src\components\popups\ChestInfoPopup.scss", "SCSS", 0, 0, 134, 0, 18, 19, 171
+"u:\telegram-miniapp-game\src\components\popups\ChestResultsPopup.jsx", "JavaScript JSX", 0, 214, 0, 0, 31, 29, 274
+"u:\telegram-miniapp-game\src\components\popups\ChestResultsPopup.scss", "SCSS", 0, 0, 238, 0, 31, 27, 296
+"u:\telegram-miniapp-game\src\components\popups\CraftingSuccessPopup.jsx", "JavaScript JSX", 0, 194, 0, 0, 18, 27, 239
+"u:\telegram-miniapp-game\src\components\popups\CraftingSuccessPopup.scss", "SCSS", 0, 0, 388, 0, 108, 52, 548
+"u:\telegram-miniapp-game\src\components\popups\ForgeItemInfoPopup.jsx", "JavaScript JSX", 0, 186, 0, 0, 19, 18, 223
+"u:\telegram-miniapp-game\src\components\popups\ForgeItemInfoPopup.scss", "SCSS", 0, 0, 346, 0, 43, 34, 423
+"u:\telegram-miniapp-game\src\components\popups\GameOverPopup.jsx", "JavaScript JSX", 0, 27, 0, 0, 6, 3, 36
+"u:\telegram-miniapp-game\src\components\popups\GameOverPopup.scss", "SCSS", 0, 0, 89, 0, 16, 13, 118
+"u:\telegram-miniapp-game\src\components\popups\ItemDetailPopup.jsx", "JavaScript JSX", 0, 413, 0, 0, 33, 33, 479
+"u:\telegram-miniapp-game\src\components\popups\LevelDetailsPopup.jsx", "JavaScript JSX", 0, 135, 0, 0, 18, 20, 173
+"u:\telegram-miniapp-game\src\components\popups\LevelDetailsPopup.scss", "SCSS", 0, 0, 194, 0, 20, 29, 243
+"u:\telegram-miniapp-game\src\components\popups\LevelLootPopup.jsx", "JavaScript JSX", 0, 74, 0, 0, 17, 10, 101
+"u:\telegram-miniapp-game\src\components\popups\LevelLootPopup.scss", "SCSS", 0, 0, 117, 0, 15, 12, 144
+"u:\telegram-miniapp-game\src\components\popups\LevelVictoryPopup.jsx", "JavaScript JSX", 0, 244, 0, 0, 19, 26, 289
+"u:\telegram-miniapp-game\src\components\popups\LevelVictoryPopup.scss", "SCSS", 0, 0, 190, 0, 24, 27, 241
+"u:\telegram-miniapp-game\src\components\popups\MailDetailPopup.jsx", "JavaScript JSX", 0, 85, 0, 0, 8, 5, 98
+"u:\telegram-miniapp-game\src\components\popups\MailDetailPopup.scss", "SCSS", 0, 0, 70, 0, 1, 11, 82
+"u:\telegram-miniapp-game\src\components\popups\MailPopupContent.jsx", "JavaScript JSX", 0, 124, 0, 0, 9, 16, 149
+"u:\telegram-miniapp-game\src\components\popups\MailPopupContent.scss", "SCSS", 0, 0, 113, 0, 4, 19, 136
+"u:\telegram-miniapp-game\src\components\popups\Popup.jsx", "JavaScript JSX", 0, 59, 0, 0, 7, 10, 76
+"u:\telegram-miniapp-game\src\components\popups\Popup.scss", "SCSS", 0, 0, 85, 0, 8, 13, 106
+"u:\telegram-miniapp-game\src\components\popups\PowerChangePopup.jsx", "JavaScript JSX", 0, 60, 0, 0, 4, 7, 71
+"u:\telegram-miniapp-game\src\components\popups\PowerChangePopup.scss", "SCSS", 0, 0, 40, 0, 7, 1, 48
+"u:\telegram-miniapp-game\src\components\popups\ShardboundRunesGamePopup.jsx", "JavaScript JSX", 0, 79, 0, 0, 6, 12, 97
+"u:\telegram-miniapp-game\src\components\popups\ShardboundRunesResultsPopup.jsx", "JavaScript JSX", 0, 37, 0, 0, 4, 8, 49
+"u:\telegram-miniapp-game\src\components\popups\SwapItemPopup.jsx", "JavaScript JSX", 0, 207, 0, 0, 12, 21, 240
+"u:\telegram-miniapp-game\src\components\popups\SwapItemPopup.scss", "SCSS", 0, 0, 351, 0, 34, 49, 434
+"u:\telegram-miniapp-game\src\components\popups\TasksPopup.jsx", "JavaScript JSX", 0, 260, 0, 0, 18, 42, 320
+"u:\telegram-miniapp-game\src\components\popups\TasksPopup.scss", "SCSS", 0, 0, 441, 0, 27, 65, 533
+"u:\telegram-miniapp-game\src\components\popups\TonExchangePopup.jsx", "JavaScript JSX", 0, 284, 0, 0, 17, 28, 329
+"u:\telegram-miniapp-game\src\components\popups\TonExchangePopup.scss", "SCSS", 0, 0, 381, 0, 29, 42, 452
+"u:\telegram-miniapp-game\src\components\popups\TreasureChestInfoPopup.jsx", "JavaScript JSX", 0, 70, 0, 0, 9, 11, 90
+"u:\telegram-miniapp-game\src\components\popups\TreasureChestInfoPopup.scss", "SCSS", 0, 0, 450, 0, 43, 61, 554
+"u:\telegram-miniapp-game\src\components\popups\UsernamePopup.jsx", "JavaScript JSX", 0, 36, 0, 0, 1, 7, 44
+"u:\telegram-miniapp-game\src\components\popups\UsernamePopup.scss", "SCSS", 0, 0, 41, 0, 0, 6, 47
+"u:\telegram-miniapp-game\src\components\popups\_mail-theme.scss", "SCSS", 0, 0, 31, 0, 5, 6, 42
+"u:\telegram-miniapp-game\src\components\popups\_treasure-chest-theme.scss", "SCSS", 0, 0, 13, 0, 4, 5, 22
+"u:\telegram-miniapp-game\src\components\screens\ArtifactsPanel.jsx", "JavaScript JSX", 0, 211, 0, 0, 21, 30, 262
+"u:\telegram-miniapp-game\src\components\screens\ArtifactsPanel.scss", "SCSS", 0, 0, 320, 0, 37, 46, 403
+"u:\telegram-miniapp-game\src\components\screens\ChestCard.scss", "SCSS", 0, 0, 139, 0, 18, 21, 178
+"u:\telegram-miniapp-game\src\components\screens\CryptoPurchaseScreen.jsx", "JavaScript JSX", 0, 99, 0, 0, 1, 11, 111
+"u:\telegram-miniapp-game\src\components\screens\CryptoPurchaseScreen.scss", "SCSS", 0, 0, 215, 0, 2, 26, 243
+"u:\telegram-miniapp-game\src\components\screens\DiscoveryScreen.jsx", "JavaScript JSX", 0, 218, 0, 0, 14, 22, 254
+"u:\telegram-miniapp-game\src\components\screens\DiscoveryScreen.scss", "SCSS", 0, 0, 123, 0, 28, 24, 175
+"u:\telegram-miniapp-game\src\components\screens\EventDetailModal.jsx", "JavaScript JSX", 0, 71, 0, 0, 9, 10, 90
+"u:\telegram-miniapp-game\src\components\screens\EventDetailModal.scss", "SCSS", 0, 0, 176, 0, 25, 30, 231
+"u:\telegram-miniapp-game\src\components\screens\Forge.jsx", "JavaScript JSX", 0, 456, 0, 0, 21, 65, 542
+"u:\telegram-miniapp-game\src\components\screens\Forge.scss", "SCSS", 0, 0, 384, 0, 51, 59, 494
+"u:\telegram-miniapp-game\src\components\screens\GloryScreen.jsx", "JavaScript JSX", 0, 165, 0, 0, 16, 14, 195
+"u:\telegram-miniapp-game\src\components\screens\GloryScreen.scss", "SCSS", 0, 0, 376, 0, 30, 48, 454
+"u:\telegram-miniapp-game\src\components\screens\Inventory.jsx", "JavaScript JSX", 0, 534, 0, 0, 16, 35, 585
+"u:\telegram-miniapp-game\src\components\screens\Inventory.scss", "SCSS", 0, 0, 1140, 0, 138, 154, 1432
+"u:\telegram-miniapp-game\src\components\screens\MainMenu.jsx", "JavaScript JSX", 0, 852, 0, 0, 37, 88, 977
+"u:\telegram-miniapp-game\src\components\screens\MainMenu.scss", "SCSS", 0, 0, 469, 0, 80, 81, 630
+"u:\telegram-miniapp-game\src\components\screens\ReferralsTab.jsx", "JavaScript JSX", 0, 277, 0, 0, 7, 25, 309
+"u:\telegram-miniapp-game\src\components\screens\ReferralsTab.scss", "SCSS", 0, 0, 403, 0, 9, 41, 453
+"u:\telegram-miniapp-game\src\components\screens\RewardsScreen.jsx", "JavaScript JSX", 0, 306, 0, 0, 22, 52, 380
+"u:\telegram-miniapp-game\src\components\screens\RewardsScreen.scss", "SCSS", 0, 0, 285, 0, 50, 36, 371
+"u:\telegram-miniapp-game\src\components\screens\ShardPassScreen.jsx", "JavaScript JSX", 0, 764, 0, 0, 34, 67, 865
+"u:\telegram-miniapp-game\src\components\screens\ShardPassScreen.scss", "SCSS", 0, 0, 1486, 0, 102, 199, 1787
+"u:\telegram-miniapp-game\src\components\screens\Shop.jsx", "JavaScript JSX", 0, 872, 0, 0, 50, 71, 993
+"u:\telegram-miniapp-game\src\components\screens\Shop.scss", "SCSS", 0, 0, 738, 0, 76, 100, 914
+"u:\telegram-miniapp-game\src\components\screens\TaskCenterModal.jsx", "JavaScript JSX", 0, 126, 0, 0, 28, 16, 170
+"u:\telegram-miniapp-game\src\components\screens\TaskCenterModal.scss", "SCSS", 0, 0, 377, 0, 20, 48, 445
+"u:\telegram-miniapp-game\src\components\screens\TaskItemNew.jsx", "JavaScript JSX", 0, 61, 0, 0, 10, 6, 77
+"u:\telegram-miniapp-game\src\components\screens\TaskItemNew.scss", "SCSS", 0, 0, 128, 0, 22, 22, 172
+"u:\telegram-miniapp-game\src\components\useEnemyLoader.jsx", "JavaScript JSX", 0, 282, 0, 0, 17, 36, 335
+"u:\telegram-miniapp-game\src\components\usePlayerLoader.jsx", "JavaScript JSX", 0, 72, 0, 0, 7, 11, 90
+"u:\telegram-miniapp-game\src\components\utils.js", "JavaScript", 18, 0, 0, 0, 3, 6, 27
+"u:\telegram-miniapp-game\src\config\raceData.js", "JavaScript", 68, 0, 0, 0, 4, 2, 74
+"u:\telegram-miniapp-game\src\context\TelegramProvider.jsx", "JavaScript JSX", 0, 67, 0, 0, 28, 14, 109
+"u:\telegram-miniapp-game\src\data\ShardPassRewardsData.js", "JavaScript", 299, 0, 0, 0, 60, 6, 365
+"u:\telegram-miniapp-game\src\data\ShardPassTasksData.js", "JavaScript", 68, 0, 0, 0, 33, 5, 106
+"u:\telegram-miniapp-game\src\data\TimeConstants.js", "JavaScript", 26, 0, 0, 0, 24, 10, 60
+"u:\telegram-miniapp-game\src\data\achievementsDatabase.js", "JavaScript", 260, 0, 0, 0, 16, 5, 281
+"u:\telegram-miniapp-game\src\data\artifactChestData.js", "JavaScript", 85, 0, 0, 0, 9, 9, 103
+"u:\telegram-miniapp-game\src\data\artifactsData.js", "JavaScript", 326, 0, 0, 0, 19, 17, 362
+"u:\telegram-miniapp-game\src\data\enemyBaseStats.js", "JavaScript", 85, 0, 0, 0, 14, 6, 105
+"u:\telegram-miniapp-game\src\data\forgeDatabase.js", "JavaScript", 196, 0, 0, 0, 19, 10, 225
+"u:\telegram-miniapp-game\src\data\gearChestData.js", "JavaScript", 46, 0, 0, 0, 8, 7, 61
+"u:\telegram-miniapp-game\src\data\generalBundlesData.js", "JavaScript", 92, 0, 0, 0, 4, 2, 98
+"u:\telegram-miniapp-game\src\data\globalTrackRewards.js", "JavaScript", 78, 0, 0, 0, 11, 4, 93
+"u:\telegram-miniapp-game\src\data\itemSets.js", "JavaScript", 32, 0, 0, 0, 2, 2, 36
+"u:\telegram-miniapp-game\src\data\itemsDatabase.js", "JavaScript", 329, 0, 0, 0, 77, 27, 433
+"u:\telegram-miniapp-game\src\data\levelChestData.js", "JavaScript", 42, 0, 0, 0, 9, 2, 53
+"u:\telegram-miniapp-game\src\data\levelRewardsData.js", "JavaScript", 94, 0, 0, 0, 18, 4, 116
+"u:\telegram-miniapp-game\src\data\rarityData.js", "JavaScript", 170, 0, 0, 0, 28, 29, 227
+"u:\telegram-miniapp-game\src\data\rewardStagesData.js", "JavaScript", 75, 0, 0, 0, 12, 3, 90
+"u:\telegram-miniapp-game\src\data\shopData.js", "JavaScript", 68, 0, 0, 0, 8, 2, 78
+"u:\telegram-miniapp-game\src\data\specialDealsData.js", "JavaScript", 107, 0, 0, 0, 8, 2, 117
+"u:\telegram-miniapp-game\src\data\tasksData.js", "JavaScript", 168, 0, 0, 0, 5, 8, 181
+"u:\telegram-miniapp-game\src\data\trialsData.js", "JavaScript", 56, 0, 0, 0, 2, 2, 60
+"u:\telegram-miniapp-game\src\data\worldMapData.js", "JavaScript", 12, 0, 0, 0, 9, 4, 25
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter10Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter1Data.js", "JavaScript", 91, 0, 0, 0, 1, 3, 95
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter2Data.js", "JavaScript", 91, 0, 0, 0, 1, 3, 95
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter3Data.js", "JavaScript", 91, 0, 0, 0, 1, 3, 95
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter4Data.js", "JavaScript", 91, 0, 0, 0, 1, 3, 95
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter5Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter6Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter7Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter8Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\chapter9Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_01_necropolis\zoneData.js", "JavaScript", 41, 0, 0, 0, 10, 8, 59
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter11Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter12Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter13Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter14Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter15Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter16Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter17Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter18Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter19Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\chapter20Data.js", "JavaScript", 91, 0, 0, 0, 0, 2, 93
+"u:\telegram-miniapp-game\src\data\zones\zone_02_infernal_chasm\zoneData.js", "JavaScript", 32, 0, 0, 0, 3, 2, 37
+"u:\telegram-miniapp-game\src\main.jsx", "JavaScript JSX", 0, 12, 0, 0, 5, 1, 18
+"u:\telegram-miniapp-game\src\store\useGameStore.js", "JavaScript", 2745, 0, 0, 0, 49, 197, 2991
+"u:\telegram-miniapp-game\src\utils\loadlevel.js", "JavaScript", 11, 0, 0, 0, 0, 2, 13
+"Total", "-", 7468, 13722, 13400, 15, 3462, 4025, 42092

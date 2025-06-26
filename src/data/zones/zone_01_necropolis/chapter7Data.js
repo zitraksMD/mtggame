@@ -12,7 +12,7 @@ const chapterData = {
             name: "Призрачные Врата",
             x: 80, y: 680, nodeSize: 40,
             description: "Вход в город, существующий на грани миров. Только те, кто не боится духов, могут пройти.",
-            requiredPowerLevel: 9200,
+            requiredPowerLevel: 60500,
             imageBanner: "/assets/ui/banners/level_banner_ghostly_gates.png"
         },
         {
@@ -20,7 +20,7 @@ const chapterData = {
             name: "Улица Теней",
             x: 200, y: 750, nodeSize: 40,
             description: "По этой улице бродят тени бывших жителей, повторяя свои последние мгновения жизни.",
-            requiredPowerLevel: 9600,
+            requiredPowerLevel: 62500,
             imageBanner: "/assets/ui/banners/level_banner_street_of_shadows.png"
         },
         {
@@ -28,7 +28,7 @@ const chapterData = {
             name: "Рыночная Площадь Фантомов",
             x: 350, y: 650, nodeSize: 45,
             description: "Когда-то оживленное место, ныне заполненное призрачными торговцами, предлагающими свой невидимый товар.",
-            requiredPowerLevel: 10100,
+            requiredPowerLevel: 64800,
             imageBanner: "/assets/ui/banners/level_banner_phantom_market.png"
         },
         {
@@ -36,7 +36,7 @@ const chapterData = {
             name: "Покинутая Таверна 'Смеющийся Череп'",
             x: 250, y: 550, nodeSize: 40,
             description: "В этой таверне до сих пор слышны призрачные смех и звон кружек, но радости в них нет.",
-            requiredPowerLevel: 10700,
+            requiredPowerLevel: 67300,
             imageBanner: "/assets/ui/banners/level_banner_abandoned_tavern.png"
         },
         {
@@ -44,7 +44,7 @@ const chapterData = {
             name: "Библиотека Забытых Знаний",
             x: 480, y: 500, nodeSize: 40,
             description: "Призрачные библиотекари охраняют книги, содержащие знания, которые лучше бы оставались забытыми.",
-            requiredPowerLevel: 11400,
+            requiredPowerLevel: 70000,
             imageBanner: "/assets/ui/banners/level_banner_forgotten_library.png"
         },
         {
@@ -52,7 +52,7 @@ const chapterData = {
             name: "Особняк Спектрального Аристократа",
             x: 650, y: 600, nodeSize: 45,
             description: "Величественный, но полупрозрачный особняк, хозяин которого не рад незваным гостям из мира живых.",
-            requiredPowerLevel: 12200,
+            requiredPowerLevel: 72900,
             imageBanner: "/assets/ui/banners/level_banner_spectral_mansion.png"
         },
         {
@@ -60,7 +60,7 @@ const chapterData = {
             name: "Театр Эфемерных Драм",
             x: 780, y: 700, nodeSize: 40,
             description: "На сцене этого театра вечно разыгрываются трагедии прошлого, с участием актеров-призраков.",
-            requiredPowerLevel: 13000,
+            requiredPowerLevel: 75900,
             imageBanner: "/assets/ui/banners/level_banner_ephemeral_theater.png"
         },
         {
@@ -68,7 +68,7 @@ const chapterData = {
             name: "Ратуша Вечного Совета",
             x: 900, y: 550, nodeSize: 40,
             description: "Здесь призрачный совет продолжает вершить суд над душами, не нашедшими покоя.",
-            requiredPowerLevel: 14000,
+            requiredPowerLevel: 79000,
             imageBanner: "/assets/ui/banners/level_banner_eternal_council_hall.png"
         },
         {
@@ -76,7 +76,7 @@ const chapterData = {
             name: "Вершина Башни Иллюзий",
             x: 700, y: 400, nodeSize: 40,
             description: "С этой башни открывается вид на весь призрачный город, но не всему, что видно, можно верить.",
-            requiredPowerLevel: 15000,
+            requiredPowerLevel: 82200,
             imageBanner: "/assets/ui/banners/level_banner_illusion_tower_peak.png"
         },
         {
@@ -84,7 +84,7 @@ const chapterData = {
             name: "Хранитель Города Призраков",
             x: 850, y: 250, nodeSize: 50, // Босс главы
             description: "Могущественный дух, связанный с этим городом, он решает, кому суждено покинуть его пределы.",
-            requiredPowerLevel: 16500,
+            requiredPowerLevel: 85500,
             imageBanner: "/assets/ui/banners/level_banner_ghost_city_guardian.png"
         },
     ]
