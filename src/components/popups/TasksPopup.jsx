@@ -150,7 +150,7 @@ const TasksPopup = ({ onClose }) => {
         }
 
         const diff = nextResetDateObj.getTime() - nowUTC; // Разница в миллисекундах
-        if (diff <= 0) return "Обновление...";
+        if (diff <= 0) return "Reshreshing..";
 
         // Вычисляем компоненты времени
         const totalSecondsRemaining = Math.floor(diff / 1000);
@@ -234,7 +234,7 @@ const TasksPopup = ({ onClose }) => {
         return (
             <div className="tasks-category-content">
                 <div className="tasks-header-info">
-                    <p>Обновление через: <span className="timer-value">{timeToResetStr}</span></p>
+                    <p>Refresh in: <span className="timer-value">{timeToResetStr}</span></p>
                 </div>
         
                 <div 
