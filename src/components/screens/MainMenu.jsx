@@ -570,7 +570,7 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
             // case 'battlepass': // Больше не нужен здесь
             //     return "Боевой Пропуск";
             case 'tasks':
-                return "Задания";
+                return "Tasks";
             default:
                 return "";
         }
@@ -728,8 +728,8 @@ const MainMenu = ({ onStart, onChapterNameChange }) => {
                     <img src="/assets/icons/map-icon.png" alt="Карта Мира" className="button-icon-img" />
                     <span className="button-label">Map</span>
                 </button>
-                <button className="main-menu-button icon-label-button quests-button" onClick={handleQuestsClick} title="Задания">
-                    <img src="/assets/icons/quests-icon.png" alt="Задания" className="button-icon-img" />
+                <button className="main-menu-button icon-label-button quests-button" onClick={handleQuestsClick} title="Tasks">
+                    <img src="/assets/icons/quests-icon.png" alt="Tasks" className="button-icon-img" />
                     <span className="button-label">Task</span>
                 </button>
                 <button className="main-menu-button icon-label-button exchange-button" onClick={handleExchangeClick} title="Обмен">
