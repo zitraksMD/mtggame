@@ -13,7 +13,7 @@ const chapterData = {
             id: 101,
             name: "Python Module 1",
             x: 150, y: 750, nodeSize: 40,
-            description: "Первый склеп на пути к древним захоронениям. Воздух здесь тяжел, а тишину нарушает лишь скрип костей.",
+            description: "The first module to start learning Python",
             requiredPowerLevel: 600,
             imageBanner: "/assets/ui/banners/level_banner_crypt1.png"
         },
